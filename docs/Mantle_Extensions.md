@@ -10,7 +10,7 @@ the §0 Declaration Block or the operator explicitly asks. The core framework
 > needed. v2.0 demotes them to clearly-optional overlays so the core stays lean.
 
 > **If you are an LLM implementing §6 (Grooves) or §7 (Urge System):** read
-> `docs/Mantle_LLM_Pitfalls.md` first. Extensions are built on top of a
+> `Mantle_LLM_Pitfalls.md` first. Extensions are built on top of a
 > correctly-certified Zombie Body — the pitfalls doc explains why skipping that
 > step always produces something that looks right but fails audit.
 
@@ -98,7 +98,7 @@ rotate among several model credentials (load-balancing, failover, multi-provider
 
 ## 5. Online skills (web lookup)
 
-The **Inner Voice / self-inquiry (ask-MIND)** skill is **core** (see `Mantle_Part2_Mind.md` and
+The **Inner Voice / self-inquiry (ask-MIND)** skill is **core** (see `../Mantle_Part2_Mind.md` and
 `examples/vcw/skills.py`): provenance = inferred-until-verified, with a waste budget. What is *optional*
 here is the **web-lookup transport** (e.g. OpenRouter `web_search`) that feeds it external data.
 
@@ -128,7 +128,7 @@ parameter). Groove promotion, monitoring, and retirement are governed by the
 **Urge System** (see below). Grooves survive across rebirth via the Ancestor Oracle
 pattern — deliberate transfer, not automatic inheritance.
 
-Full design: `docs/Mantle_Grooves.md`
+Full design: `Mantle_Grooves.md`
 
 ---
 
@@ -146,7 +146,7 @@ decays at rest, and becomes undeniable when it enters the critical band. Executi
 a Body reflex — the MIND observes but cannot prevent or force an urge. Custom urges
 may be declared in §0 as an extension opt-in.
 
-Full design: `docs/Mantle_Urge_System.md`
+Full design: `Mantle_Urge_System.md`
 
 ---
 

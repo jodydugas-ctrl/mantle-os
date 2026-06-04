@@ -233,7 +233,7 @@ genomes: the **agent genome** (who you are — the Genome organ here) lives in t
 - **Reflexes:** none — the Brain is the *non-reflex* organ. It reasons.
 - **Phase 1:** **fully dormant.** The cube has the bands; nothing writes them.
 - **Phase 2:** active. Receives the assembled context, thinks, writes thoughts,
-  authors intentions. (See `Mantle_Part2_Mind.md`.)
+  authors intentions. (See `../Mantle_Part2_Mind.md`.)
 - **Learned skills (learning → instinct):** the MIND may cultivate and prove code; once it
   passes trial, the Body **calcifies** it into an `exec` reflex layer the Body runs with no MIND
   (hash- + capability-gated; `examples/vcw/drivers.py::ExecDriver`). The first such skill is the **Inner
@@ -270,7 +270,7 @@ The Genome (Primer/identity) is **not** a cube band; it lives in the Body (§4.2
 a dedicated band range is reserved at genesis for the armory (exec sub-band +
 memo sub-band). Only the Body's calcify path may write here; the MIND may not.
 The exact layer range is declared in §0 and must not overlap reserved bands above.
-See `docs/Mantle_Grooves.md` for the full groove lifecycle and armory band design.
+See `Mantle_Grooves.md` for the full groove lifecycle and armory band design.
 
 ---
 

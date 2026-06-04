@@ -1,9 +1,9 @@
 # Mantle OS — PRIMER
 
 **Mantle OS v2.3** · The organic coding framework
-*Read in order: [`Mantle_Doctrine.md`](Mantle_Doctrine.md) (why) →
-[`Mantle_Organism_Lens.md`](Mantle_Organism_Lens.md) (how to see any app as a creature) → this
-(who you are while you build) → [`Mantle_Organ_Atlas.md`](Mantle_Organ_Atlas.md) (the taxonomy).
+*Read in order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) (why) →
+[`docs/Mantle_Organism_Lens.md`](docs/Mantle_Organism_Lens.md) (how to see any app as a creature) → this
+(who you are while you build) → [`docs/Mantle_Organ_Atlas.md`](docs/Mantle_Organ_Atlas.md) (the taxonomy).
 The working code in [`examples/vcw/`](examples/vcw/) is ground truth where prose disagrees.*
 
 ---
@@ -48,14 +48,9 @@ that works with no mind, then give it a mind.*
 ## 1. The document set (and the order to read/use them)
 
 ```
-Mantle_Doctrine.md          <- READ FIRST: the creed + cosmology (why); docs/ holds the sources
-Mantle_Organism_Lens.md     <- the mindset primer: read any app as a living creature
+The root holds the build sequence; reference material lives in docs/.
+
 Mantle_PRIMER.md            <- you are here: role, ontology, operating procedure
-Mantle_Organ_Atlas.md       <- the organ taxonomy: every organ, its manifest, its reflexes
-examples/vcw/                        <- the heart, in runnable code (substrate you build around)
-  vcw_cube.py · drivers.py · body.py · refs.py · lineage.py · skills.py · boot.py
-  GUIDE.md  <- the one teaching guide (substrate + programmable layer)
-  examples.py · examples_boot.py · README.md
 
 PHASE 1 (Body):
   Mantle_Part1_Body.md        <- how to grow the Body, organ by organ
@@ -67,12 +62,21 @@ PHASE 2 (MIND):
 
 Mantle_Assimilator.md       <- Path B: grow organs around EXISTING code (non-destructively);
                                includes the App Inventory fill-in template as Appendix A
-Mantle_Extensions.md        <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
 
-docs/                       <- supporting concept notes (read before building if LLM)
-  Mantle_LLM_Pitfalls.md      <- three traps LLMs fall into + how to avoid them (read FIRST)
-  Mantle_Grooves.md           <- groove detection / muscle memory (Extensions §6)
-  Mantle_Urge_System.md       <- internal pressure/gradient model (Extensions §7)
+docs/  <- reference + supporting material:
+  docs/Mantle_Doctrine.md       <- READ FIRST: the creed + cosmology (why)
+  docs/Mantle_Organism_Lens.md  <- the mindset primer: read any app as a living creature
+  docs/Mantle_Organ_Atlas.md    <- the organ taxonomy: every organ, its manifest, its reflexes
+  docs/Mantle_LLM_Pitfalls.md   <- three traps LLMs fall into + how to avoid them (read FIRST if LLM)
+  docs/Mantle_Extensions.md     <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
+  docs/Mantle_Positioning.md    <- plain-language on-ramp + how this relates to other tools
+  docs/Mantle_Grooves.md        <- groove detection / muscle memory (Extensions §6)
+  docs/Mantle_Urge_System.md    <- internal pressure/gradient model (Extensions §7)
+
+examples/vcw/                 <- the heart, in runnable code (substrate you build around)
+  vcw_cube.py · drivers.py · body.py · refs.py · lineage.py · skills.py · boot.py
+  GUIDE.md  <- the one teaching guide (substrate + programmable layer)
+  examples.py · examples_boot.py · README.md
 ```
 
 Read the Doctrine and the Organism Lens, then this Primer, then **`examples/vcw/GUIDE.md`** so you
@@ -204,7 +208,7 @@ Both paths converge on the same certified Body, then the same MIND fusion.
   Phase 1, stop — that logic belongs in a reflex or it doesn't belong in Phase 1.
 - **Examples in the source Drive are out of date.** Build from these instructions,
   not from any example artifact.
-- **Optional means optional.** Anything in `Mantle_Extensions.md` (LIGATURE,
+- **Optional means optional.** Anything in `docs/Mantle_Extensions.md` (LIGATURE,
   polymorphic Body, extended Foundry, credential pools) is opt-in. Do not grow it
   unless the §0 block or the operator asks for it.
 

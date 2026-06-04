@@ -78,7 +78,7 @@ const RESERVED_SHARDS = Object.freeze([
 // The eight canonical organs of a Mantle organism, mapped to THIS engine. Code is grown as
 // ORGANS (not services/layers/controllers): each owns a responsibility, binds to VCW cube
 // bands, and declares its reflexes + audit obligations. The Brain is Phase-2 (dormant until a
-// MIND is fused); every other organ runs in the zombie Body with NO LLM. (Mantle_Organ_Atlas.md §2.)
+// MIND is fused); every other organ runs in the zombie Body with NO LLM. (docs/Mantle_Organ_Atlas.md §2.)
 const ORGAN_ATLAS = Object.freeze([
   { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence", bands: [], phase1: "active",
     implementedBy: ["heartbeat loop", "save()", "HB.* queue"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event"] },
@@ -190,14 +190,14 @@ const IMPLEMENTATION_DECLARATION = Object.freeze({
   RUNTIME: ENV_PROFILE.runtime,
   VCW_FORMAT,
   BODY_MODE: "polymorphic",        // Extensions opt-in: this app morphs its own Somatic Form (reflexMorph)
-  CREDENTIAL_POOL: "Extensions opt-in — per-arm ARM_KEYS pool (max 10 keys) for concurrent arm isolation (Mantle_Extensions.md §4; HF-M01 declared)",
+  CREDENTIAL_POOL: "Extensions opt-in — per-arm ARM_KEYS pool (max 10 keys) for concurrent arm isolation (docs/Mantle_Extensions.md §4; HF-M01 declared)",
   HEARTBEAT_COGNITION: "Scheduled Body heartbeat (HB_MS interval) is the authorized Body-initiated MIND wake event. Additional forced pulses may be triggered by delivery notices, arm delegation, or external stimuli — all Body-owned. Cognition is Body-clocked, not free-running.",
   INTENTIONALLY_OMITTED: "none",
   SYNTAX_CONSTRAINTS: "single-file HTML, React UMD, Babel TypeScript/JSX transform",
   KEYFILE_PRESENT: "runtime-required for MIND activation; memory-only, never persisted",
   DEFAULT_MODEL: MODELS[0],
-  ORGANS: ORGAN_ATLAS.map((o) => o.organ),   // the eight organs this engine grows (Mantle_Organ_Atlas.md §2)
-  GROOVE_DETECTION: "disabled — armory band not reserved at genesis for this reference implementation; see Mantle_Extensions.md §6 and docs/Mantle_Grooves.md to enable",
+  ORGANS: ORGAN_ATLAS.map((o) => o.organ),   // the eight organs this engine grows (docs/Mantle_Organ_Atlas.md §2)
+  GROOVE_DETECTION: "disabled — armory band not reserved at genesis for this reference implementation; see docs/Mantle_Extensions.md §6 and docs/Mantle_Grooves.md to enable",
   URGE_SYSTEM: "conceptual — URGE.REBIRTH pressure tracked via mortalityWarned + SYS.MORTALITY_WARNING immune event (gradient-based; see docs/Mantle_Urge_System.md). URGE.MAINTENANCE fires on immune event accumulation. MIND observes via events band; Body owns execution.",
 });
 const HUMAN_SURFACE_MAP = Object.freeze([

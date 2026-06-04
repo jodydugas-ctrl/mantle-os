@@ -11,7 +11,7 @@ reference Body) and the security invariants run in CI, and the audit harness is 
 **catch** tampering.*
 
 > **New here, or skeptical of the biology metaphor?** Start with
-> [`Mantle_Positioning.md`](Mantle_Positioning.md) — a plain-language summary, how Mantle relates to
+> [`docs/Mantle_Positioning.md`](docs/Mantle_Positioning.md) — a plain-language summary, how Mantle relates to
 > other tools (LangChain, Mem0, Guardrails, …), and an honest list of its limitations. *(Non-normative;
 > not part of the doctrine.)*
 
@@ -46,7 +46,7 @@ The payoff is an application that is **provable, auditable, and genuinely functi
 AI is attached** — and whose AI layer is sharply bounded.
 
 The name follows the biology: the **mantle** is the octopus's body — the structure that houses
-its organs. *(See [`Mantle_Organism_Lens.md`](Mantle_Organism_Lens.md) for the full octopus lens.)*
+its organs. *(See [`docs/Mantle_Organism_Lens.md`](docs/Mantle_Organism_Lens.md) for the full octopus lens.)*
 
 ---
 
@@ -100,7 +100,7 @@ The biology is not decoration; it is the architecture.
 
 The canonical organ set is eight organs: **Heart, Genome, Nervous System, Senses, Immune System,
 Limbs, Memory, and Brain** (the Brain being the only organ dormant in Phase 1). See
-[`Mantle_Organ_Atlas.md`](Mantle_Organ_Atlas.md) for the full taxonomy.
+[`docs/Mantle_Organ_Atlas.md`](docs/Mantle_Organ_Atlas.md) for the full taxonomy.
 
 ---
 
@@ -110,13 +110,9 @@ The documents are meant to be read in order. Start with the philosophy, then the
 the operating manual, then the code.
 
 ```
-Mantle_Doctrine.md        <- READ FIRST: the creed + cosmology (why)
-Mantle_Organism_Lens.md   <- the mindset: read any app as a living creature
-Mantle_PRIMER.md          <- role, ontology, operating procedure (who you are while building)
-Mantle_Organ_Atlas.md     <- the formal organ taxonomy (what each organ is)
-examples/vcw/                      <- the heart, in runnable code (the substrate you build around)
-  examples/vcw/GUIDE.md            <- the one teaching guide for the substrate
-  examples/vcw/organs/            <- the runnable reference Body (Heart, Senses, Limbs, Nervous System)
+The root holds the build sequence — the documents you work through directly:
+
+Mantle_PRIMER.md             <- role, ontology, operating procedure (who you are while building)
 
 PHASE 1 (Body):
   Mantle_Part1_Body.md         <- how to grow the Body, organ by organ
@@ -126,18 +122,26 @@ PHASE 2 (MIND):
   Mantle_Part2_Mind.md         <- how to fuse the MIND
   Mantle_Part2_Mind_Audit.md   <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
 
-Mantle_Assimilator.md     <- Path B: grow organs around EXISTING code, non-destructively
-Mantle_Extensions.md      <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
-Mantle_Positioning.md     <- plain-language on-ramp + how this relates to other tools (non-normative)
+Mantle_Assimilator.md        <- Path B: grow organs around EXISTING code, non-destructively
 
-docs/                     <- supporting concept notes (non-normative)
-  Mantle_LLM_Pitfalls.md      <- READ BEFORE BUILDING: three traps LLMs fall into + how to avoid them
-  Mantle_Grooves.md           <- groove detection / muscle memory (Extensions §6)
-  Mantle_Urge_System.md       <- internal pressure/gradient model (Extensions §7)
+docs/  <- reference + supporting material (read the first four before Part 1):
+  docs/Mantle_Doctrine.md        <- READ FIRST: the creed + cosmology (why)
+  docs/Mantle_Organism_Lens.md   <- the mindset: read any app as a living creature
+  docs/Mantle_Organ_Atlas.md     <- the formal organ taxonomy (what each organ is)
+  docs/Mantle_LLM_Pitfalls.md    <- READ BEFORE BUILDING (if LLM): three traps + how to avoid them
+  docs/Mantle_Extensions.md      <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
+  docs/Mantle_Positioning.md     <- plain-language on-ramp + how this relates to other tools
+  docs/Mantle_Grooves.md         <- groove detection / muscle memory (Extensions §6)
+  docs/Mantle_Urge_System.md     <- internal pressure/gradient model (Extensions §7)
 
-docs/                 <- source texts for the doctrine (the creed + the cosmology)
-examples/                 <- illustrative reference artifacts (see note below)
+examples/vcw/                  <- the heart, in runnable code (the substrate you build around)
+  examples/vcw/GUIDE.md          <- the one teaching guide for the substrate
+  examples/vcw/organs/           <- the runnable reference Body (Heart, Senses, Limbs, Nervous System)
+examples/                      <- illustrative reference artifacts (see note below)
 ```
+
+Reading order: `docs/Mantle_Doctrine.md` → `docs/Mantle_Organism_Lens.md` →
+`Mantle_PRIMER.md` → `docs/Mantle_Organ_Atlas.md` → `examples/vcw/GUIDE.md`, then Part 1.
 
 When prose and code disagree, **the working code in `examples/vcw/` is ground truth.**
 
