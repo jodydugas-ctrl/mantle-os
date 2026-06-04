@@ -10,9 +10,10 @@ security invariants (test_invariants.py), prints the Stage-1 sign-off block fill
 exits non-zero if any hard-fail is open.
 
 Honesty rules:
-  * Rows that need a running HOST app (heartbeat, surface parity, dispatch proofs, dual-flush)
-    are reported NEEDS-HOST -- never silently passed. The reference agent's in-browser self-audit
-    covers those; here we certify the substrate.
+  * Rows that need a running Body (heartbeat, dual-flush, senses classifier, surface map, dispatch
+    proofs, import-compat) are now evaluated for real against the runnable reference Body in
+    `vcw/organs/` -- they were NEEDS-HOST until the Body became code. A browser host can still
+    self-audit the same rows against its own surface.
   * Phase-2 (MIND) rows are out of scope here (NEEDS-MODEL).
 
 Usage:
@@ -29,21 +30,12 @@ import sys
 
 from lineage import Organism, standard_genome
 from drivers import make_entry, _entry_hash
+from entry import entry_hash
+from organs import ReferenceBody
 import test_invariants
 
 PASS, FAIL, NA = "PASS", "FAIL", "N/A"
 NEEDS_HOST, NEEDS_MODEL = "NEEDS-HOST", "NEEDS-MODEL"
-
-# Stage-1 rows that require a live host application, not the substrate (kept visible, not passed).
-HOST_ROWS = [
-    ("B-04", "Heartbeat loop runs with no LLM", "HF-B08"),
-    ("B-05", "Dual-flush: checkpoint + atexit", "HF-B33"),
-    ("B-16", "Senses classifier deterministic & LLM-free", "HF-B09"),
-    ("B-25", "Every visible control in the Human Surface Map", "HF-B44"),
-    ("B-26", "Each control has a ControlBridge + recorded proof", "HF-B44"),
-    ("B-29", "Dispatch authorship present & immutable", "HF-B29"),
-    ("B-38", "Imports as module and as script", "HF-B34"),
-]
 
 
 def _row(code, requirement, result, hf=None, note=""):
@@ -134,13 +126,109 @@ def audit_organism(org):
     return rows
 
 
+def audit_host(org):
+    """Evaluate the Stage-1 rows that need a RUNNING Body, against the runnable reference organs
+    (vcw/organs/). These were NEEDS-HOST until the Body became real code. Each check is fail-open:
+    an organ bug becomes a FAIL with evidence, never a crash of the audit."""
+    rows = []
+
+    def safe(code, requirement, hf, fn):
+        try:
+            ok, note = fn()
+        except Exception as e:  # noqa: BLE001 -- a host-organ bug is a FAIL with evidence
+            ok, note = False, "host check crashed: %s: %s" % (type(e).__name__, e)
+        rows.append(_row(code, requirement, PASS if ok else FAIL, hf, note))
+
+    rb = ReferenceBody(org)
+
+    # B-04 — the heartbeat loop advances with NO cognition callback (no LLM)
+    def b04():
+        before = rb.heart.beats
+        rb.heart.run(3)                                  # cognition=None -> no model
+        return (rb.heart.beats == before + 3,
+                "3 beats advanced with cognition=None (no LLM in the loop)")
+    safe("B-04", "Heartbeat loop runs with no LLM", "HF-B08", b04)
+
+    # B-05 — dual-flush: an atexit handler is installed AND a checkpoint flush persists
+    def b05():
+        installed = rb.heart.install_dual_flush()
+        f0 = rb.heart.flushes
+        rb.heart.circulate()
+        return (installed and rb.heart.flushes == f0 + 1,
+                "atexit handler installed + explicit checkpoint flush persisted")
+    safe("B-05", "Dual-flush: checkpoint + atexit", "HF-B33", b05)
+
+    # B-16 — senses classifier deterministic & LLM-free; one entry per signal; REFLEX skips brain
+    def b16():
+        hits = {"n": 0}
+        rb.senses.bind_reflex("btn", "press", lambda o, s: hits.__setitem__("n", hits["n"] + 1))
+        rb.senses.mark_routine("poll", "tick")
+        deterministic = (
+            rb.senses.classify("btn", "press") == rb.senses.classify("btn", "press") == "REFLEX"
+            and rb.senses.classify("poll", "tick") == "ROUTINE"
+            and rb.senses.classify("zzz", "qqq") == "SIGNIFICANT")
+        sb = len(org.prime.read("senses")); bb = len(org.prime.read("brain"))
+        cls = rb.senses.inhale({"action_id": "btn", "event_type": "press"})
+        one_entry = len(org.prime.read("senses")) == sb + 1
+        no_brain = len(org.prime.read("brain")) == bb
+        return (deterministic and cls == "REFLEX" and one_entry and no_brain and hits["n"] == 1,
+                "deterministic; exactly one senses entry; REFLEX ran without touching brain")
+    safe("B-16", "Senses classifier deterministic & LLM-free", "HF-B09", b16)
+
+    # B-25 — every human-visible control appears in the Human Surface Map
+    def b25():
+        rb.limbs.register_control("save_btn", {"label": "Save"}, lambda v: None)
+        rb.limbs.register_control("title", {"label": "Title", "type": "text"}, lambda v: None)
+        return (set(rb.limbs.surface_map) == {"save_btn", "title"},
+                "Human Surface Map inventories %d control(s)" % len(rb.limbs.surface_map))
+    safe("B-25", "Every visible control in the Human Surface Map", "HF-B44", b25)
+
+    # B-26 — each control has a ControlBridge + a recorded Action Execution Proof
+    def b26():
+        def proofs():
+            return sum(1 for e in org.prime.read("brain")
+                       if isinstance(e.get("content"), dict) and "action_proof" in e["content"])
+        covered = rb.limbs.surface_covered()
+        p0 = proofs()
+        rb.limbs.operate("save_btn", True)
+        return (covered and proofs() == p0 + 1,
+                "every control bridged; operate() recorded an Action Execution Proof")
+    safe("B-26", "Each control has a ControlBridge + recorded proof", "HF-B44", b26)
+
+    # B-29 — dispatch authorship present & immutable; the Body never authors a MIND phase
+    def b29():
+        e = rb.limbs.complete({"task": "save"})
+        present = e.get("authorship") == "BODY"
+        body_authored_mind_phase = any(
+            isinstance(x.get("content"), dict)
+            and x["content"].get("phase") in ("INTENTION", "DELEGATED")
+            and x.get("authorship") == "BODY"
+            for x in org.prime.read("brain"))
+        rewrite = dict(e); rewrite["authorship"] = "MIND"
+        caught = entry_hash(rewrite) != e["hash"]          # authorship is inside the hash
+        return (present and not body_authored_mind_phase and caught,
+                "authorship=BODY present; a rewrite breaks the hash; Body authored no INTENTION")
+    safe("B-29", "Dispatch authorship present & immutable", "HF-B29", b29)
+
+    # B-38 — the organs import both as a package and as sibling scripts (import compatibility)
+    def b38():
+        import importlib
+        mods = [importlib.import_module("organs." + m)
+                for m in ("heart", "senses", "limbs", "nervous")]
+        return (all(mods) and hasattr(mods[0], "Heart"),
+                "organs import via the sibling+package fallback idiom")
+    safe("B-38", "Imports as module and as script", "HF-B34", b38)
+
+    return rows
+
+
 def organs_present(org):
-    """Which organs the SUBSTRATE can attest to (host-level organs are marked [host])."""
+    """Which organs are attested. Heart/Senses/Limbs/Nervous are now runnable reference organs
+    (vcw/organs/), evaluated by audit_host(); the rest are attested from the substrate."""
     bands = org.prime.bands
     return {
-        "Heart": "host", "Limbs": "host", "Nervous": "host",
+        "Heart": "x", "Senses": "x", "Limbs": "x", "Nervous": "x",
         "Genome": "x" if org.body.self_record().get("primer") else " ",
-        "Senses": "x" if "senses" in bands else " ",
         "Immune": "x" if "immune" in bands else " ",
         "Memory": "x" if {"facts", "events", "discoveries"} <= set(bands) else " ",
         "Brain-stub": "x" if "thoughts" in bands else " ",
@@ -182,61 +270,75 @@ def main(argv):
                              break_primer="--break-primer" in flags)
         source = "demo organism (in-memory)"
 
-    rows = audit_organism(org)
+    substrate_rows = audit_organism(org)
+    host_rows = audit_host(org)
+    all_rows = substrate_rows + host_rows
     invariants = test_invariants.run_all()
 
     print("=" * 72)
     print("MANTLE OS — PART 1 (ZOMBIE BODY) AUDIT  ·  source: %s" % source)
     print("=" * 72)
-    width = max(len(r["requirement"]) for r in rows)
-    for r in rows:
+    width = max(len(r["requirement"]) for r in all_rows)
+
+    def _print(r):
         hf = (" [%s]" % r["hf"]) if r["hf"] else ""
         print("  %-4s %-9s %-*s %s%s" % (r["code"], r["result"], width, r["requirement"],
                                          r["note"], hf))
-    print("\n  Host-dependent rows (certify against the running app, not the substrate):")
-    for code, req, hf in HOST_ROWS:
-        print("    %-4s %-10s %s [%s]" % (code, NEEDS_HOST, req, hf))
+
+    print("  Substrate rows (the cube/Body store):")
+    for r in substrate_rows:
+        _print(r)
+    print("\n  Host rows (the runnable reference Body, vcw/organs/):")
+    for r in host_rows:
+        _print(r)
 
     print("\n  Security invariants (test_invariants.py):")
     for r in invariants:
         print("    [%s] %s — %s" % ("PASS" if r["ok"] else "FAIL", r["name"], r["detail"]))
 
-    checkable = [r for r in rows if r["result"] in (PASS, FAIL)]
+    checkable = [r for r in all_rows if r["result"] in (PASS, FAIL)]
     passed = sum(1 for r in checkable if r["result"] == PASS)
-    substrate_fails = [r for r in checkable if r["result"] == FAIL]
-    open_hf = [r for r in rows if r["hf"] and r["result"] == FAIL]
+    fails = [r for r in checkable if r["result"] == FAIL]
+    open_hf = [r for r in all_rows if r["hf"] and r["result"] == FAIL]
     inv_pass = sum(1 for r in invariants if r["ok"])
-    # The gate blocks on ANY substrate FAIL (an integrity/verify failure is disqualifying even
-    # when the audit table tags it "—") or any failing security invariant.
-    blocked = bool(substrate_fails) or inv_pass != len(invariants)
+    # The gate blocks on ANY row FAIL (an integrity/verify failure is disqualifying even when the
+    # audit table tags it "—") or any failing security invariant.
+    blocked = bool(fails) or inv_pass != len(invariants)
 
     organs = organs_present(org)
+    sub_check = [r for r in substrate_rows if r["result"] in (PASS, FAIL)]
+    host_check = [r for r in host_rows if r["result"] in (PASS, FAIL)]
     print("\n" + "-" * 72)
     print("ZOMBIE BODY CERTIFICATION")
     print("  AppAI name        : %s" % org.body.identity_name())
     print("  Prime generation  : %d   ancestral: %s"
           % (org.prime.generation, [c.generation for c in org.ancestral] or "none"))
     print("  Substrate verify  : [%s] healthy" % ("x" if not org.prime.verify() else " "))
-    print("  Substrate rows    : %d / %d passed" % (passed, len(checkable)))
+    print("  Substrate rows    : %d / %d passed"
+          % (sum(1 for r in sub_check if r["result"] == PASS), len(sub_check)))
+    print("  Host (Body) rows  : %d / %d passed"
+          % (sum(1 for r in host_check if r["result"] == PASS), len(host_check)))
     print("  Security invariants: %d / %d green" % (inv_pass, len(invariants)))
     print("  Open hard-fails   : %d   (MUST be 0 to authorize Phase 2)" % len(open_hf))
-    if substrate_fails:
-        print("  Substrate FAILs   : %s" % ", ".join(r["code"] for r in substrate_fails))
-    print("  Organs (substrate): " + "  ".join("%s[%s]" % (k, v) for k, v in organs.items()))
+    if fails:
+        print("  FAILs             : %s" % ", ".join(r["code"] for r in fails))
+    print("  Organs            : " + "  ".join("%s[%s]" % (k, v) for k, v in organs.items()))
     print("-" * 72)
 
     if "--json" in flags:
         print("\nEVIDENCE_JSON:")
-        print(json.dumps({"source": source, "rows": rows, "invariants": invariants,
+        print(json.dumps({"source": source, "substrate_rows": substrate_rows,
+                          "host_rows": host_rows, "invariants": invariants,
                           "open_hardfails": [r["code"] for r in open_hf]}, indent=2))
 
     if blocked:
-        reasons = [r["code"] for r in substrate_fails]
+        reasons = [r["code"] for r in fails]
         if inv_pass != len(invariants):
             reasons.append("security-invariants")
         print("\nRESULT: GATE BLOCKED — %s" % ", ".join(reasons))
         return 1
-    print("\nRESULT: STAGE-1 SUBSTRATE GATE PASSED (Phase 2 authorized once host rows certify).")
+    print("\nRESULT: STAGE-1 ZOMBIE BODY GATE PASSED (substrate + runnable Body certified; "
+          "Phase 2 authorized).")
     return 0
 
 

@@ -13,6 +13,7 @@ Python standard library — no third-party packages, no PIL. It is meant to be *
 |------|------------|
 | [`GUIDE.md`](GUIDE.md) | **The one teaching guide** — substrate (Part I) + programmable layer (Part II). |
 | [`vcw_cube.py`](vcw_cube.py) | The base codec + `Cube` API + CLI. The substrate spec, in code. |
+| [`entry.py`](entry.py) | The **one** entry hasher (covers every non-volatile field, incl. `authorship`). |
 | [`boot.py`](boot.py) | Programmable boot-sector schema + the **driver registry**. |
 | [`drivers.py`](drivers.py) | `log-json`, `keyvalue`, `calendar-spatial`, `exec` drivers. |
 | [`body.py`](body.py) | The **Body** store: Primer / Special Instructions / Immunization + lineage index. |
@@ -21,12 +22,21 @@ Python standard library — no third-party packages, no PIL. It is meant to be *
 | [`skills.py`](skills.py) | The **Inner Voice** self-inquiry skill. |
 | [`examples.py`](examples.py) | Narrated tour of a single cube's lifecycle. |
 | [`examples_boot.py`](examples_boot.py) | Narrated tour: boot sectors, Body, reflex layers, on-demand layers, lineage. |
+| [`organs/`](organs/) | The **runnable reference Body**: Heart, Senses, Limbs, Nervous System (pure stdlib, no LLM). |
+| [`audit.py`](audit.py) · [`test_invariants.py`](test_invariants.py) | The Stage-1 gate + the red/green security invariants. |
 
 ## Run it
 
 ```bash
-python examples.py            # the base cube tour (no network, no LLM)
+# one command from the repo root (no network, no LLM)
+python -m vcw demo            # the full narrated tour
+python -m vcw audit           # the Stage-1 Zombie Body gate (substrate + runnable Body)
+python -m vcw prove           # the security invariants
+
+# or directly, from inside vcw/
+python examples.py            # the base cube tour
 python examples_boot.py       # the full tour: programmable layers, Body, reflexes, rebirth
+python audit.py               # the Stage-1 audit; --break-hash / --break-primer must FAIL
 python vcw_cube.py create organism.vcw --primer "first breath"
 python vcw_cube.py inspect organism.vcw
 python vcw_cube.py verify  organism.vcw

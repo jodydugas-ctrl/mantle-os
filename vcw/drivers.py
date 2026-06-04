@@ -15,8 +15,7 @@ These prove that the boot sector -- not hard-coded logic -- decides how a layer 
 """
 from __future__ import annotations
 
-import hashlib
-import json
+import ast
 import threading
 import time
 from datetime import date
@@ -24,22 +23,17 @@ from typing import Any, Dict, List, Tuple
 
 from vcw_cube import SIDE, CHANNELS, LAYER_BYTES
 from boot import Driver, register, code_hash
+from entry import entry_hash as _entry_hash   # the one entry hasher (covers extras incl. authorship)
 
 
 # ============================================================================
 # log-json : append-only immutable entries
 # ============================================================================
-def _entry_hash(e: Dict[str, Any]) -> str:
-    h = {k: e.get(k) for k in ("ts", "opcode", "author", "source", "content")}
-    return hashlib.sha256(json.dumps(h, sort_keys=True, separators=(",", ":"))
-                          .encode("utf-8")).hexdigest()[:16]
-
-
 def make_entry(content: Any, opcode: str = "WRITE", author: str = "BODY",
                source: str = "", **extra) -> Dict[str, Any]:
     e = {"id": None, "ts": time.time(), "opcode": opcode, "author": author,
          "source": source, "content": content, "tombstone": False, "quarantined": False}
-    e.update(extra)
+    e.update(extra)               # e.g. authorship, verified, confidence -- now INSIDE the hash
     e["hash"] = _entry_hash(e)
     return e
 
@@ -174,6 +168,44 @@ class CapabilityError(Exception):
 
 class IntegrityError(Exception):
     pass
+
+
+class SandboxError(Exception):
+    """Raised when a candidate Python skill contains a STATIC escape vector and so must never be
+    calcified into a reflex (HF-B51). The Python runner's restricted namespace is not a hard
+    sandbox: it is trivially escaped at runtime via dunder traversal
+    (`().__class__.__bases__[0].__subclasses__()` reaches `os`/`subprocess`) or an `import`. The
+    capability/integrity/trust gates fire at EXECUTE time, but the cheapest, most reliable defense
+    is to refuse such code at CULTIVATION time -- before it ever becomes an instinct. This is a
+    static AST check, complementary to the hard-sandbox `wasm` runner seam (the eventual answer for
+    untrusted or foreign code)."""
+
+
+# Names a skill may never reference, and dunder attribute access (the namespace-escape vectors).
+_FORBIDDEN_NAMES = frozenset({
+    "eval", "exec", "compile", "__import__", "open", "globals", "locals", "vars",
+    "getattr", "setattr", "delattr", "input", "breakpoint", "memoryview", "exit", "quit",
+    "help", "__builtins__",
+})
+
+
+def validate_skill_code(code: str) -> None:
+    """Static gate for a Python skill: reject `import`, dunder attribute access, and forbidden
+    builtins. Raises SandboxError on the first violation; returns None if the code is clean.
+    (Applies to the `python` runner; a `wasm` skill is a compiled module checked by its sandbox.)"""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as e:
+        raise SandboxError("skill does not parse: %s" % e)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            raise SandboxError("skill may not import modules")
+        if isinstance(node, ast.Attribute) and isinstance(node.attr, str) \
+                and node.attr.startswith("__") and node.attr.endswith("__"):
+            raise SandboxError("skill may not access dunder attribute %r (escape vector)"
+                               % node.attr)
+        if isinstance(node, ast.Name) and node.id in _FORBIDDEN_NAMES:
+            raise SandboxError("skill may not reference %r" % node.id)
 
 
 class TrustError(Exception):
@@ -352,7 +384,9 @@ class ExecDriver(Driver):
 
 def trial(code: str, entry: str, cases: List[Tuple[Dict[str, Any], Any]]) -> Dict[str, Any]:
     """Run a candidate skill against (args, expected) cases in the sandbox. Used by the
-    calcification pipeline BEFORE a skill is allowed into an exec layer."""
+    calcification pipeline BEFORE a skill is allowed into an exec layer. The static sandbox gate
+    runs FIRST: code that could escape the namespace never even reaches the proving step."""
+    validate_skill_code(code)
     drv = ExecDriver()
     candidate = {"code": code, "code_hash": code_hash(code), "entry": entry,
                  "capabilities": {}, "limits": {"ms": 200}}

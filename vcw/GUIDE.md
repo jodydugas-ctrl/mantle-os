@@ -398,10 +398,18 @@ cube.calcify("reflex_tax", code, entry="compute_tax",
 cube.invoke("reflex_tax", {"amount": 80.0, "rate": 0.25})   # 20.0 — ran with NO MIND
 ```
 
-Two gates protect every invocation:
-- **Integrity** — the code must match the `code_hash` it was promoted with, or it is refused.
-- **Capability** — the call may touch only the bands/limbs the layer declared; over-reach is an
-  immune event, not an execution.
+Gates protect a skill at two moments — when it is *cultivated* and every time it is *invoked*:
+- **Static sandbox gate (cultivation)** — before code can be trialed or calcified, a deterministic
+  AST check (`validate_skill_code`) refuses `import`, dunder attribute access
+  (`().__class__.__bases__…`, the classic namespace-escape vector), and dangerous builtins. Code
+  that could break out of the restricted namespace never becomes an instinct — it raises
+  `SandboxError`. (This complements, and does not replace, the hard-sandboxed `wasm` runner seam.)
+- **Integrity (invocation)** — the code must match the `code_hash` it was promoted with, or it is
+  refused.
+- **Capability (invocation)** — the call may touch only the bands/limbs the layer declared;
+  over-reach is an immune event, not an execution.
+- **Trust (invocation)** — untrusted/foreign-provenance code may not run on the non-isolating
+  Python runner; it must use the isolating `wasm` runner (or earn trust via trial+calcify).
 
 Skills are **immutable + versioned**: a better skill is a *new* layer plus a tombstone, never an
 in-place edit. They inherit across rebirth — so an aged organism's zombie Body is more capable
@@ -480,6 +488,15 @@ re-fitted layout is a **new cube**. So `rebirth()`:
 Generation-pinned references (`<gen0.facts.0>`) keep the entire past addressable forever —
 rebirth loses nothing. `Organism.save(dir)` / `Organism.load(dir)` persist the whole lineage
 (Body + every generation).
+
+> **Durability + the visual substrate, in the path you build against.** As of v2.3 the canonical
+> `lineage.Cube` shares the base codec's two guarantees, not just the legacy `vcw_cube.Cube`:
+> every layer persists as a **real PNG** (entry/keyvalue/exec layers via the JSON-in-pixels codec,
+> calendar layers as their raw RGBA canvas — so the whole cube is again "pictures you can open in
+> any image viewer"), and `save()` is a **staged commit** (write `.stage` → reload → `verify()` →
+> atomic `os.replace`). `verify()` also **recomputes every entry hash**, so the cube attests to
+> its own integrity — a tampered field (including a rewritten `authorship`, now inside the hash)
+> is caught by the cube itself, not only by the external audit harness.
 
 ---
 

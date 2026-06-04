@@ -4,6 +4,12 @@
 
 > Mantle OS v2.3 · A demo of an alternative coding structure.
 
+[![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
+
+*The Zombie Body re-certifies on every commit: the Stage-1 audit (substrate **and** the runnable
+reference Body) and the security invariants run in CI, and the audit harness is itself proven to
+**catch** tampering.*
+
 Mantle OS is a framework for **organic coding**. Instead of writing a "program" with a
 "database," you *grow* an application as if it were a living creature — an **AppAI** — built
 **Body first, brain second**. You assemble a body of deterministic *organs* around a durable
@@ -83,6 +89,7 @@ Mantle_PRIMER.md          <- role, ontology, operating procedure (who you are wh
 Mantle_Organ_Atlas.md     <- the formal organ taxonomy (what each organ is)
 vcw/                      <- the heart, in runnable code (the substrate you build around)
   vcw/GUIDE.md            <- the one teaching guide for the substrate
+  vcw/organs/            <- the runnable reference Body (Heart, Senses, Limbs, Nervous System)
 
 PHASE 1 (Body):
   Mantle_Part1_Body.md          <- how to grow the Body, organ by organ
@@ -109,7 +116,12 @@ The `vcw/` package is plain Python with no required third-party dependencies for
 substrate.
 
 ```bash
-# from the repository root
+# from the repository root — one command to see the whole organism live
+python -m vcw demo      # narrated tour: genesis -> sense -> reflex -> learn -> rebirth -> persist
+python -m vcw audit     # the Stage-1 Zombie Body audit (substrate + runnable Body)
+python -m vcw prove     # the security invariants (red/green)
+
+# or run the modules directly from inside vcw/
 cd vcw
 
 # run the Stage 1 (Zombie Body) audit against a fresh demo organism
@@ -124,7 +136,11 @@ python test_invariants.py
 ```
 
 A passing `audit.py` prints a **Zombie Body Certification** block and exits zero only when there
-are no open hard-fails — the deterministic gate that authorizes Phase 2.
+are no open hard-fails — the deterministic gate that authorizes Phase 2. As of v2.3 that block
+certifies **both** the substrate **and** a runnable reference Body (`vcw/organs/`): the Heart's
+heartbeat, the Senses classifier, the Limbs dispatch lifecycle, and the Nervous System's Context
+Assembly are real, no-LLM code, so the seven rows that once read *NEEDS-HOST* are now genuine
+PASS/FAIL.
 
 ---
 

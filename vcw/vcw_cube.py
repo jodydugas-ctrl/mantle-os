@@ -60,7 +60,6 @@ import struct
 import time
 import zlib
 import zipfile
-import hashlib
 from typing import Any, Dict, List, Optional, Tuple
 
 # ----------------------------------------------------------------------------
@@ -272,10 +271,10 @@ def make_entry(opcode: str, content: Any, author: str = "BODY",
     return body
 
 
-def _entry_hash(entry: Dict[str, Any]) -> str:
-    h = {k: entry[k] for k in ("ts", "opcode", "author", "source", "content")}
-    blob = json.dumps(h, separators=(",", ":"), sort_keys=True).encode("utf-8")
-    return hashlib.sha256(blob).hexdigest()[:16]
+# The entry hash lives in one place now (entry.py). For an entry with no extra fields the
+# non-volatile set is {ts, opcode, author, source, content}, so this reproduces the legacy
+# codec hash exactly -- the base codec keeps verifying unchanged.
+from entry import entry_hash as _entry_hash  # noqa: E402
 
 
 def visible_entries(payload: Dict[str, Any], reveal_private: bool = False,

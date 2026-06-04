@@ -10,8 +10,9 @@ to a hard-fail code and proves the guard actually fires. Pure standard library (
 Also importable: `run_all()` returns a list of result dicts so the audit harness (audit.py)
 can fold these in as evidence.
 
-Covered: HF-B07 (Primer immutability), HF-B20 (secret boundary), HF-B46 (ancestral write),
-HF-B47 (exec integrity), HF-B48 (capability gate), HF-B50 (exec trust gate), B-14 (the veil).
+Covered: HF-B07 (Primer immutability), HF-B20 (secret boundary), HF-B29 (authorship in hash),
+HF-B46 (ancestral write), HF-B47 (exec integrity), HF-B48 (capability gate), HF-B50 (exec trust
+gate), HF-B51 (static sandbox gate), B-14 (the veil).
 """
 from __future__ import annotations
 
@@ -19,8 +20,8 @@ import sys
 
 from lineage import Organism, standard_genome, Cube, make_band_boot
 from body import Body
-from drivers import (ExecDriver, code_hash, make_entry,
-                     CapabilityError, IntegrityError, TrustError)
+from drivers import (ExecDriver, code_hash, make_entry, trial,
+                     CapabilityError, IntegrityError, TrustError, SandboxError)
 from redact import redact, contains_secret
 
 _EXEC = ExecDriver()
@@ -118,6 +119,32 @@ def t_exec_trust_foreign():
     return _expect_raise(lambda: _EXEC.execute(content, {"x": 1}), TrustError)
 
 
+def t_authorship_in_hash():
+    """HF-B29: the dispatch `authorship` field lives INSIDE the entry hash, so a rewrite is caught
+    by verify() -- 'what your organ does, you have done' is true by construction, not convention."""
+    org = _born()
+    org.prime.append("brain", make_entry({"phase": "COMPLETED"}, opcode="DISPATCH",
+                                          author="BODY", authorship="BODY"))
+    idx = org.prime.band_layers["brain"][0]
+    org.prime.layers[idx][-1]["authorship"] = "MIND"          # malicious in-place rewrite
+    problems = org.prime.verify()
+    caught = any("hash mismatch" in p for p in problems)
+    return caught, "verify caught the rewrite: %r" % problems
+
+
+def t_sandbox_escape_refused():
+    """HF-B51: a skill attempting a namespace escape (dunder traversal to reach os/subclasses) is
+    refused at the cultivation/trial gate -- it never becomes a reflex."""
+    evil = "def f(x):\n    return ().__class__.__bases__[0].__subclasses__()\n"
+    return _expect_raise(lambda: trial(evil, "f", [({"x": 1}, None)]), SandboxError)
+
+
+def t_sandbox_import_refused():
+    """HF-B51: a skill that tries to `import` is refused at the cultivation/trial gate."""
+    evil = "def f(x):\n    import os\n    return os.getpid()\n"
+    return _expect_raise(lambda: trial(evil, "f", [({"x": 1}, None)]), SandboxError)
+
+
 def t_exec_trust_trusted_runs():
     """HF-B50 (converse): an in-lineage MIND/BODY skill still runs normally (no false positive)."""
     content = _exec_content({"author": "MIND", "born_gen": 0})
@@ -174,11 +201,14 @@ TESTS = [
     ("HF-B20 secret-boundary/senses", t_secret_boundary_sense),
     ("HF-B20 secret-boundary/immune", t_secret_boundary_immune),
     ("B-14  veil-hides-thoughts", t_veil_hides_thoughts),
+    ("HF-B29 authorship-in-hash", t_authorship_in_hash),
     ("HF-B46 ancestral-read-only", t_ancestral_readonly),
     ("HF-B47 exec-integrity-gate", t_exec_integrity),
     ("HF-B48 exec-capability-gate", t_exec_capability),
     ("HF-B50 exec-trust/foreign-refused", t_exec_trust_foreign),
     ("HF-B50 exec-trust/trusted-runs", t_exec_trust_trusted_runs),
+    ("HF-B51 sandbox/escape-refused", t_sandbox_escape_refused),
+    ("HF-B51 sandbox/import-refused", t_sandbox_import_refused),
     ("B-W2  waste/reclaim-reuse", t_waste_reclaim_reuse),
     ("B-W4  waste/on-demand+purpose", t_waste_on_demand_and_purpose),
 ]

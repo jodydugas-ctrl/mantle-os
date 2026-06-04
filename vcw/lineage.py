@@ -27,10 +27,12 @@ import os
 import zipfile
 from typing import Any, Dict, List, Optional
 
-from vcw_cube import encode_png_rgba, decode_png_rgba, LAYER_BYTES
+from vcw_cube import (encode_png_rgba, decode_png_rgba, LAYER_BYTES,
+                      build_layer_rgba, parse_layer_rgba)
 from boot import make_band_boot, make_cube_boot, get_driver, code_hash
 import drivers  # noqa: F401 -- registers the drivers on import
-from drivers import ExecDriver, make_entry, trial
+from drivers import ExecDriver, make_entry, trial, validate_skill_code
+from entry import entry_hash
 from body import Body
 from redact import redact
 
@@ -232,6 +234,9 @@ class Cube:
             raise PermissionError("cannot calcify into an ancestral cube")
         if self.encoding(band) != "exec":
             raise ValueError("band %r is not an exec band" % band)
+        # the static sandbox gate: code that could escape the restricted namespace never becomes
+        # a reflex (the immune system refuses it at the moment of calcification).
+        validate_skill_code(code)
         content = {"code": code, "code_hash": code_hash(code), "entry": entry,
                    "language": "python", "signature": signature,
                    "capabilities": capabilities, "limits": limits or {"ms": 200},
@@ -248,20 +253,41 @@ class Cube:
         return _EXEC.execute(content, args, granted)
 
     # ---- persistence ------------------------------------------------------
-    def save(self, path: str) -> None:
-        meta = {"generation": self.generation, "identity_in_body": self.identity_in_body,
-                "sealed": self.sealed, "bands": self.bands,
-                "band_layers": self.band_layers, "band_free": self.band_free, "content": {}}
+    # Every layer persists as a REAL PNG (the "Visual Cortex Workspace" made literal in the
+    # canonical runtime, not only in the base codec): entry/keyvalue/exec layers via the
+    # JSON-in-pixels codec, calendar layers as their raw RGBA canvas. So the whole organism's
+    # memory is once again "a directory of pictures you can open in any image viewer."
+    def _write_container(self, path: str) -> None:
+        meta = {"format": "vcw-cube-png-v2", "generation": self.generation,
+                "identity_in_body": self.identity_in_body, "sealed": self.sealed,
+                "bands": self.bands, "band_layers": self.band_layers,
+                "band_free": self.band_free}
         with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr("cube.json", json.dumps(meta, indent=2))
             for band, boot in self.bands.items():
                 for idx in self.band_layers[band]:
                     content = self.layers[idx]
                     if boot["encoding"] == "calendar-spatial":
-                        z.writestr("layers/%03d.png" % idx, encode_png_rgba(bytes(content)))
-                        meta["content"][str(idx)] = {"__png__": "layers/%03d.png" % idx}
+                        # the canvas itself IS the image -- store its raw RGBA pixels as a PNG
+                        png = encode_png_rgba(bytes(content))
                     else:
-                        meta["content"][str(idx)] = content
-            z.writestr("cube.json", json.dumps(meta, indent=2))
+                        lboot = {"band": band, "layer": idx, "encoding": boot["encoding"],
+                                 "private": bool(boot.get("private")), "v": 2}
+                        png = encode_png_rgba(build_layer_rgba(lboot, {"content": content}))
+                    z.writestr("layers/%03d.png" % idx, png)
+
+    def save(self, path: str) -> None:
+        """Staged commit (the Heart's `circulate` reflex): write <path>.stage, RELOAD it, run
+        verify(), and only on a clean verify atomically `os.replace` it over <path>. A corrupt or
+        half-written cube can therefore never replace a healthy one -- the Immune System's
+        existential guarantee, now real in the canonical runtime, not only the base codec."""
+        stage = path + ".stage"
+        self._write_container(stage)
+        problems = Cube.load(stage).verify()
+        if problems:
+            os.remove(stage)
+            raise RuntimeError("staged cube failed verify: %s" % problems)
+        os.replace(stage, path)
 
     @classmethod
     def load(cls, path: str) -> "Cube":
@@ -275,14 +301,19 @@ class Cube:
             c.band_free = {k: list(v) for k, v in meta.get("band_free", {}).items()}
             for band, boot in c.bands.items():
                 for idx in c.band_layers[band]:
-                    stored = meta["content"][str(idx)]
+                    raw = decode_png_rgba(z.read("layers/%03d.png" % idx))
                     if boot["encoding"] == "calendar-spatial":
-                        c.layers[idx] = bytearray(decode_png_rgba(z.read(stored["__png__"])))
+                        c.layers[idx] = bytearray(raw)
                     else:
-                        c.layers[idx] = stored
+                        _, payload = parse_layer_rgba(raw)
+                        c.layers[idx] = payload["content"]
         return c
 
     def verify(self) -> List[str]:
+        """The Immune System's `scan` reflex: the cube attests to its own integrity. As well as
+        band/driver/reuse sanity, it RECOMPUTES every entry hash -- so a tampered field (including
+        a rewritten `authorship`, now inside the hash) is caught by the cube itself, not only by an
+        external audit harness."""
         problems = []
         for band, boot in self.bands.items():
             if not self.band_layers.get(band):
@@ -294,6 +325,13 @@ class Cube:
             # active and free layer sets must not overlap (reuse integrity)
             if set(self.band_layers.get(band, [])) & set(self.band_free.get(band, [])):
                 problems.append("band %s has a layer both active and free" % band)
+            # entry integrity: recompute the hash of every immutable entry
+            if boot["encoding"] == "log-json":
+                for idx in self.band_layers.get(band, []):
+                    for e in self.layers.get(idx, []):
+                        if isinstance(e, dict) and "hash" in e and entry_hash(e) != e["hash"]:
+                            problems.append("entry hash mismatch in band %s layer %d id=%s"
+                                            % (band, idx, e.get("id")))
         return problems
 
 
