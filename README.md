@@ -142,6 +142,20 @@ heartbeat, the Senses classifier, the Limbs dispatch lifecycle, and the Nervous 
 Assembly are real, no-LLM code, so the seven rows that once read *NEEDS-HOST* are now genuine
 PASS/FAIL.
 
+```bash
+# Phase 2 — fuse a MIND, bounded entirely by the Body (offline; no key needed)
+python -m vcw mind        # narrated fusion tour: the same heartbeat now also thinks
+python -m vcw audit-mind  # the Stage-2 gate: MIND containment + Phase-1 regression
+```
+
+The MIND ([`vcw/mind.py`](vcw/mind.py)) is sharply contained: it may write **only** the private
+`thoughts` band and the `brain` band (any other write is refused and logged as an immune event),
+it *proposes* Special Instructions while the Body *applies* them, and it cannot self-promote a
+skill. The model is a **pluggable transport** — there is no vendor SDK in the Body. The reference
+transport is **OpenRouter** (one OpenAI-compatible endpoint, one keyfile, a model-id *string* that
+selects any provider/model); an offline deterministic stub is used for the demo and audit so they
+need no network or key. You change providers by changing a string, never the Body code.
+
 ---
 
 ## The mental model in one sentence

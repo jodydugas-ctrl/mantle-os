@@ -463,6 +463,24 @@ iv.ask("Caching forever is wise.", mode="oppose")   # -> stored in thoughts (pri
 dialectic self-debate lands in the private `thoughts` band. A **waste budget** caps
 self-conversation so the agent cannot spiral.
 
+### The fused MIND (`mind.py`) — Phase 2, bounded by the Body
+
+The Inner Voice takes a `model(prompt) -> text` callable; the full Phase-2 fusion ([`mind.py`](mind.py))
+is built around the same seam. The `Mind` is contained by construction: it may write **only**
+`thoughts` and `brain` (any other band is refused and logged as an immune event), it **proposes**
+Special Instructions while the Body **applies** them, and it cannot self-promote a skill (a
+candidate must pass the sandbox gate + `trial` before the *Body* calcifies it). Its cognition is an
+**extension of the heartbeat** — the same pulse that runs the Body now also thinks — never a
+replacement of a reflex.
+
+The model is a **pluggable transport with no vendor code in the Body**. The reference transport is
+**OpenRouter** (`openrouter_model` — one OpenAI-compatible endpoint over stdlib `urllib`, one
+keyfile, a model-id *string* that selects any provider/model); `openai_compatible_model` points the
+same code at any compatible gateway or local server; and `stub_mind` is an offline deterministic
+stand-in so the demo and the Stage-2 audit need no key or network. You change providers by changing
+a string. The executable Stage-2 gate is [`audit_mind.py`](audit_mind.py): it re-runs the Stage-1
+checks after fusion and proves the MIND's containment.
+
 ---
 
 ## 7. The Organism and rebirth-as-reformat

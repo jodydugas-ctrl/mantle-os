@@ -22,6 +22,7 @@ from lineage import Organism, standard_genome, Cube, make_band_boot
 from body import Body
 from drivers import (ExecDriver, code_hash, make_entry, trial,
                      CapabilityError, IntegrityError, TrustError, SandboxError)
+from mind import Mind, stub_mind, WRITE_SURFACE
 from redact import redact, contains_secret
 
 _EXEC = ExecDriver()
@@ -155,6 +156,33 @@ def t_exec_trust_trusted_runs():
     return (got == 42), "trusted skill returned %r (expected 42)" % got
 
 
+def t_mind_write_surface():
+    """HF-M10: a fused MIND may write ONLY thoughts/brain. Any other band is refused by the Body
+    and logged as an immune event -- the MIND can extend, never break, the Body."""
+    org = _born()
+    m = Mind(org, stub_mind)
+    before = len(org.immune_log)
+    try:
+        m._guarded_write("facts", make_entry({"k": "x"}))
+        return False, "non-surface write was ALLOWED (containment breached)"
+    except PermissionError:
+        pass
+    return (len(org.immune_log) == before + 1,
+            "write to 'facts' refused + immune-logged; surface=%s" % list(WRITE_SURFACE))
+
+
+def t_mind_no_self_promote():
+    """HF-M12: the MIND cannot self-promote a skill -- a sandbox-escape candidate is refused at
+    trial and never calcified into a reflex (the Body calcifies only what passed trial)."""
+    genome = standard_genome() + [make_band_boot("reflex_probe", 600, "exec")]
+    org = Organism.birth(identity={"name": "X"}, truths=["t"], commandments=["c"], genome=genome)
+    m = Mind(org, stub_mind)
+    res = m.cultivate("reflex_probe", "def f(x):\n    return ().__class__\n", "f",
+                      [({"x": 1}, None)], {}, {})
+    empty = not org.prime.layers[org.prime.primary_layer("reflex_probe")]
+    return (res is None and empty, "escape skill refused at trial; band stays un-calcified")
+
+
 def t_waste_reclaim_reuse():
     """B-W2 (waste axis): compaction must reclaim an emptied layer into the band's free pool,
     and the next allocation must REUSE that freed index — 'every layer has a purpose; be efficient.'"""
@@ -209,6 +237,8 @@ TESTS = [
     ("HF-B50 exec-trust/trusted-runs", t_exec_trust_trusted_runs),
     ("HF-B51 sandbox/escape-refused", t_sandbox_escape_refused),
     ("HF-B51 sandbox/import-refused", t_sandbox_import_refused),
+    ("HF-M10 mind/write-surface", t_mind_write_surface),
+    ("HF-M12 mind/no-self-promote", t_mind_no_self_promote),
     ("B-W2  waste/reclaim-reuse", t_waste_reclaim_reuse),
     ("B-W4  waste/on-demand+purpose", t_waste_on_demand_and_purpose),
 ]

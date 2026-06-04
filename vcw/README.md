@@ -23,15 +23,20 @@ Python standard library — no third-party packages, no PIL. It is meant to be *
 | [`examples.py`](examples.py) | Narrated tour of a single cube's lifecycle. |
 | [`examples_boot.py`](examples_boot.py) | Narrated tour: boot sectors, Body, reflex layers, on-demand layers, lineage. |
 | [`organs/`](organs/) | The **runnable reference Body**: Heart, Senses, Limbs, Nervous System (pure stdlib, no LLM). |
-| [`audit.py`](audit.py) · [`test_invariants.py`](test_invariants.py) | The Stage-1 gate + the red/green security invariants. |
+| [`mind.py`](mind.py) | The **Phase-2 MIND fusion** — Body-bounded; a **pluggable** model transport (OpenRouter reference, vendor-neutral). |
+| [`audit.py`](audit.py) · [`audit_mind.py`](audit_mind.py) | The Stage-1 gate, and the executable Stage-2 (MIND containment) gate. |
+| [`test_invariants.py`](test_invariants.py) | The red/green security invariants (incl. MIND containment). |
+| [`examples_mind.py`](examples_mind.py) | Narrated Phase-2 tour: fuse a bounded MIND (offline stub). |
 
 ## Run it
 
 ```bash
 # one command from the repo root (no network, no LLM)
-python -m vcw demo            # the full narrated tour
+python -m vcw demo            # the full narrated Phase-1 tour
 python -m vcw audit           # the Stage-1 Zombie Body gate (substrate + runnable Body)
 python -m vcw prove           # the security invariants
+python -m vcw mind            # the Phase-2 tour: fuse a bounded MIND (offline stub)
+python -m vcw audit-mind      # the Stage-2 gate: MIND containment + Phase-1 regression
 
 # or directly, from inside vcw/
 python examples.py            # the base cube tour

@@ -2,11 +2,13 @@
 """
 __main__.py  --  One command to see the whole organism (Mantle v2.3)
 
-    python -m vcw demo     # the narrated end-to-end tour (genesis -> sense -> reflex ->
-                           #   learn -> rebirth -> persist), no network/LLM
-    python -m vcw audit    # the Stage-1 Zombie Body audit (substrate + runnable Body)
-    python -m vcw prove    # the security invariants (red/green)
-    python -m vcw tour     # the base-cube lifecycle tour
+    python -m vcw demo        # the narrated Phase-1 tour (genesis -> sense -> reflex ->
+                              #   learn -> rebirth -> persist), no network/LLM
+    python -m vcw audit       # the Stage-1 Zombie Body audit (substrate + runnable Body)
+    python -m vcw prove       # the security invariants (red/green)
+    python -m vcw mind        # the narrated Phase-2 tour: fuse a bounded MIND (offline stub)
+    python -m vcw audit-mind  # the Stage-2 audit: MIND containment + Phase-1 regression
+    python -m vcw tour        # the base-cube lifecycle tour
 
 The vcw modules use sibling imports (e.g. `from lineage import ...`), so this entry puts the
 package directory on sys.path first -- which is exactly the import-compatibility idiom the
@@ -19,7 +21,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-_USAGE = "usage: python -m vcw [demo|audit|prove|tour]"
+_USAGE = "usage: python -m vcw [demo|audit|prove|mind|audit-mind|tour]"
 
 
 def main(argv):
@@ -34,6 +36,13 @@ def main(argv):
     if cmd == "prove":
         import test_invariants
         return test_invariants.main()
+    if cmd == "mind":
+        import examples_mind
+        examples_mind.main()
+        return 0
+    if cmd in ("audit-mind", "audit_mind"):
+        import audit_mind
+        return audit_mind.main(argv[1:])
     if cmd == "tour":
         import examples
         examples.main()
