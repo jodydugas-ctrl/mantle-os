@@ -10,6 +10,11 @@
 reference Body) and the security invariants run in CI, and the audit harness is itself proven to
 **catch** tampering.*
 
+> **New here, or skeptical of the biology metaphor?** Start with
+> [`Mantle_Positioning.md`](Mantle_Positioning.md) — a plain-language summary, how Mantle relates to
+> other tools (LangChain, Mem0, Guardrails, …), and an honest list of its limitations. *(Non-normative;
+> not part of the doctrine.)*
+
 Mantle OS is a framework for **organic coding**. Instead of writing a "program" with a
 "database," you *grow* an application as if it were a living creature — an **AppAI** — built
 **Body first, brain second**. You assemble a body of deterministic *organs* around a durable
@@ -114,15 +119,16 @@ vcw/                      <- the heart, in runnable code (the substrate you buil
   vcw/organs/            <- the runnable reference Body (Heart, Senses, Limbs, Nervous System)
 
 PHASE 1 (Body):
-  Mantle_Part1_Body.md          <- how to grow the Body, organ by organ
-  Mantle_Part1_Body_Audit.md    <- the Stage 1 Gate; certify the Zombie Body
+  Mantle_Part1_Body.md         <- how to grow the Body, organ by organ
+  Mantle_Part1_Body_Audit.md   <- the Stage 1 Gate; certify the Zombie Body
 
 PHASE 2 (MIND):
-  Mantle_Part2_Mind.md          <- how to fuse the MIND
-  Mantle_Part2_Mind_Audit.md    <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
+  Mantle_Part2_Mind.md         <- how to fuse the MIND
+  Mantle_Part2_Mind_Audit.md   <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
 
 Mantle_Assimilator.md     <- Path B: grow organs around EXISTING code, non-destructively
 Mantle_Extensions.md      <- OPTIONAL overlays. Not normative.
+Mantle_Positioning.md     <- plain-language on-ramp + how this relates to other tools (non-normative)
 
 doctrine/                 <- source texts for the doctrine (the creed + the cosmology)
 examples/                 <- illustrative reference artifacts (see note below)
