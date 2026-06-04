@@ -36,6 +36,15 @@ that works with no mind, then give it a mind.*
 
 ---
 
+> **⚠ If you are an LLM about to start building:** Read
+> [`docs/Mantle_LLM_Pitfalls.md`](docs/Mantle_LLM_Pitfalls.md) before writing any
+> code. LLMs consistently fall into three specific traps when assimilating this
+> framework. That document names them, explains why they happen, and tells you exactly
+> what to do instead. Five minutes now will save you from producing something that
+> looks right but fails every audit check.
+
+---
+
 ## 1. The document set (and the order to read/use them)
 
 ```
