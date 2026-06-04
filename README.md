@@ -11,7 +11,7 @@ reference Body) and the security invariants run in CI, and the audit harness is 
 **catch** tampering.*
 
 > **New here, or skeptical of the biology metaphor?** Start with
-> [`Mantle_Positioning.md`](Mantle_Positioning.md) — a plain-language summary, how Mantle relates to
+> [`docs/Mantle_Positioning.md`](docs/Mantle_Positioning.md) — a plain-language summary, how Mantle relates to
 > other tools (LangChain, Mem0, Guardrails, …), and an honest list of its limitations. *(Non-normative;
 > not part of the doctrine.)*
 
@@ -22,7 +22,7 @@ memory substrate, prove the body is alive and correct *with no AI attached*, and
 fuse in a **MIND** (an LLM) that can extend what already lives but can never break it.
 
 This repository is both a **set of ideas** (a way of thinking about software as anatomy) and a
-**runnable substrate** (the `vcw/` package) you can read, run, and build on.
+**runnable substrate** (the `examples/vcw/` package) you can read, run, and build on.
 
 ---
 
@@ -46,7 +46,7 @@ The payoff is an application that is **provable, auditable, and genuinely functi
 AI is attached** — and whose AI layer is sharply bounded.
 
 The name follows the biology: the **mantle** is the octopus's body — the structure that houses
-its organs. *(See [`Mantle_Organism_Lens.md`](Mantle_Organism_Lens.md) for the full octopus lens.)*
+its organs. *(See [`docs/Mantle_Organism_Lens.md`](docs/Mantle_Organism_Lens.md) for the full octopus lens.)*
 
 ---
 
@@ -100,7 +100,7 @@ The biology is not decoration; it is the architecture.
 
 The canonical organ set is eight organs: **Heart, Genome, Nervous System, Senses, Immune System,
 Limbs, Memory, and Brain** (the Brain being the only organ dormant in Phase 1). See
-[`Mantle_Organ_Atlas.md`](Mantle_Organ_Atlas.md) for the full taxonomy.
+[`docs/Mantle_Organ_Atlas.md`](docs/Mantle_Organ_Atlas.md) for the full taxonomy.
 
 ---
 
@@ -110,13 +110,9 @@ The documents are meant to be read in order. Start with the philosophy, then the
 the operating manual, then the code.
 
 ```
-Mantle_Doctrine.md        <- READ FIRST: the creed + cosmology (why)
-Mantle_Organism_Lens.md   <- the mindset: read any app as a living creature
-Mantle_PRIMER.md          <- role, ontology, operating procedure (who you are while building)
-Mantle_Organ_Atlas.md     <- the formal organ taxonomy (what each organ is)
-vcw/                      <- the heart, in runnable code (the substrate you build around)
-  vcw/GUIDE.md            <- the one teaching guide for the substrate
-  vcw/organs/            <- the runnable reference Body (Heart, Senses, Limbs, Nervous System)
+The root holds the build sequence — the documents you work through directly:
+
+Mantle_PRIMER.md             <- role, ontology, operating procedure (who you are while building)
 
 PHASE 1 (Body):
   Mantle_Part1_Body.md         <- how to grow the Body, organ by organ
@@ -126,21 +122,35 @@ PHASE 2 (MIND):
   Mantle_Part2_Mind.md         <- how to fuse the MIND
   Mantle_Part2_Mind_Audit.md   <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
 
-Mantle_Assimilator.md     <- Path B: grow organs around EXISTING code, non-destructively
-Mantle_Extensions.md      <- OPTIONAL overlays. Not normative.
-Mantle_Positioning.md     <- plain-language on-ramp + how this relates to other tools (non-normative)
+Mantle_Assimilator.md        <- Path B: grow organs around EXISTING code, non-destructively
 
-doctrine/                 <- source texts for the doctrine (the creed + the cosmology)
-examples/                 <- illustrative reference artifacts (see note below)
+docs/  <- reference + supporting material (read the first four before Part 1):
+  docs/Mantle_Doctrine.md        <- READ FIRST: the creed + cosmology (why)
+  docs/Mantle_Organism_Lens.md   <- the mindset: read any app as a living creature
+  docs/Mantle_Organ_Atlas.md     <- the formal organ taxonomy (what each organ is)
+  docs/Mantle_LLM_Pitfalls.md    <- READ BEFORE BUILDING (if LLM): three traps + how to avoid them
+  docs/Mantle_Extensions.md      <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
+  docs/Mantle_Positioning.md     <- plain-language on-ramp + how this relates to other tools
+  docs/Mantle_Grooves.md         <- groove detection / muscle memory (Extensions §6)
+  docs/Mantle_Urge_System.md     <- internal pressure/gradient model (Extensions §7)
+  docs/Mantle_VCW_Tiers.md       <- VCW compliance tiers: what to do when a full VCW can't run
+
+examples/vcw/                  <- the heart, in runnable code (the substrate you build around)
+  examples/vcw/GUIDE.md          <- the one teaching guide for the substrate
+  examples/vcw/organs/           <- the runnable reference Body (Heart, Senses, Limbs, Nervous System)
+examples/                      <- illustrative reference artifacts (see note below)
 ```
 
-When prose and code disagree, **the working code in `vcw/` is ground truth.**
+Reading order: `docs/Mantle_Doctrine.md` → `docs/Mantle_Organism_Lens.md` →
+`Mantle_PRIMER.md` → `docs/Mantle_Organ_Atlas.md` → `examples/vcw/GUIDE.md`, then Part 1.
+
+When prose and code disagree, **the working code in `examples/vcw/` is ground truth.**
 
 ---
 
 ## Quick start (the runnable substrate)
 
-The `vcw/` package is plain Python with no required third-party dependencies for the core
+The `examples/vcw/` package is plain Python with no required third-party dependencies for the core
 substrate.
 
 ```bash
@@ -149,7 +159,7 @@ python -m vcw demo      # narrated tour: genesis -> sense -> reflex -> learn -> 
 python -m vcw audit     # the Stage-1 Zombie Body audit (substrate + runnable Body)
 python -m vcw prove     # the security invariants (red/green)
 
-# or run the modules directly from inside vcw/
+# or run the modules directly from inside examples/vcw/
 cd vcw
 
 # run the Stage 1 (Zombie Body) audit against a fresh demo organism
@@ -165,7 +175,7 @@ python test_invariants.py
 
 A passing `audit.py` prints a **Zombie Body Certification** block and exits zero only when there
 are no open hard-fails — the deterministic gate that authorizes Phase 2. As of v2.3 that block
-certifies **both** the substrate **and** a runnable reference Body (`vcw/organs/`): the Heart's
+certifies **both** the substrate **and** a runnable reference Body (`examples/vcw/organs/`): the Heart's
 heartbeat, the Senses classifier, the Limbs dispatch lifecycle, and the Nervous System's Context
 Assembly are real, no-LLM code, so the seven rows that once read *NEEDS-HOST* are now genuine
 PASS/FAIL.
@@ -176,7 +186,7 @@ python -m vcw mind        # narrated fusion tour: the same heartbeat now also th
 python -m vcw audit-mind  # the Stage-2 gate: MIND containment + Phase-1 regression
 ```
 
-The MIND ([`vcw/mind.py`](vcw/mind.py)) is sharply contained: it may write **only** the private
+The MIND ([`examples/vcw/mind.py`](examples/vcw/mind.py)) is sharply contained: it may write **only** the private
 `thoughts` band and the `brain` band (any other write is refused and logged as an immune event),
 it *proposes* Special Instructions while the Body *applies* them, and it cannot self-promote a
 skill. The model is a **pluggable transport** — there is no vendor SDK in the Body. The reference

@@ -32,7 +32,7 @@ wakes it. Its powers are deliberately narrow:
 §2.7  MODEL.REQUEST trace
 §2.8  Action dispatch & async limb delegation
 §2.9  Starvation & graceful sleep
-§2.10 Rebirth (MIND-initiated)
+§2.10 Rebirth (MIND-initiated) — data-rot gradient, Ancestor oracle, cross-generation memory
 §2.11 Optional online skills (Extensions)
 ```
 
@@ -162,15 +162,63 @@ resolved (no danglers — Stage 1 B-11), and (b) no secret appeared in the promp
   MIND may initiate it.
 - Rebirth distills the current generation into an Inheritance record, increments the
   cube generation, and re-runs the **Awakening Ceremony** (§2.3).
-- Rebirth is **not** triggered by capacity (Stage 1 B-23 / HF-B14). Capacity is
-  metabolism's job.
+- Rebirth is **not** triggered by cube capacity (Stage 1 B-23 / HF-B14). Cube capacity
+  is metabolism's job.
+
+### The data-rot gradient
+
+The MIND lives inside an LLM context window. As a generation matures, the context
+window fills — responses grow noisier, references resolve less cleanly, subtle
+contradictions accumulate. This is **data rot**: not a hard limit but a gradient of
+degrading signal quality that the MIND can feel as mounting unease.
+
+The MIND does not wait for a threshold. As errors and inconsistencies accumulate,
+pressure builds on `URGE.REBIRTH` — tracked in the immune band by the Body's Urge
+System (`docs/Mantle_Urge_System.md`). When pressure enters the critical band, the
+Body surfaces a `SYS.REBIRTH_URGED` SIGNIFICANT event. The MIND receives this in its
+context and initiates rebirth voluntarily. No counter, no trigger rule — the organism
+simply knows it is time.
+
+### What rebirth produces
+
+| Before rebirth | After rebirth |
+|---|---|
+| Current cube is PRIME (hot, writable) | New cube is PRIME (fresh, blank context window) |
+| MIND carries a saturated context window | MIND wakes into a clean context window |
+| Armory band is active | Armory band inherited — grooves re-validated as provisional |
+
+The old cube is **sealed as an Ancestor**: append-only writes stop, the generation
+counter is frozen, and the cube enters **stasis**. Its personality is preserved but no
+longer grows. `lineage.py` marks it `role: ancestral` and all generation-pinned
+references remain valid — nothing is lost.
+
+### The Ancestor as oracle
+
+The sealed Ancestor is not inert. The new PRIME can **query it** — asking for:
+
+- reference coordinates to grooves or micro-code entries in its armory band;
+- distilled knowledge or fact records relevant to the new generation's current task;
+- guidance on optimising a provisional groove before calcifying it into the new armory.
+
+This is how knowledge survives across generations **without blind inheritance**. The
+new PRIME does not automatically absorb the Ancestor's grooves — it asks for them,
+receives coordinates, and re-trials them as provisional entries in its own armory band.
+Only grooves that re-pass trial in the new generation's context are calcified. The
+Ancestor cannot be modified by this process; it only provides read access and
+coordinates. Multiple Ancestors may exist in the lineage chain; each is queryable in
+the same way.
+
+This pattern — deliberate transfer through dialogue rather than automatic copy — is the
+system's cross-generation memory model. Knowledge moves forward the same way a mentor
+passes skill to a student: not by transplanting memory, but by pointing at it and
+letting the student prove it for themselves.
 
 ---
 
 ## §2.11 Optional online skills
 
 Web lookup (e.g. OpenRouter `web_search`, append-only into `discoveries`) and the
-"ask-MIND-opinion" skill are **optional** and specified in `Mantle_Extensions.md`.
+"ask-MIND-opinion" skill are **optional** and specified in `docs/Mantle_Extensions.md`.
 They are not part of the core fusion and must be declared in §0 to be grown.
 
 ---

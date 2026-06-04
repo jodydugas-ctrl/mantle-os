@@ -2,7 +2,7 @@
 
 **Mantle OS v2.3** · The first-class organ taxonomy
 *Read [`Mantle_Doctrine.md`](Mantle_Doctrine.md) (why), [`Mantle_Organism_Lens.md`](Mantle_Organism_Lens.md)
-(how to see), and [`vcw/GUIDE.md`](vcw/GUIDE.md) (the substrate) first. The Lens teaches you to
+(how to see), and [`examples/vcw/GUIDE.md`](examples/vcw/GUIDE.md) (the substrate) first. The Lens teaches you to
 **recognize** organs in any app; this Atlas is the **formal catalog** of what each organ is, the
 bands it owns, its reflexes, and its audit obligations.*
 
@@ -44,7 +44,7 @@ logic lives in **app organs** bound to the app band range (550–749).
 | # | Organ | Biological role | Code responsibility | Primary band(s) | Phase-1 |
 |---|-------|-----------------|---------------------|-----------------|---------|
 | 1 | **Heart** | circulation / pulse | clock, heartbeat loop, drives cube read/write circulation | — (drives all) | **active** |
-| 2 | **Genome** | DNA / inheritance / lineage | the Primer + commandments + lineage index, held in the **Body** (`vcw/body.py`); rebirth = reformat across the cube lineage | **Body store** (not the cube) | active |
+| 2 | **Genome** | DNA / inheritance / lineage | the Primer + commandments + lineage index, held in the **Body** (`examples/vcw/body.py`); rebirth = reformat across the cube lineage | **Body store** (not the cube) | active |
 | 3 | **Nervous System** | signal routing | bridges, reference resolver, 9-step Context Assembly | prime (8–99), all | active |
 | 4 | **Senses** | perception (afferent I/O) | sensor + **surface** intake; REFLEX/ROUTINE/SIGNIFICANT classifier; the Human Surface Map (what controls exist) | senses (300–399) | active |
 | 5 | **Immune System** | defense / repair | audit, quarantine, tombstone, dangling-ref + integrity detection; secret-boundary redaction | immune (400–449) | active |
@@ -124,7 +124,7 @@ they are*.
   `atexit`; a missed pulse is logged, never swallowed.
 
 ### 4.2 Genome — identity, inheritance & lineage
-The Genome is **held in the Body, not the cube** (`vcw/body.py`). There are two distinct
+The Genome is **held in the Body, not the cube** (`examples/vcw/body.py`). There are two distinct
 genomes: the **agent genome** (who you are — the Genome organ here) lives in the Body; the
 **cube genome** (the band layout) is the cube boot sector. The cube is pure experiential memory.
 - **Owns** three Body-resident, addressable categories — the mutable surface over the
@@ -219,7 +219,7 @@ genomes: the **agent genome** (who you are — the Genome organ here) lives in t
   list), `overflow` (fire near layer/range capacity → compact, then motivate a rebirth-reformat —
   never a silent reset).
 - **Safe-reuse:** only entry-addressed (`log-json`/`keyvalue`) layers are reclaimable; spatial and
-  exec layers are never recycled while referenced (`vcw/lineage.py::Cube.compact`).
+  exec layers are never recycled while referenced (`examples/vcw/lineage.py::Cube.compact`).
 - **Phase 1:** active. **Phase 2:** the MIND may *request* a write, but the write is performed by a
   Body reflex into the correct band; metabolism stays pure Body.
 - **Audit:** entries are immutable + hashed; reads honor the veil; no organ rewrites history;
@@ -233,12 +233,12 @@ genomes: the **agent genome** (who you are — the Genome organ here) lives in t
 - **Reflexes:** none — the Brain is the *non-reflex* organ. It reasons.
 - **Phase 1:** **fully dormant.** The cube has the bands; nothing writes them.
 - **Phase 2:** active. Receives the assembled context, thinks, writes thoughts,
-  authors intentions. (See `Mantle_Part2_Mind.md`.)
+  authors intentions. (See `../Mantle_Part2_Mind.md`.)
 - **Learned skills (learning → instinct):** the MIND may cultivate and prove code; once it
   passes trial, the Body **calcifies** it into an `exec` reflex layer the Body runs with no MIND
-  (hash- + capability-gated; `vcw/drivers.py::ExecDriver`). The first such skill is the **Inner
+  (hash- + capability-gated; `examples/vcw/drivers.py::ExecDriver`). The first such skill is the **Inner
   Voice** (self-inquiry) — a framed side-channel question to the MIND whose answers are stored
-  *inferred, not observed* (`vcw/skills.py`).
+  *inferred, not observed* (`examples/vcw/skills.py`).
 - **Audit (Stage 2):** the MIND writes nowhere except `thoughts` + `brain`; it cannot
   touch the Genome; it never self-promotes or executes ungated code; lifting the Body's Phase-1
   reflexes is impossible by construction.
@@ -248,7 +248,7 @@ genomes: the **agent genome** (who you are — the Genome organ here) lives in t
 ## 5. Band ownership map (authoritative)
 
 To prevent two organs writing the same band, ownership is fixed. (Ranges are the canonical band
-map — see `vcw/GUIDE.md` and `vcw/lineage.py::standard_genome` — they must match everywhere.)
+map — see `examples/vcw/GUIDE.md` and `examples/vcw/lineage.py::standard_genome` — they must match everywhere.)
 The Genome (Primer/identity) is **not** a cube band; it lives in the Body (§4.2).
 
 | Band | Layers | Owning organ(s) | Writers |
@@ -265,6 +265,12 @@ The Genome (Primer/identity) is **not** a cube band; it lives in the Body (§4.2
 | `thoughts` | 500–549 | Brain | Brain only (private; veiled) |
 | app bands | 550–749 | app organs, Limbs | app organs; Limbs (efferent surface actuation / App-Face Bridge) |
 | tail | 750–799 | — | reserved |
+
+**Armory band (Extensions §6 — optional):** If groove detection is declared in §0,
+a dedicated band range is reserved at genesis for the armory (exec sub-band +
+memo sub-band). Only the Body's calcify path may write here; the MIND may not.
+The exact layer range is declared in §0 and must not overlap reserved bands above.
+See `Mantle_Grooves.md` for the full groove lifecycle and armory band design.
 
 ---
 

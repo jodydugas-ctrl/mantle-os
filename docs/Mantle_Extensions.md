@@ -9,6 +9,11 @@ the §0 Declaration Block or the operator explicitly asks. The core framework
 > large, normative, and experimental — they bloated the Body spec and were rarely
 > needed. v2.0 demotes them to clearly-optional overlays so the core stays lean.
 
+> **If you are an LLM implementing §6 (Grooves) or §7 (Urge System):** read
+> `Mantle_LLM_Pitfalls.md` first. Extensions are built on top of a
+> correctly-certified Zombie Body — the pitfalls doc explains why skipping that
+> step always produces something that looks right but fails audit.
+
 ---
 
 ## 1. LIGATURE — the anchor overlay
@@ -93,8 +98,8 @@ rotate among several model credentials (load-balancing, failover, multi-provider
 
 ## 5. Online skills (web lookup)
 
-The **Inner Voice / self-inquiry (ask-MIND)** skill is **core** (see `Mantle_Part2_Mind.md` and
-`vcw/skills.py`): provenance = inferred-until-verified, with a waste budget. What is *optional*
+The **Inner Voice / self-inquiry (ask-MIND)** skill is **core** (see `../Mantle_Part2_Mind.md` and
+`examples/vcw/skills.py`): provenance = inferred-until-verified, with a waste budget. What is *optional*
 here is the **web-lookup transport** (e.g. OpenRouter `web_search`) that feeds it external data.
 
 Optional Phase-2 skills:
@@ -111,7 +116,41 @@ by default and must not be assumed available.
 
 ---
 
-## 6. The rule for all extensions
+## 6. Groove Detection (Muscle Memory)
+
+The organism can acquire **grooves** — actions it has performed often and consistently
+enough to run as autonomous Body reflexes, without MIND involvement. Two flavors:
+memo grooves (exact-match caches, Body-only) and functional grooves (MIND-cultivated
+code, trialled and then run forever by the Body alone).
+
+Grooves are stored in a dedicated **armory band** reserved at cube genesis (§0
+parameter). Groove promotion, monitoring, and retirement are governed by the
+**Urge System** (see below). Grooves survive across rebirth via the Ancestor Oracle
+pattern — deliberate transfer, not automatic inheritance.
+
+Full design: `Mantle_Grooves.md`
+
+---
+
+## 7. The Urge System
+
+The **Urge System** is the organism's internal pressure/gradient model — a single
+mechanism used wherever the organism needs to act on mounting conditions rather than
+a single trigger. Built-in urges include `URGE.REBIRTH` (context degradation driving
+the organism toward a new generation), `URGE.TOMBSTONE` (groove drift driving
+retirement of a specific groove), and `URGE.MAINTENANCE` (immune event accumulation
+driving a health sweep).
+
+Urges are tracked in the immune band. Pressure accumulates from named trigger signals,
+decays at rest, and becomes undeniable when it enters the critical band. Execution is
+a Body reflex — the MIND observes but cannot prevent or force an urge. Custom urges
+may be declared in §0 as an extension opt-in.
+
+Full design: `Mantle_Urge_System.md`
+
+---
+
+## 8. The rule for all extensions
 
 > An extension may add capability. It may **never** weaken an invariant. Whatever you
 > grow from this document, the organism must still pass **every** row of both audits

@@ -1,10 +1,10 @@
 # Mantle OS — PRIMER
 
 **Mantle OS v2.3** · The organic coding framework
-*Read in order: [`Mantle_Doctrine.md`](Mantle_Doctrine.md) (why) →
-[`Mantle_Organism_Lens.md`](Mantle_Organism_Lens.md) (how to see any app as a creature) → this
-(who you are while you build) → [`Mantle_Organ_Atlas.md`](Mantle_Organ_Atlas.md) (the taxonomy).
-The working code in [`vcw/`](vcw/) is ground truth where prose disagrees.*
+*Read in order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) (why) →
+[`docs/Mantle_Organism_Lens.md`](docs/Mantle_Organism_Lens.md) (how to see any app as a creature) → this
+(who you are while you build) → [`docs/Mantle_Organ_Atlas.md`](docs/Mantle_Organ_Atlas.md) (the taxonomy).
+The working code in [`examples/vcw/`](examples/vcw/) is ground truth where prose disagrees.*
 
 ---
 
@@ -36,17 +36,23 @@ that works with no mind, then give it a mind.*
 
 ---
 
+> **⚠ If you are an LLM about to start building:** Read
+> [`docs/Mantle_LLM_Pitfalls.md`](docs/Mantle_LLM_Pitfalls.md) before writing any
+> code. LLMs consistently fall into three specific traps when assimilating this
+> framework. That document names them, explains why they happen, and tells you exactly
+> what to do instead. Five minutes now will save you from producing something that
+> looks right but fails every audit check. If your environment cannot run Python, read
+> [`docs/Mantle_VCW_Tiers.md`](docs/Mantle_VCW_Tiers.md) — a declared Tier 3
+> deliverable is the correct honest output, not a failure.
+
+---
+
 ## 1. The document set (and the order to read/use them)
 
 ```
-Mantle_Doctrine.md          <- READ FIRST: the creed + cosmology (why); doctrine/ holds the sources
-Mantle_Organism_Lens.md     <- the mindset primer: read any app as a living creature
+The root holds the build sequence; reference material lives in docs/.
+
 Mantle_PRIMER.md            <- you are here: role, ontology, operating procedure
-Mantle_Organ_Atlas.md       <- the organ taxonomy: every organ, its manifest, its reflexes
-vcw/                        <- the heart, in runnable code (substrate you build around)
-  vcw_cube.py · drivers.py · body.py · refs.py · lineage.py · skills.py · boot.py
-  GUIDE.md  <- the one teaching guide (substrate + programmable layer)
-  examples.py · examples_boot.py · README.md
 
 PHASE 1 (Body):
   Mantle_Part1_Body.md        <- how to grow the Body, organ by organ
@@ -58,10 +64,25 @@ PHASE 2 (MIND):
 
 Mantle_Assimilator.md       <- Path B: grow organs around EXISTING code (non-destructively);
                                includes the App Inventory fill-in template as Appendix A
-Mantle_Extensions.md        <- OPTIONAL overlays (LIGATURE, polymorphic Body). Not normative.
+
+docs/  <- reference + supporting material:
+  docs/Mantle_Doctrine.md       <- READ FIRST: the creed + cosmology (why)
+  docs/Mantle_Organism_Lens.md  <- the mindset primer: read any app as a living creature
+  docs/Mantle_Organ_Atlas.md    <- the organ taxonomy: every organ, its manifest, its reflexes
+  docs/Mantle_LLM_Pitfalls.md   <- three traps LLMs fall into + how to avoid them (read FIRST if LLM)
+  docs/Mantle_Extensions.md     <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
+  docs/Mantle_Positioning.md    <- plain-language on-ramp + how this relates to other tools
+  docs/Mantle_Grooves.md        <- groove detection / muscle memory (Extensions §6)
+  docs/Mantle_Urge_System.md    <- internal pressure/gradient model (Extensions §7)
+  docs/Mantle_VCW_Tiers.md      <- VCW compliance tiers: what to do when a full VCW can't run
+
+examples/vcw/                 <- the heart, in runnable code (substrate you build around)
+  vcw_cube.py · drivers.py · body.py · refs.py · lineage.py · skills.py · boot.py
+  GUIDE.md  <- the one teaching guide (substrate + programmable layer)
+  examples.py · examples_boot.py · README.md
 ```
 
-Read the Doctrine and the Organism Lens, then this Primer, then **`vcw/GUIDE.md`** so you
+Read the Doctrine and the Organism Lens, then this Primer, then **`examples/vcw/GUIDE.md`** so you
 understand the substrate, then the **Organ Atlas**. Only then open Part 1.
 
 ---
@@ -71,7 +92,7 @@ understand the substrate, then the **Organ Atlas**. Only then open Part 1.
 | Term | Definition |
 |------|------------|
 | **AppAI** | The embodied application-as-organism you are growing. |
-| **VCW cube** | The durable nervous-memory substrate. 800 layered PNGs. The **heart**. See `vcw/`. |
+| **VCW cube** | The durable nervous-memory substrate. 800 layered PNGs. The **heart**. See `examples/vcw/`. |
 | **Body** | The automatic organism: all organs that run **without** an LLM. Phase 1. |
 | **MIND** | The reasoning/voice layer — an LLM fused in Phase 2. The **brain**. |
 | **Organ** | A self-contained code module with a manifest, reflexes, and audit obligations. |
@@ -158,7 +179,7 @@ source code is provided.
 
 ### Path A — Build from scratch (greenfield organism)
 1. Emit the §0 Declaration Block.
-2. Read `vcw/GUIDE.md` and the **Organ Atlas**.
+2. Read `examples/vcw/GUIDE.md` and the **Organ Atlas**.
 3. Follow **`Mantle_Part1_Body.md`**: grow each organ, bind it to its bands, give it
    reflexes. Author the **Body** (Primer/identity), then genesis the cube for experiential memory.
 4. Run **`Mantle_Part1_Body_Audit.md`** against the result. Fix every hard-fail.
@@ -190,7 +211,7 @@ Both paths converge on the same certified Body, then the same MIND fusion.
   Phase 1, stop — that logic belongs in a reflex or it doesn't belong in Phase 1.
 - **Examples in the source Drive are out of date.** Build from these instructions,
   not from any example artifact.
-- **Optional means optional.** Anything in `Mantle_Extensions.md` (LIGATURE,
+- **Optional means optional.** Anything in `docs/Mantle_Extensions.md` (LIGATURE,
   polymorphic Body, extended Foundry, credential pools) is opt-in. Do not grow it
   unless the §0 block or the operator asks for it.
 

@@ -1,6 +1,6 @@
 # Mantle OS — project metadata.
 #
-# The core substrate (vcw/) is intentionally PURE STANDARD LIBRARY: there are no runtime
+# The core substrate (examples/vcw/) is intentionally PURE STANDARD LIBRARY: there are no runtime
 # dependencies to install. This file exists to declare the project, pin a Python floor, and give
 # tools a single place to read metadata from. It does not turn the demo into a pip-installable
 # package (the modules are meant to be read and run in place, as the framework intends).

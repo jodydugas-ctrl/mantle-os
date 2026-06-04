@@ -1,8 +1,8 @@
 # Mantle OS — PART 1: THE BODY
 
 **Mantle OS v2.3** · Phase 1 — grow a certified Zombie Body (no brain attached)
-*Prerequisites: read `Mantle_Doctrine.md`, `Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`,
-`vcw/GUIDE.md`, and `Mantle_Organ_Atlas.md`. This document tells you HOW to grow the Body, organ
+*Prerequisites: read `docs/Mantle_Doctrine.md`, `docs/Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`,
+`examples/vcw/GUIDE.md`, and `docs/Mantle_Organ_Atlas.md`. This document tells you HOW to grow the Body, organ
 by organ. When you finish, certify with `Mantle_Part1_Body_Audit.md`.*
 
 ---
@@ -14,6 +14,11 @@ LLM anywhere in the loop.** The product is a **Zombie Body**: provably alive (it
 heartbeat, memory, senses, reflexes, and a mapped surface) but dormant (no cognition,
 no voice). If any behavior in Phase 1 depends on a model, the design is wrong — push
 that logic into a reflex or defer it to a Phase-2 extension.
+
+The armory band (groove storage — see `docs/Mantle_Extensions.md` §6) is **not grown in
+Phase 1**. If declared in §0, reserve the band address at genesis but leave it empty.
+Grooves are a Phase-2 / Extensions capability; the Zombie Body does not calcify or
+execute grooves.
 
 You will build in this order. Each section ends with the **audit hooks** that
 `Mantle_Part1_Body_Audit.md` checks. Build to the hooks.
@@ -39,18 +44,22 @@ You will build in this order. Each section ends with the **audit hooks** that
 ## §1.1 Declaration & genesis
 
 1. Emit the **§0 Declaration Block** (PRIMER §4). Fix `BODY_MODE: standard` unless the
-   operator opted into `polymorphic` (Extensions).
+   operator opted into `polymorphic` (Extensions). Set `VCW_BACKEND: file` (or omit —
+   `file` is the default). If your environment cannot create a file-backed cube, declare
+   `VCW_BACKEND: schema-only` now, before writing any implementation code, and produce
+   a Tier 3 blueprint deliverable instead of a running system. See
+   `docs/Mantle_VCW_Tiers.md` for the full tier model.
 2. **Birth the Body & design the cube genome.** Identity lives in the Body, the band layout in
    the cube boot sector:
    - `Body.birth(identity, truths, commandments)` sets the read-only Primer and seeds
-     Immunization (`vcw/body.py`). This is the **agent genome** — never written to the cube.
+     Immunization (`examples/vcw/body.py`). This is the **agent genome** — never written to the cube.
    - Author the **cube genome**: the band layout, each band declaring an `encoding` (driver), a
      **`span`** of reserved layers, and a **`purpose`** to fit the app. Layers are allocated **on
      demand** within the span and **reclaimed** after compaction — give high-churn bands more
      span. Longevity is a property of this design.
    - `Cube.genesis(genome)` + `Organism.save(dir)` performs the staged commit. The AppAI is
      **born** once the Body holds a Primer.
-3. Confirm the band map matches the canonical layout (`vcw/lineage.py::standard_genome`). Never
+3. Confirm the band map matches the canonical layout (`examples/vcw/lineage.py::standard_genome`). Never
    invent a parallel store outside the cube.
 
 **Audit hooks:** B-01 cube genesis valid; B-02 Primer present, immutable & Body-resident; B-03
@@ -78,7 +87,7 @@ checkpoint and `atexit`; B-06 a missed pulse is logged to `immune`.
 
 ## §1.3 Genome — identity in the BODY
 
-The Genome (who the AppAI is) lives in the **Body store** (`vcw/body.py`), **not** in the cube.
+The Genome (who the AppAI is) lives in the **Body store** (`examples/vcw/body.py`), **not** in the cube.
 The cube is pure experiential memory. Design the *cube* genome (band layout) separately in §1.1
 — each band declaring a **`span`** of reserved layers and a **`purpose`**.
 

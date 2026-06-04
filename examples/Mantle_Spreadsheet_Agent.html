@@ -498,19 +498,25 @@
     const IMPLEMENTATION_DECLARATION = Object.freeze({
       framework: "Mantle OS v2.3",
       auditBundle: [
-        "Mantle_Doctrine.md",
-        "Mantle_Organism_Lens.md",
+        "docs/Mantle_Doctrine.md",
+        "docs/Mantle_Organism_Lens.md",
         "Mantle_PRIMER.md",
-        "Mantle_Organ_Atlas.md",
+        "docs/Mantle_Organ_Atlas.md",
         "Mantle_Part1_Body.md",
         "Mantle_Part1_Body_Audit.md",
         "Mantle_Part2_Mind.md",
         "Mantle_Part2_Mind_Audit.md",
-        "vcw/GUIDE.md"
+        "docs/Mantle_Extensions.md",
+        "examples/vcw/GUIDE.md",
+        "docs/Mantle_LLM_Pitfalls.md",
+        "docs/Mantle_Grooves.md",
+        "docs/Mantle_Urge_System.md"
       ],
       organs: ["Heart", "Genome", "Nervous", "Senses", "Immune", "Limbs", "Memory", "Brain"],
       substrate: "VCW Cube (vcw-cube-png-v2) — live store; legacy crystals are the cold serialization",
       bodyMode: "fixed-browser-html",
+      grooveDetection: "disabled — armory band not reserved at genesis for this implementation; see docs/Mantle_Extensions.md §6 and docs/Mantle_Grooves.md to enable",
+      urgeSystem: "conceptual — URGE.REBIRTH pressure accumulates from context degradation signals; URGE.MAINTENANCE fires on immune event accumulation. MIND observes via events band; Body owns execution. (docs/Mantle_Urge_System.md)",
       appFacePolicy: "Spreadsheet grid, formula bar, terminal, and system log are Body-owned surfaces. MIND can request changes only through parsed intents, dispatches, or Body bindings with proof coordinates.",
       textBatchingPolicy: "Text-like inputs stage locally on input, log focus/touch only, and commit text content only on blur or explicit submit.",
       busyReleasePolicy: "Deterministic Body mutations write proof and return a user-facing result without waiting for another Prime call.",
@@ -657,7 +663,7 @@ const VCW = (() => {
   const registerRunner = (r) => { RUNNERS[r.name] = r; return r; };
   const getRunner = (name) => {
     if (!RUNNERS[name]) throw new Error("no exec runner '" + name + "' (have: " + Object.keys(RUNNERS).join(",") +
-      "). To enable WASM register a runner named 'wasm' — see exec-wasm contract in vcw/GUIDE.md.");
+      "). To enable WASM register a runner named 'wasm' — see exec-wasm contract in examples/vcw/GUIDE.md.");
     return RUNNERS[name];
   };
   const SAFE_GLOBALS = { Math, Number, String, Boolean, Array, Object, JSON, isNaN, parseInt, parseFloat };
@@ -691,7 +697,7 @@ const VCW = (() => {
       if (granted.net && !caps.net) throw new Error("exec layer requested net without capability");
       // trust gate (HF-B50): the default 'js' runner is NOT a hard sandbox, so it may run only
       // TRUSTED, in-lineage code. Untrusted/foreign (e.g. GRAFT-imported) skills must use the
-      // isolating 'wasm' runner. Mirrors drivers.ExecDriver in vcw/. Local override available.
+      // isolating 'wasm' runner. Mirrors drivers.ExecDriver in examples/vcw/. Local override available.
       const runnerName = content.runner || "js";
       const prov = content.provenance || {};
       const trusted = (prov.author === "MIND" || prov.author === "BODY") && !prov.foreign;
@@ -1873,7 +1879,7 @@ let ORGANISM = null;
       return content;
     }
 
-    // Inner Voice (Mantle_Organ_Atlas §4.10 / vcw/skills.py): the agent speaks to ITSELF — a framed,
+    // Inner Voice (Mantle_Organ_Atlas §4.10 / examples/vcw/skills.py): the agent speaks to ITSELF — a framed,
     // bounded side-channel question to its own MIND, separate from heartbeat cognition. PROVENANCE:
     // a self-asked answer is INFERRED, never an observed fact — oppose→private thoughts band,
     // neutral/search→discoveries; it NEVER writes the facts band. Capped by a waste budget.

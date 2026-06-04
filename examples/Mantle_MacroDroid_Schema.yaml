@@ -11,19 +11,34 @@ mantle_alignment:
   framework: "Mantle OS v2.3"
   substrate: "VCW Cube (vcw-cube-png-v2) — 800-layer bands; this schema is referenced (<band.N>), not copied, into context"
   audit_bundle:
-    - "Mantle_Doctrine.md"
-    - "Mantle_Organism_Lens.md"
+    - "docs/Mantle_Doctrine.md"
+    - "docs/Mantle_Organism_Lens.md"
     - "Mantle_PRIMER.md"
-    - "Mantle_Organ_Atlas.md"
+    - "docs/Mantle_Organ_Atlas.md"
     - "Mantle_Assimilator.md"          # Path B — host-owned assimilation (App Inventory gated first)
     - "Mantle_Part1_Body.md"
     - "Mantle_Part1_Body_Audit.md"
     - "Mantle_Part2_Mind.md"
     - "Mantle_Part2_Mind_Audit.md"
-    - "vcw/GUIDE.md"
+    - "docs/Mantle_Extensions.md"
+    - "examples/vcw/GUIDE.md"
+    - "docs/Mantle_LLM_Pitfalls.md"   # read BEFORE building — three LLM failure modes + how to avoid them
+    - "docs/Mantle_Grooves.md"        # muscle memory / armory band (Extensions §6)
+    - "docs/Mantle_Urge_System.md"    # internal pressure/gradient model (Extensions §7)
   implementation_role: "MacroDroid schema reference + generated-JSON app-face source (host-owned Body)"
   body_mode: "host-owned"
   genome_location: "BODY — Primer + Commandments + lineage index live in the Body, never in the cube (HF-B45)"
+  organs:                               # eight canonical organs (docs/Mantle_Organ_Atlas.md §2)
+    - "Heart"
+    - "Genome"
+    - "Nervous"
+    - "Senses"
+    - "Immune"
+    - "Limbs"
+    - "Memory"
+    - "Brain"
+  groove_detection: "disabled — Path B assimilator; host-owned Body; armory band not reserved. See docs/Mantle_Extensions.md §6 if enabling grooves on a future standalone organism."
+  urge_system: "enabled (Mantle immune band tracks URGE.REBIRTH / URGE.MAINTENANCE pressure via heartbeat loop; MacroDroid host respects MIND awakening on SIGNIFICANT / SYS.REBIRTH_URGED events). MIND observes but cannot force urge execution. (docs/Mantle_Urge_System.md)"
   organ_map:                            # MacroDroid host surfaces → Mantle organs (Organ_Atlas §2)
     macro_scheduler: "Heart — the trigger-polling loop and macro-execution cadence; the Body's clock and circulation (HF-B08)"
     macro_request_composer: "Senses — perceived via the Human Surface Map (afferent intake)"

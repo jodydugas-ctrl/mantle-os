@@ -3,8 +3,8 @@
 **Non-normative.** This file is *not* part of the doctrine and you do not need it to build. It
 exists for one reason: Mantle's vocabulary (organisms, bodies, minds, cubes) is deliberately
 opinionated, and that can be a wall on first contact. This page is the plain-language door. If you
-want the real thing, read [`Mantle_Doctrine.md`](Mantle_Doctrine.md) → [`Mantle_PRIMER.md`](Mantle_PRIMER.md)
-→ [`vcw/GUIDE.md`](vcw/GUIDE.md).
+want the real thing, read [`Mantle_Doctrine.md`](Mantle_Doctrine.md) → [`Mantle_PRIMER.md`](../Mantle_PRIMER.md)
+→ [`examples/vcw/GUIDE.md`](examples/vcw/GUIDE.md).
 
 ---
 
@@ -59,7 +59,7 @@ is what makes Mantle distinct rather than another agent wrapper.
 
 Mantle's discipline includes admitting what it is *not*:
 
-- **It is a reference implementation, not a production runtime.** The `vcw/` package is meant to be
+- **It is a reference implementation, not a production runtime.** The `examples/vcw/` package is meant to be
   read and run as a clear, complete example — not deployed as-is at scale.
 - **The hard-sandbox (`wasm`) runner is a prepared seam, not built.** This is a deliberate trade to
   keep the project pure-standard-library (zero dependencies). The Python runner is hardened with a
