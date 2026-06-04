@@ -42,6 +42,21 @@ AI is attached** — and whose AI layer is sharply bounded.
 
 ---
 
+## What's possible with an AppAI
+
+Mantle OS is a general framework, but the AppAI idea has already been proven in practice. Real
+AppAIs have been built on these principles — for example:
+
+- A **companion agent** whose *body* is a modified Android phone, acting as a dependable,
+  always-available assistant.
+- A **smart home** run by an AppAI, where the home itself is the organism's body.
+
+These examples shape the framework's priorities — dependability without the LLM, memory that is
+never silently rewritten, and a MIND that can only ever *extend* what already lives. Mantle OS
+generalizes those lessons into a substrate others can build on.
+
+---
+
 ## The two phases (non-negotiable order)
 
 | Phase | Name | LLM attached? | Produces |
