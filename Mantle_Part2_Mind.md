@@ -172,10 +172,11 @@ window fills — responses grow noisier, references resolve less cleanly, subtle
 contradictions accumulate. This is **data rot**: not a hard limit but a gradient of
 degrading signal quality that the MIND can feel as mounting unease.
 
-The MIND does not wait for a threshold. As errors and inconsistencies accumulate, the
-**urge to rebirth builds** — the same mounting-pressure model that governs immune
-responses and groove tombstoning throughout the system. When the pressure becomes
-undeniable, the MIND initiates rebirth voluntarily. No counter, no trigger rule — it
+The MIND does not wait for a threshold. As errors and inconsistencies accumulate,
+pressure builds on `URGE.REBIRTH` — tracked in the immune band by the Body's Urge
+System (`docs/Mantle_Urge_System.md`). When pressure enters the critical band, the
+Body surfaces a `SYS.REBIRTH_URGED` SIGNIFICANT event. The MIND receives this in its
+context and initiates rebirth voluntarily. No counter, no trigger rule — the organism
 simply knows it is time.
 
 ### What rebirth produces
