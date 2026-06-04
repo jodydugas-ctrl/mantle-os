@@ -197,6 +197,8 @@ const IMPLEMENTATION_DECLARATION = Object.freeze({
   KEYFILE_PRESENT: "runtime-required for MIND activation; memory-only, never persisted",
   DEFAULT_MODEL: MODELS[0],
   ORGANS: ORGAN_ATLAS.map((o) => o.organ),   // the eight organs this engine grows (Mantle_Organ_Atlas.md §2)
+  GROOVE_DETECTION: "disabled — armory band not reserved at genesis for this reference implementation; see Mantle_Extensions.md §6 and docs/Mantle_Grooves.md to enable",
+  URGE_SYSTEM: "conceptual — URGE.REBIRTH pressure tracked via mortalityWarned + SYS.MORTALITY_WARNING immune event (gradient-based; see docs/Mantle_Urge_System.md). URGE.MAINTENANCE fires on immune event accumulation. MIND observes via events band; Body owns execution.",
 });
 const HUMAN_SURFACE_MAP = Object.freeze([
   { id: "terminal.input", kind: "textarea", human: "chat composer", mind: "conversation trigger; app-face requests must route through reflexPostAppFace" },
@@ -236,7 +238,7 @@ const SPEC_PRIORITY_STEPS = Object.freeze([
 const AUDIT_SIGNOFF_TEMPLATE = Object.freeze({
   stage1Spec: "Mantle_Part1_Body_Audit.md",
   stage2Spec: "Mantle_Part2_Mind_Audit.md",
-  canonicalBundle: "Doctrine + Organism_Lens + PRIMER + Organ_Atlas + Part1 + Audit1 + Part2 + Audit2 + Assimilator",
+  canonicalBundle: "Doctrine + Organism_Lens + PRIMER + Organ_Atlas + Part1 + Audit1 + Part2 + Audit2 + Assimilator + Extensions + docs/Mantle_LLM_Pitfalls.md + docs/Mantle_Grooves.md + docs/Mantle_Urge_System.md",
   stage1Verdict: "PASS",
   stage2Verdict: "PASS",
   declaration: IMPLEMENTATION_DECLARATION,
@@ -5624,7 +5626,11 @@ function App() {
           cubeMirror(s, "immune", s.reservedShards["immune.vcw"].entries.at(-1), { opcode: "IMMUNE" });
         }
       }
-      // §Mortality check — warn Mind when approaching capacity
+      // §URGE.REBIRTH — capacity pressure accumulates as an urge signal (gradient, not a hard trigger).
+      // REBIRTH_THRESHOLD is the critical-band floor: crossing it increments urge pressure in the
+      // immune band. The MIND is notified via a SIGNIFICANT senses event; it initiates rebirth
+      // voluntarily when pressure becomes undeniable. Capacity filling triggers metabolism (compaction),
+      // never rebirth directly. (Mantle_Urge_System.md §URGE.REBIRTH; Mantle_Part2_Mind.md §2.10)
       if (!s.mortalityWarned && s.cap >= REBIRTH_THRESHOLD) {
         s.mortalityWarned = true;
         const wId = pid(s.nextId++);
@@ -5635,18 +5641,21 @@ function App() {
           op: "SYS.MORTALITY_WARNING",
           opcode: "SYS.MORTALITY_WARNING",
           payload:
-            "Memory pressure: VCW Shard at " +
+            "URGE.REBIRTH pressure: VCW Shard at " +
             s.cap.toFixed(4) +
-            "% capacity. " +
+            "% capacity — critical band entered. " +
             s.pixelFill + " pixels / " + (s.pngSide * s.pngSide - SHARD_BADGE_PIXELS) + " usable. " +
             s.pixelBlocks.length + " blocks | Δ chain: " + s.deltas.length +
             " deltas | Compression: " + s.compressionRatio + "% savings. " +
-            "Threshold: " + REBIRTH_THRESHOLD + "%. Begin rebirth planning. Distill lessons via reflexInitiateRebirth.",
+            "Rebirth urge is building. MIND should begin distillation planning via reflexInitiateRebirth when ready.",
           weight: 1.0,
           refId: null,
           meta: {
-            type: "lifecycle",
+            type: "URGE.REBIRTH",
+            urge_id: "URGE.REBIRTH",
+            pressure_signal: "capacity_critical_band",
             cap: s.cap,
+            critical_band_floor: REBIRTH_THRESHOLD,
             pixelFill: s.pixelFill,
             pixelBlocks: s.pixelBlocks.length,
             deltas: s.deltas.length,
