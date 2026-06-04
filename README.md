@@ -40,6 +40,9 @@ Mantle applies that wiring to software:
 The payoff is an application that is **provable, auditable, and genuinely functional before any
 AI is attached** — and whose AI layer is sharply bounded.
 
+The name follows the biology: the **mantle** is the octopus's body — the structure that houses
+its organs. *(See [`Mantle_Organism_Lens.md`](Mantle_Organism_Lens.md) for the full octopus lens.)*
+
 ---
 
 ## What's possible with an AppAI
@@ -54,6 +57,10 @@ AppAIs have been built on these principles — for example:
 These examples shape the framework's priorities — dependability without the LLM, memory that is
 never silently rewritten, and a MIND that can only ever *extend* what already lives. Mantle OS
 generalizes those lessons into a substrate others can build on.
+
+Mantle OS comes from a **biology and medicine perspective** rather than an AI-engineering one —
+which is why the organism model is the architecture, not a metaphor laid over a conventional
+design.
 
 ---
 
