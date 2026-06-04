@@ -75,7 +75,7 @@ const RESERVED_SHARDS = Object.freeze([
   "senses.vcw", "immune.vcw", "brain.vcw", "thoughts.vcw"
 ]);
 // ── ORGAN ATLAS (Mantle OS v2.3) ───────────────────────────────────────────
-// The ten canonical organs of a Mantle organism, mapped to THIS engine. Code is grown as
+// The eight canonical organs of a Mantle organism, mapped to THIS engine. Code is grown as
 // ORGANS (not services/layers/controllers): each owns a responsibility, binds to VCW cube
 // bands, and declares its reflexes + audit obligations. The Brain is Phase-2 (dormant until a
 // MIND is fused); every other organ runs in the zombie Body with NO LLM. (Mantle_Organ_Atlas.md §2.)
@@ -190,6 +190,8 @@ const IMPLEMENTATION_DECLARATION = Object.freeze({
   RUNTIME: ENV_PROFILE.runtime,
   VCW_FORMAT,
   BODY_MODE: "polymorphic",        // Extensions opt-in: this app morphs its own Somatic Form (reflexMorph)
+  CREDENTIAL_POOL: "Extensions opt-in — per-arm ARM_KEYS pool (max 10 keys) for concurrent arm isolation (Mantle_Extensions.md §4; HF-M01 declared)",
+  HEARTBEAT_COGNITION: "Scheduled Body heartbeat (HB_MS interval) is the authorized Body-initiated MIND wake event. Additional forced pulses may be triggered by delivery notices, arm delegation, or external stimuli — all Body-owned. Cognition is Body-clocked, not free-running.",
   INTENTIONALLY_OMITTED: "none",
   SYNTAX_CONSTRAINTS: "single-file HTML, React UMD, Babel TypeScript/JSX transform",
   KEYFILE_PRESENT: "runtime-required for MIND activation; memory-only, never persisted",
@@ -9015,8 +9017,15 @@ function App() {
     [app, sn, sync]
   );
 
-  // §Append To Shard — MIND appends a delta to any crystal in the array (cross-shard write)
+  // §Append To Shard — MIND appends a delta to a crystal in the array (cross-shard write)
+  // Intended use: annotate ARM crystals. When targeting the main organism crystal, the MIND
+  // write surface rule applies: deltaType must map to thoughts or brain (HF-M07/M08). Any
+  // attempt to write a non-MIND-allowed zone to the main crystal is refused + logged to immune.
   // Active crystal: direct write. Sealed crystal: load → write → save (full AES-GCM cycle).
+  const MIND_SHARD_ALLOWED_ZONES = new Set([
+    "THOUGHT", "BRAIN", "REFLECT", "CONTRADICTION", "ANNOTATION",
+    "BRAIN.DISPATCH", "THOUGHT.NORMAL", "THOUGHT.NULL"
+  ]);
   const rAppendToShard = useCallback(
     async ({ crystalName = "", deltaType = "EVENT", content = "", _b = false } = {}) => {
       const ii = !_b
@@ -9027,6 +9036,15 @@ function App() {
         if (!_b) app("REFLEX", "RFL.FAIL", "crystalName and content required", { type: "physical", stateSnapshot: sn() }, ii);
         sync();
         return { error: "crystalName and content are required" };
+      }
+      // §MIND write surface guard — main organism crystal: restrict to thoughts/brain zones (HF-M07/M08)
+      const isMainCrystal = crystalName === s.crystalName;
+      const zoneAllowed = MIND_SHARD_ALLOWED_ZONES.has(deltaType) ||
+        Object.keys(MIND_SHARD_ALLOWED_ZONES).some(z => deltaType.startsWith(z));
+      if (isMainCrystal && !zoneAllowed) {
+        app("SYSTEM", "IMMUNE.INJECTION", "MIND attempted to write zone '" + deltaType + "' to main crystal — refused (HF-M07)", { type: "immune", band: deltaType, crystalName });
+        sync();
+        return { error: "MIND may only write thoughts/brain zones to the main organism crystal (HF-M07/M08)" };
       }
       try {
         if (crystalName === s.crystalName) {
@@ -10117,6 +10135,11 @@ function App() {
       s.customInstructions = ci;
       await save();
     }
+    // §Heartbeat cognition contract — the scheduled Body pulse (HB_MS interval) IS the
+    // authorized wake event for the MIND. This is Body-clocked cognition, not free-running.
+    // Unscheduled wakes are: delivery notices (piggybacked), arm delegation (firePulse),
+    // and forced pulses from elevated-permission sub-agents. All are Body-owned paths.
+    // (Mantle_Part2_Mind.md §2.6 — cognition is event-gated; the heartbeat IS the event.)
     app("HEARTBEAT", "HB.CHECK", "Autonomous HB " + iso());
     const deliveryNotice = drainDeliveries();
 

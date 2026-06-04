@@ -25,6 +25,7 @@ mantle_alignment:
   body_mode: "host-owned"
   genome_location: "BODY — Primer + Commandments + lineage index live in the Body, never in the cube (HF-B45)"
   organ_map:                            # MacroDroid host surfaces → Mantle organs (Organ_Atlas §2)
+    macro_scheduler: "Heart — the trigger-polling loop and macro-execution cadence; the Body's clock and circulation (HF-B08)"
     macro_request_composer: "Senses — perceived via the Human Surface Map (afferent intake)"
     generated_json_app_face: "Limbs — rendered/posted via the App-Face Bridge with an Action Execution Proof (efferent)"
     triggers: "Senses — inbound events → REFLEX/ROUTINE/SIGNIFICANT classifier"
@@ -53,6 +54,8 @@ mantle_alignment:
     provider_diagnostics: "Empty/truncated model output is logged as MODEL.EMPTY_RESPONSE_DIAGNOSTIC (a model trace; secrets redacted) before retry/fallback (HF-M14)."
     inferred_provenance: "Self-generated / inner-voice answers are stored INFERRED (discoveries/thoughts), never laundered into the facts band (HF-M25)."
     exec_trust: "Any calcified exec helper runs only with trusted in-lineage provenance on the Body's runner; untrusted/foreign code requires the isolating (wasm) runner (HF-B50)."
+    cognition_gating: "MIND wakes on the Body's scheduled heartbeat pulse (the Body's clock IS the authorized wake event) and on SIGNIFICANT signals or pending INTENTIONs (HF-M11). Unscheduled wakes are Body-owned (delivery notices, forced pulses from elevated-permission agents). The Body's reflexes run regardless of model availability."
+    dispatch_lifecycle: "Macro generation follows INTENTION→DELEGATED (MIND-authored, brain band) → NOTIFIED→COMPLETED (Body-authored, brain band); authorship field is permanent and covered by the entry hash — Body never authors INTENTION (HF-B29, HF-B30, HF-M15)."
   security_boundary:
     - "MIND (Brain) may produce candidate MacroDroid JSON only — it has no direct host write or execute path."
     - "Body validates JSON syntax, required wrapper keys, classType placement, and compactness before publishing to the app face."

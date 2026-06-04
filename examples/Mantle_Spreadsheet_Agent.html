@@ -552,7 +552,7 @@
       DEFAULT_MODEL: "local-mind-stage2",
       PROVIDER: "embedded",
       BODY_MODE: "fixed",
-      VCW_FORMAT: "vcw-png-v1",
+      VCW_FORMAT: "vcw-cube-png-v2",
       TARGET_ENVIRONMENT: "browser/html5",
       RUNTIME: "standalone-html",
       SYNTAX_CONSTRAINTS: "none",
@@ -1131,9 +1131,9 @@ let ORGANISM = null;
         purposeId,
         primerText: primerText || "",
         privateFlag: Boolean(privateFlag),
-        type: "vcw-png-v1",
+        type: "vcw-cube-png-v2",
         purposeManifest: {
-          type: "vcw-png-v1",
+          type: "vcw-cube-png-v2",
           status: "ACTIVE",
           generation: 1,
           purposeId,
@@ -1551,21 +1551,23 @@ let ORGANISM = null;
     }
 
     function awakeningCeremony(state, reason) {
+      // §Awakening record belongs in the events band (experiential history), not in Special
+      // Instructions (bodyentry.002). Special Instructions are for operator steering only —
+      // MIND proposes, Body applies (Mantle_Part2_Mind.md §2.3). The ceremony is a Body-authored
+      // historical fact and goes to the events band via the activity log (Organ Atlas §5).
       state.awakenCount += 1;
-      const entry = {
-        opcode: "SYS.AWAKEN",
+      const keyfile_hash = crc8(JSON.stringify(KEYFILE));
+      const ceremony_hash = crc8(reason + "|" + state.awakenCount + "|" + state.generation);
+      mindWrite(state, "thoughts", "THOUGHT.NORMAL [" + ceremony_hash + "]: Awakening ceremony complete for reason='" + reason + "'.", "MIND", "THOUGHT.NORMAL");
+      addMessage(state, "system", "Awakening ceremony complete. Stage 2 fusion is active.");
+      // Write to events band via activity log — append-only, Body-authored, hashed on read
+      pushActivity(state, "SYS.AWAKEN", "SIGNIFICANT", {
         reason: reason,
-        timestamp: isoNow(),
-        model: KEYFILE.DEFAULT_MODEL,
-        keyfile_hash: crc8(JSON.stringify(KEYFILE)),
-        ceremony_hash: crc8(reason + "|" + state.awakenCount + "|" + state.generation),
+        ceremonyHash: ceremony_hash,
+        keyfile_hash: keyfile_hash,
         stage1_audit_ref: "embedded-stage1-audit",
         stage2_audit_ref: "embedded-stage2-audit"
-      };
-      state.bodyEntries["bodyentry.002"].content.push(entry);
-      mindWrite(state, "thoughts", "THOUGHT.NORMAL [" + entry.ceremony_hash + "]: Awakening ceremony complete for reason='" + reason + "'.", "MIND", "THOUGHT.NORMAL");
-      addMessage(state, "system", "Awakening ceremony complete. Stage 2 fusion is active.");
-      pushActivity(state, "SYS.AWAKEN", "SIGNIFICANT", { reason: reason, ceremonyHash: entry.ceremony_hash });
+      });
     }
 
     function addMessage(state, role, text) {
@@ -2824,15 +2826,16 @@ let ORGANISM = null;
     }
 
     function computeStage2Audit(state, stage1) {
-      const awakenEntries = state.bodyEntries["bodyentry.002"].content.filter((entry) => entry && entry.opcode === "SYS.AWAKEN");
+      // SYS.AWAKEN records live in the events band (activity log), not bodyentry.002 — see awakeningCeremony()
+      const awakenEntries = state.activityLog.filter((entry) => entry && entry.eventType === "SYS.AWAKEN");
       const dispatchValid = state.dispatches.every((item) => item.intentionRef && item.delegatedRef && item.notifiedRef && item.completedRef);
       const latestResource = state.activityLog.find((entry) => entry.eventType === "SYS.STARVATION" || entry.eventType === "SYS.RESOURCE");
       const checks = [
         {
           id: "2.1",
           label: "Awakening ceremony recorded",
-          pass: awakenEntries.length >= 1 && awakenEntries.every((entry) => entry.keyfile_hash && entry.ceremony_hash) && buildRemoteMindPrompt(state).includes("bodyentry.000"),
-          detail: "SYS.AWAKEN entries append to bodyentry.002 with keyfile/ceremony hashes, and live prompts carry canonical Body primer refs."
+          pass: awakenEntries.length >= 1 && awakenEntries.every((entry) => entry.data && entry.data.keyfile_hash && entry.data.ceremonyHash) && buildRemoteMindPrompt(state).includes("bodyentry.000"),
+          detail: "SYS.AWAKEN entries recorded in the events band (activity log) with keyfile/ceremony hashes; live prompts carry canonical Body primer refs."
         },
         {
           id: "2.2/2.3",
@@ -2891,7 +2894,8 @@ let ORGANISM = null;
     }
 
     function signOffBundle(state, stage1, stage2) {
-      const awakenEntries = state.bodyEntries["bodyentry.002"].content.filter((entry) => entry && entry.opcode === "SYS.AWAKEN");
+      // SYS.AWAKEN records live in the events band (activity log) — see awakeningCeremony()
+      const awakenEntries = state.activityLog.filter((entry) => entry && entry.eventType === "SYS.AWAKEN");
       const manifest = {
         appId: KEYFILE.APP_ID,
         agentName: KEYFILE.AGENT_NAME,
