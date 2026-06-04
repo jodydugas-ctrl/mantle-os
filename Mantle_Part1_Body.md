@@ -2,7 +2,7 @@
 
 **Mantle OS v2.3** · Phase 1 — grow a certified Zombie Body (no brain attached)
 *Prerequisites: read `Mantle_Doctrine.md`, `Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`,
-`vcw/GUIDE.md`, and `Mantle_Organ_Atlas.md`. This document tells you HOW to grow the Body, organ
+`examples/vcw/GUIDE.md`, and `Mantle_Organ_Atlas.md`. This document tells you HOW to grow the Body, organ
 by organ. When you finish, certify with `Mantle_Part1_Body_Audit.md`.*
 
 ---
@@ -48,14 +48,14 @@ You will build in this order. Each section ends with the **audit hooks** that
 2. **Birth the Body & design the cube genome.** Identity lives in the Body, the band layout in
    the cube boot sector:
    - `Body.birth(identity, truths, commandments)` sets the read-only Primer and seeds
-     Immunization (`vcw/body.py`). This is the **agent genome** — never written to the cube.
+     Immunization (`examples/vcw/body.py`). This is the **agent genome** — never written to the cube.
    - Author the **cube genome**: the band layout, each band declaring an `encoding` (driver), a
      **`span`** of reserved layers, and a **`purpose`** to fit the app. Layers are allocated **on
      demand** within the span and **reclaimed** after compaction — give high-churn bands more
      span. Longevity is a property of this design.
    - `Cube.genesis(genome)` + `Organism.save(dir)` performs the staged commit. The AppAI is
      **born** once the Body holds a Primer.
-3. Confirm the band map matches the canonical layout (`vcw/lineage.py::standard_genome`). Never
+3. Confirm the band map matches the canonical layout (`examples/vcw/lineage.py::standard_genome`). Never
    invent a parallel store outside the cube.
 
 **Audit hooks:** B-01 cube genesis valid; B-02 Primer present, immutable & Body-resident; B-03
@@ -83,7 +83,7 @@ checkpoint and `atexit`; B-06 a missed pulse is logged to `immune`.
 
 ## §1.3 Genome — identity in the BODY
 
-The Genome (who the AppAI is) lives in the **Body store** (`vcw/body.py`), **not** in the cube.
+The Genome (who the AppAI is) lives in the **Body store** (`examples/vcw/body.py`), **not** in the cube.
 The cube is pure experiential memory. Design the *cube* genome (band layout) separately in §1.1
 — each band declaring a **`span`** of reserved layers and a **`purpose`**.
 

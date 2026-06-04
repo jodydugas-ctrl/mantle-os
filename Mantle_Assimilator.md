@@ -4,7 +4,7 @@
 *This document REPLACES `Mantle_Part1_Body.md` when external source code is provided.
 You still finish at the same Stage 1 Gate (`Mantle_Part1_Body_Audit.md`) and then
 proceed to Phase 2 identically. Prerequisite reading: `Mantle_Doctrine.md`,
-`Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`, `vcw/GUIDE.md`, `Mantle_Organ_Atlas.md`.
+`Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`, `examples/vcw/GUIDE.md`, `Mantle_Organ_Atlas.md`.
 Assimilation is the **Organism Lens applied as a read-only dissection**: find the host's organs
 first, then thread a nervous system through them. Identity is synthesized into the **Body** (not
 the cube); the App Inventory (Appendix A) is a hard, read-only gate before any edit.*
@@ -159,7 +159,7 @@ to the cube; each is individually `try/except → degrade + log to immune`.
 ## §B.4 Synthesize the BODY from a host (Phase 2)
 
 Synthesize the **Body** (not cube layers) from the host's own identity — do not invent one.
-Identity lives in the Body store (`vcw/body.py`); the cube is pure experiential memory.
+Identity lives in the Body store (`examples/vcw/body.py`); the cube is pure experiential memory.
 
 - **Primer** (read-only): the host's name, purpose, entry point, the §0 declaration, and the
   Commandments. Becomes immutable the moment it is committed.

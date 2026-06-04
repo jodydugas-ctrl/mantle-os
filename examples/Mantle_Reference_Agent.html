@@ -517,7 +517,7 @@ const TOOL_SCHEMAS = [
   {
     name: "reflexSelfAudit",
     description:
-      "Administer the Stage-1 (Zombie Body) audit against this live agent and record the sign-off. Deterministically checks the organism's invariants — Primer Body-resident & immutable (HF-B02/B07/B45), canonical cube bands (HF-B03), the veil, heartbeat-without-LLM (HF-B08), dual-flush (HF-B33), secret boundary (HF-B20), dispatch authorship (HF-B29), exec trust gate (HF-B50), and surface parity (HF-B44). Returns rows + verdict + open hard-fails. Pairs with vcw/audit.py (substrate).",
+      "Administer the Stage-1 (Zombie Body) audit against this live agent and record the sign-off. Deterministically checks the organism's invariants — Primer Body-resident & immutable (HF-B02/B07/B45), canonical cube bands (HF-B03), the veil, heartbeat-without-LLM (HF-B08), dual-flush (HF-B33), secret boundary (HF-B20), dispatch authorship (HF-B29), exec trust gate (HF-B50), and surface parity (HF-B44). Returns rows + verdict + open hard-fails. Pairs with examples/vcw/audit.py (substrate).",
     parameters: { type: "object", properties: {} },
   },
   {
@@ -1680,7 +1680,7 @@ const buildContext = (state, maxChars = 120000) => {
   return parts.join("");
 };
 
-// ══ VCW Cube Codec (v2.3 — faithful in-browser mirror of the Python vcw/ package) ══
+// ══ VCW Cube Codec (v2.3 — faithful in-browser mirror of the Python examples/vcw/ package) ══
 // Two-level encoding: a band's BOOT SECTOR (fixed format) names a programmable DRIVER that
 // implements read/retrieve/append. Bands own a layer RANGE (span) and allocate layers on
 // demand, reclaiming emptied ones (safe-reuse). Identity lives in the BODY, not the cube.
@@ -1777,7 +1777,7 @@ const VCW = (() => {
   const registerRunner = (r) => { RUNNERS[r.name] = r; return r; };
   const getRunner = (name) => {
     if (!RUNNERS[name]) throw new Error("no exec runner '" + name + "' (have: " + Object.keys(RUNNERS).join(",") +
-      "). To enable WASM register a runner named 'wasm' — see exec-wasm contract in vcw/GUIDE.md.");
+      "). To enable WASM register a runner named 'wasm' — see exec-wasm contract in examples/vcw/GUIDE.md.");
     return RUNNERS[name];
   };
   const SAFE_GLOBALS = { Math, Number, String, Boolean, Array, Object, JSON, isNaN, parseInt, parseFloat };
@@ -1811,7 +1811,7 @@ const VCW = (() => {
       if (granted.net && !caps.net) throw new Error("exec layer requested net without capability");
       // trust gate (HF-B50): the default 'js' runner is NOT a hard sandbox, so it may run only
       // TRUSTED, in-lineage code. Untrusted/foreign (e.g. GRAFT-imported) skills must use the
-      // isolating 'wasm' runner. Mirrors drivers.ExecDriver in vcw/. Local override available.
+      // isolating 'wasm' runner. Mirrors drivers.ExecDriver in examples/vcw/. Local override available.
       const runnerName = content.runner || "js";
       const prov = content.provenance || {};
       const trusted = (prov.author === "MIND" || prov.author === "BODY") && !prov.foreign;
@@ -2001,7 +2001,7 @@ const bandForOpcode = (op) => {
   return "events";
 };
 
-// Secret boundary (HF-B20, mirrors vcw/redact.py): mask obvious secrets before they enter the
+// Secret boundary (HF-B20, mirrors examples/vcw/redact.py): mask obvious secrets before they enter the
 // append-only senses/immune logs — a permanent, inspectable cube must never carry a live secret.
 // Conservative on high-signal shapes only (PEM keys, Bearer/sk-/AKIA tokens, JWTs, key=value
 // secrets); deliberately NOT masking long hex/base64 here, since this engine logs many hashes/ids.
@@ -2048,7 +2048,7 @@ const resolveCubeRef = (s, ref, privileged = false, bound = null) => {
 };
 
 // Stage-1 (Zombie Body) self-audit over LIVE agent state — the in-browser companion to
-// vcw/audit.py. Pure + deterministic so it is unit-testable; the reflexSelfAudit wrapper supplies
+// examples/vcw/audit.py. Pure + deterministic so it is unit-testable; the reflexSelfAudit wrapper supplies
 // live state, the surface-parity result, and deps (redactor, organs, HB cadence, gate flags).
 // Each row maps to an audit code + hard-fail; a FAIL on any hard-fail row BLOCKS the gate.
 const runStage1SelfAudit = (s, surface, deps = {}) => {
@@ -8211,7 +8211,7 @@ function App() {
   );
 
   // reflexSelfAudit — administer the Stage-1 (Zombie Body) audit against THIS live agent and
-  // record the sign-off. Pairs with vcw/audit.py (substrate) to make the gate machine-checkable.
+  // record the sign-off. Pairs with examples/vcw/audit.py (substrate) to make the gate machine-checkable.
   const rSelfAudit = useCallback(
     ({ _b = false }: any = {}) => {
       const ii = !_b ? app("USER", "USER.INPUT", "SelfAudit", { type: "physical" }) : null;
@@ -8249,7 +8249,7 @@ function App() {
   );
 
   // reflexInnerVoice — the first learned skill: the agent speaks to ITSELF. A framed, bounded
-  // side-channel question to its own MIND, separate from heartbeat cognition (mirrors vcw/skills.py).
+  // side-channel question to its own MIND, separate from heartbeat cognition (mirrors examples/vcw/skills.py).
   // PROVENANCE is the rule: a self-asked answer is INFERRED, not observed — neutral/search land in
   // `discoveries` (verified:false), oppose (devil's-advocate) lands in private `thoughts`, and it
   // NEVER writes the `facts` band. A waste budget caps self-conversation so it cannot spiral.
