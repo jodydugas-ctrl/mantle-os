@@ -133,6 +133,7 @@ docs/  <- reference + supporting material (read the first four before Part 1):
   docs/Mantle_Positioning.md     <- plain-language on-ramp + how this relates to other tools
   docs/Mantle_Grooves.md         <- groove detection / muscle memory (Extensions §6)
   docs/Mantle_Urge_System.md     <- internal pressure/gradient model (Extensions §7)
+  docs/Mantle_VCW_Tiers.md       <- VCW compliance tiers: what to do when a full VCW can't run
 
 examples/vcw/                  <- the heart, in runnable code (the substrate you build around)
   examples/vcw/GUIDE.md          <- the one teaching guide for the substrate

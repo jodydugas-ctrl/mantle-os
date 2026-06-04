@@ -41,7 +41,9 @@ that works with no mind, then give it a mind.*
 > code. LLMs consistently fall into three specific traps when assimilating this
 > framework. That document names them, explains why they happen, and tells you exactly
 > what to do instead. Five minutes now will save you from producing something that
-> looks right but fails every audit check.
+> looks right but fails every audit check. If your environment cannot run Python, read
+> [`docs/Mantle_VCW_Tiers.md`](docs/Mantle_VCW_Tiers.md) — a declared Tier 3
+> deliverable is the correct honest output, not a failure.
 
 ---
 
@@ -72,6 +74,7 @@ docs/  <- reference + supporting material:
   docs/Mantle_Positioning.md    <- plain-language on-ramp + how this relates to other tools
   docs/Mantle_Grooves.md        <- groove detection / muscle memory (Extensions §6)
   docs/Mantle_Urge_System.md    <- internal pressure/gradient model (Extensions §7)
+  docs/Mantle_VCW_Tiers.md      <- VCW compliance tiers: what to do when a full VCW can't run
 
 examples/vcw/                 <- the heart, in runnable code (substrate you build around)
   vcw_cube.py · drivers.py · body.py · refs.py · lineage.py · skills.py · boot.py
