@@ -127,8 +127,13 @@ PHASE 2 (MIND):
   Mantle_Part2_Mind_Audit.md   <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
 
 Mantle_Assimilator.md     <- Path B: grow organs around EXISTING code, non-destructively
-Mantle_Extensions.md      <- OPTIONAL overlays. Not normative.
+Mantle_Extensions.md      <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
 Mantle_Positioning.md     <- plain-language on-ramp + how this relates to other tools (non-normative)
+
+docs/                     <- supporting concept notes (non-normative)
+  Mantle_LLM_Pitfalls.md      <- READ BEFORE BUILDING: three traps LLMs fall into + how to avoid them
+  Mantle_Grooves.md           <- groove detection / muscle memory (Extensions §6)
+  Mantle_Urge_System.md       <- internal pressure/gradient model (Extensions §7)
 
 doctrine/                 <- source texts for the doctrine (the creed + the cosmology)
 examples/                 <- illustrative reference artifacts (see note below)

@@ -9,6 +9,11 @@ the §0 Declaration Block or the operator explicitly asks. The core framework
 > large, normative, and experimental — they bloated the Body spec and were rarely
 > needed. v2.0 demotes them to clearly-optional overlays so the core stays lean.
 
+> **If you are an LLM implementing §6 (Grooves) or §7 (Urge System):** read
+> `docs/Mantle_LLM_Pitfalls.md` first. Extensions are built on top of a
+> correctly-certified Zombie Body — the pitfalls doc explains why skipping that
+> step always produces something that looks right but fails audit.
+
 ---
 
 ## 1. LIGATURE — the anchor overlay
