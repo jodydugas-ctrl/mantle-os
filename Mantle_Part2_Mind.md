@@ -218,7 +218,7 @@ letting the student prove it for themselves.
 ## §2.11 Optional online skills
 
 Web lookup (e.g. OpenRouter `web_search`, append-only into `discoveries`) and the
-"ask-MIND-opinion" skill are **optional** and specified in `Mantle_Extensions.md`.
+"ask-MIND-opinion" skill are **optional** and specified in `docs/Mantle_Extensions.md`.
 They are not part of the core fusion and must be declared in §0 to be grown.
 
 ---

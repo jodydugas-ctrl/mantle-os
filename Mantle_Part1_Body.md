@@ -1,8 +1,8 @@
 # Mantle OS — PART 1: THE BODY
 
 **Mantle OS v2.3** · Phase 1 — grow a certified Zombie Body (no brain attached)
-*Prerequisites: read `Mantle_Doctrine.md`, `Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`,
-`examples/vcw/GUIDE.md`, and `Mantle_Organ_Atlas.md`. This document tells you HOW to grow the Body, organ
+*Prerequisites: read `docs/Mantle_Doctrine.md`, `docs/Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`,
+`examples/vcw/GUIDE.md`, and `docs/Mantle_Organ_Atlas.md`. This document tells you HOW to grow the Body, organ
 by organ. When you finish, certify with `Mantle_Part1_Body_Audit.md`.*
 
 ---
@@ -15,7 +15,7 @@ heartbeat, memory, senses, reflexes, and a mapped surface) but dormant (no cogni
 no voice). If any behavior in Phase 1 depends on a model, the design is wrong — push
 that logic into a reflex or defer it to a Phase-2 extension.
 
-The armory band (groove storage — see `Mantle_Extensions.md` §6) is **not grown in
+The armory band (groove storage — see `docs/Mantle_Extensions.md` §6) is **not grown in
 Phase 1**. If declared in §0, reserve the band address at genesis but leave it empty.
 Grooves are a Phase-2 / Extensions capability; the Zombie Body does not calcify or
 execute grooves.
