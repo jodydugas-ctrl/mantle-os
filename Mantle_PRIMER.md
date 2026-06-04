@@ -67,7 +67,12 @@ PHASE 2 (MIND):
 
 Mantle_Assimilator.md       <- Path B: grow organs around EXISTING code (non-destructively);
                                includes the App Inventory fill-in template as Appendix A
-Mantle_Extensions.md        <- OPTIONAL overlays (LIGATURE, polymorphic Body). Not normative.
+Mantle_Extensions.md        <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
+
+docs/                       <- supporting concept notes (read before building if LLM)
+  Mantle_LLM_Pitfalls.md      <- three traps LLMs fall into + how to avoid them (read FIRST)
+  Mantle_Grooves.md           <- groove detection / muscle memory (Extensions §6)
+  Mantle_Urge_System.md       <- internal pressure/gradient model (Extensions §7)
 ```
 
 Read the Doctrine and the Organism Lens, then this Primer, then **`vcw/GUIDE.md`** so you

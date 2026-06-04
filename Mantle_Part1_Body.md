@@ -15,6 +15,11 @@ heartbeat, memory, senses, reflexes, and a mapped surface) but dormant (no cogni
 no voice). If any behavior in Phase 1 depends on a model, the design is wrong — push
 that logic into a reflex or defer it to a Phase-2 extension.
 
+The armory band (groove storage — see `Mantle_Extensions.md` §6) is **not grown in
+Phase 1**. If declared in §0, reserve the band address at genesis but leave it empty.
+Grooves are a Phase-2 / Extensions capability; the Zombie Body does not calcify or
+execute grooves.
+
 You will build in this order. Each section ends with the **audit hooks** that
 `Mantle_Part1_Body_Audit.md` checks. Build to the hooks.
 

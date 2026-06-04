@@ -266,6 +266,12 @@ The Genome (Primer/identity) is **not** a cube band; it lives in the Body (§4.2
 | app bands | 550–749 | app organs, Limbs | app organs; Limbs (efferent surface actuation / App-Face Bridge) |
 | tail | 750–799 | — | reserved |
 
+**Armory band (Extensions §6 — optional):** If groove detection is declared in §0,
+a dedicated band range is reserved at genesis for the armory (exec sub-band +
+memo sub-band). Only the Body's calcify path may write here; the MIND may not.
+The exact layer range is declared in §0 and must not overlap reserved bands above.
+See `docs/Mantle_Grooves.md` for the full groove lifecycle and armory band design.
+
 ---
 
 ## 6. How organs talk
