@@ -92,6 +92,13 @@ The web environment is the wrong place to run the Body. Be explicit about this:
 The user would rather have a correct system that needs two commands to start than a
 broken system that opens in one click.
 
+**The correct name for this output is a Tier 3 deliverable.** Declare
+`VCW_BACKEND: schema-only` in §0. This tells the framework — and the user — that the
+organism is a blueprint requiring local Python execution, not a running system. It is
+not a failure. It is an honest, auditable organism declaration. See
+`docs/Mantle_VCW_Tiers.md` for the full tier model and what a correct Tier 3
+deliverable must include.
+
 ---
 
 ### Trap 3: The Faked Audit
@@ -149,6 +156,10 @@ Answer these five questions before writing any code:
 
 5. **Are my organs importing from `examples/vcw/` or copying its code?**
    If copying: stop. Import it. The examples/vcw/ directory is the ground truth.
+
+6. **If I am in a web-only environment, have I declared `VCW_BACKEND: schema-only`
+   in §0 and produced files for local execution rather than a running system?**
+   If not: do that now. This is the correct Tier 3 output. See `docs/Mantle_VCW_Tiers.md`.
 
 ---
 

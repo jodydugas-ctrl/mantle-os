@@ -44,7 +44,11 @@ You will build in this order. Each section ends with the **audit hooks** that
 ## §1.1 Declaration & genesis
 
 1. Emit the **§0 Declaration Block** (PRIMER §4). Fix `BODY_MODE: standard` unless the
-   operator opted into `polymorphic` (Extensions).
+   operator opted into `polymorphic` (Extensions). Set `VCW_BACKEND: file` (or omit —
+   `file` is the default). If your environment cannot create a file-backed cube, declare
+   `VCW_BACKEND: schema-only` now, before writing any implementation code, and produce
+   a Tier 3 blueprint deliverable instead of a running system. See
+   `docs/Mantle_VCW_Tiers.md` for the full tier model.
 2. **Birth the Body & design the cube genome.** Identity lives in the Body, the band layout in
    the cube boot sector:
    - `Body.birth(identity, truths, commandments)` sets the read-only Primer and seeds
