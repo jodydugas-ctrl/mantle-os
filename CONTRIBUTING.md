@@ -8,7 +8,7 @@ architecture — are welcome.
 
 - **Ask questions or discuss the ideas.** Open an issue. "Why is it built this way?" is a valid
   issue. The philosophy is meant to be examined.
-- **Report problems.** If something in the `vcw/` substrate doesn't run, or a document
+- **Report problems.** If something in the `examples/vcw/` substrate doesn't run, or a document
   contradicts the code, open an issue describing what you expected and what happened.
 - **Improve the docs.** Clarity fixes, examples, and diagrams are valuable.
 - **Extend the substrate.** New organs, drivers, or examples that respect the framework's rules.
@@ -30,7 +30,7 @@ Mantle has a small number of load-bearing principles. Changes should respect the
 
 ## Before you open a pull request
 
-- Run the substrate audit and invariants from the `vcw/` directory:
+- Run the substrate audit and invariants from the `examples/vcw/` directory:
 
   ```bash
   cd vcw
@@ -43,7 +43,7 @@ Mantle has a small number of load-bearing principles. Changes should respect the
 
 ## Style
 
-- Match the existing code style in `vcw/`.
+- Match the existing code style in `examples/vcw/`.
 - Keep documents in the established voice and reading order. If you add a document, link it from
   the README and the Primer's document set.
 

@@ -21,7 +21,7 @@ mantle_alignment:
     - "Mantle_Part2_Mind.md"
     - "Mantle_Part2_Mind_Audit.md"
     - "Mantle_Extensions.md"
-    - "vcw/GUIDE.md"
+    - "examples/vcw/GUIDE.md"
     - "docs/Mantle_LLM_Pitfalls.md"   # read BEFORE building — three LLM failure modes + how to avoid them
     - "docs/Mantle_Grooves.md"        # muscle memory / armory band (Extensions §6)
     - "docs/Mantle_Urge_System.md"    # internal pressure/gradient model (Extensions §7)

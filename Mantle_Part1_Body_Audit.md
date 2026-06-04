@@ -17,7 +17,7 @@ is."*
 - The audit is itself **deterministic**: every check can be performed by reading the
   cube, running the Body's reflexes, and running `vcw_cube.py verify`. No human
   judgment of model output is involved (there is no model yet).
-- "Verify cmd" columns reference `vcw/vcw_cube.py` where a direct check exists.
+- "Verify cmd" columns reference `examples/vcw/vcw_cube.py` where a direct check exists.
 
 ---
 

@@ -22,7 +22,7 @@ memory substrate, prove the body is alive and correct *with no AI attached*, and
 fuse in a **MIND** (an LLM) that can extend what already lives but can never break it.
 
 This repository is both a **set of ideas** (a way of thinking about software as anatomy) and a
-**runnable substrate** (the `vcw/` package) you can read, run, and build on.
+**runnable substrate** (the `examples/vcw/` package) you can read, run, and build on.
 
 ---
 
@@ -114,9 +114,9 @@ Mantle_Doctrine.md        <- READ FIRST: the creed + cosmology (why)
 Mantle_Organism_Lens.md   <- the mindset: read any app as a living creature
 Mantle_PRIMER.md          <- role, ontology, operating procedure (who you are while building)
 Mantle_Organ_Atlas.md     <- the formal organ taxonomy (what each organ is)
-vcw/                      <- the heart, in runnable code (the substrate you build around)
-  vcw/GUIDE.md            <- the one teaching guide for the substrate
-  vcw/organs/            <- the runnable reference Body (Heart, Senses, Limbs, Nervous System)
+examples/vcw/                      <- the heart, in runnable code (the substrate you build around)
+  examples/vcw/GUIDE.md            <- the one teaching guide for the substrate
+  examples/vcw/organs/            <- the runnable reference Body (Heart, Senses, Limbs, Nervous System)
 
 PHASE 1 (Body):
   Mantle_Part1_Body.md         <- how to grow the Body, organ by organ
@@ -135,17 +135,17 @@ docs/                     <- supporting concept notes (non-normative)
   Mantle_Grooves.md           <- groove detection / muscle memory (Extensions §6)
   Mantle_Urge_System.md       <- internal pressure/gradient model (Extensions §7)
 
-doctrine/                 <- source texts for the doctrine (the creed + the cosmology)
+docs/                 <- source texts for the doctrine (the creed + the cosmology)
 examples/                 <- illustrative reference artifacts (see note below)
 ```
 
-When prose and code disagree, **the working code in `vcw/` is ground truth.**
+When prose and code disagree, **the working code in `examples/vcw/` is ground truth.**
 
 ---
 
 ## Quick start (the runnable substrate)
 
-The `vcw/` package is plain Python with no required third-party dependencies for the core
+The `examples/vcw/` package is plain Python with no required third-party dependencies for the core
 substrate.
 
 ```bash
@@ -154,7 +154,7 @@ python -m vcw demo      # narrated tour: genesis -> sense -> reflex -> learn -> 
 python -m vcw audit     # the Stage-1 Zombie Body audit (substrate + runnable Body)
 python -m vcw prove     # the security invariants (red/green)
 
-# or run the modules directly from inside vcw/
+# or run the modules directly from inside examples/vcw/
 cd vcw
 
 # run the Stage 1 (Zombie Body) audit against a fresh demo organism
@@ -170,7 +170,7 @@ python test_invariants.py
 
 A passing `audit.py` prints a **Zombie Body Certification** block and exits zero only when there
 are no open hard-fails — the deterministic gate that authorizes Phase 2. As of v2.3 that block
-certifies **both** the substrate **and** a runnable reference Body (`vcw/organs/`): the Heart's
+certifies **both** the substrate **and** a runnable reference Body (`examples/vcw/organs/`): the Heart's
 heartbeat, the Senses classifier, the Limbs dispatch lifecycle, and the Nervous System's Context
 Assembly are real, no-LLM code, so the seven rows that once read *NEEDS-HOST* are now genuine
 PASS/FAIL.
@@ -181,7 +181,7 @@ python -m vcw mind        # narrated fusion tour: the same heartbeat now also th
 python -m vcw audit-mind  # the Stage-2 gate: MIND containment + Phase-1 regression
 ```
 
-The MIND ([`vcw/mind.py`](vcw/mind.py)) is sharply contained: it may write **only** the private
+The MIND ([`examples/vcw/mind.py`](examples/vcw/mind.py)) is sharply contained: it may write **only** the private
 `thoughts` band and the `brain` band (any other write is refused and logged as an immune event),
 it *proposes* Special Instructions while the Body *applies* them, and it cannot self-promote a
 skill. The model is a **pluggable transport** — there is no vendor SDK in the Body. The reference

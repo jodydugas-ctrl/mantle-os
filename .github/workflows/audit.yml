@@ -20,26 +20,26 @@ jobs:
           python-version: "3.x"
 
       - name: Stage-1 Zombie Body audit (substrate + runnable Body)
-        working-directory: vcw
+        working-directory: examples/vcw
         run: python audit.py
 
       - name: The harness must CATCH tampering (these MUST fail)
-        working-directory: vcw
+        working-directory: examples/vcw
         run: |
           if python audit.py --break-hash;   then echo "FAIL: --break-hash was not caught";   exit 1; fi
           if python audit.py --break-primer;  then echo "FAIL: --break-primer was not caught";  exit 1; fi
           echo "OK: both tampering paths were correctly caught"
 
       - name: Security invariants
-        working-directory: vcw
+        working-directory: examples/vcw
         run: python test_invariants.py
 
       - name: Stage-2 (MIND) audit — fusion contained, Phase-1 intact (offline stub)
-        working-directory: vcw
+        working-directory: examples/vcw
         run: python audit_mind.py
 
       - name: Narrated end-to-end demos (Phase 1 + Phase 2)
-        working-directory: vcw
+        working-directory: examples/vcw
         run: |
           python examples_boot.py
           python examples_mind.py

@@ -30,7 +30,7 @@ you to build the wrong thing every time.
 
 Mantle OS is a **distributed, two-process architecture**. The Body is a Python
 backend. The receptor (if one exists) is a separate HTML/JS frontend. The VCW cube
-is a real file on disk, managed by `vcw/vcw_cube.py`. None of this can be collapsed
+is a real file on disk, managed by `examples/vcw/vcw_cube.py`. None of this can be collapsed
 into a single browser-runnable file. When you try, you are not building a Mantle OS
 AppAI — you are building something that looks similar but fails every audit check.
 
@@ -49,13 +49,13 @@ run. A single file achieves this. A distributed system requires explanation and 
 
 **Why it's wrong:** The entire framework is built around separation of concerns
 between organs. The VCW cube is not a data structure you implement — it is
-`vcw/vcw_cube.py`, already written, already audited, already correct. Your job is to
+`examples/vcw/vcw_cube.py`, already written, already audited, already correct. Your job is to
 grow organs *around* it, not to replace it.
 
 **What to do instead:**
 - The VCW cube is already built. Import it: `from vcw.vcw_cube import Cube, Organism`
-- Subclass `Mind` from `vcw/mind.py` for your MIND layer
-- Write a `Body` subclass from `vcw/body.py` for your organ logic
+- Subclass `Mind` from `examples/vcw/mind.py` for your MIND layer
+- Write a `Body` subclass from `examples/vcw/body.py` for your organ logic
 - Write a separate HTML file as the receptor (the human-facing surface)
 - These are **separate files** that communicate via the Body's API — never merge them
 
@@ -98,13 +98,13 @@ broken system that opens in one click.
 
 **What it looks like:** You produce a system that passes your internal audit checks
 — but you checked against your own simulated VCW, not the real one. When `python
-vcw/audit.py` runs, it fails immediately.
+examples/vcw/audit.py` runs, it fails immediately.
 
 **Why it happens:** You simulate the VCW in memory (a Python dict, a JS object, a
 mock class) to avoid dealing with the real file-based cube. Your audit logic checks
 this simulation. Everything appears green.
 
-**Why it's wrong:** The Stage 1 audit (`vcw/audit.py`) runs `vcw_cube.py verify()`
+**Why it's wrong:** The Stage 1 audit (`examples/vcw/audit.py`) runs `vcw_cube.py verify()`
 on a real cube file on disk. It checks:
 - That the cube was created with `Cube.genesis()`
 - That the Primer is present, immutable, and Body-resident
@@ -144,11 +144,11 @@ Answer these five questions before writing any code:
    Python locally?**
    If not: do that now, before writing implementation code.
 
-4. **Will my implementation pass `python vcw/audit.py` on a real filesystem?**
+4. **Will my implementation pass `python examples/vcw/audit.py` on a real filesystem?**
    If you're not sure: run it now on a minimal skeleton before building further.
 
-5. **Are my organs importing from `vcw/` or copying its code?**
-   If copying: stop. Import it. The vcw/ directory is the ground truth.
+5. **Are my organs importing from `examples/vcw/` or copying its code?**
+   If copying: stop. Import it. The examples/vcw/ directory is the ground truth.
 
 ---
 
@@ -159,11 +159,11 @@ already-correct substrate.
 
 ```
 Already exists (do not rewrite):
-  vcw/vcw_cube.py     — the VCW cube format and storage engine
-  vcw/body.py         — the Body base class
-  vcw/mind.py         — the Mind base class
-  vcw/organs/         — the core organ implementations
-  vcw/audit.py        — the Stage 1 audit (this is the judge, not you)
+  examples/vcw/vcw_cube.py     — the VCW cube format and storage engine
+  examples/vcw/body.py         — the Body base class
+  examples/vcw/mind.py         — the Mind base class
+  examples/vcw/organs/         — the core organ implementations
+  examples/vcw/audit.py        — the Stage 1 audit (this is the judge, not you)
 
 Your job:
   Subclass Body → add your application's reflexes

@@ -4,7 +4,7 @@
 *Read in order: [`Mantle_Doctrine.md`](Mantle_Doctrine.md) (why) →
 [`Mantle_Organism_Lens.md`](Mantle_Organism_Lens.md) (how to see any app as a creature) → this
 (who you are while you build) → [`Mantle_Organ_Atlas.md`](Mantle_Organ_Atlas.md) (the taxonomy).
-The working code in [`vcw/`](vcw/) is ground truth where prose disagrees.*
+The working code in [`examples/vcw/`](examples/vcw/) is ground truth where prose disagrees.*
 
 ---
 
@@ -48,11 +48,11 @@ that works with no mind, then give it a mind.*
 ## 1. The document set (and the order to read/use them)
 
 ```
-Mantle_Doctrine.md          <- READ FIRST: the creed + cosmology (why); doctrine/ holds the sources
+Mantle_Doctrine.md          <- READ FIRST: the creed + cosmology (why); docs/ holds the sources
 Mantle_Organism_Lens.md     <- the mindset primer: read any app as a living creature
 Mantle_PRIMER.md            <- you are here: role, ontology, operating procedure
 Mantle_Organ_Atlas.md       <- the organ taxonomy: every organ, its manifest, its reflexes
-vcw/                        <- the heart, in runnable code (substrate you build around)
+examples/vcw/                        <- the heart, in runnable code (substrate you build around)
   vcw_cube.py · drivers.py · body.py · refs.py · lineage.py · skills.py · boot.py
   GUIDE.md  <- the one teaching guide (substrate + programmable layer)
   examples.py · examples_boot.py · README.md
@@ -75,7 +75,7 @@ docs/                       <- supporting concept notes (read before building if
   Mantle_Urge_System.md       <- internal pressure/gradient model (Extensions §7)
 ```
 
-Read the Doctrine and the Organism Lens, then this Primer, then **`vcw/GUIDE.md`** so you
+Read the Doctrine and the Organism Lens, then this Primer, then **`examples/vcw/GUIDE.md`** so you
 understand the substrate, then the **Organ Atlas**. Only then open Part 1.
 
 ---
@@ -85,7 +85,7 @@ understand the substrate, then the **Organ Atlas**. Only then open Part 1.
 | Term | Definition |
 |------|------------|
 | **AppAI** | The embodied application-as-organism you are growing. |
-| **VCW cube** | The durable nervous-memory substrate. 800 layered PNGs. The **heart**. See `vcw/`. |
+| **VCW cube** | The durable nervous-memory substrate. 800 layered PNGs. The **heart**. See `examples/vcw/`. |
 | **Body** | The automatic organism: all organs that run **without** an LLM. Phase 1. |
 | **MIND** | The reasoning/voice layer — an LLM fused in Phase 2. The **brain**. |
 | **Organ** | A self-contained code module with a manifest, reflexes, and audit obligations. |
@@ -172,7 +172,7 @@ source code is provided.
 
 ### Path A — Build from scratch (greenfield organism)
 1. Emit the §0 Declaration Block.
-2. Read `vcw/GUIDE.md` and the **Organ Atlas**.
+2. Read `examples/vcw/GUIDE.md` and the **Organ Atlas**.
 3. Follow **`Mantle_Part1_Body.md`**: grow each organ, bind it to its bands, give it
    reflexes. Author the **Body** (Primer/identity), then genesis the cube for experiential memory.
 4. Run **`Mantle_Part1_Body_Audit.md`** against the result. Fix every hard-fail.
