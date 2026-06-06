@@ -54,7 +54,27 @@ class NervousSystem:
     # ---- the 9-step Context Assembly Protocol -----------------------------
     def assemble(self, reveal_private: bool = False) -> Dict[str, Any]:
         """Deterministically assemble a fully-resolved, veiled context snapshot. `_complete` is
-        True iff no unresolved reference remains (any leftover is an immune event)."""
+        True iff no unresolved reference remains (any leftover is an immune event).
+
+        Resolution (step 7) and the completeness scan (step 9) are done in ONE traversal of the
+        snapshot skeleton instead of two: each leaf is resolved, then the produced value is scanned
+        for any remaining reference (embedded, or inside a resolved value) -- which is exactly what
+        a separate `_unresolved` walk of the final snapshot would find. `resolve_all`/`_unresolved`
+        remain for callers/tests."""
+        leftover: List[str] = []
+
+        def resolve_and_check(obj: Any) -> Any:
+            if isinstance(obj, str):
+                s = obj.strip()
+                val = self.org.resolve(s) if _REF_RE.fullmatch(s) else obj
+                self._unresolved(val, leftover)        # scan the produced value (step 9, inline)
+                return val
+            if isinstance(obj, dict):
+                return {k: resolve_and_check(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [resolve_and_check(v) for v in obj]
+            return obj
+
         snap: Dict[str, Any] = {
             "primer": self.org.body.boot_order(),                                  # 1 identity/boot
             "identity": self.org.prime.read("identity"),                           # 2 self-state
@@ -64,9 +84,7 @@ class NervousSystem:
             "senses": self.org.prime.read("senses"),                               # 6 perception
             "thoughts": self.org.prime.read("thoughts", reveal_private=reveal_private),  # 8 veil
         }
-        snap = self.resolve_all(snap)                                              # 7 resolve refs
-        leftover: List[str] = []
-        self._unresolved(snap, leftover)                                           # 9 completeness
+        snap = resolve_and_check(snap)                                  # 7 resolve + 9 completeness
         if leftover:
             self.org.immune_event("unresolved_ref",
                                   {"count": len(leftover), "sample": leftover[:3]})
