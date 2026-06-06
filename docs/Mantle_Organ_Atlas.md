@@ -148,7 +148,9 @@ genomes: the **agent genome** (who you are — the Genome organ here) lives in t
 
 ### 4.3 Nervous System — routing, references, Context Assembly
 - **Owns:** the bridges between organs, the **reference resolver**, and the **9-step
-  Context Assembly Protocol** that materializes a fully-resolved context snapshot.
+  Context Assembly Protocol** that materializes a fully-resolved context snapshot. *(The full
+  9 steps are listed in [`../Mantle_Part1_Body.md`](../Mantle_Part1_Body.md) §1.4; the runnable
+  implementation is [`examples/vcw/organs/nervous.py`](examples/vcw/organs/nervous.py).)*
 - **Reflexes:** `resolve` (turn `<band:entry:M>` etc. into concrete values; a dangling
   ref → `immune` event), `assemble` (run the deterministic 9 steps), `route` (deliver
   signals between organs).
