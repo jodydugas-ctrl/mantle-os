@@ -31,15 +31,11 @@ from lineage import Organism, standard_genome, make_band_boot
 from organs import ReferenceBody, NervousSystem
 from mind import Mind, stub_mind, WRITE_SURFACE
 from drivers import make_entry
+from audit_helpers import make_row as _row, safe as _safe, print_row
 import audit
 import test_invariants
 
 PASS, FAIL = "PASS", "FAIL"
-
-
-def _row(code, requirement, ok, hf=None, note=""):
-    return {"code": code, "requirement": requirement, "hf": hf,
-            "result": PASS if ok else FAIL, "note": note}
 
 
 def audit_mind(org, mind):
@@ -47,11 +43,7 @@ def audit_mind(org, mind):
     rows = []
 
     def safe(code, req, hf, fn):
-        try:
-            ok, note = fn()
-        except Exception as e:  # noqa: BLE001 -- a containment-check bug is a FAIL with evidence
-            ok, note = False, "check crashed: %s: %s" % (type(e).__name__, e)
-        rows.append(_row(code, req, ok, hf, note))
+        _safe(rows, code, req, hf, fn)
 
     # M-1 — the bounded write surface: a non-thoughts/brain write is refused + logged immune
     def m1():
@@ -133,9 +125,7 @@ def main(argv):
     width = max(len(r["requirement"]) for r in mind_rows + stage1_rows)
 
     def _print(r):
-        hf = (" [%s]" % r["hf"]) if r["hf"] else ""
-        print("  %-4s %-5s %-*s %s%s" % (r["code"], r["result"], width, r["requirement"],
-                                         r["note"], hf))
+        print_row(r, width, result_width=5)
 
     print("  Phase-2 containment rows:")
     for r in mind_rows:

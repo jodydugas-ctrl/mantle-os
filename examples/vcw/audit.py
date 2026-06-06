@@ -29,17 +29,14 @@ import json
 import sys
 
 from lineage import Organism, standard_genome
-from drivers import make_entry, _entry_hash
+from drivers import make_entry
 from entry import entry_hash
 from organs import ReferenceBody
+from audit_helpers import make_row as _row, safe as _safe, print_row
 import test_invariants
 
 PASS, FAIL, NA = "PASS", "FAIL", "N/A"
 NEEDS_HOST, NEEDS_MODEL = "NEEDS-HOST", "NEEDS-MODEL"
-
-
-def _row(code, requirement, result, hf=None, note=""):
-    return {"code": code, "requirement": requirement, "hf": hf, "result": result, "note": note}
 
 
 def audit_organism(org):
@@ -73,15 +70,9 @@ def audit_organism(org):
                      note="identity_in_body=%s, genome-bands-in-cube=%s"
                           % (org.prime.identity_in_body, genome_in_cube or "none")))
 
-    # B-13 — every entry immutable & correctly hashed (recompute)
-    bad = []
-    for band in org.prime.bands:
-        if org.prime.encoding(band) != "log-json":
-            continue
-        for idx in org.prime.band_layers[band]:
-            for e in org.prime.layers[idx]:
-                if isinstance(e, dict) and "hash" in e and _entry_hash(e) != e["hash"]:
-                    bad.append("%s#%s" % (band, e.get("id")))
+    # B-13 — every entry immutable & correctly hashed. verify() (B-01) already recomputed every
+    # entry hash, so reuse its report instead of walking every entry a second time.
+    bad = [p for p in problems if "hash mismatch" in p]
     rows.append(_row("B-13", "Entries immutable & hashed; verify recomputes hash",
                      PASS if not bad else FAIL, note="all hashes intact" if not bad
                      else "tampered: %s" % bad))
@@ -133,11 +124,7 @@ def audit_host(org):
     rows = []
 
     def safe(code, requirement, hf, fn):
-        try:
-            ok, note = fn()
-        except Exception as e:  # noqa: BLE001 -- a host-organ bug is a FAIL with evidence
-            ok, note = False, "host check crashed: %s: %s" % (type(e).__name__, e)
-        rows.append(_row(code, requirement, PASS if ok else FAIL, hf, note))
+        _safe(rows, code, requirement, hf, fn)
 
     rb = ReferenceBody(org)
 
@@ -281,9 +268,7 @@ def main(argv):
     width = max(len(r["requirement"]) for r in all_rows)
 
     def _print(r):
-        hf = (" [%s]" % r["hf"]) if r["hf"] else ""
-        print("  %-4s %-9s %-*s %s%s" % (r["code"], r["result"], width, r["requirement"],
-                                         r["note"], hf))
+        print_row(r, width, result_width=9)
 
     print("  Substrate rows (the cube/Body store):")
     for r in substrate_rows:
