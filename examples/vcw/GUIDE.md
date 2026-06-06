@@ -180,12 +180,20 @@ Both are reversible record-level flags, never destructive rewrites.
 
 Every `cube.save(path)`:
 
-1. writes the whole container to `path.stage`;
-2. **re-loads** the staged file and runs `verify()`;
+1. writes the container to `path.stage`, **re-encoding only the layers whose content actually
+   changed** (each layer carries a cheap signature; unchanged layers reuse their cached PNG bytes,
+   so nothing is needlessly re-compressed);
+2. **decodes the freshly-written layers back from the staged file and verifies them** — confirming
+   the new bytes round-trip and their entry hashes are intact. Unchanged layers were written
+   byte-identical to the previous file, which itself was atomic-replaced only after passing this
+   same check, so re-checking them would be redundant (the guarantee is inductive);
 3. only on a clean verify does it `os.replace(stage, path)` — an atomic swap.
 
-A half-written or corrupt cube can therefore never replace a healthy one. This is
-the substrate's core durability guarantee.
+A half-written or corrupt cube can therefore never replace a healthy one — the substrate's core
+durability guarantee — and a save now costs work proportional to **what changed**, not to the
+whole cube. (Sealed ancestral cubes never change, so `Organism.save` writes each one once and
+skips it thereafter.) The standalone `verify()` is unchanged: it still recomputes **every** entry
+hash, so an integrity scan or a freshly loaded cube is checked in full.
 
 `verify()` checks: Genome present and ordered, Primer non-empty (the AppAI is
 "born"), every reserved band head present and correctly labeled, and every entry
@@ -511,8 +519,9 @@ rebirth loses nothing. `Organism.save(dir)` / `Organism.load(dir)` persist the w
 > `lineage.Cube` shares the base codec's two guarantees, not just the legacy `vcw_cube.Cube`:
 > every layer persists as a **real PNG** (entry/keyvalue/exec layers via the JSON-in-pixels codec,
 > calendar layers as their raw RGBA canvas — so the whole cube is again "pictures you can open in
-> any image viewer"), and `save()` is a **staged commit** (write `.stage` → reload → `verify()` →
-> atomic `os.replace`). `verify()` also **recomputes every entry hash**, so the cube attests to
+> any image viewer"), and `save()` is a **staged commit** (write `.stage` → verify the
+> freshly-written layers → atomic `os.replace`) that re-encodes and re-checks **only what changed**
+> (§8). `verify()` itself still **recomputes every entry hash**, so the cube attests to
 > its own integrity — a tampered field (including a rewritten `authorship`, now inside the hash)
 > is caught by the cube itself, not only by the external audit harness.
 

@@ -19,6 +19,11 @@ from typing import Any
 
 MASK = "[REDACTED]"
 
+# A dict key whose NAME matches this is a secret holder -- its whole value is masked. Compiled
+# once at import (not per call) since redact() runs at every sense/immune boundary.
+_KEY_RE = re.compile(r"(?i)(api[_-]?key|secret|token|password|passwd|private[_-]?key|"
+                     r"access[_-]?key|auth)")
+
 # Ordered (pattern, replacement) rules applied to every string crossing the boundary.
 _RULES = [
     # PEM private-key blocks
@@ -54,8 +59,7 @@ def redact(obj: Any) -> Any:
     if isinstance(obj, dict):
         out = {}
         for k, v in obj.items():
-            if re.search(r"(?i)(api[_-]?key|secret|token|password|passwd|private[_-]?key|"
-                         r"access[_-]?key|auth)", str(k)):
+            if _KEY_RE.search(str(k)):
                 out[k] = MASK
             else:
                 out[k] = redact(v)

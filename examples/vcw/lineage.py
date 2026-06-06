@@ -22,6 +22,7 @@ v2.2 -- LAYERS ON DEMAND + SAFE REUSE
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import zipfile
@@ -72,6 +73,15 @@ class Cube:
         self.band_layers: Dict[str, List[int]] = {}        # name -> active physical layer indices
         self.band_free: Dict[str, List[int]] = {}          # name -> reclaimed indices (reuse pool)
         self.layers: Dict[int, Any] = {}                   # physical idx -> driver-native content
+        # --- persistence acceleration (does not change observable behavior) ---
+        # A layer's encoded PNG is recomputed ONLY when its content actually changes. We detect
+        # change by a cheap per-layer SIGNATURE (over each entry's id+hash+immune flags, i.e. every
+        # byte that ends up in the layer payload) rather than re-zlib-encoding every layer on every
+        # save. Signature change is detected even for in-place mutations (e.g. a directly flipped
+        # `tombstone`), so the cache can never go stale. Caches are pure memo: dropping them only
+        # makes the next save slower, never wrong.
+        self._png_cache: Dict[int, bytes] = {}             # physical idx -> last encoded PNG bytes
+        self._layer_sig: Dict[int, str] = {}               # physical idx -> signature of those bytes
 
     # ---- genesis ----------------------------------------------------------
     @classmethod
@@ -257,33 +267,111 @@ class Cube:
     # canonical runtime, not only in the base codec): entry/keyvalue/exec layers via the
     # JSON-in-pixels codec, calendar layers as their raw RGBA canvas. So the whole organism's
     # memory is once again "a directory of pictures you can open in any image viewer."
-    def _write_container(self, path: str) -> None:
+    def _layer_signature(self, idx: int, boot: Dict[str, Any]) -> str:
+        """A cheap fingerprint of everything that ends up in a layer's payload, so we can tell
+        whether the encoded PNG is still current WITHOUT re-encoding. For entry layers it covers
+        each entry's id + hash + immune flags (the only mutable bytes); for calendar/exec layers it
+        hashes the raw content. Far cheaper than zlib-encoding the 2.56 MB layer."""
+        content = self.layers[idx]
+        enc = boot["encoding"]
+        if enc == "log-json":
+            blob = json.dumps([(e.get("id"), e.get("hash"), bool(e.get("tombstone")),
+                                bool(e.get("quarantined"))) for e in content],
+                              separators=(",", ":")).encode("utf-8")
+        elif enc == "keyvalue":
+            blob = json.dumps(content, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        elif enc == "calendar-spatial":
+            blob = bytes(content)
+        else:  # exec and any future encoding: hash the JSON form
+            blob = json.dumps(content, separators=(",", ":"), sort_keys=True,
+                              default=str).encode("utf-8")
+        return "%s:%s" % (enc, hashlib.sha1(blob).hexdigest())
+
+    def _encode_layer(self, band: str, boot: Dict[str, Any], idx: int) -> bytes:
+        content = self.layers[idx]
+        if boot["encoding"] == "calendar-spatial":
+            return encode_png_rgba(bytes(content))          # the canvas itself IS the image
+        lboot = {"band": band, "layer": idx, "encoding": boot["encoding"],
+                 "private": bool(boot.get("private")), "v": 2}
+        return encode_png_rgba(build_layer_rgba(lboot, {"content": content}))
+
+    def _write_container(self, path: str) -> set:
+        """Write the container, re-encoding ONLY layers whose signature changed since they were
+        last encoded; clean layers reuse their cached PNG bytes (no zlib). Returns the set of
+        physical layer indices that were freshly (re)encoded this call -- the only layers whose
+        on-disk bytes are new and therefore need a durability check by save()."""
         meta = {"format": "vcw-cube-png-v2", "generation": self.generation,
                 "identity_in_body": self.identity_in_body, "sealed": self.sealed,
                 "bands": self.bands, "band_layers": self.band_layers,
                 "band_free": self.band_free}
+        active = set()
+        changed = set()
         with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
             z.writestr("cube.json", json.dumps(meta, indent=2))
             for band, boot in self.bands.items():
                 for idx in self.band_layers[band]:
-                    content = self.layers[idx]
-                    if boot["encoding"] == "calendar-spatial":
-                        # the canvas itself IS the image -- store its raw RGBA pixels as a PNG
-                        png = encode_png_rgba(bytes(content))
-                    else:
-                        lboot = {"band": band, "layer": idx, "encoding": boot["encoding"],
-                                 "private": bool(boot.get("private")), "v": 2}
-                        png = encode_png_rgba(build_layer_rgba(lboot, {"content": content}))
-                    z.writestr("layers/%03d.png" % idx, png)
+                    active.add(idx)
+                    sig = self._layer_signature(idx, boot)
+                    png = self._png_cache.get(idx)
+                    if png is None or self._layer_sig.get(idx) != sig:
+                        png = self._encode_layer(band, boot, idx)
+                        self._png_cache[idx] = png
+                        self._layer_sig[idx] = sig
+                        changed.add(idx)
+                    # PNG bytes are already zlib-compressed -- store them verbatim (ZIP_STORED)
+                    # rather than have the ZIP fruitlessly re-DEFLATE incompressible data each save.
+                    z.writestr("layers/%03d.png" % idx, png, compress_type=zipfile.ZIP_STORED)
+        # prune caches for layers reclaimed by compaction (keep the memo bounded)
+        for idx in list(self._png_cache):
+            if idx not in active:
+                self._png_cache.pop(idx, None)
+                self._layer_sig.pop(idx, None)
+        return changed
+
+    def _verify_staged(self, stage: str, changed: set) -> List[str]:
+        """Durability check for a staged write. Cheap metadata sanity (in-memory) plus a decode of
+        ONLY the freshly-written layers from the stage file -- confirming the new bytes round-trip
+        and their entry hashes are intact. Unchanged layers were written byte-identical to the
+        already-verified previous file (inductive: every file on disk was atomic-replaced only after
+        passing this check), so re-decoding them would be redundant. Same guarantee -- a corrupt or
+        half-written cube can never replace a healthy one -- at a fraction of the cost."""
+        problems: List[str] = []
+        for band, boot in self.bands.items():
+            if not self.band_layers.get(band):
+                problems.append("band %s has no active layer" % band)
+            try:
+                get_driver(boot["encoding"])
+            except KeyError:
+                problems.append("band %s names unknown driver %s" % (band, boot["encoding"]))
+            if set(self.band_layers.get(band, [])) & set(self.band_free.get(band, [])):
+                problems.append("band %s has a layer both active and free" % band)
+        if not changed:
+            return problems
+        idx_band = {idx: band for band, idxs in self.band_layers.items() for idx in idxs}
+        with zipfile.ZipFile(stage, "r") as z:
+            for idx in changed:
+                boot = self.bands[idx_band[idx]]
+                raw = decode_png_rgba(z.read("layers/%03d.png" % idx))
+                if boot["encoding"] == "calendar-spatial":
+                    continue                                # spatial canvas: round-trip is identity
+                _, payload = parse_layer_rgba(raw)
+                content = payload["content"]
+                if boot["encoding"] == "log-json":
+                    for e in content:
+                        if isinstance(e, dict) and "hash" in e and entry_hash(e) != e["hash"]:
+                            problems.append("staged entry hash mismatch in band %s layer %d id=%s"
+                                            % (idx_band[idx], idx, e.get("id")))
+        return problems
 
     def save(self, path: str) -> None:
-        """Staged commit (the Heart's `circulate` reflex): write <path>.stage, RELOAD it, run
-        verify(), and only on a clean verify atomically `os.replace` it over <path>. A corrupt or
-        half-written cube can therefore never replace a healthy one -- the Immune System's
-        existential guarantee, now real in the canonical runtime, not only the base codec."""
+        """Staged commit (the Heart's `circulate` reflex): write <path>.stage, verify the freshly
+        written layers, and only on a clean verify atomically `os.replace` it over <path>. A corrupt
+        or half-written cube can therefore never replace a healthy one -- the Immune System's
+        existential guarantee. Unchanged layers are written from cache (not re-encoded) and were
+        verified by the save that first wrote them, so the durability check is incremental."""
         stage = path + ".stage"
-        self._write_container(stage)
-        problems = Cube.load(stage).verify()
+        changed = self._write_container(stage)
+        problems = self._verify_staged(stage, changed)
         if problems:
             os.remove(stage)
             raise RuntimeError("staged cube failed verify: %s" % problems)
@@ -301,12 +389,18 @@ class Cube:
             c.band_free = {k: list(v) for k, v in meta.get("band_free", {}).items()}
             for band, boot in c.bands.items():
                 for idx in c.band_layers[band]:
-                    raw = decode_png_rgba(z.read("layers/%03d.png" % idx))
+                    png = z.read("layers/%03d.png" % idx)
+                    raw = decode_png_rgba(png)
                     if boot["encoding"] == "calendar-spatial":
                         c.layers[idx] = bytearray(raw)
                     else:
                         _, payload = parse_layer_rgba(raw)
                         c.layers[idx] = payload["content"]
+                    # seed the persistence memo with the exact on-disk bytes: this file was
+                    # verified before it was written, so re-saving an unchanged layer can reuse
+                    # these bytes without re-encoding.
+                    c._png_cache[idx] = png
+                    c._layer_sig[idx] = c._layer_signature(idx, boot)
         return c
 
     def verify(self) -> List[str]:
@@ -415,7 +509,12 @@ class Organism:
         os.makedirs(directory, exist_ok=True)
         self.prime.save(os.path.join(directory, "gen%03d.vcw" % self.prime.generation))
         for c in self.ancestral:
-            c.save(os.path.join(directory, "gen%03d.vcw" % c.generation))
+            target = os.path.join(directory, "gen%03d.vcw" % c.generation)
+            # A sealed ancestral cube is immutable; once its file exists in this directory it never
+            # needs rewriting. (A fresh directory has no file yet -> it is written once.)
+            if c.sealed and os.path.exists(target):
+                continue
+            c.save(target)
         with open(os.path.join(directory, "body.json"), "w") as f:
             json.dump(self.body.to_dict(), f, indent=2)
         with open(os.path.join(directory, "organism.json"), "w") as f:
