@@ -121,14 +121,19 @@ def encode_png_rgba(raw: bytes, width: int = SIDE, height: int = SIDE) -> bytes:
         raise ValueError("encode_png_rgba: raw length %d != %d"
                          % (len(raw), width * height * CHANNELS))
     stride = width * CHANNELS
-    # Prepend filter-type byte 0 (None) to each scanline.
-    out = bytearray()
+    # Prepend filter-type byte 0 (None) to each scanline. Pre-size the buffer and copy each row
+    # into place (the filter bytes stay 0 from the zero-init), instead of 800 append/concat ops.
+    out = bytearray(height * (stride + 1))
     for y in range(height):
-        out.append(0)
-        out += raw[y * stride:(y + 1) * stride]
+        dst = y * (stride + 1) + 1
+        out[dst:dst + stride] = raw[y * stride:(y + 1) * stride]
     sig  = b"\x89PNG\r\n\x1a\n"
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)  # 8-bit, color type 6 = RGBA
-    idat = zlib.compress(bytes(out), 6)
+    # Level 1: the layer payload is JSON + a large zero pad (or a sparse RGBA canvas) -- both
+    # compress almost as small at level 1 as at level 6, for a fraction of the CPU. Compression
+    # level is invisible to the decoder (zlib.decompress is level-agnostic), so this re-encodes
+    # changed layers far faster while every byte still round-trips.
+    idat = zlib.compress(bytes(out), 1)
     return (sig + _png_chunk(b"IHDR", ihdr)
             + _png_chunk(b"IDAT", idat) + _png_chunk(b"IEND", b""))
 

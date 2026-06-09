@@ -24,6 +24,7 @@ from drivers import (ExecDriver, code_hash, make_entry, trial,
                      CapabilityError, IntegrityError, TrustError, SandboxError)
 from mind import Mind, stub_mind, WRITE_SURFACE
 from redact import redact, contains_secret
+from audit_helpers import expect_raise as _expect_raise
 
 _EXEC = ExecDriver()
 _CODE = "def f(x):\n    return x + 1\n"
@@ -39,16 +40,6 @@ def _exec_content(provenance, runner="python", caps=None, bad_hash=False):
     return {"code": _CODE, "code_hash": ("sha256:deadbeef" if bad_hash else code_hash(_CODE)),
             "entry": "f", "runner": runner, "capabilities": caps or {},
             "limits": {"ms": 200}, "provenance": provenance}
-
-
-def _expect_raise(fn, exc):
-    try:
-        fn()
-    except exc:
-        return True, "raised %s as required" % exc.__name__
-    except Exception as e:  # noqa: BLE001
-        return False, "raised wrong type %s: %s" % (type(e).__name__, e)
-    return False, "did NOT raise %s (guard missing)" % exc.__name__
 
 
 # ---- the invariants --------------------------------------------------------
