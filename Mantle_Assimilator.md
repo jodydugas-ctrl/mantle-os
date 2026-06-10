@@ -1,6 +1,6 @@
 # Mantle OS — THE ASSIMILATOR (Path B)
 
-**Mantle OS v2.3** · Grow organs around existing code, non-destructively
+**Mantle OS v3.0** · Grow organs around existing code, non-destructively
 *This document REPLACES `Mantle_Part1_Body.md` when external source code is provided.
 You still finish at the same Stage 1 Gate (`Mantle_Part1_Body_Audit.md`) and then
 proceed to Phase 2 identically. Prerequisite reading: `docs/Mantle_Doctrine.md`,
@@ -159,7 +159,7 @@ to the cube; each is individually `try/except → degrade + log to immune`.
 ## §B.4 Synthesize the BODY from a host (Phase 2)
 
 Synthesize the **Body** (not cube layers) from the host's own identity — do not invent one.
-Identity lives in the Body store (`examples/vcw/body.py`); the cube is pure experiential memory.
+Identity lives in the Body store (`mantle/core/body.py`); the cube is pure experiential memory.
 
 - **Primer** (read-only): the host's name, purpose, entry point, the §0 declaration, and the
   Commandments. Becomes immutable the moment it is committed.

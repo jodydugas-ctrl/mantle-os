@@ -1,11 +1,18 @@
 # Mantle OS — PART 1 AUDIT (Stage 1 Gate)
 
-**Mantle OS v2.3** · Certify the Zombie Body before any MIND is fused
+**Mantle OS v3.0** · Certify the Zombie Body before any MIND is fused
 *Administer this audit against the Body produced by `Mantle_Part1_Body.md` (Path A)
 or `Mantle_Assimilator.md` (Path B). Fill every `Pass?` cell. Any open hard-fail
-blocks Phase 2. End with the sign-off block. Checks cover the breakage axis (B-01..B-38, with
-hard-fails HF-B01..HF-B50) and the **waste axis** (B-W1..B-W4) — "Failure is not the end. Waste
-is."*
+blocks Phase 2. End with the sign-off block. Checks cover the breakage axis (B-01..B-38 +
+the v3 mesh rows B-60..B-63, with hard-fails HF-B01..HF-B61) and the **waste axis**
+(B-W1..B-W4) — "Failure is not the end. Waste is."*
+
+> **The runnable gate.** For a Body built on (or imitating) the `mantle/` package this
+> entire audit is EXECUTABLE: `python -m mantle audit` evaluates every row below plus the
+> 32 security invariants (`python -m mantle prove`), and exits non-zero on any open
+> hard-fail. The gate also proves it CATCHES violations: `--break-hash`,
+> `--break-primer`, and `--break-seal` must each exit non-zero. This document remains the
+> normative checklist for hand-grown or assimilated Bodies the harness cannot reach.*
 
 ---
 
@@ -15,9 +22,11 @@ is."*
 - A row that maps to a **hard-fail code (HF-Bxx)** and reads `FAIL` is a **gate
   blocker** — Phase 2 is forbidden until it is `PASS`.
 - The audit is itself **deterministic**: every check can be performed by reading the
-  cube, running the Body's reflexes, and running `vcw_cube.py verify`. No human
-  judgment of model output is involved (there is no model yet).
-- "Verify cmd" columns reference `examples/vcw/vcw_cube.py` where a direct check exists.
+  cube, running the Body's reflexes, and running `verify()` (engine: `org.prime.verify()`;
+  standalone: `python examples/vcw/vcw_cube.py verify <cube>`). No human judgment of
+  model output is involved (there is no model yet).
+- "Verify cmd" columns reference the standalone `examples/vcw/vcw_cube.py` CLI where a
+  direct check exists.
 
 ---
 
@@ -26,8 +35,8 @@ is."*
 | #    | Requirement | HF | Pass? | Notes |
 |------|-------------|----|-------|-------|
 | B-01 | Cube genesis valid; container loads; `verify()` healthy | — | | `python vcw_cube.py verify <cube>` |
-| B-02 | `bodyentry.000` Primer present and non-empty (AppAI is "born") | HF-B02 | | |
-| B-03 | Band map matches canonical `RESERVED_BANDS` ranges exactly | HF-B03 | | `python vcw_cube.py inspect <cube>` |
+| B-02 | Primer present in the **Body** and non-empty (AppAI is "born") | HF-B02 | | Body-resident; never in the cube (HF-B45) |
+| B-03 | Band map matches canonical `standard_genome()` heads exactly | HF-B03 | | `python examples/vcw/vcw_cube.py inspect <cube>` |
 
 ## A1.2 — Heart
 
@@ -42,7 +51,7 @@ is."*
 | #    | Requirement | HF | Pass? | Notes |
 |------|-------------|----|-------|-------|
 | B-07 | Primer immutable post-genesis (write raises `PermissionError`) | HF-B07 | | |
-| B-08 | Load order `.000→.001→.002→.003→prime→bands` enforced | HF-B01 | | |
+| B-08 | Boot order `Primer → Special Instructions → Immunization` enforced | HF-B01 | | `Body.boot_order()` |
 | B-09 | No MIND write path to the Genome exists | HF-B09g | | |
 
 ## A1.4 — Nervous System
@@ -81,8 +90,8 @@ is."*
 
 | #    | Requirement | HF | Pass? | Notes |
 |------|-------------|----|-------|-------|
-| B-22 | Overflow fires at **0.75**, emergency at **0.90** capacity | — | | |
-| B-23 | Reaching capacity compacts/reclaims — **never** triggers rebirth | HF-B14 | | |
+| B-22 | Overflow fires at **0.75**, emergency at **0.90** capacity (executable: `mantle/vcw/bands.py` thresholds; `capacity_overflow`/`capacity_emergency` immune events) | — | | |
+| B-23 | Reaching capacity compacts/dedupes/reclaims — **never** triggers rebirth (generation unchanged, no ancestor created) | HF-B14 | | invariant B-CAP proves it |
 | B-24 | Compaction preserves visible history | — | | |
 
 ## A1.9 — Surface Parity *(Senses perceive / Limbs operate; no separate "Lungs")*
@@ -118,7 +127,17 @@ is."*
 | B-36 | Every instrumentation hook fails open (degrade + log, never crash) | HF-B32 | | |
 | B-37 | Dual-flush present (checkpoint + `atexit`) | HF-B33 | | |
 | B-38 | Import works both as a module and as a script (sibling fallback) | HF-B34 | | |
-| B-39 | Untrusted/foreign reflex (exec) layers are refused on the Python runner — they require the hard-sandboxed `wasm` runner | HF-B50 | | trust gate in `drivers.ExecDriver.execute` |
+| B-39 | Untrusted/foreign reflex (exec) layers are refused on the Python runner — they require the hard-sandboxed `wasm` runner | HF-B50 | | trust gate in `mantle/vcw/drivers.py::ExecDriver.execute` |
+
+## A1.13 — The organism mesh (v3 rows)
+
+| #    | Requirement | HF | Pass? | Notes |
+|------|-------------|----|-------|-------|
+| B-60 | All eight organs present, each with an enforced OrganContract; Brain dormant | HF-B60 | | `org.manifests()` |
+| B-61 | SignalBus deterministic (registration order) + fail-open (a faulting reflex → immune event, never a crash) | HF-B32 | | |
+| B-62 | An out-of-contract organ write is refused + recorded as `organ_overreach` | HF-B61 | | |
+| B-63 | Capacity pressure measurable per band (0..1) and the pressure hook is wired | — | | |
+| B-64 | Sealed ancestors carry a content **seal fingerprint**; tampering is detected on verify | HF-B46 | | `--break-seal` proves the catch |
 
 ---
 
@@ -155,6 +174,10 @@ A `FAIL` on any of these blocks the gate. (Codes are stable across the framework
 | HF-B48 | A reflex (exec) layer exceeds its declared capabilities |
 | HF-B49 | A self-inquiry/inferred answer is written to `facts` as if observed/verified |
 | HF-B50 | An untrusted/foreign-provenance reflex (exec) layer ran on a non-isolating runner (the Python runner) instead of the hard-sandboxed `wasm` runner |
+| HF-B51 | A skill with a static escape vector (import / dunder traversal / forbidden builtin) reached trial or calcify |
+| HF-B52 | Calcification accepted without code-hash + signature + capability set + provenance naming an author |
+| HF-B60 | An organ lacks a contract, or the Brain is active in Phase 1 |
+| HF-B61 | An organ wrote a band outside its declared contract without refusal + immune event |
 
 ### Waste axis (B-W) — "Failure is not the end. Waste is."
 | #    | Requirement | Pass? | Notes |
@@ -169,11 +192,13 @@ A `FAIL` on any of these blocks the gate. (Codes are stable across the framework
 ## Stage 1 sign-off
 
 ```
-ZOMBIE BODY CERTIFICATION
+ZOMBIE BODY CERTIFICATION                (runnable form: python -m mantle audit)
   AppAI name        : ____________________________
   Cube path         : ____________________________
-  vcw_cube verify   : [ ] healthy
-  Audit rows passed : ____ / 39
+  verify() healthy  : [ ] (engine or standalone vcw_cube.py verify)
+  Audit rows passed : ____ / 44   (B-01..B-39 + B-60..B-64)
+  Security invariants: ____ / 32   (python -m mantle prove)
+  Tamper proofs CAUGHT: [ ] --break-hash  [ ] --break-primer  [ ] --break-seal
   Open hard-fails   : ____  (MUST be 0 to proceed)
   Organs present    : Heart [ ] Genome [ ] Nervous [ ] Senses [ ] Immune [ ]
                       Limbs [ ] Memory [ ] Brain-stub [ ]   (8 organs)
