@@ -1,69 +1,48 @@
-# `vcw/` — The VCW Cube (working code)
+# examples/vcw — the VCW cube, standalone and fully defined
 
-**Mantle OS v2.3** · The heart of the nervous system, in runnable code.
-
-This directory is the **heart of the Mantle nervous system** in runnable form: the durable
-nervous-memory substrate (`vcw-cube-png-v2`) that every Mantle AppAI Body is built around. Pure
-Python standard library — no third-party packages, no PIL. It is meant to be *read* as much as
-*run*: an LLM that studies it comes away able to use a VCW cube.
-
-## Files
-
-| File | What it is |
-|------|------------|
-| [`GUIDE.md`](GUIDE.md) | **The one teaching guide** — substrate (Part I) + programmable layer (Part II). |
-| [`vcw_cube.py`](vcw_cube.py) | The base codec + `Cube` API + CLI. The substrate spec, in code. |
-| [`entry.py`](entry.py) | The **one** entry hasher (covers every non-volatile field, incl. `authorship`). |
-| [`boot.py`](boot.py) | Programmable boot-sector schema + the **driver registry**. |
-| [`drivers.py`](drivers.py) | `log-json`, `keyvalue`, `calendar-spatial`, `exec` drivers. |
-| [`body.py`](body.py) | The **Body** store: Primer / Special Instructions / Immunization + lineage index. |
-| [`refs.py`](refs.py) | The unified reference resolver `<TARGET.SELECTOR.ADDRESS>`. |
-| [`lineage.py`](lineage.py) | Boot-driven `Cube` + the `Organism` (Prime + ancestral chain) + rebirth. |
-| [`skills.py`](skills.py) | The **Inner Voice** self-inquiry skill. |
-| [`examples.py`](examples.py) | Narrated tour of a single cube's lifecycle. |
-| [`examples_boot.py`](examples_boot.py) | Narrated tour: boot sectors, Body, reflex layers, on-demand layers, lineage. |
-| [`organs/`](organs/) | The **runnable reference Body**: Heart, Senses, Limbs, Nervous System (pure stdlib, no LLM). |
-| [`mind.py`](mind.py) | The **Phase-2 MIND fusion** — Body-bounded; a **pluggable** model transport (OpenRouter reference, vendor-neutral). |
-| [`audit.py`](audit.py) · [`audit_mind.py`](audit_mind.py) | The Stage-1 gate, and the executable Stage-2 (MIND containment) gate. |
-| [`test_invariants.py`](test_invariants.py) | The red/green security invariants (incl. MIND containment). |
-| [`examples_mind.py`](examples_mind.py) | Narrated Phase-2 tour: fuse a bounded MIND (offline stub). |
-
-## Run it
+This directory is the **teaching home of the VCW cube**. Its centerpiece is
+[`vcw_cube.py`](vcw_cube.py): a single, pure-stdlib, heavily documented Python file that
+is the **normative, runnable definition of the cube format** — how a cube is born, how it
+is read and appended, how the veil works, how entries are hashed, how a generation seals,
+and how persistence stays atomic. It imports nothing from the `mantle` package, and the
+bytes it writes are identical to the production engine's
+([`mantle/vcw/cube.py`](../../mantle/vcw/cube.py)) — [`interop.py`](interop.py) proves
+both directions on every CI run.
 
 ```bash
-# one command from the repo root (no network, no LLM)
-python -m vcw demo            # the full narrated Phase-1 tour
-python -m vcw audit           # the Stage-1 Zombie Body gate (substrate + runnable Body)
-python -m vcw prove           # the security invariants
-python -m vcw mind            # the Phase-2 tour: fuse a bounded MIND (offline stub)
-python -m vcw audit-mind      # the Stage-2 gate: MIND containment + Phase-1 regression
+# the whole format, proven in one run
+python vcw_cube.py selftest
 
-# or directly, from inside vcw/
-python examples.py            # the base cube tour
-python examples_boot.py       # the full tour: programmable layers, Body, reflexes, rebirth
-python audit.py               # the Stage-1 audit; --break-hash / --break-primer must FAIL
-python vcw_cube.py create organism.vcw --primer "first breath"
-python vcw_cube.py inspect organism.vcw
-python vcw_cube.py verify  organism.vcw
+# a cube you can poke at by hand
+python vcw_cube.py create demo.vcw
+python vcw_cube.py append demo.vcw facts '{"k": "sky", "v": "blue"}'
+python vcw_cube.py read demo.vcw facts
+python vcw_cube.py tombstone demo.vcw facts 0
+python vcw_cube.py verify demo.vcw
+python vcw_cube.py inspect demo.vcw
+python vcw_cube.py extract demo.vcw 150 layer150.png   # open it in any image viewer
+python vcw_cube.py seal demo.vcw
+
+# one format, two faithful implementations (standalone <-> mantle engine)
+python interop.py
+
+# timings for the curious
+python bench.py
 ```
 
-## The contract in five lines
+## What else is here
 
-1. A cube is **800 layers**; each layer is one **800×800 RGBA PNG**.
-2. Layers are grouped into **bands** (reserved ranges); each band declares a driver, a `span`,
-   and a `purpose`. Layers are allocated **on demand** and reclaimed for reuse.
-3. **Identity lives in the BODY, not the cube** (`body.py`): Primer (read-only) + Special
-   Instructions + Immunization + lineage index. The cube is pure *experiential* memory.
-4. Memory = **immutable, hashed entries** appended to bands; reads apply the **veil** (hide
-   tombstoned / quarantined / private).
-5. `save()` is a **staged commit**: write `.stage` → re-load → `verify()` → atomic `os.replace`.
-   A corrupt cube can never replace a healthy one.
+| File | What it is |
+|---|---|
+| `vcw_cube.py` | **the standalone cube** — read this file to know the format |
+| `interop.py` | proof the standalone and the engine speak the same bytes |
+| `GUIDE.md` | the substrate teaching guide (concepts → code) |
+| `bench.py` | tiny timing harness for the standalone codec |
+| `audit.py` / `audit_mind.py` / `test_invariants.py` | back-compat shims → `mantle/audits/` (the v2.3 commands keep working from here) |
+| `examples_boot.py` / `examples_mind.py` | back-compat shims → `python -m mantle demo` / `mind` |
+| `__main__.py` | `python -m vcw …` → forwards to `python -m mantle …` |
 
-## Why this lives apart from the prompts
-
-The framework documents (`../Mantle_*.md`) describe the organism; this directory is the **organ
-they all depend on** — a small, complete, inspectable reference an LLM can import, run, and reason
-against. Where prose and this code ever disagree, **the code is ground truth.**
-
-Read [`GUIDE.md`](GUIDE.md) to learn the substrate, then [`../Mantle_Organ_Atlas.md`](../Mantle_Organ_Atlas.md)
-to see how every organ binds to it.
+The v2.3 implementation that used to live here (lineage.py, drivers.py, organs/, mind.py,
+…) grew up into the [`mantle/`](../../mantle/) package — see
+[`docs/Mantle_v3_Migration.md`](../../docs/Mantle_v3_Migration.md) for the exact map.
+Old history is always one `git log` away.

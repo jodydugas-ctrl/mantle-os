@@ -1,114 +1,177 @@
 #!/usr/bin/env python3
 """
-vcw_cube.py  --  VCW Cube reference codec  (format: vcw-cube-png-v2)
+vcw_cube.py  --  the VCW Cube, standalone and fully defined  (Mantle OS v3)
 
-The VCW ("Visual Cortex Workspace") cube is the durable nervous-memory substrate
-of a Mantle AppAI -- the heart of its nervous system. It is a stack of 800 square
-RGBA layers (800 x 800 pixels each). Every layer is a real, valid PNG image, so the
-whole organism's memory is a directory of pictures you can open in any image viewer.
-The cube container is a ZIP holding those PNGs plus two small JSON descriptors.
-
-This module is pure standard library (zlib, struct, zipfile, json, os, hashlib).
-No third-party packages, no PIL. It is meant to be READ as much as RUN: an LLM that
-reads this file should come away knowing exactly how to address, write, and read a
-VCW cube.
+THIS FILE IS THE NORMATIVE, RUNNABLE DEFINITION OF THE VCW CUBE FORMAT.
+It is pure standard library (json, zlib, struct, zipfile, hashlib, os, time), imports
+NOTHING from the mantle package, and is meant to be READ as much as RUN. Everything it
+writes can be loaded by the production engine (`mantle/vcw/cube.py`) and everything the
+engine writes can be loaded here -- the interop test in CI proves it on every commit.
 
 --------------------------------------------------------------------------------
-MENTAL MODEL
+WHAT A CUBE IS
 --------------------------------------------------------------------------------
-  cube            = ordered stack of 800 layers           (index 0 .. 799)
-  layer           = one 800x800 RGBA image = a flat byte stream of 2,560,000 bytes
-  band            = a named, contiguous RANGE of layers reserved for one purpose
-  entry           = one immutable record appended into a band's payload
-  body entry      = one of four genome records (.000..003) that define identity
+The VCW ("Visual Cortex Workspace") cube is the durable experiential memory of a Mantle
+AppAI: ONE GENERATION of everything it has sensed, done, learned, and thought.
 
-  LEGACY NOTE (read this): storing the four body entries *inside* the cube (reserved
-  layers 4-7) is a SUBSTRATE PRIMITIVE shown here for completeness. The canonical Mantle
-  architecture SUPERSEDES it: identity lives in the BODY (see body.py / GUIDE.md Part I
-  Sec.4), not the cube, so it survives rebirth and the cube stays pure experiential memory.
-  Putting the Primer/commandments in the cube is a Stage-1 hard fail (HF-B45). Build against
-  Organism/Body (lineage.py, body.py); treat the in-cube genome as legacy.
+  cube   = an ordered stack of 800 square RGBA layers      (index 0 .. 799)
+  layer  = one 800 x 800 RGBA image = 2,560,000 bytes, stored as a REAL, valid PNG --
+           the whole memory is a directory of pictures you can open in any image viewer
+  band   = a named, contiguous reserved RANGE of layers, self-described by a BOOT SECTOR
+  entry  = one immutable record appended into a band; hashed over every non-volatile field
 
+Identity (the Primer / commandments) is NOT in the cube. It lives in the BODY and
+survives every rebirth; the cube is pure experiential memory. (HF-B45: putting the
+Primer in the cube is a Stage-1 hard fail.)
+
+--------------------------------------------------------------------------------
 ADDRESSING
-  A single byte inside a layer is addressed by (layer, x, y):
+--------------------------------------------------------------------------------
+A single byte inside a layer is addressed by (layer, x, y):
 
-        offset = (y * SIDE + x) * CHANNELS          # CHANNELS = 4 (R,G,B,A)
+      offset = (y * SIDE + x) * CHANNELS          # CHANNELS = 4 (R,G,B,A)
 
-  We do NOT hand-place bytes at pixel coordinates for normal use; instead each
-  layer's pixel stream carries two length-prefixed JSON blobs -- a Layer Boot
-  Sector and a Payload -- behind an 8-byte magic. The (layer,x,y) formula is the
-  primitive the reference-resolver and any low-level tool can rely on.
+Normal use never hand-places bytes: each non-spatial layer's pixel stream carries two
+length-prefixed JSON blobs behind an 8-byte magic (see LAYER PIXEL STREAM below). The
+(layer,x,y) formula is the primitive that spatial drivers and low-level tools rely on.
 
-LAYER PIXEL STREAM LAYOUT (inside the decoded RGBA bytes of one layer)
-  [ 8 bytes  MAGIC = b"VCWPNG2\n" ]
-  [ 4 bytes  uint32 length of boot JSON   ][ boot JSON utf-8 ]
-  [ 4 bytes  uint32 length of payload JSON][ payload JSON utf-8 ]
+A LOGICAL entry address is its index into the band's concatenated VISIBLE stream
+(tombstoned/quarantined entries excluded), so physical layer reuse never breaks a
+reference like <facts.11>. Every entry also carries a BAND-UNIQUE, monotonic `id`
+(assigned at append, never reused) for stable tombstone/quarantine addressing.
+
+--------------------------------------------------------------------------------
+LAYER PIXEL STREAM  (inside the decoded RGBA bytes of one non-spatial layer)
+--------------------------------------------------------------------------------
+  [ 8 bytes  MAGIC = b"VCWPNG2\\n" ]
+  [ 4 bytes  big-endian uint32: length of the layer-boot JSON ][ layer-boot JSON utf-8 ]
+  [ 4 bytes  big-endian uint32: length of the payload JSON    ][ payload JSON utf-8 ]
   [ zero padding up to LAYER_BYTES ]
 
-CONTAINER (a .vcw file is just a ZIP)
-  manifest.json     -- cube-level descriptor (format, dims, band map, generation)
-  cube_boot.json    -- the Cube Boot Sector (authoritative band map + checksums)
-  layers/000.png .. 799.png   -- every layer as a real PNG
+  layer-boot JSON = {"band": <name>, "layer": <index>, "encoding": <driver>,
+                     "private": <bool>, "v": 2}
+  payload JSON    = {"content": <driver-native content>}     # log-json: a list of entries
+
+  JSON is serialized compact + sorted: separators=(",", ":"), sort_keys=True.
+  A calendar-spatial layer has NO stream: its raw RGBA canvas IS the image.
 
 --------------------------------------------------------------------------------
+THE CONTAINER  (a .vcw file is just a ZIP)
+--------------------------------------------------------------------------------
+  cube.json            -- the cube descriptor (see CubeMeta below)
+  layers/000.png ...   -- every ACTIVE layer as a real PNG (zero-padded 3-digit names)
+
+  cube.json keys:
+    format           "vcw-cube-png-v2"   (the on-disk format id; stable since v2)
+    generation       int                  this cube's generation number
+    identity_in_body true                 the Primer is in the Body, never here
+    sealed           bool                 sealed = ancestral = read-only forever
+    seal_fingerprint "sha256:..." | null  content fingerprint taken at seal time
+    bands            {name: band boot sector}
+    band_layers      {name: [active physical layer indices, in fill order]}
+    band_free        {name: [reclaimed indices available for reuse]}
+    next_entry_id    {name: next band-unique entry id}
+
+  BAND BOOT SECTOR = {"band": name, "head": first layer, "span": reserved layer count,
+                      "purpose": human-readable reason this band exists,
+                      "encoding": driver name ("log-json" | "keyvalue" |
+                                  "calendar-spatial" | "exec"),
+                      "params": driver params, "private": bool, "v": 3}
+
+--------------------------------------------------------------------------------
+THE ENTRY  (log-json bands; THE record of experience)
+--------------------------------------------------------------------------------
+  {"id": <band-unique int>, "ts": <unix float>, "opcode": "WRITE" | "SENSE" | ...,
+   "author": "BODY" | "MIND" | <organ>, "source": <provenance string>,
+   "content": <anything JSON>, "tombstone": false, "quarantined": false,
+   ...any extra fields (authorship, verified, confidence, ...)...,
+   "hash": <sha256 hex, first 16 chars>}
+
+  THE HASH RULE (total): the hash covers EVERY field EXCEPT the four volatile ones the
+  Body may flip after birth -- "id", "tombstone", "quarantined", and "hash" itself.
+  Serialization for hashing: json.dumps(fields, separators=(",", ":"), sort_keys=True).
+  So `authorship` and every extra field are tamper-evident by construction.
+
+  APPEND-ONLY: an entry is never edited or deleted. Retirement = tombstone; isolation =
+  quarantine; both only FLIP A FLAG, and both vanish from visible reads. Compaction may
+  later drop dead entries and reclaim emptied layers (metabolism) -- that is the Body's
+  reflex, not an edit.
+
+--------------------------------------------------------------------------------
+THE FOUR RULES OF READING AND APPENDING (commit these to memory)
+--------------------------------------------------------------------------------
+  1. APPEND, never overwrite. cube.append(band, content) -> a new hashed entry with a
+     fresh band-unique id at the band's tail layer.
+  2. READ through the VEIL. cube.read(band) returns only visible entries; a private
+     band returns [] unless reveal_private=True; tombstoned/quarantined never surface.
+  3. VERIFY before trusting. cube.verify() recomputes every entry hash and checks
+     structural coherence; save() refuses to replace a healthy file with a sick one
+     (staged commit: write .stage -> verify -> atomic os.replace).
+  4. SEALED means SEALED. A sealed (ancestral) cube refuses writes forever, and its
+     seal fingerprint makes any rewritten history detectable.
+
+Run `python vcw_cube.py selftest` to watch every rule proven, or use the CLI below to
+create, append, read, mark, verify, seal, inspect, and extract layers as PNGs.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import struct
 import time
-import zlib
 import zipfile
+import zlib
 from typing import Any, Dict, List, Optional, Tuple
 
 # ----------------------------------------------------------------------------
-# Format constants
+# Format constants (normative)
 # ----------------------------------------------------------------------------
-VCW_FORMAT   = "vcw-cube-png-v2"
-LAYER_COUNT  = 800
-SIDE         = 800
-CHANNELS     = 4                       # RGBA
-LAYER_BYTES  = SIDE * SIDE * CHANNELS  # 2,560,000 bytes per layer
-MAGIC        = b"VCWPNG2\n"            # 8 bytes, opens every layer's payload stream
+VCW_FORMAT  = "vcw-cube-png-v2"
+LAYER_COUNT = 800
+SIDE        = 800
+CHANNELS    = 4                          # RGBA
+LAYER_BYTES = SIDE * SIDE * CHANNELS     # 2,560,000 bytes per layer
+MAGIC       = b"VCWPNG2\n"               # 8 bytes; opens every non-spatial layer stream
 
-# ----------------------------------------------------------------------------
-# Reserved band map.  (name -> (first_layer, last_layer inclusive, archetype, private))
-# Layers 0-3 are the Cube Boot Sector. Layers 4-7 are the Genome (body entries).
-# ----------------------------------------------------------------------------
-BOOT_LAYERS   = (0, 3)
-GENOME_LAYERS = (4, 7)   # bodyentry .000 .001 .002 .003 -> layers 4,5,6,7
+# Capacity doctrine (enforced by the engine; stated here because it is format doctrine):
+# allocation pressure >= 0.75 of a band's span triggers METABOLISM (compaction/dedupe);
+# >= 0.90 triggers aggressive metabolism. Capacity NEVER triggers rebirth.
+OVERFLOW_THRESHOLD  = 0.75
+EMERGENCY_THRESHOLD = 0.90
 
-RESERVED_BANDS: Dict[str, Dict[str, Any]] = {
-    #  name          first  last  archetype     private
-    "prime":       {"range": (8, 99),    "archetype": "reference", "private": False},
-    "identity":    {"range": (100, 149), "archetype": "summary",   "private": False},
-    "facts":       {"range": (150, 199), "archetype": "table",     "private": False},
-    "events":      {"range": (200, 249), "archetype": "log",       "private": False},
-    "discoveries": {"range": (250, 299), "archetype": "summary",   "private": False},
-    "senses":      {"range": (300, 399), "archetype": "log",       "private": False},
-    "immune":      {"range": (400, 449), "archetype": "audit",     "private": False},
-    "brain":       {"range": (450, 499), "archetype": "dispatch",  "private": False},
-    "thoughts":    {"range": (500, 549), "archetype": "log",       "private": True},
-}
-APP_BAND_RANGE  = (550, 749)   # caller-defined application bands
-TAIL_RANGE      = (750, 799)   # reserved scratch / future use
-
-# Body entry names, in mandatory load order.  Each maps to one Genome layer.
-BODY_ENTRIES = ["bodyentry.000", "bodyentry.001", "bodyentry.002", "bodyentry.003"]
-BODY_ENTRY_TITLES = {
-    "bodyentry.000": "Primer",            # immutable post-genesis
-    "bodyentry.001": "Immunization",
-    "bodyentry.002": "Special Instructions",
-    "bodyentry.003": "Inheritance",       # rebirth-write-only
-}
-
-PRIVATE_FLAG = 0x01  # set in a layer boot sector's "private" field; veiled on read
+# Fields the Body may set/flip after an entry is born; everything else is in the hash.
+VOLATILE_FIELDS = ("id", "tombstone", "quarantined", "hash")
 
 
 # ============================================================================
-# PNG codec  (hand-rolled, pure stdlib).  We WRITE filter type 0 (None) scanlines
-# and zlib-compress them; we can READ all five PNG filter types for robustness.
+# 1. THE ENTRY -- making and hashing immutable records
+# ============================================================================
+def entry_hash(entry: Dict[str, Any]) -> str:
+    """sha256 (first 16 hex chars) over every NON-VOLATILE field, serialized compact
+    and key-sorted. Deterministic across processes, platforms, and save/reload."""
+    h = {k: v for k, v in entry.items() if k not in VOLATILE_FIELDS}
+    blob = json.dumps(h, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()[:16]
+
+
+def make_entry(content: Any, opcode: str = "WRITE", author: str = "BODY",
+               source: str = "", **extra) -> Dict[str, Any]:
+    """One immutable record. Extra fields (authorship, verified, ...) go INSIDE the hash."""
+    e = {"id": None, "ts": time.time(), "opcode": opcode, "author": author,
+         "source": source, "content": content, "tombstone": False, "quarantined": False}
+    e.update(extra)
+    e["hash"] = entry_hash(e)
+    return e
+
+
+def visible(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The base visibility filter: tombstoned/quarantined entries never surface."""
+    return [e for e in entries if not e.get("tombstone") and not e.get("quarantined")]
+
+
+# ============================================================================
+# 2. THE PNG CODEC -- every layer is a real image (pure stdlib, hand-rolled)
 # ============================================================================
 def _png_chunk(tag: bytes, data: bytes) -> bytes:
     return (struct.pack(">I", len(data)) + tag + data
@@ -116,26 +179,23 @@ def _png_chunk(tag: bytes, data: bytes) -> bytes:
 
 
 def encode_png_rgba(raw: bytes, width: int = SIDE, height: int = SIDE) -> bytes:
-    """Encode a flat RGBA byte buffer (len == width*height*4) into PNG bytes."""
+    """Flat RGBA bytes (len == width*height*4) -> PNG bytes. We write filter type 0
+    scanlines at zlib level 1 (the payload is JSON + zero pad; level 1 compresses it
+    nearly as well as level 6 for a fraction of the CPU, and the level is invisible to
+    any decoder)."""
     if len(raw) != width * height * CHANNELS:
         raise ValueError("encode_png_rgba: raw length %d != %d"
                          % (len(raw), width * height * CHANNELS))
     stride = width * CHANNELS
-    # Prepend filter-type byte 0 (None) to each scanline. Pre-size the buffer and copy each row
-    # into place (the filter bytes stay 0 from the zero-init), instead of 800 append/concat ops.
-    out = bytearray(height * (stride + 1))
+    out = bytearray(height * (stride + 1))      # filter bytes stay 0 from zero-init
     for y in range(height):
         dst = y * (stride + 1) + 1
         out[dst:dst + stride] = raw[y * stride:(y + 1) * stride]
     sig  = b"\x89PNG\r\n\x1a\n"
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)  # 8-bit, color type 6 = RGBA
-    # Level 1: the layer payload is JSON + a large zero pad (or a sparse RGBA canvas) -- both
-    # compress almost as small at level 1 as at level 6, for a fraction of the CPU. Compression
-    # level is invisible to the decoder (zlib.decompress is level-agnostic), so this re-encodes
-    # changed layers far faster while every byte still round-trips.
-    idat = zlib.compress(bytes(out), 1)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)   # 8-bit RGBA
     return (sig + _png_chunk(b"IHDR", ihdr)
-            + _png_chunk(b"IDAT", idat) + _png_chunk(b"IEND", b""))
+            + _png_chunk(b"IDAT", zlib.compress(bytes(out), 1))
+            + _png_chunk(b"IEND", b""))
 
 
 def _paeth(a: int, b: int, c: int) -> int:
@@ -149,7 +209,8 @@ def _paeth(a: int, b: int, c: int) -> int:
 
 
 def decode_png_rgba(png: bytes) -> bytes:
-    """Decode PNG bytes into a flat RGBA byte buffer. Handles filter types 0-4."""
+    """PNG bytes -> flat RGBA bytes. Reads ALL five PNG filter types for robustness
+    (any conforming PNG encoder may have written the file)."""
     if png[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError("decode_png_rgba: not a PNG")
     pos = 8
@@ -178,17 +239,17 @@ def decode_png_rgba(png: bytes) -> bytes:
         line = bytearray(raw[src:src + stride]); src += stride
         if ftype == 0:
             pass
-        elif ftype == 1:  # Sub
+        elif ftype == 1:                                   # Sub
             for i in range(CHANNELS, stride):
                 line[i] = (line[i] + line[i - CHANNELS]) & 0xFF
-        elif ftype == 2:  # Up
+        elif ftype == 2:                                   # Up
             for i in range(stride):
                 line[i] = (line[i] + prev[i]) & 0xFF
-        elif ftype == 3:  # Average
+        elif ftype == 3:                                   # Average
             for i in range(stride):
                 a = line[i - CHANNELS] if i >= CHANNELS else 0
                 line[i] = (line[i] + ((a + prev[i]) >> 1)) & 0xFF
-        elif ftype == 4:  # Paeth
+        elif ftype == 4:                                   # Paeth
             for i in range(stride):
                 a = line[i - CHANNELS] if i >= CHANNELS else 0
                 c = prev[i - CHANNELS] if i >= CHANNELS else 0
@@ -201,10 +262,9 @@ def decode_png_rgba(png: bytes) -> bytes:
 
 
 # ============================================================================
-# Layer payload (boot sector + payload JSON) <-> RGBA byte stream
+# 3. THE LAYER STREAM -- (layer boot, payload) <-> RGBA bytes
 # ============================================================================
 def build_layer_rgba(boot: Dict[str, Any], payload: Dict[str, Any]) -> bytes:
-    """Serialize a Layer Boot Sector + payload into a full LAYER_BYTES RGBA stream."""
     boot_b = json.dumps(boot, separators=(",", ":"), sort_keys=True).encode("utf-8")
     pay_b  = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     body = (MAGIC + struct.pack(">I", len(boot_b)) + boot_b
@@ -215,9 +275,8 @@ def build_layer_rgba(boot: Dict[str, Any], payload: Dict[str, Any]) -> bytes:
 
 
 def parse_layer_rgba(raw: bytes) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
-    """Parse a LAYER_BYTES RGBA stream back into (boot, payload). Empty layer -> (None, None)."""
     if raw[:8] != MAGIC:
-        return None, None
+        return None, None                                  # a spatial canvas or empty layer
     pos = 8
     (blen,) = struct.unpack(">I", raw[pos:pos + 4]); pos += 4
     boot = json.loads(raw[pos:pos + blen].decode("utf-8")); pos += blen
@@ -227,245 +286,278 @@ def parse_layer_rgba(raw: bytes) -> Tuple[Optional[Dict[str, Any]], Optional[Dic
 
 
 # ============================================================================
-# Boot sectors
+# 4. BOOT SECTORS + THE STANDARD GENOME
 # ============================================================================
-def make_layer_boot(band: str, layer_index: int, archetype: str,
-                    private: bool = False) -> Dict[str, Any]:
-    return {
-        "band": band,
-        "layer": layer_index,
-        "archetype": archetype,
-        "private": PRIVATE_FLAG if private else 0,
-        "v": 2,
-    }
+def make_band_boot(band: str, head: int, encoding: str = "log-json",
+                   params: Optional[Dict[str, Any]] = None, private: bool = False,
+                   span: int = 1, purpose: str = "") -> Dict[str, Any]:
+    """A band's boot sector. The band reserves [head, head+span-1]; physical layers
+    materialize on demand as it fills; every band declares a purpose."""
+    return {"band": band, "head": head, "span": max(1, int(span)),
+            "purpose": purpose or band, "encoding": encoding, "params": params or {},
+            "private": bool(private), "v": 3}
 
 
-def make_cube_boot(generation: int, band_map: Dict[str, Any]) -> Dict[str, Any]:
-    return {
-        "format": VCW_FORMAT,
-        "side": SIDE,
-        "layers": LAYER_COUNT,
-        "channels": CHANNELS,
-        "generation": generation,
-        "boot_layers": list(BOOT_LAYERS),
-        "genome_layers": list(GENOME_LAYERS),
-        "bands": band_map,
-        "app_band_range": list(APP_BAND_RANGE),
-        "tail_range": list(TAIL_RANGE),
-    }
-
-
-# ============================================================================
-# Entries
-# ============================================================================
-def make_entry(opcode: str, content: Any, author: str = "BODY",
-               source: str = "") -> Dict[str, Any]:
-    """Create one immutable band/body entry record."""
-    ts = time.time()
-    body = {
-        "id": None,                  # assigned on append
-        "ts": ts,
-        "opcode": opcode,            # e.g. WRITE, NOTE, SENSE, DISPATCH, AUDIT
-        "author": author,            # BODY | MIND | <organ name>
-        "source": source,            # provenance string / reference
-        "content": content,
-        "tombstone": False,
-        "quarantined": False,
-    }
-    body["hash"] = _entry_hash(body)
-    return body
-
-
-# The entry hash lives in one place now (entry.py). For an entry with no extra fields the
-# non-volatile set is {ts, opcode, author, source, content}, so this reproduces the legacy
-# codec hash exactly -- the base codec keeps verifying unchanged.
-from entry import entry_hash as _entry_hash  # noqa: E402
-
-
-def visible_entries(payload: Dict[str, Any], reveal_private: bool = False,
-                    is_private_layer: bool = False) -> List[Dict[str, Any]]:
-    """Apply the VEIL: hide tombstoned + quarantined entries always; hide all
-    entries of a private layer unless reveal_private is set (the MIND veil)."""
-    if is_private_layer and not reveal_private:
-        return []
-    return [e for e in payload.get("entries", [])
-            if not e.get("tombstone") and not e.get("quarantined")]
+def standard_genome() -> List[Dict[str, Any]]:
+    """The eight reserved experiential bands. (No Primer here -- identity is the Body's.)"""
+    return [
+        make_band_boot("identity",    100, "log-json", span=50,  purpose="experiential self-state"),
+        make_band_boot("facts",       150, "log-json", span=50,  purpose="durable truths"),
+        make_band_boot("events",      200, "log-json", span=50,  purpose="event history"),
+        make_band_boot("discoveries", 250, "log-json", span=50,  purpose="learned knowledge"),
+        make_band_boot("senses",      300, "log-json", span=100, purpose="sensor intake"),
+        make_band_boot("immune",      400, "log-json", span=50,  purpose="audit/defense"),
+        make_band_boot("brain",       450, "log-json", span=50,  purpose="dispatch log"),
+        make_band_boot("thoughts",    500, "log-json", span=50,  purpose="private reflection",
+                       private=True),
+    ]
 
 
 # ============================================================================
-# Cube  --  the in-memory representation + container I/O
+# 5. THE CUBE -- genesis, append, read, mark, verify, seal, save, load
 # ============================================================================
 class Cube:
-    """An in-memory VCW cube. Layers are lazily materialized; only touched layers
-    carry a real payload. Persists as a ZIP container via save()/load()."""
+    """A minimal but COMPLETE, format-faithful VCW cube. (The production engine in
+    mantle/vcw/cube.py adds lazy loading, PNG caching, indexes, and metabolism; the
+    bytes it writes and reads are identical to these.)"""
 
-    def __init__(self, generation: int = 0):
+    def __init__(self, generation: int = 0) -> None:
         self.generation = generation
-        # layer_index -> (boot dict, payload dict)
-        self.layers: Dict[int, Tuple[Dict[str, Any], Dict[str, Any]]] = {}
-        self._next_id = 1
+        self.identity_in_body = True            # always; the cube never holds the Primer
+        self.sealed = False
+        self.seal_fingerprint: Optional[str] = None
+        self.bands: Dict[str, Dict[str, Any]] = {}
+        self.band_layers: Dict[str, List[int]] = {}
+        self.band_free: Dict[str, List[int]] = {}
+        self.layers: Dict[int, Any] = {}        # idx -> entries list | dict | bytearray
+        self.next_entry_id: Dict[str, int] = {}
 
-    # ---- genesis ----------------------------------------------------------
+    # ---- genesis -----------------------------------------------------------
     @classmethod
-    def genesis(cls, primer_content: Any = None,
-                immunization: Any = None) -> "Cube":
-        """Create a fresh cube: boot sector, genome (body entries), reserved bands."""
-        cube = cls(generation=0)
-        # Genome / body entries .000..003
-        for i, name in enumerate(BODY_ENTRIES):
-            layer = GENOME_LAYERS[0] + i
-            boot = make_layer_boot(name, layer, "genome", private=False)
-            content = {"bodyentry.000": primer_content,
-                       "bodyentry.001": immunization,
-                       "bodyentry.002": None,
-                       "bodyentry.003": None}.get(name)
-            entries = []
-            if content is not None:
-                e = make_entry("GENOME", content, author="BODY", source=name)
-                e["id"] = i
-                entries.append(e)
-            cube.layers[layer] = (boot, {"name": name, "title": BODY_ENTRY_TITLES[name],
-                                         "entries": entries})
-        # Reserved bands -- materialize each band's HEAD layer with a boot sector.
-        for name, spec in RESERVED_BANDS.items():
-            head = spec["range"][0]
-            boot = make_layer_boot(name, head, spec["archetype"], spec["private"])
-            cube.layers[head] = (boot, {"band": name, "archetype": spec["archetype"],
-                                        "entries": []})
-        return cube
+    def genesis(cls, genome: Optional[List[Dict[str, Any]]] = None,
+                generation: int = 0) -> "Cube":
+        """Create a newborn cube: each band gets its boot sector and ONE materialized
+        head layer ('every layer has a purpose; allocate only what is needed')."""
+        c = cls(generation=generation)
+        for boot in (genome or standard_genome()):
+            name = boot["band"]
+            c.bands[name] = boot
+            c.band_layers[name] = [boot["head"]]
+            c.band_free[name] = []
+            c.layers[boot["head"]] = (bytearray(LAYER_BYTES)
+                                      if boot["encoding"] == "calendar-spatial"
+                                      else {} if boot["encoding"] in ("keyvalue", "exec")
+                                      else [])
+            c.next_entry_id[name] = 0
+        return c
 
-    # ---- band addressing --------------------------------------------------
-    @staticmethod
-    def band_head(band: str) -> int:
-        if band in RESERVED_BANDS:
-            return RESERVED_BANDS[band]["range"][0]
-        raise KeyError("unknown reserved band: %s" % band)
+    # ---- helpers -------------------------------------------------------------
+    def _boot(self, band: str) -> Dict[str, Any]:
+        if band not in self.bands:
+            raise KeyError("no band %r in generation %d" % (band, self.generation))
+        return self.bands[band]
 
-    @staticmethod
-    def is_private(band: str) -> bool:
-        return RESERVED_BANDS.get(band, {}).get("private", False)
+    def pressure(self, band: str) -> float:
+        """Allocated fraction of the band's reserved span (the capacity doctrine's input)."""
+        return len(self.band_layers[band]) / float(self._boot(band)["span"])
 
-    # ---- append / read ----------------------------------------------------
-    def append(self, band: str, entry: Dict[str, Any]) -> Dict[str, Any]:
-        head = self.band_head(band)
-        boot, payload = self.layers[head]
-        entry = dict(entry)
-        entry["id"] = self._next_id
-        self._next_id += 1
-        payload.setdefault("entries", []).append(entry)
-        return entry
+    def _allocate(self, band: str) -> int:
+        """One more physical layer for a band: reuse a freed slot first, else the next
+        unused index in range. (The engine adds the 0.75/0.90 metabolism response here.)"""
+        boot = self._boot(band)
+        if self.band_free[band]:
+            idx = self.band_free[band].pop(0)
+        else:
+            head, span = boot["head"], boot["span"]
+            used = set(self.band_layers[band]) | set(self.band_free[band])
+            slots = [i for i in range(head, head + span) if i not in used]
+            if not slots:
+                raise OverflowError("band %r exhausted its %d reserved layers "
+                                    "(metabolize, or CHOOSE a rebirth-reformat -- "
+                                    "capacity never forces one)" % (band, span))
+            idx = slots[0]
+        self.layers[idx] = []
+        self.band_layers[band].append(idx)
+        return idx
 
-    def append_body_entry(self, name: str, content: Any,
-                          author: str = "BODY") -> Dict[str, Any]:
-        if name not in BODY_ENTRIES:
-            raise KeyError("not a body entry: %s" % name)
-        if name == "bodyentry.000":
-            # Primer is immutable post-genesis.
-            _, payload = self.layers[GENOME_LAYERS[0]]
-            if payload.get("entries"):
-                raise PermissionError("bodyentry.000 (Primer) is immutable post-genesis")
-        layer = GENOME_LAYERS[0] + BODY_ENTRIES.index(name)
-        boot, payload = self.layers[layer]
-        e = make_entry("GENOME", content, author=author, source=name)
-        e["id"] = self._next_id; self._next_id += 1
-        payload.setdefault("entries", []).append(e)
+    # ---- RULE 1: APPEND, never overwrite ---------------------------------------
+    def append(self, band: str, content: Any, opcode: str = "WRITE",
+               author: str = "BODY", source: str = "", **extra) -> Dict[str, Any]:
+        """Append one immutable entry. Returns the stored entry (with its band-unique id).
+        Raises PermissionError on a sealed cube -- RULE 4."""
+        if self.sealed:
+            raise PermissionError("generation %d is ANCESTRAL (read-only); "
+                                  "experiential writes go to the PRIME only"
+                                  % self.generation)
+        boot = self._boot(band)
+        if boot["encoding"] != "log-json":
+            raise ValueError("append() is for log-json bands; %r is %s"
+                             % (band, boot["encoding"]))
+        e = (content if isinstance(content, dict) and "hash" in content
+             else make_entry(content, opcode=opcode, author=author, source=source, **extra))
+        e = dict(e)
+        e["id"] = self.next_entry_id[band]               # band-unique, monotonic, never reused
+        self.next_entry_id[band] = e["id"] + 1
+        tail = self.band_layers[band][-1]
+        cap = boot["params"].get("max_entries_per_layer")
+        if cap and len(self.layers[tail]) >= cap:        # the tail is full: grow on demand
+            tail = self._allocate(band)
+        self.layers[tail].append(e)
         return e
 
+    # ---- RULE 2: READ through the veil ------------------------------------------
     def read(self, band: str, reveal_private: bool = False) -> List[Dict[str, Any]]:
-        head = self.band_head(band)
-        if head not in self.layers:
-            return []
-        _, payload = self.layers[head]
-        return visible_entries(payload, reveal_private=reveal_private,
-                               is_private_layer=self.is_private(band))
+        """The band's concatenated VISIBLE stream. A private band is veiled to [] unless
+        deliberately revealed; tombstoned/quarantined entries never surface."""
+        boot = self._boot(band)
+        if boot["private"] and not reveal_private:
+            return []                                     # the veil
+        out: List[Dict[str, Any]] = []
+        for idx in self.band_layers[band]:
+            out.extend(visible(self.layers[idx]))
+        return out
 
-    def read_body_entry(self, name: str) -> List[Dict[str, Any]]:
-        layer = GENOME_LAYERS[0] + BODY_ENTRIES.index(name)
-        _, payload = self.layers[layer]
-        return visible_entries(payload)
+    def retrieve(self, band: str, address: int) -> Optional[Dict[str, Any]]:
+        """One entry by LOGICAL address: its index into the visible stream. Stable under
+        physical layer reuse. None (a dangling reference -- the caller's Immune System
+        must log it) when out of range."""
+        vis = self.read(band)
+        return vis[address] if 0 <= address < len(vis) else None
 
-    # ---- mark (tombstone / quarantine) ------------------------------------
-    def _find(self, band: str, entry_id: int):
-        head = self.band_head(band)
-        _, payload = self.layers[head]
-        for e in payload.get("entries", []):
-            if e.get("id") == entry_id:
-                return e
+    # ---- immune marks (flag flips; never edits) ------------------------------------
+    def _find_by_id(self, band: str, entry_id: int) -> Optional[Dict[str, Any]]:
+        for idx in self.band_layers[band]:
+            for e in self.layers[idx]:
+                if e.get("id") == entry_id:
+                    return e
         return None
 
     def tombstone(self, band: str, entry_id: int) -> bool:
-        e = self._find(band, entry_id)
+        """Retire an entry by its band-unique id. The record remains; reads hide it."""
+        if self.sealed:
+            raise PermissionError("generation %d is ANCESTRAL (read-only)" % self.generation)
+        e = self._find_by_id(band, entry_id)
         if e is None:
             return False
         e["tombstone"] = True
         return True
 
     def quarantine(self, band: str, entry_id: int) -> bool:
-        e = self._find(band, entry_id)
+        """Isolate a suspect entry by id. Same mechanics, different meaning."""
+        if self.sealed:
+            raise PermissionError("generation %d is ANCESTRAL (read-only)" % self.generation)
+        e = self._find_by_id(band, entry_id)
         if e is None:
             return False
         e["quarantined"] = True
         return True
 
-    # ---- verify -----------------------------------------------------------
+    def compact(self, band: str) -> Dict[str, Any]:
+        """Metabolism: drop dead entries; an emptied non-tail layer returns to the band's
+        free pool for reuse. Visible history is preserved exactly."""
+        reclaimed = 0
+        keep: List[int] = []
+        for idx in list(self.band_layers[band]):
+            live = visible(self.layers[idx])
+            dropped = len(self.layers[idx]) - len(live)
+            self.layers[idx] = live
+            if not live and (len(self.band_layers[band]) - reclaimed) > 1:
+                del self.layers[idx]
+                self.band_free[band].append(idx)
+                reclaimed += 1
+            else:
+                keep.append(idx)
+        self.band_layers[band] = keep or [self.band_layers[band][0]]
+        return {"band": band, "reclaimed": reclaimed,
+                "active": len(self.band_layers[band]), "free": len(self.band_free[band])}
+
+    # ---- RULE 3: VERIFY before trusting ----------------------------------------------
     def verify(self) -> List[str]:
-        """Return a list of integrity problems. Empty list == healthy cube."""
+        """Recompute EVERY entry hash + structural coherence + the seal fingerprint.
+        An empty list is a healthy cube; anything else is an immune finding."""
         problems: List[str] = []
-        # Genome present and ordered.
-        for i, name in enumerate(BODY_ENTRIES):
-            layer = GENOME_LAYERS[0] + i
-            if layer not in self.layers:
-                problems.append("missing genome layer for %s" % name)
-        # Primer must exist.
-        g0 = self.layers.get(GENOME_LAYERS[0])
-        if not g0 or not g0[1].get("entries"):
-            problems.append("bodyentry.000 (Primer) is empty -- not yet born")
-        # Reserved band heads present with correct boot sector.
-        for name, spec in RESERVED_BANDS.items():
-            head = spec["range"][0]
-            if head not in self.layers:
-                problems.append("missing band head for %s" % name)
-                continue
-            boot, _ = self.layers[head]
-            if boot.get("band") != name:
-                problems.append("band head %d mislabeled: %r != %r"
-                                % (head, boot.get("band"), name))
-        # Entry hashes intact.
-        for idx, (boot, payload) in self.layers.items():
-            for e in payload.get("entries", []):
-                if "hash" in e and e["hash"] != _entry_hash(e):
-                    problems.append("entry hash mismatch in layer %d id=%s"
-                                    % (idx, e.get("id")))
+        for band, boot in self.bands.items():
+            if not self.band_layers.get(band):
+                problems.append("band %s has no active layer" % band)
+            if set(self.band_layers.get(band, [])) & set(self.band_free.get(band, [])):
+                problems.append("band %s has a layer both active and free" % band)
+            if boot["encoding"] == "log-json":
+                seen_ids = set()
+                for idx in self.band_layers.get(band, []):
+                    for e in self.layers.get(idx, []):
+                        if isinstance(e, dict) and "hash" in e and entry_hash(e) != e["hash"]:
+                            problems.append("entry hash mismatch in band %s layer %d id=%s"
+                                            % (band, idx, e.get("id")))
+                        eid = e.get("id")
+                        if eid is not None:
+                            if eid in seen_ids:
+                                problems.append("band %s duplicate entry id %s" % (band, eid))
+                            seen_ids.add(eid)
+        if self.sealed and self.seal_fingerprint:
+            if self.fingerprint() != self.seal_fingerprint:
+                problems.append("seal fingerprint mismatch: ancestor content was altered")
         return problems
 
-    # ---- container I/O ----------------------------------------------------
-    def _band_map(self) -> Dict[str, Any]:
-        return {name: {"range": list(spec["range"]),
-                       "archetype": spec["archetype"],
-                       "private": spec["private"]}
-                for name, spec in RESERVED_BANDS.items()}
+    # ---- RULE 4: SEALED means SEALED ---------------------------------------------------
+    def fingerprint(self) -> str:
+        """A deterministic content fingerprint over band metadata + EVERY field of every
+        entry (so a tamper that leaves a stale hash behind still breaks the seal).
+        Byte-identical to mantle/vcw/cube.py::Cube.fingerprint."""
+        h = hashlib.sha256()
+        h.update(json.dumps({"generation": self.generation, "bands": self.bands,
+                             "band_layers": self.band_layers},
+                            sort_keys=True, separators=(",", ":"), default=str).encode())
+        for band in sorted(self.bands):
+            boot = self.bands[band]
+            for idx in self.band_layers[band]:
+                content = self.layers[idx]
+                if boot["encoding"] == "log-json":
+                    h.update(json.dumps(content, sort_keys=True, separators=(",", ":"),
+                                        default=str).encode())
+                elif boot["encoding"] == "calendar-spatial":
+                    h.update(hashlib.sha256(bytes(content)).digest())
+                else:
+                    h.update(json.dumps(content, sort_keys=True, separators=(",", ":"),
+                                        default=str).encode())
+        return "sha256:" + h.hexdigest()
+
+    def seal(self) -> str:
+        """Freeze this generation as ancestral memory. Returns the fingerprint (the
+        Organism records it in the Body's lineage index)."""
+        self.sealed = True
+        self.seal_fingerprint = self.fingerprint()
+        return self.seal_fingerprint
+
+    # ---- persistence: staged commit -> verify -> atomic replace --------------------------
+    def _meta(self) -> Dict[str, Any]:
+        return {"format": VCW_FORMAT, "generation": self.generation,
+                "identity_in_body": self.identity_in_body, "sealed": self.sealed,
+                "seal_fingerprint": self.seal_fingerprint, "bands": self.bands,
+                "band_layers": self.band_layers, "band_free": self.band_free,
+                "next_entry_id": self.next_entry_id}
+
+    def _encode_layer(self, band: str, idx: int) -> bytes:
+        boot = self.bands[band]
+        content = self.layers[idx]
+        if boot["encoding"] == "calendar-spatial":
+            return encode_png_rgba(bytes(content))         # the canvas itself IS the image
+        lboot = {"band": band, "layer": idx, "encoding": boot["encoding"],
+                 "private": bool(boot.get("private")), "v": 2}
+        return encode_png_rgba(build_layer_rgba(lboot, {"content": content}))
 
     def save(self, path: str) -> None:
-        """Staged commit: write to <path>.stage, verify, then atomically replace."""
+        """RULE 3 made durable: write <path>.stage, re-load and verify the staged file,
+        and only on a clean verify atomically replace <path>. A corrupt or half-written
+        cube can never replace a healthy one."""
         stage = path + ".stage"
-        cube_boot = make_cube_boot(self.generation, self._band_map())
-        manifest = {
-            "format": VCW_FORMAT, "side": SIDE, "layers": LAYER_COUNT,
-            "channels": CHANNELS, "generation": self.generation,
-            "materialized_layers": sorted(self.layers.keys()),
-            "next_id": self._next_id,
-        }
         with zipfile.ZipFile(stage, "w", zipfile.ZIP_DEFLATED) as z:
-            z.writestr("manifest.json", json.dumps(manifest, indent=2))
-            z.writestr("cube_boot.json", json.dumps(cube_boot, indent=2))
-            for idx in sorted(self.layers.keys()):
-                boot, payload = self.layers[idx]
-                raw = build_layer_rgba(boot, payload)
-                png = encode_png_rgba(raw)
-                z.writestr("layers/%03d.png" % idx, png)
-        # Verify the staged file reads back cleanly before committing.
-        check = Cube.load(stage)
-        problems = check.verify()
+            z.writestr("cube.json", json.dumps(self._meta(), indent=2))
+            for band in self.bands:
+                for idx in self.band_layers[band]:
+                    # PNG bytes are already zlib-compressed: store them verbatim
+                    z.writestr("layers/%03d.png" % idx, self._encode_layer(band, idx),
+                               compress_type=zipfile.ZIP_STORED)
+        problems = Cube.load(stage).verify()
         if problems:
             os.remove(stage)
             raise RuntimeError("staged cube failed verify: %s" % problems)
@@ -474,80 +566,204 @@ class Cube:
     @classmethod
     def load(cls, path: str) -> "Cube":
         with zipfile.ZipFile(path, "r") as z:
-            manifest = json.loads(z.read("manifest.json"))
-            cube = cls(generation=manifest.get("generation", 0))
-            cube._next_id = manifest.get("next_id", 1)
-            for nm in z.namelist():
-                if nm.startswith("layers/") and nm.endswith(".png"):
-                    idx = int(nm[len("layers/"):-len(".png")])
-                    raw = decode_png_rgba(z.read(nm))
-                    boot, payload = parse_layer_rgba(raw)
-                    if boot is not None:
-                        cube.layers[idx] = (boot, payload)
-        return cube
+            meta = json.loads(z.read("cube.json"))
+            c = cls(generation=meta.get("generation", 0))
+            c.identity_in_body = meta.get("identity_in_body", True)
+            c.sealed = meta.get("sealed", False)
+            c.seal_fingerprint = meta.get("seal_fingerprint")
+            c.bands = meta["bands"]
+            c.band_layers = {k: list(v) for k, v in meta["band_layers"].items()}
+            c.band_free = {k: list(v) for k, v in meta.get("band_free", {}).items()}
+            c.next_entry_id = {k: int(v) for k, v in meta.get("next_entry_id", {}).items()}
+            for band, boot in c.bands.items():
+                c.band_free.setdefault(band, [])
+                c.next_entry_id.setdefault(band, 0)
+                for idx in c.band_layers[band]:
+                    raw = decode_png_rgba(z.read("layers/%03d.png" % idx))
+                    if boot["encoding"] == "calendar-spatial":
+                        c.layers[idx] = bytearray(raw)
+                    else:
+                        _, payload = parse_layer_rgba(raw)
+                        c.layers[idx] = payload["content"]
+        return c
+
+    # ---- inspection ------------------------------------------------------------------
+    def inspect(self) -> str:
+        lines = ["format=%s generation=%d sealed=%s layers=%d"
+                 % (VCW_FORMAT, self.generation, self.sealed, len(self.layers))]
+        for name, boot in self.bands.items():
+            n = len(self.read(name, reveal_private=True))
+            lines.append("  band %-12s head=%-3d span=%-3d enc=%-16s entries=%-4d "
+                         "pressure=%.2f%s  -- %s"
+                         % (name, boot["head"], boot["span"], boot["encoding"], n,
+                            self.pressure(name),
+                            "  [PRIVATE]" if boot["private"] else "", boot["purpose"]))
+        return "\n".join(lines)
 
 
 # ============================================================================
-# CLI
+# 6. SELFTEST -- every rule of the format, proven in one run
+# ============================================================================
+def selftest() -> int:
+    import tempfile
+    ok = True
+
+    def check(name, cond, detail=""):
+        nonlocal ok
+        ok = ok and bool(cond)
+        print("  [%s] %-46s %s" % ("PASS" if cond else "FAIL", name, detail))
+
+    print("VCW cube selftest (standalone, pure stdlib)")
+    c = Cube.genesis()
+    check("genesis: 8 bands, head layers only",
+          len(c.bands) == 8 and len(c.layers) == 8)
+
+    # RULE 1: append
+    e0 = c.append("facts", {"k": "sky", "v": "blue"}, source="selftest")
+    e1 = c.append("facts", {"k": "grass", "v": "green"})
+    c.append("thoughts", "a private musing", opcode="THINK", author="MIND")
+    check("append: band-unique monotonic ids", (e0["id"], e1["id"]) == (0, 1))
+    check("append: entries hashed", entry_hash(e0) == e0["hash"])
+
+    # RULE 2: the veil + marks
+    check("read: visible stream", len(c.read("facts")) == 2)
+    check("veil: private band reads []", c.read("thoughts") == [])
+    check("veil: deliberate reveal works",
+          len(c.read("thoughts", reveal_private=True)) == 1)
+    c.tombstone("facts", e0["id"])
+    check("tombstone: hidden from read + retrieve",
+          len(c.read("facts")) == 1 and c.retrieve("facts", 0)["id"] == e1["id"])
+    check("tombstone: record preserved (append-only)",
+          any(x["id"] == e0["id"] for x in c.layers[c.band_layers["facts"][0]]))
+
+    # RULE 3: verify + staged save
+    check("verify: healthy cube", c.verify() == [])
+    d = tempfile.mkdtemp(prefix="vcw-selftest-")
+    p = os.path.join(d, "gen000.vcw")
+    c.save(p)
+    back = Cube.load(p)
+    check("round-trip: reads identical", back.read("facts") == c.read("facts"))
+    check("round-trip: every layer a real PNG",
+          zipfile.ZipFile(p).read("layers/150.png")[:8] == b"\x89PNG\r\n\x1a\n")
+    back.layers[back.band_layers["facts"][0]][0]["content"] = {"k": "TAMPERED"}
+    problems = back.verify()
+    check("verify: catches a tampered entry",
+          any("hash mismatch" in pr for pr in problems), problems[:1])
+    try:
+        back.save(p)
+        check("staged save: refuses a corrupt cube", False)
+    except RuntimeError:
+        check("staged save: refuses a corrupt cube",
+              Cube.load(p).verify() == [], "on-disk file still healthy")
+
+    # RULE 4: seal
+    c2 = Cube.load(p)
+    fp = c2.seal()
+    check("seal: fingerprint recorded", fp.startswith("sha256:"))
+    try:
+        c2.append("facts", {"k": "x"})
+        check("seal: writes refused", False)
+    except PermissionError:
+        check("seal: writes refused", True)
+    c2.layers[c2.band_layers["facts"][0]][0]["content"] = {"k": "REWRITTEN"}
+    check("seal: tampered history detected",
+          any("fingerprint" in pr for pr in c2.verify()))
+
+    # metabolism
+    c3 = Cube.genesis([make_band_boot("log", 600, span=4,
+                                      params={"max_entries_per_layer": 2},
+                                      purpose="rolling")])
+    for i in range(4):
+        c3.append("log", {"i": i})
+    first = c3.band_layers["log"][0]
+    for e in c3.layers[first]:
+        e["tombstone"] = True
+    rep = c3.compact("log")
+    check("metabolism: emptied layer reclaimed", rep["reclaimed"] == 1
+          and first in c3.band_free["log"])
+    c3.append("log", {"j": 0}); c3.append("log", {"j": 1}); c3.append("log", {"j": 2})
+    check("metabolism: freed layer REUSED", first in c3.band_layers["log"])
+
+    print("\nselftest:", "ALL GREEN" if ok else "FAILURES ABOVE")
+    return 0 if ok else 1
+
+
+# ============================================================================
+# 7. CLI -- create / append / read / retrieve / tombstone / quarantine /
+#           verify / seal / inspect / extract / selftest
 # ============================================================================
 def _cli(argv: List[str]) -> int:
     import argparse
-    p = argparse.ArgumentParser(prog="vcw_cube", description="VCW cube codec (vcw-cube-png-v2)")
+    p = argparse.ArgumentParser(prog="vcw_cube",
+                                description="the standalone VCW cube (vcw-cube-png-v2)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    c = sub.add_parser("create", help="genesis a new cube")
-    c.add_argument("path")
-    c.add_argument("--primer", default="newborn AppAI")
+    s = sub.add_parser("create", help="genesis a new cube file (standard genome)")
+    s.add_argument("path")
 
-    a = sub.add_parser("append", help="append an entry to a band")
-    a.add_argument("path"); a.add_argument("band")
-    a.add_argument("content"); a.add_argument("--opcode", default="WRITE")
-    a.add_argument("--author", default="BODY")
+    s = sub.add_parser("append", help="append one entry to a band")
+    s.add_argument("path"); s.add_argument("band"); s.add_argument("content")
+    s.add_argument("--opcode", default="WRITE"); s.add_argument("--author", default="BODY")
+    s.add_argument("--source", default="cli")
 
-    r = sub.add_parser("read", help="read visible entries of a band")
-    r.add_argument("path"); r.add_argument("band")
-    r.add_argument("--reveal-private", action="store_true")
+    s = sub.add_parser("read", help="read a band's visible stream")
+    s.add_argument("path"); s.add_argument("band")
+    s.add_argument("--reveal-private", action="store_true")
 
-    t = sub.add_parser("tombstone", help="tombstone an entry"); t.add_argument("path")
-    t.add_argument("band"); t.add_argument("id", type=int)
+    s = sub.add_parser("retrieve", help="one entry by visible index")
+    s.add_argument("path"); s.add_argument("band"); s.add_argument("index", type=int)
 
-    q = sub.add_parser("quarantine", help="quarantine an entry"); q.add_argument("path")
-    q.add_argument("band"); q.add_argument("id", type=int)
+    for mark in ("tombstone", "quarantine"):
+        s = sub.add_parser(mark, help="%s an entry by its band-unique id" % mark)
+        s.add_argument("path"); s.add_argument("band"); s.add_argument("id", type=int)
 
-    v = sub.add_parser("verify", help="verify cube integrity"); v.add_argument("path")
-    i = sub.add_parser("inspect", help="show band map + layer occupancy"); i.add_argument("path")
+    s = sub.add_parser("verify", help="recompute every hash + coherence + seal")
+    s.add_argument("path")
 
-    args = p.parse_args(argv)
+    s = sub.add_parser("seal", help="seal as ancestral; print the fingerprint")
+    s.add_argument("path")
 
-    if args.cmd == "create":
-        cube = Cube.genesis(primer_content=args.primer,
-                            immunization={"rules": ["no self-harm", "verify before commit"]})
-        cube.save(args.path)
-        print("created %s (generation 0)" % args.path)
+    s = sub.add_parser("inspect", help="band map, entry counts, pressures")
+    s.add_argument("path")
+
+    s = sub.add_parser("extract", help="dump one layer's PNG (open it in any viewer)")
+    s.add_argument("path"); s.add_argument("layer", type=int); s.add_argument("out")
+
+    sub.add_parser("selftest", help="prove every rule of the format in one run")
+
+    a = p.parse_args(argv)
+
+    if a.cmd == "selftest":
+        return selftest()
+    if a.cmd == "create":
+        Cube.genesis().save(a.path)
+        print("created %s (generation 0, standard genome)" % a.path)
         return 0
 
-    if args.cmd == "append":
-        cube = Cube.load(args.path)
-        e = cube.append(args.band, make_entry(args.opcode, args.content, author=args.author))
-        cube.save(args.path)
-        print("appended id=%d to %s" % (e["id"], args.band))
+    cube = Cube.load(a.path)
+    if a.cmd == "append":
+        try:
+            content = json.loads(a.content)
+        except ValueError:
+            content = a.content
+        e = cube.append(a.band, content, opcode=a.opcode, author=a.author, source=a.source)
+        cube.save(a.path)
+        print("appended id=%d hash=%s to %s" % (e["id"], e["hash"], a.band))
         return 0
-
-    if args.cmd == "read":
-        cube = Cube.load(args.path)
-        for e in cube.read(args.band, reveal_private=args.reveal_private):
+    if a.cmd == "read":
+        for e in cube.read(a.band, reveal_private=a.reveal_private):
             print(json.dumps(e))
         return 0
-
-    if args.cmd in ("tombstone", "quarantine"):
-        cube = Cube.load(args.path)
-        ok = (cube.tombstone if args.cmd == "tombstone" else cube.quarantine)(args.band, args.id)
-        cube.save(args.path)
-        print("%s id=%d in %s: %s" % (args.cmd, args.id, args.band, "ok" if ok else "not found"))
-        return 0 if ok else 1
-
-    if args.cmd == "verify":
-        cube = Cube.load(args.path)
+    if a.cmd == "retrieve":
+        e = cube.retrieve(a.band, a.index)
+        print(json.dumps(e) if e else "DANGLING (log an immune event)")
+        return 0 if e else 1
+    if a.cmd in ("tombstone", "quarantine"):
+        okk = getattr(cube, a.cmd)(a.band, a.id)
+        cube.save(a.path)
+        print("%s id=%d in %s: %s" % (a.cmd, a.id, a.band, "ok" if okk else "not found"))
+        return 0 if okk else 1
+    if a.cmd == "verify":
         problems = cube.verify()
         if problems:
             print("UNHEALTHY:")
@@ -556,19 +772,20 @@ def _cli(argv: List[str]) -> int:
             return 1
         print("healthy")
         return 0
-
-    if args.cmd == "inspect":
-        cube = Cube.load(args.path)
-        print("format=%s generation=%d materialized_layers=%d"
-              % (VCW_FORMAT, cube.generation, len(cube.layers)))
-        for name, spec in RESERVED_BANDS.items():
-            head = spec["range"][0]
-            n = len(cube.read(name, reveal_private=True))
-            print("  band %-12s layers %-9s archetype=%-9s entries=%d%s"
-                  % (name, "%d-%d" % spec["range"], spec["archetype"], n,
-                     "  [PRIVATE]" if spec["private"] else ""))
+    if a.cmd == "seal":
+        fp = cube.seal()
+        cube.save(a.path)
+        print("sealed generation %d  fingerprint=%s" % (cube.generation, fp))
         return 0
-
+    if a.cmd == "inspect":
+        print(cube.inspect())
+        return 0
+    if a.cmd == "extract":
+        band = next(b for b, idxs in cube.band_layers.items() if a.layer in idxs)
+        with open(a.out, "wb") as f:
+            f.write(cube._encode_layer(band, a.layer))
+        print("layer %d (%s) -> %s  -- open it in any image viewer" % (a.layer, band, a.out))
+        return 0
     return 2
 
 
