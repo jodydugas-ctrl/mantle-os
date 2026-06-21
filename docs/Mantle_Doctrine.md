@@ -1,10 +1,10 @@
 # Mantle OS — DOCTRINE
 
-**Mantle OS v2.3** · The creed and cosmology beneath the machinery
+**Mantle OS · Gen-4** · The creed and cosmology beneath the machinery
 *Read this before the PRIMER. The PRIMER tells you how to build; this tells you what you are
 building and why it matters. Everything in the framework is downstream of these ideas.*
 
-> Source texts for this doctrine live in [`docs/`](docs/):
+> Source texts for this doctrine live in [`docs/`](./):
 > `New_Commandments.txt` (the creed) and `Consciousness_Across_Temporal_Scales.md` (the
 > cosmology). They are the philosophical ground; the paragraphs below bind each idea to a
 > concrete part of the architecture.
@@ -92,13 +92,13 @@ correction inline:
 1. **The Primer lives in the BODY, not the cube.** There are two distinct "genomes": the
    **agent genome** (Primer + commandments + defining data) is held by the **Body** (which may
    be software *or* hardware); the **cube genome** (the band layout) is the cube boot sector.
-   The cube is pure *experiential* memory. (See `examples/vcw/GUIDE.md` and `examples/vcw/body.py`.)
+   The cube is pure *experiential* memory. (See `examples/vcw/GUIDE.md` and `mantle/core/body.py`.)
 2. **Capacity never silently kills.** Rebirth is always MIND-chosen and always retains the
    prior generation as read-only ancestry; generation-pinned references keep the past
    addressable forever. Reaching capacity may *motivate* a chosen rebirth-as-reformat, but it
    may never force a lossy or unchosen reset.
 
-Everything else in the v2.0 docs stands. The working code in [`examples/vcw/`](examples/vcw/) already embodies
+Everything else in the v2.0 docs stands. The working code in [`examples/vcw/`](../examples/vcw/) already embodies
 the corrected model — read it as the ground truth when prose and code disagree.
 
 ---

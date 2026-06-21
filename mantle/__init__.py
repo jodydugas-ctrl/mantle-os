@@ -21,7 +21,7 @@ from .vcw import (Cube, standard_genome, make_band_boot, make_entry, entry_hash,
 from .egg import EGG_FORMAT, EggError, validate as validate_egg, load as load_egg
 from .hatchery import incubate, hatch, HatchError
 
-__version__ = "4.0.0"
+__version__ = "4.5.0"
 __lineage__ = ("Mantle OS v3 (Homeostatic AppAI Framework)", "Mantle OS")
 
 __all__ = ["Organism", "Body", "SignalBus", "Cube", "standard_genome", "make_band_boot",

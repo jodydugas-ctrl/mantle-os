@@ -1,6 +1,6 @@
 # Mantle OS — VCW Compliance Tiers
 
-**Mantle OS v2.3** · Non-normative concept note.
+**Mantle OS · Gen-4** · Non-normative concept note.
 *Read this if your environment cannot create a file-backed VCW cube — or if you are
 building tooling for constrained runtimes.*
 
@@ -116,7 +116,7 @@ instantiates locally. The deliverable includes:
 
 1. **§0 Declaration Block** — with `VCW_BACKEND: schema-only` and a note explaining
    that this organism requires local Python execution to run.
-2. **`body.py`** — the organism's Body subclass, importing from `examples/vcw/body.py`.
+2. **`body.py`** — the organism's Body subclass, importing from `mantle/core/body.py`.
 3. **`mind.py`** — the MIND subclass (if Phase 2 is in scope).
 4. **Organ modules** — one file per organ, each a Body reflex, no LLM in Phase 1.
 5. **`receptor.html`** — the human-facing surface (separate from the Body).
