@@ -1,6 +1,6 @@
 # Mantle OS — THE ORGANISM LENS
 
-**Mantle OS v2.3** · How to read any application as a living creature
+**Mantle OS · Gen-4** · How to read any application as a living creature
 *Read [`Mantle_Doctrine.md`](Mantle_Doctrine.md) (the why), then this (the how-to-see), then
 [`Mantle_Organ_Atlas.md`](Mantle_Organ_Atlas.md) (the formal taxonomy). This is the thinking
 tool — a short lens you apply to every app, whether you are growing one from scratch or

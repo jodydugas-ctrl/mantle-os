@@ -7,8 +7,8 @@
 
 [project]
 name = "mantle-os"
-version = "3.0.0"
-description = "Mantle OS v3: the Homeostatic AppAI Framework — grow software like a living organism, then give it a mind."
+version = "4.5.0"
+description = "Mantle OS (Gen-4): the Homeostatic AppAI Framework — grow software like a living organism, then give it a mind. Reproduction, symbiosis, and self-evolution on the certified Body."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.8"

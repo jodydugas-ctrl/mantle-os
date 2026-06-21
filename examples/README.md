@@ -30,8 +30,10 @@ These were aligned to **Gen-4**: version labels, framework prose, ontology/syste
 doc references are current; the YAML's `mantle_alignment` contract is fully Gen-4 (with a
 `gen4_capabilities` block). They are honest about scope — the in-browser HTML demos run the
 **inherited Body / organ / VCW core**, which Gen-4 carries *unchanged* (same cube format
-`vcw-cube-png-v2`, same eight organs + the `<facts.N>` grammar), and their prompts now describe
-the Gen-4 hardening (self/other, event-gated nociception, graded memory). The fuller Gen-4
-reproductive/symbiotic tissue (egg/hatchery, anchor/symbiosis, graft, mem, compiler, ganglia,
-vault) is **not reimplemented in JS** — it lives in the `mantle/` Python package and the runnable
-`FIELD_GUIDE.md`. For anything authoritative, the `mantle/` package is ground truth.
+`vcw-cube-png-v2`, same eight organs + the `<facts.N>` grammar). Beyond describing it, both demos
+now **functionally implement and browser-test the four Gen-4 organ behaviors**: graded memory
+(deweight → recoverable ghosts), self/other (a Body-resident genesis key; anti-clone), nociception
+(`heart.pain`, the now-interrupt), and `schedule_pulse` (planned future wakes that chain thoughts).
+The fuller Gen-4 reproductive/symbiotic tissue (egg/hatchery, anchor/symbiosis, graft, mem,
+compiler, ganglia, vault) is **not reimplemented in JS** — it lives in the `mantle/` Python package
+and the runnable `FIELD_GUIDE.md`. For anything authoritative, the `mantle/` package is ground truth.

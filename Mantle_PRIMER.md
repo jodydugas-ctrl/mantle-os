@@ -268,10 +268,12 @@ Both paths converge on the same certified Body, then the same MIND fusion.
 - **Containment before reach.** Gen-4 abilities reach into host code and foreign data — never
   do so except through the SELF/OTHER test and the exec gates (sandbox · hash · capability ·
   provenance · trust). Build the boundary before the capability.
-- **Trust the runnable examples; distrust the legacy artifacts.** `examples/sample_app/`,
-  `eggs/*.json`, and `examples/vcw/vcw_cube.py` are current and proven by the gate — read them.
-  The large `examples/*.html` / `*.yaml` reference artifacts are **v2-era and not yet
-  regenerated**; do not build from them (see `examples/README.md`).
+- **Trust the runnable examples.** `examples/sample_app/`, `eggs/*.json`, and
+  `examples/vcw/vcw_cube.py` are current and proven by the gate — read them. The
+  `examples/*.html` reference apps (the Spreadsheet Agent and the Reference AppAI) and the
+  `examples/*.yaml` alignment schema are aligned to **Gen-4**, and the two HTML demos are
+  functionally rebuilt and browser-tested (graded memory · self/other · nociception ·
+  schedule_pulse) — read them too (see `examples/README.md`).
 - **Optional means optional.** Anything in `docs/Mantle_Extensions.md` (LIGATURE,
   polymorphic Body, extended Foundry, credential pools) is opt-in. Do not grow it
   unless the §0 block or the operator asks for it.

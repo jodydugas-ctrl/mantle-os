@@ -160,11 +160,11 @@ docs/
   MOLT_LEDGER.md         the Gen-4 evolution record: every molt, its invariants, format verdict
   Mantle_v3_Architecture.md · Mantle_v3_Migration.md · v3/ (VCW · lifecycle · contracts · audit · visual)
   assets/                diagrams (SVG, agent-readable) + rendered art
-  Mantle_Doctrine.md (+ the v2 doc set)   the living doctrine — still the creed
+  Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
 examples/
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
-  sample_app/            the assimilation / anchor / graft target
-  README.md              note on the legacy v2-era reference artifacts (HTML / YAML)
+  *.html / *.yaml        Gen-4 reference demos (the two HTML apps functionally implement the
+                         organ behaviors and are browser-tested) — see examples/README.md
 ```
 
 Reading order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) →

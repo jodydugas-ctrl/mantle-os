@@ -4,7 +4,7 @@
 exists for one reason: Mantle's vocabulary (organisms, bodies, minds, cubes) is deliberately
 opinionated, and that can be a wall on first contact. This page is the plain-language door. If you
 want the real thing, read [`Mantle_Doctrine.md`](Mantle_Doctrine.md) → [`Mantle_PRIMER.md`](../Mantle_PRIMER.md)
-→ [`examples/vcw/GUIDE.md`](examples/vcw/GUIDE.md).
+→ [`examples/vcw/GUIDE.md`](../examples/vcw/GUIDE.md).
 
 ---
 

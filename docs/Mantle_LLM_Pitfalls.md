@@ -54,8 +54,8 @@ grow organs *around* it, not to replace it.
 
 **What to do instead:**
 - The VCW cube is already built. Import it: `from vcw.vcw_cube import Cube, Organism`
-- Subclass `Mind` from `examples/vcw/mind.py` for your MIND layer
-- Write a `Body` subclass from `examples/vcw/body.py` for your organ logic
+- Subclass `Mind` from `mantle/mind/mind.py` for your MIND layer
+- Write a `Body` subclass from `mantle/core/body.py` for your organ logic
 - Write a separate HTML file as the receptor (the human-facing surface)
 - These are **separate files** that communicate via the Body's API — never merge them
 
@@ -171,9 +171,9 @@ already-correct substrate.
 ```
 Already exists (do not rewrite):
   examples/vcw/vcw_cube.py     — the VCW cube format and storage engine
-  examples/vcw/body.py         — the Body base class
-  examples/vcw/mind.py         — the Mind base class
-  examples/vcw/organs/         — the core organ implementations
+  mantle/core/body.py         — the Body base class
+  mantle/mind/mind.py         — the Mind base class
+  mantle/organs/              — the core organ implementations
   examples/vcw/audit.py        — the Stage 1 audit (this is the judge, not you)
 
 Your job:
