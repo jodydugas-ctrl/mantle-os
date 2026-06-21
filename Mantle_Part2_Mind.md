@@ -1,8 +1,10 @@
 # Mantle OS — PART 2: THE MIND
 
-**Mantle OS v2.3** · Phase 2 — fuse a brain into a certified Body
-*Prerequisite: a Body that has PASSED `Mantle_Part1_Body_Audit.md` with zero open
-hard-fails. If it has not, stop. Fusing a MIND onto an uncertified Body is forbidden.*
+**Mantle OS · Gen-4** · Phase 2 — fuse a brain into a certified Body
+*Prerequisite: a Body that has PASSED `Mantle_Part1_Body_Audit.md` (`python -m mantle audit`)
+with zero open hard-fails. If it has not, stop. Fusing a MIND onto an uncertified Body is
+forbidden — `mantle.mind.fuse` refuses it in code (`HF-M15`). The working `mantle/mind/` package
++ `python -m mantle teach` (the gate/MIND chapters) are ground truth.*
 
 ---
 
@@ -40,8 +42,9 @@ wakes it. Its powers are deliberately narrow:
 
 ## §2.1 Pre-fusion gate
 
-1. Confirm `Mantle_Part1_Body_Audit.md` is signed off with **0 open hard-fails**.
-2. Confirm `vcw_cube.py verify` is healthy on the live cube.
+1. Confirm `Mantle_Part1_Body_Audit.md` is signed off with **0 open hard-fails**
+   (`python -m mantle audit` + `python -m mantle prove` → 66/66 green).
+2. Confirm the live cube `verify()` is healthy.
 3. Confirm the §0 Declaration Block now carries `KEYFILE_PATH` and `DEFAULT_MODEL`.
 
 If any fails, return to Phase 1. Do not continue.
@@ -111,13 +114,18 @@ The Heart's existing Phase-1 heartbeat (Stage 1 B-04) now *additionally* drives
 cognition — without changing any Phase-1 reflex:
 
 1. Heart pulses; Body reflexes run as before (unchanged).
-2. If there are **SIGNIFICANT** senses (Stage 1 B-16) or pending INTENTIONs, the Body
-   assembles a fresh context snapshot and issues a MODEL.REQUEST.
+2. The MIND is offered the snapshot **only on a wake reason**: a **SIGNIFICANT** senses signal,
+   or **distress** — a severe immune event the Body could not resolve by reflex (Gen-4
+   nociception, Part 1 §1.7). The Immune System emits the pain coordinates `{reason, band, ref}`
+   and the Heart fires an **unscheduled pulse**; the snapshot is pre-anchored to the stressor
+   (`snapshot["_stressor"]`) so the MIND does not scan the whole cube.
 3. The MIND thinks (writes `thoughts`) and may author INTENTIONs.
 4. The Body dispatches those INTENTIONs through the Limbs (§2.8).
 
-Cognition is **event-gated**: no SIGNIFICANT input and no pending intention → no
-model call. The Body keeps beating regardless.
+Cognition is **event-gated**: no wake reason → no model call. A calm fused organism completes
+every beat with the MIND asleep and spends **zero** energy (Part 2 §2.9). Proven by `NOC-1..3`;
+`org.heart.pain(reason, band, ref)` is the explicit interrupt vector. The Body keeps beating
+regardless.
 
 ---
 
@@ -147,12 +155,23 @@ resolved (no danglers — Stage 1 B-11), and (b) no secret appeared in the promp
 
 ---
 
-## §2.9 Starvation & graceful sleep
+## §2.9 Symbiosis: the metered energy economy & graceful starvation
 
-- If the model is unavailable (no key, quota, network), the Immune System raises a
-  **starvation** event and the MIND **sleeps gracefully** — the Body keeps running all
-  Phase-1 reflexes. A starved organism is a Zombie Body again, not a dead one.
-- On recovery, the Awakening reflex re-binds the model and resumes cognition.
+The MIND lives in **symbiosis** with its user (`mantle/symbiosis.py`): API keys are *resources*
+(ledgered by NAME only — material redacted at the boundary), API credits are *energy*. Cognition
+is **metered** — wrap any transport in the metabolic gate:
+
+- `symbiosis.metered(model, org, cost_per_call)` — pay a flat cost before each call; or
+  `symbiosis.metered_by_usage(model, org, price_per_1k)` — pay from **actual token usage**, so
+  credits in the cube mirror credits in the world. `metering_summary(org)` reports the burn rate
+  and the **starvation horizon**.
+- **The starvation law.** An unaffordable call is refused: the Immune System records a
+  **starvation** event, the MIND **sleeps gracefully**, and the Body keeps beating every pulse. A
+  starved organism is a Zombie Body again, never a corpse — energy can never go negative. (This is
+  also what model-unavailability — no key, quota, network — degrades to.) Proven by `SYM-1`, `SYM-2`.
+- Every piece of delivered work is recorded as a `VALUE` entry in the same append-only ledger;
+  `python -m mantle vitals <host>` shows the whole relationship. The user feeds what earns its keep.
+- On recovery (or a new grant via `feed`), the Awakening reflex re-binds the model and resumes.
 
 ---
 
@@ -211,7 +230,32 @@ the same way.
 This pattern — deliberate transfer through dialogue rather than automatic copy — is the
 system's cross-generation memory model. Knowledge moves forward the same way a mentor
 passes skill to a student: not by transplanting memory, but by pointing at it and
-letting the student prove it for themselves.
+letting the student prove it for themselves. In Gen-4 this re-derivation is
+`compiler.re_derive(...)`: inherited microcode **re-trials before it re-calcifies** — a skill
+that no longer passes its cases is refused (`BOOT-3`); no blind inheritance.
+
+### The self-redesigning VCW & memory bridge (Gen-4 / Compiler-class)
+
+A Compiler-class organism authors a VCW **custom-made for the body it inhabits**. At a chosen
+rebirth the MIND may **propose** a new genome (`compiler.propose_genome`) — extra app bands,
+possibly a different registered driver (e.g. a `keyvalue` band mirroring a host's native memory
+ops) — and the Body **validates** it hard (every encoding a registered driver, every head in
+range, no collisions) before adopting it via `compiler.adopt_genome` → `rebirth(new_genome=…)`.
+The previous Prime stays the readable oracle. An unsafe proposal is refused; the generation is
+untouched (`BOOT-1..2`).
+
+The **memory bridge** (`compiler.HostMemoryBridge`) then lets a host's own key/value store *be*
+a VCW band: the host writes what it thinks is its own memory; those writes append to the cube and
+reads resolve from it (no raw secret crosses — `BRIDGE-1..2`). The host's store becomes the
+organism's hot scratchpad; the cube becomes the host's durable brain.
+
+### Sharing knowledge between organisms (MEM VCW)
+
+A **MEM VCW** (`mantle/mem.py`) is a keyless, lineage-free cube — bare knowledge + microcode,
+like a USB stick. `excrete` writes one; another organism `digest`s it: the knowledge enters
+`discoveries` as **inferred** (provenance `foreign-MEM`, never `facts`), and any microcode is
+**sandbox-trialed** and re-derived into SELF only after the finder's OWN trial — foreign code is
+never run raw (`MEM-1..3`). Because it carries no genesis key, a MEM VCW is always OTHER.
 
 ---
 

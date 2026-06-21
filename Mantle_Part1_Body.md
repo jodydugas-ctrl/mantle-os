@@ -1,9 +1,12 @@
 # Mantle OS — PART 1: THE BODY
 
-**Mantle OS v2.3** · Phase 1 — grow a certified Zombie Body (no brain attached)
+**Mantle OS · Gen-4** · Phase 1 — grow a certified Zombie Body (no brain attached)
 *Prerequisites: read `docs/Mantle_Doctrine.md`, `docs/Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`,
-`examples/vcw/GUIDE.md`, and `docs/Mantle_Organ_Atlas.md`. This document tells you HOW to grow the Body, organ
-by organ. When you finish, certify with `Mantle_Part1_Body_Audit.md`.*
+run `python -m mantle teach` (or read `FIELD_GUIDE.md`), and read `docs/Mantle_Organ_Atlas.md`. This
+document tells you HOW to grow the Body, organ by organ; the working `mantle/` package is ground
+truth. When you finish, certify with `Mantle_Part1_Body_Audit.md` (`python -m mantle audit` runs it).
+The fastest Phase-1 build is a declarative **egg** (`eggs/greeter.json` → `python -m mantle hatch`);
+this document is the organ-by-organ path when the egg vocabulary is not enough.*
 
 ---
 
@@ -51,15 +54,16 @@ You will build in this order. Each section ends with the **audit hooks** that
    `docs/Mantle_VCW_Tiers.md` for the full tier model.
 2. **Birth the Body & design the cube genome.** Identity lives in the Body, the band layout in
    the cube boot sector:
-   - `Body.birth(identity, truths, commandments)` sets the read-only Primer and seeds
-     Immunization (`examples/vcw/body.py`). This is the **agent genome** — never written to the cube.
+   - `Body.birth(identity, truths, commandments)` sets the read-only Primer, seeds
+     Immunization, and **mints the one-time genesis key** (the cryptographic SELF — see §1.3)
+     (`mantle/core/body.py`). This is the **agent genome** — never written to the cube.
    - Author the **cube genome**: the band layout, each band declaring an `encoding` (driver), a
      **`span`** of reserved layers, and a **`purpose`** to fit the app. Layers are allocated **on
      demand** within the span and **reclaimed** after compaction — give high-churn bands more
      span. Longevity is a property of this design.
    - `Cube.genesis(genome)` + `Organism.save(dir)` performs the staged commit. The AppAI is
      **born** once the Body holds a Primer.
-3. Confirm the band map matches the canonical layout (`examples/vcw/lineage.py::standard_genome`). Never
+3. Confirm the band map matches the canonical layout (`mantle/vcw/bands.py::standard_genome`). Never
    invent a parallel store outside the cube.
 
 **Audit hooks:** B-01 cube genesis valid; B-02 Primer present, immutable & Body-resident; B-03
@@ -87,7 +91,7 @@ checkpoint and `atexit`; B-06 a missed pulse is logged to `immune`.
 
 ## §1.3 Genome — identity in the BODY
 
-The Genome (who the AppAI is) lives in the **Body store** (`examples/vcw/body.py`), **not** in the cube.
+The Genome (who the AppAI is) lives in the **Body store** (`mantle/core/body.py`), **not** in the cube.
 The cube is pure experiential memory. Design the *cube* genome (band layout) separately in §1.1
 — each band declaring a **`span`** of reserved layers and a **`purpose`**.
 
@@ -99,19 +103,27 @@ The cube is pure experiential memory. Design the *cube* genome (band layout) sep
   rebirth.
 - The model **boot order** is fixed: **Primer + Special Instructions + Immunization**. A
   violation of this assembly order is a hard fail (HF-B01).
+- **The genesis key (Gen-4, cryptographic SELF).** `Body.birth` mints a one-time key
+  (`secrets.token_hex`) — generated once, known only to this Body. It is **never in any cube and
+  never in `boot_order`/the MIND's snapshot** (the MIND cannot leak what it does not know).
+  `body.sign`/`verify` (HMAC) and `seal_bytes`/`open_bytes` (the seed vault) ride on it: what the
+  Body can sign is **SELF**, everything else is **OTHER**. This is the containment that earns
+  Gen-4's reach into host code. Proven by `SELF-1..4`.
 
 **Audit hooks:** B-07 Primer immutable post-birth & Body-resident (not in the cube); B-08 boot
-order correct; B-09 no MIND write path to the Genome exists (there is no MIND yet — verify the
-path is absent).
+order correct; B-09 no MIND write path to the Genome exists; **SELF-1 the genesis key is minted
+once and is absent from boot_order, the snapshot, and every cube band.**
 
 ---
 
 ## §1.4 Nervous System — references & Context Assembly
 
-- **Reference resolver:** implement the reference syntax from the VCW guide §9
-  (`<band:entry:M>`, `<layername:x:X:y:Y>`, `<cube:GEN:...>`, `<bodyentry.NNN:entry:M>`).
-  A reference that resolves to nothing is a **dangling reference** → append an `immune`
-  event. Never silently drop it.
+- **Reference resolver:** one grammar addresses everything the organism can remember
+  (`mantle/core/refs.py`): **`<TARGET.SELECTOR.ADDRESS>`** — e.g. `<facts.11>` (Prime, facts
+  band, visible entry 11), `<gen2.boot.23x33>` (generation 2, that layer, pixel 23,33),
+  `<body.immune.11>` (the Body's immunization store, entry 11). TARGET defaults to the current
+  Prime cube when omitted. A reference that resolves to nothing is a **dangling reference** →
+  append an `immune` event. Never silently drop it.
 - **9-step Context Assembly Protocol** — deterministic, no LLM. Each pulse (or on
   demand) assemble a fully-materialized snapshot:
   1. Load Genome (fixed order).
@@ -139,9 +151,16 @@ contains zero unresolved references; B-12 every dangling reference is an `immune
   (e.g. counts, latest-value tables, dedup). If a summary needs judgment, defer it as a
   Phase-2 extension; do not fake it with a model in Phase 1.
 - Never rewrite history. Corrections are new entries plus a `tombstone` on the old one.
+- **Graded memory (Gen-4).** Between "remembered" and "retired" there is a middle ground:
+  `memory.deweight(band, id, weight=0.0)` lowers an entry's weight via an **append-only DEWEIGHT
+  event** — never mutating the original. A contradicted value becomes a **behavioral ghost**:
+  hidden from default `recall` (which is weight-ordered), still physically present, recoverable
+  via `memory.recall_ghosts(band)`. Belief history is preserved; nothing is overwritten. Proven
+  by `MEMW-1..3`.
 
 **Audit hooks:** B-13 entries immutable & hashed; B-14 reads honor the veil; B-15 no
-organ rewrites a committed entry.
+organ rewrites a committed entry; **MEMW-1 a deweighted entry is hidden yet recoverable and the
+original is never mutated.**
 
 ---
 
@@ -169,9 +188,18 @@ B-18 REFLEX handled without touching `brain`.
 - `quarantine`: isolate a suspect entry (corruption / untrusted source) until cleared.
 - `redact`: at any `secret_boundary=True` crossing, strip secrets from senses/immune
   logs before they are written.
+- **SELF / OTHER (Gen-4).** `immune.is_self(data, mac)` verifies an artifact against the Body's
+  genesis key; `immune.reject_foreign(...)` records OTHER as a `foreign_rejected` event. This is
+  the recognition boundary that bounds an organism's reach to its own anatomy.
+- **Nociception (Gen-4).** A *severe* immune event (an `AUTONOMIC_KINDS` member: integrity,
+  organ_overreach, foreign_rejected, …) emits a `distress` signal carrying the pain coordinates
+  `{reason, band, ref}`. In Phase 1 there is no MIND to wake, but the Heart turns distress into an
+  unscheduled pulse; in Phase 2 that pulse is what *event-gates* cognition (Part 2). Proven by
+  `SELF-2`, `NOC-2`.
 
 **Audit hooks:** B-19 integrity scan each heartbeat; B-20 secrets never appear in
-logs; B-21 tombstoned/quarantined entries hidden from normal reads.
+logs; B-21 tombstoned/quarantined entries hidden from normal reads; **SELF-2 OTHER artifacts are
+rejected; NOC-2 a severe fault fires exactly one unscheduled pulse anchored to the stressor.**
 
 ---
 
@@ -269,8 +297,11 @@ The Body is a **certified Zombie Body** when:
 
 - it boots, beats, persists, perceives, defends, and acts with **no LLM** in any path;
 - every organ's manifest is present and its reflexes are deterministic;
-- the cube `verify()` is healthy and every audit hook B-01..B-38 passes;
-- `Mantle_Part1_Body_Audit.md` is filled in with no open hard-fails and is signed off.
+- the cube `verify()` is healthy and every audit hook passes;
+- **the executable gate is green**: `python -m mantle audit` (the Stage-1 Zombie Body gate) plus
+  `python -m mantle prove` (the **66 security invariants**, red/green) — and the three tamper
+  proofs (`audit --break-hash/primer/seal`) must each exit non-zero, proving the gate *catches*
+  violations. `Mantle_Part1_Body_Audit.md` is the human checklist for the same gate.
 
 **Do not proceed to Phase 2 until certification is complete.** A MIND fused onto an
 uncertified Body inherits every latent defect and hides it behind plausible text.

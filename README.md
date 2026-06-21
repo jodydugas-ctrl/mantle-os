@@ -2,7 +2,7 @@
 
 **An organic coding framework — grow software like a living organism, then give it a mind.**
 
-> Mantle OS v3.0 · The Homeostatic AppAI Framework.
+> Mantle OS · Gen-4 · The Homeostatic AppAI Framework, evolved (reproduction · symbiosis · self-evolution).
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
@@ -23,6 +23,14 @@ then is a **MIND** (an LLM) fused — and it may only ever *extend* what already
 **metabolism** — compaction, deduplication, layer reuse — never a lossy reset. Every organ
 carries an enforced contract. Every failure becomes an immune event. Every generation of
 memory seals with a tamper-evident fingerprint.
+
+**Gen-4** adds the reproductive, symbiotic, and self-evolving tissue on the same skeleton: a
+whole AppAI declared as one **egg**, **residency** in a host codebase with a metered energy
+economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
+keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, and a
+self-reconstruction **seed vault** — every one gated (36 → **66 invariants**). See the section
+*The Gen-4 generation* below, the runnable [`FIELD_GUIDE.md`](FIELD_GUIDE.md), and
+[`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md).
 
 ---
 
@@ -133,24 +141,30 @@ every Stage-1 row to prove it.
 ## Repository layout
 
 ```
-mantle/                  the v3 framework (start here)
-  core/                  Body, SignalBus, references, redaction, the Organism
-  vcw/                   the substrate: PNG codec, bands, drivers, cube, metabolism, indexes
-  organs/                the eight organs, each with an enforced contract
+mantle/                  the framework (start here)
+  core/                  Body (+ the genesis key), SignalBus, references, redaction, the Organism
+  vcw/                   the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
+  organs/                the eight organs, each with an enforced contract (self/other + nociception)
   mind/                  Phase 2 only: transports, containment, the MIND, AppAIRuntime
-  assimilator/           Path B: read-only dissection, organ map, fail-open wrappers
-  audits/                Stage 1, Stage 2, and the 66 invariants
+  assimilator/ audits/   Path B dissection + the gates (Stage 1, Stage 2, the 66 invariants)
+  egg.py hatchery.py     Gen-4: declarative birth — a whole AppAI as one JSON file
+  anchor.py symbiosis.py Gen-4: residency in a host + the metered energy economy
+  graft.py               Gen-4: the graft egg (patch a host) + live residency weaving
+  mem.py compiler.py     Gen-4: keyless knowledge plasmids + the self-redesigning VCW / memory bridge
+  ganglia.py vault.py    Gen-4: parallel limbs + the self-reconstruction seed vault
+  ingestion.py doctor.py Gen-4: conversation ingestion + the deployment checkup
+  face.py teach.py       the PNG self-portrait + the running Field Guide
+FIELD_GUIDE.md           the runnable manual (mirror of `python -m mantle teach`, 17 chapters)
+eggs/                    greeter.json (hatch it) · notes_graft.json (a graft egg)
 docs/
-  Mantle_v3_Architecture.md     why the rewrite, and the shape of it
-  Mantle_v3_Migration.md        old layout -> new layout, what tightened
-  v3/                           VCW guide · organism lifecycle · organ contracts ·
-                                assimilation guide · audit guide · visual guide
-  assets/                       diagrams (SVG, agent-readable) + rendered art
+  MOLT_LEDGER.md         the Gen-4 evolution record: every molt, its invariants, format verdict
+  Mantle_v3_Architecture.md · Mantle_v3_Migration.md · v3/ (VCW · lifecycle · contracts · audit · visual)
+  assets/                diagrams (SVG, agent-readable) + rendered art
   Mantle_Doctrine.md (+ the v2 doc set)   the living doctrine — still the creed
 examples/
-  vcw/                   THE standalone VCW cube: vcw_cube.py (the normative, runnable
-                         format definition), interop proof, bench, back-compat shims
-  sample_app/            the assimilation dry-run target
+  vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
+  sample_app/            the assimilation / anchor / graft target
+  README.md              note on the legacy v2-era reference artifacts (HTML / YAML)
 ```
 
 Reading order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) →
@@ -165,7 +179,8 @@ When prose and code disagree, **the working code in `mantle/` is ground truth** 
 
 Body before brain · Reflex before reasoning · Append before overwrite · Veil before
 exposure · Immune event before silent failure · Audit before fusion · Capability before
-action · Provenance before trust · **Metabolism before rebirth** · Harmony before cleverness.
+action · Provenance before trust · **Metabolism before rebirth** · Harmony before cleverness ·
+**Vessel before voyage · Containment before reach.**
 
 ## Two build paths
 

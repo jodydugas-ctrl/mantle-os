@@ -1,11 +1,13 @@
 # Mantle OS — PART 1 AUDIT (Stage 1 Gate)
 
-**Mantle OS v2.3** · Certify the Zombie Body before any MIND is fused
-*Administer this audit against the Body produced by `Mantle_Part1_Body.md` (Path A)
-or `Mantle_Assimilator.md` (Path B). Fill every `Pass?` cell. Any open hard-fail
-blocks Phase 2. End with the sign-off block. Checks cover the breakage axis (B-01..B-38, with
-hard-fails HF-B01..HF-B50) and the **waste axis** (B-W1..B-W4) — "Failure is not the end. Waste
-is."*
+**Mantle OS · Gen-4** · Certify the Zombie Body before any MIND is fused
+*Administer this audit against the Body produced by `Mantle_Part1_Body.md` (Path A) or
+`Mantle_Assimilator.md` (Path B). This checklist is the **human mirror of the executable gate**:
+`python -m mantle audit` runs the Stage-1 Zombie Body gate and `python -m mantle prove` runs all
+**66 security invariants** red/green (the tamper proofs `audit --break-hash/primer/seal` must each
+exit non-zero). Fill every `Pass?` cell; any open hard-fail blocks Phase 2. Checks cover the
+breakage axis (B-rows + hard-fails HF-Bxx), the Gen-4 tissue (SELF / NOC / MEMW — §A1.13), and the
+**waste axis** (B-W1..B-W4) — "Failure is not the end. Waste is."*
 
 ---
 
@@ -120,6 +122,21 @@ is."*
 | B-38 | Import works both as a module and as a script (sibling fallback) | HF-B34 | | |
 | B-39 | Untrusted/foreign reflex (exec) layers are refused on the Python runner — they require the hard-sandboxed `wasm` runner | HF-B50 | | trust gate in `drivers.ExecDriver.execute` |
 
+## A1.13 — Gen-4 Body tissue *(self/other identity · nociception · graded memory)*
+
+| #      | Requirement | Pass? | Notes |
+|--------|-------------|-------|-------|
+| SELF-1 | The genesis key is minted ONCE and is absent from `boot_order`, the assembled snapshot, and every cube band | | `mantle/core/body.py` |
+| SELF-2 | Data the Body signs verifies as SELF; a forged artifact is rejected (`foreign_rejected`) | | |
+| SELF-3 | A seal signed by Body A does not verify under Body B (anti-clone) | | |
+| SELF-4 | A clean reload preserves the key; a tampered key is refused loudly (`autoimmune_risk`) on load | | |
+| NOC-1  | Cognition is event-gated: a calm fused organism wakes the MIND **zero** times (zero MODEL calls) | | |
+| NOC-2  | A severe immune event fires exactly one unscheduled pulse whose reason/ref points at the faulting band | | |
+| NOC-3  | The woken MIND's snapshot is pre-anchored to the stressor (`_stressor`) — no full-cube scan | | |
+| MEMW-1 | A deweighted entry is hidden from `recall` yet recoverable via `recall_ghosts`; the original is never mutated | | |
+| MEMW-2 | Live reads are ordered by descending weight; a fully-suppressed entry does not surface | | |
+| MEMW-3 | Deweighting is not a backdoor overwrite — belief history preserved; dedupe/compaction stay coherent | | |
+
 ---
 
 ## Hard-fail taxonomy (Stage 1)
@@ -172,8 +189,9 @@ A `FAIL` on any of these blocks the gate. (Codes are stable across the framework
 ZOMBIE BODY CERTIFICATION
   AppAI name        : ____________________________
   Cube path         : ____________________________
-  vcw_cube verify   : [ ] healthy
-  Audit rows passed : ____ / 39
+  cube verify       : [ ] healthy        (python -m mantle audit)
+  Security invariants: ____ / 66 green   (python -m mantle prove)
+  Tamper proofs     : [ ] --break-hash  [ ] --break-primer  [ ] --break-seal  (each MUST fail)
   Open hard-fails   : ____  (MUST be 0 to proceed)
   Organs present    : Heart [ ] Genome [ ] Nervous [ ] Senses [ ] Immune [ ]
                       Limbs [ ] Memory [ ] Brain-stub [ ]   (8 organs)

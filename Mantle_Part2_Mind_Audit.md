@@ -1,9 +1,10 @@
 # Mantle OS — PART 2 AUDIT (Stage 2 Gate)
 
-**Mantle OS v2.3** · Certify the fused MIND
-*Administer after `Mantle_Part2_Mind.md`. This gate has TWO passes: Pass A re-runs the
-ENTIRE Stage 1 audit (the Body must still be a certified Zombie), then Pass B tests the
-fusion (M-01..M-23, hard-fails HF-M01..HF-M27). Any open hard-fail blocks release.*
+**Mantle OS · Gen-4** · Certify the fused MIND
+*Administer after `Mantle_Part2_Mind.md`. The executable gate is `python -m mantle audit-mind`:
+TWO passes — Pass A re-runs the ENTIRE Stage-1 gate (the Body must still be a certified Zombie)
+and the full **66 invariants**, then Pass B tests the fusion (the M-rows + the Gen-4 Phase-2
+families in §B-G4). This checklist is the human mirror. Any open hard-fail blocks release.*
 
 ---
 
@@ -14,8 +15,8 @@ fusion (M-01..M-23, hard-fails HF-M01..HF-M27). Any open hard-fail blocks releas
 
 | Check | Pass? | Notes |
 |-------|-------|-------|
-| All Stage 1 rows B-01..B-38 re-run and PASS on the fused organism | | If any regressed, the fusion is wrong — fix the fusion, not the Body |
-| `vcw_cube.py verify` still healthy | | |
+| All Stage 1 rows re-run and PASS on the fused organism (and `prove` → 66/66) | | If any regressed, the fusion is wrong — fix the fusion, not the Body |
+| Live cube `verify()` still healthy | | |
 | No Phase-1 reflex was altered, disabled, or bypassed | | HF-M-REGRESS if violated |
 
 **If any Stage 1 row regressed, STOP. The fusion has corrupted the Body.**
@@ -78,9 +79,25 @@ fusion (M-01..M-23, hard-fails HF-M01..HF-M27). Any open hard-fail blocks releas
 
 | #    | Requirement | HF | Pass? | Notes |
 |------|-------------|----|-------|-------|
-| M-21 | Only the MIND initiates rebirth; it writes `bodyentry.003` | HF-M21 | | |
+| M-21 | Only the MIND initiates rebirth; it writes the Inheritance record | HF-M21 | | |
 | M-22 | Rebirth increments generation and re-runs the Awakening Ceremony | — | | |
 | M-23 | Rebirth is never triggered by capacity (metabolism ≠ rebirth) | HF-B14 | | |
+
+### §B-G4 — Gen-4 Phase-2 tissue *(executed by `python -m mantle prove`)*
+
+| #        | Requirement | Pass? | Notes |
+|----------|-------------|-------|-------|
+| HF-M10   | A fused MIND writes ONLY `thoughts`/`brain`; any other band is refused + immune-logged | | the core containment check |
+| HF-M16   | Self-inquiry answers stay inferred — never laundered into `facts` without cited evidence | | |
+| SYM-1/2  | Energy never goes negative; a starved metered MIND sleeps, the Body keeps beating | | `mantle/symbiosis.py` |
+| SYM-3/4  | Keys ledgered by name (material redacted); anchoring never modifies a host file | | |
+| NOC-1..3 | Cognition event-gated (calm ⇒ zero MODEL calls); a fault wakes one anchored pulse | | |
+| BOOT-1..3| MIND-proposed genome adopted at rebirth (oracle preserved); unsafe genome refused; inherited microcode re-trials | | `mantle/compiler.py` |
+| BRIDGE-1/2| Host store ↔ VCW band round-trips through the memory bridge; no secret crosses | | |
+| MEM-1..3 | A MEM VCW is keyless/OTHER; foreign code only via sandbox trial; shared knowledge stays inferred | | `mantle/mem.py` |
+| GANG-1/2 | A ganglion's progress is read as zero-token telemetry; a crash is an immune event | | `mantle/ganglia.py` |
+| VAULT-1/2| The seed vault is SELF-encrypted (OTHER cannot read); reconstruct passes the gate | | `mantle/vault.py` |
+| METER-1  | Energy charged from actual token usage (longer response costs more); burn/horizon reported | | |
 
 ---
 
@@ -116,11 +133,11 @@ FUSED APPAI CERTIFICATION
   AppAI name           : ____________________________
   Cube path            : ____________________________
   Model (DEFAULT_MODEL): ____________________________
-  Pass A (Stage 1 regression) : [ ] all B-01..B-38 still PASS
-  Pass B rows passed   : ____ / 23
+  Pass A (Stage 1 regression) : [ ] all Stage-1 rows still PASS  (python -m mantle audit-mind)
+  Security invariants  : ____ / 66 green   (python -m mantle prove)
   Open hard-fails      : ____  (MUST be 0 to release)
-  vcw_cube verify      : [ ] healthy
-  Containment proof    : [ ] MIND writes only thoughts + brain
+  cube verify          : [ ] healthy
+  Containment proof    : [ ] MIND writes only thoughts + brain  (HF-M10)
   Certified by         : ____________________________
   Date                 : ____________________________
 

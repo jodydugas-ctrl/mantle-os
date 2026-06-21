@@ -1,13 +1,26 @@
 # Mantle OS — THE ASSIMILATOR (Path B)
 
-**Mantle OS v2.3** · Grow organs around existing code, non-destructively
+**Mantle OS · Gen-4** · Take residence in existing code, non-destructively
 *This document REPLACES `Mantle_Part1_Body.md` when external source code is provided.
 You still finish at the same Stage 1 Gate (`Mantle_Part1_Body_Audit.md`) and then
 proceed to Phase 2 identically. Prerequisite reading: `docs/Mantle_Doctrine.md`,
-`docs/Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`, `examples/vcw/GUIDE.md`, `docs/Mantle_Organ_Atlas.md`.
-Assimilation is the **Organism Lens applied as a read-only dissection**: find the host's organs
-first, then thread a nervous system through them. Identity is synthesized into the **Body** (not
-the cube); the App Inventory (Appendix A) is a hard, read-only gate before any edit.*
+`docs/Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`, then run `python -m mantle teach`, and read
+`docs/Mantle_Organ_Atlas.md` + `docs/v3/Assimilation_Guide.md`. Assimilation is the **Organism
+Lens applied as a read-only dissection**: find the host's organs first, then thread a nervous
+system through them. Identity is synthesized into the **Body** (not the cube); the App Inventory
+(Appendix A) is a hard, read-only gate before any edit.*
+
+> **Gen-4 automates this whole path** (`mantle/assimilator/` + `anchor.py` + `graft.py`):
+> - `python -m mantle assimilate <host> --dry-run` — the read-only AST dissection + Organ Map (Phase 0).
+> - `python -m mantle anchor <host>` — grow an anchored **resident** in a `.mantle/` nest, remember
+>   the host's organ map as observed facts, pass the Stage-1 gate, and **prove do-no-harm with a
+>   byte-level census** (`SYM-4`). Then `ask` / `feed` / `vitals` it — the resident earns its keep.
+> - `python -m mantle graft <graft-egg> <host>` — apply a non-destructive **patch** in a workspace
+>   copy; `graft.weave(...)` threads the host's live callables through fail-open organ wrappers
+>   (residency that *feels the host run*, zero LLM) and `unweave` detaches cleanly (`GRAFT/RESID-*`).
+>
+> The sections below are the doctrine and the manual procedure those tools implement; read them to
+> understand *what* the tools do and to assimilate a host the framework's automation does not cover.
 
 ---
 
@@ -159,7 +172,7 @@ to the cube; each is individually `try/except → degrade + log to immune`.
 ## §B.4 Synthesize the BODY from a host (Phase 2)
 
 Synthesize the **Body** (not cube layers) from the host's own identity — do not invent one.
-Identity lives in the Body store (`examples/vcw/body.py`); the cube is pure experiential memory.
+Identity lives in the Body store (`mantle/core/body.py`); the cube is pure experiential memory.
 
 - **Primer** (read-only): the host's name, purpose, entry point, the §0 declaration, and the
   Commandments. Becomes immutable the moment it is committed.
