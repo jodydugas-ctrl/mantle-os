@@ -530,7 +530,7 @@
       bodyWriteSurfaces: ["arm-spreadsheet", "senses", "brain", "events"],
       mindWriteAllowed: Array.from(MIND_WRITE_ALLOWED)
     });
-    const ZOMBIE_PRIMITIVES = Object.freeze(["math.eval", "state.set", "state.get", "string.transform", "list.op", "datetime.now"]);
+    const ZOMBIE_PRIMITIVES = Object.freeze(["math.eval", "state.set", "state.get", "string.transform", "list.op", "datetime.now", "heart.schedule", "heart.cancel"]);
     const FOUNDRY_OPS = Object.freeze(["FORGE", "CLONE", "DISTILL", "GRAFT", "CALCIFY", "SEAL"]);
     const BODY_ENTRY_OPS = Object.freeze(["ADD", "REMOVE", "ALTER"]);
     const SPEC_PRIORITY_STEPS = Object.freeze([
@@ -911,8 +911,8 @@ const redactSecrets = (v) => {
 
 // implementedBy localized to THIS agent's symbols (Mantle Spreadsheet Agent); role/bands/phase1/audit are framework-canonical.
 const ORGAN_ATLAS = Object.freeze([
-  { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence", bands: [], phase1: "active",
-    implementedBy: ["heartbeat()", "setInterval(HEARTBEAT_INTERVAL_MS)", "saveState() cadence", "heartbeatQueue"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event"] },
+  { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence; plans ahead by scheduling future wakes", bands: [], phase1: "active",
+    implementedBy: ["heartbeat()", "setInterval(HEARTBEAT_INTERVAL_MS)", "saveState() cadence", "heartbeatQueue", "schedulePulse()/cancelPulse() (heart.schedule)"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event", "a scheduled pulse fires on its due beat and not before (SCHED-1)"] },
   { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index, held in the BODY not the cube; rebirth = reformat across the cube lineage", bands: ["(Body store)"], phase1: "active",
     implementedBy: ["createBodyEntries (bodyentry.000–.003)", "state.lineageIndex", "mutateBodyEntry", "ORGANISM.rebirth"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)"] },
   { organ: "Nervous", role: "signal routing — bridges, the unified reference resolver, deterministic Context Assembly", bands: ["prime", "(all)"], phase1: "active",
@@ -1409,6 +1409,14 @@ let ORGANISM = null;
         if (!/^[0-9+\-*/().\s]+$/.test(expr)) return { error: "Unsafe math expression." };
         return { result: Function("return (" + expr + ")")() };
       }
+      if (name === "heart.schedule") {   // Gen-4 — plan a future wake (countdown `after` / beat `at`)
+        const due = schedulePulse(state, (args && args.reason) || "scheduled",
+                                  args && args.after, args && args.at);
+        return { result: { scheduledForBeat: due, reason: (args && args.reason) || "scheduled" } };
+      }
+      if (name === "heart.cancel") {
+        return { result: { cancelled: cancelPulse(state, args && args.reason) } };
+      }
       return { error: "Unknown zombie primitive." };
     }
 
@@ -1430,6 +1438,7 @@ let ORGANISM = null;
           { opcode: "HB.HEALTH", summary: "Genesis heartbeat health check", args: {} },
           { opcode: "HB.CACHE", summary: "Genesis cache warm-up", args: {} }
         ],
+        scheduledPulses: [],   // Gen-4: planned future wakes (schedule_pulse) — chain thoughts
         nextPlanSummary: "Genesis queue primed with health and cache work.",
         lastPlannerReason: "Genesis queue primed with health and cache work.",
         lastHeartbeatExecution: [],
@@ -2003,7 +2012,7 @@ let ORGANISM = null;
 
     function classifyEvent(eventType, data) {
       const reflex = new Set(["cell_navigate", "scroll", "focus", "heartbeat_tick", "hover"]);
-      const significant = new Set(["user_message", "formula_error", "crystal_critical_fill", "immune_anomaly", "rebirth_signal", "starvation", "resource_restore"]);
+      const significant = new Set(["user_message", "formula_error", "crystal_critical_fill", "immune_anomaly", "rebirth_signal", "starvation", "resource_restore", "scheduled_pulse"]);
       if (reflex.has(eventType)) return "REFLEX";
       if (significant.has(eventType)) return "SIGNIFICANT";
       if (data && data.isError) return "SIGNIFICANT";
@@ -2697,8 +2706,42 @@ let ORGANISM = null;
       };
     }
 
+    // Gen-4 — planning ahead: schedule a FUTURE wake so the AppAI chains a thought to a later
+    // beat (countdown `after`, or a scheduled beat `at`) and runs a task only as often as it
+    // needs. Returns the beat it will fire on. `cancelPulse` clears pending plans.
+    function schedulePulse(state, reason, after, at) {
+      if (!Array.isArray(state.scheduledPulses)) state.scheduledPulses = [];
+      let due;
+      if (typeof at === "number") due = Math.max(state.heartbeatCount + 1, Math.floor(at));
+      else due = state.heartbeatCount + Math.max(1, Math.floor(after || 1));
+      state.scheduledPulses.push({ due, reason: reason || "scheduled" });
+      logHeartbeatExecution(state, "HB.SCHEDULE",
+        "Planned a wake for beat " + due + ": " + (reason || "scheduled"),
+        (typeof at === "number" ? "at beat " + at : "countdown " + Math.max(1, Math.floor(after || 1))));
+      return due;
+    }
+
+    function cancelPulse(state, reason) {
+      if (!Array.isArray(state.scheduledPulses)) return 0;
+      const before = state.scheduledPulses.length;
+      state.scheduledPulses = reason == null
+        ? [] : state.scheduledPulses.filter((p) => p.reason !== reason);
+      return before - state.scheduledPulses.length;
+    }
+
     function heartbeat(state) {
       state.heartbeatCount += 1;
+      // Gen-4 — fire any scheduled pulse now due: a SIGNIFICANT wake the MIND attends to,
+      // so a planned continuation runs on its beat (the rest of the time the organism sleeps).
+      if (Array.isArray(state.scheduledPulses) && state.scheduledPulses.length) {
+        const dueNow = state.scheduledPulses.filter((p) => p.due <= state.heartbeatCount);
+        state.scheduledPulses = state.scheduledPulses.filter((p) => p.due > state.heartbeatCount);
+        dueNow.forEach((p) => {
+          dispatchSense(state, "scheduled_pulse", { reason: p.reason, scheduled: true, due: p.due });
+          logHeartbeatExecution(state, "HB.SCHEDULED",
+            "Scheduled pulse fired: " + p.reason, "planned for beat " + p.due);
+        });
+      }
       dispatchSense(state, "heartbeat_tick", { heartbeat: state.heartbeatCount });
       const highFill = Object.values(state.crystals).filter((crystal) => crystal.fillLevel >= 0.9);
       highFill.forEach((crystal) => dispatchSense(state, "crystal_critical_fill", { crystal: crystal.fullName, fillLevel: crystal.fillLevel }));
