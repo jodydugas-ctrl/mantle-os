@@ -1,4 +1,4 @@
-"""mantle.core -- the organism's spine (Argonaut, of the Mantle lineage).
+"""mantle.core -- the organism's spine (Mantle OS · Gen-4).
 
 The Body store, the SignalBus, the unified reference resolver, the secret boundary, and
 the Organism that meshes the eight organs. No LLM, no network, no vendor code -- ever.

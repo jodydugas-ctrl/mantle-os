@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.nervous  --  the Nervous System organ: routing + Context Assembly (Argonaut, of the Mantle lineage)
+mantle.organs.nervous  --  the Nervous System organ: routing + Context Assembly (Mantle OS · Gen-4)
 
 Owns the reference resolver (delegated to mantle.core.refs) and the Context Assembly
 Protocol: the deterministic act of materializing a fully-resolved context snapshot from

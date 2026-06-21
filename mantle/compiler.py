@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 mantle.compiler  --  the Compiler-class leap: a self-redesigning VCW + a memory bridge
-                        (Argonaut · M5 + M6)
+                        (Mantle OS · M5 + M6)
 
 M5 -- the self-redesigning VCW (a programmable boot sector at rebirth).
   Mantle rebirth re-geneses the SAME standard genome. A Compiler-class organism instead

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.genome  --  the Genome organ: identity, inheritance & lineage (Argonaut, of the Mantle lineage)
+mantle.organs.genome  --  the Genome organ: identity, inheritance & lineage (Mantle OS · Gen-4)
 
 The Genome is held in the BODY, not the cube. There are two distinct genomes: the *agent
 genome* (Primer + commandments + defining data -- this organ) lives in the Body; the

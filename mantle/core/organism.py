@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.core.organism  --  the Organism: Body + Prime cube + ancestors + eight organs (Argonaut, of the Mantle lineage)
+mantle.core.organism  --  the Organism: Body + Prime cube + ancestors + eight organs (Mantle OS · Gen-4)
 
     Organism = BODY        (the Primer + lineage index -- identity, outside every cube)
              + PRIME cube  (one, hot, takes all experiential writes)

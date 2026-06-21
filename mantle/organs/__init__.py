@@ -1,4 +1,4 @@
-"""mantle.organs -- the eight canonical organs (Argonaut, of the Mantle lineage).
+"""mantle.organs -- the eight canonical organs (Mantle OS · Gen-4).
 
 Heart, Genome, Nervous System, Senses, Immune System, Limbs, Memory, Brain. Every organ
 carries an OrganContract (manifest, reflex surface, band permissions, audit obligations,

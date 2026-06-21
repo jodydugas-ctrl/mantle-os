@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.cli  --  one command for the whole lineage (Argonaut)
+mantle.cli  --  one command for the whole lineage (Mantle OS · Gen-4)
 
     python -m mantle hatch <egg.json> [--out=DIR]   incubate an egg -> certified AppAI
                                                       (+ hatch report + self-portrait)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.hatchery  --  incubate an egg into a CERTIFIED organism (Argonaut)
+mantle.hatchery  --  incubate an egg into a CERTIFIED organism (Mantle OS · Gen-4)
 
 The hatchery is the brood shell. It takes a validated egg and performs the whole birth,
 deterministically, with no LLM anywhere:

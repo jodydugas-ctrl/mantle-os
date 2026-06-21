@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.mem  --  the MEM VCW: a keyless knowledge plasmid (Argonaut · M4)
+mantle.mem  --  the MEM VCW: a keyless knowledge plasmid (Mantle OS · M4)
 
 A MEM VCW is a VCW *without an identity key* -- bare memory, like a USB stick. It carries
 DATA and MICROCODE-as-data only: no Body, no genesis key, no lineage, no memory tree. It is

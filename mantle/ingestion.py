@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.ingestion  --  the organism remembers its own becoming (Argonaut · §3)
+mantle.ingestion  --  the organism remembers its own becoming (Mantle OS · §3)
 
 Conversations (design sessions, operator instructions, these very build notes) should not
 live only in a chat log -- they should enter the organism the same way everything else

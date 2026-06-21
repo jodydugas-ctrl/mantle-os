@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.immune  --  the Immune System organ: defense & repair (Argonaut, of the Mantle lineage)
+mantle.organs.immune  --  the Immune System organ: defense & repair (Mantle OS · Gen-4)
 
 The Immune System is EXISTENTIAL, not janitorial: the VCW is the organism's reality, so
 protecting it is protecting the self. It is also the organism's ONLY failure boundary --

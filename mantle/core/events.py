@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.core.events  --  the SignalBus: the organism's reflex/event bus (Argonaut, of the Mantle lineage)
+mantle.core.events  --  the SignalBus: the organism's reflex/event bus (Mantle OS · Gen-4)
 
 Organs do not reach into each other. They publish SIGNALS onto one deterministic,
 synchronous bus and subscribe REFLEXES to the signal kinds they care about. The bus is the

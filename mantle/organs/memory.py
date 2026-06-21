@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.memory  --  the Memory organ: recall & metabolism (Argonaut, of the Mantle lineage)
+mantle.organs.memory  --  the Memory organ: recall & metabolism (Mantle OS · Gen-4)
 
 Owns the durable knowledge bands -- identity, facts, events, discoveries -- AND their
 metabolism: the hot working-set -> durable flush cycle, on-demand layer allocation,

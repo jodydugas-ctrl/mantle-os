@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.core.body  --  the BODY store (Argonaut, of the Mantle lineage)
+mantle.core.body  --  the BODY store (Mantle OS · Gen-4)
 
 The Primer lives in the BODY, not in the VCW cube. The cube is pure experiential memory
 (read/append-only). The Body holds the agent's *defining* data and provides the small

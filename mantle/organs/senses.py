@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.senses  --  the Senses organ: perception, the ONLY inbound boundary (Argonaut, of the Mantle lineage)
+mantle.organs.senses  --  the Senses organ: perception, the ONLY inbound boundary (Mantle OS · Gen-4)
 
 ALL inbound data enters the organism through Senses. It ingests external signals,
 REDACTS them at the boundary (a secret must never burn into append-only memory), and

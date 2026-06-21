@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.core.refs  --  the unified reference resolver (Argonaut, of the Mantle lineage)
+mantle.core.refs  --  the unified reference resolver (Mantle OS · Gen-4)
 
 One grammar addresses everything the organism can remember:
 

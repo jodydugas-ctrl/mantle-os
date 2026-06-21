@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.symbiosis  --  the energy economy: the AppAI earns its keep (Argonaut)
+mantle.symbiosis  --  the energy economy: the AppAI earns its keep (Mantle OS · Gen-4)
 
 An AppAI lives in SYMBIOSIS with its user. The user provides RESOURCES (API keys) and
 ENERGY (API credits); the organism spends energy to think and repays the relationship

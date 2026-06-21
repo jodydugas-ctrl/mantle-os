@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.entry  --  the one entry hasher + the one entry maker (Argonaut, of the Mantle lineage)
+mantle.vcw.entry  --  the one entry hasher + the one entry maker (Mantle OS · Gen-4)
 
 The rule is simple and total: the hash covers EVERY field of an entry EXCEPT the four
 volatile ones the Body is allowed to flip after the fact -- `id` (assigned on append),
