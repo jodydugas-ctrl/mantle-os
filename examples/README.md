@@ -34,9 +34,14 @@ doc references are current; the YAML's `mantle_alignment` contract is fully Gen-
 now **functionally implement and browser-test the four Gen-4 organ behaviors**: graded memory
 (deweight → recoverable ghosts), self/other (a Body-resident genesis key; anti-clone), nociception
 (`heart.pain`, the now-interrupt), and `schedule_pulse` (planned future wakes that chain thoughts).
-The fuller Gen-4 reproductive/symbiotic tissue (egg/hatchery, anchor/symbiosis, graft, mem,
-compiler, ganglia, vault) is **not reimplemented in JS** — it lives in the `mantle/` Python package
-and the runnable `FIELD_GUIDE.md`. For anything authoritative, the `mantle/` package is ground truth.
+Both demos also expose a **browser-feasible subset of the reproductive/symbiotic tissue** as Body
+primitives: keyless knowledge plasmids (`mem.excrete` / `mem.digest` — foreign knowledge digests as
+*inferred*, never fact), a **SELF-locked seed vault** (`vault.seal` / `vault.reconstruct` — an OTHER
+body cannot reopen it), and **egg** author/hatch (declare a new AppAI as data, then instantiate it);
+the Arms serve as **ganglia**. The parts that act on a real *host repo* — host residency (`anchor`),
+the **graft egg**, and the self-redesigning **compiler** — are inherently out of reach for a
+single-page demo and remain **framework-only** in the `mantle/` Python package and the runnable
+`FIELD_GUIDE.md`. For anything authoritative, the `mantle/` package is ground truth.
 
 ## Headless smoke tests (`tests/`)
 
