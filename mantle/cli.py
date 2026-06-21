@@ -209,6 +209,18 @@ def cmd_face(argv):
     return 0
 
 
+# ---- back-compat API surface (the v2.3 reference shims in examples/vcw/ call these
+# directly: examples_boot.py -> cli.demo, examples_mind.py -> cli.mind_demo) ----------
+def demo(argv=None):
+    from . import lineage_cli
+    return lineage_cli.demo(argv or [])
+
+
+def mind_demo(argv=None):
+    from . import lineage_cli
+    return lineage_cli.mind_demo(argv or [])
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     cmd = argv[0] if argv else "teach"
