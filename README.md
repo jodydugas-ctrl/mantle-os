@@ -165,6 +165,7 @@ examples/
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
   *.html / *.yaml        Gen-4 reference demos (the two HTML apps functionally implement the
                          organ behaviors and are browser-tested) — see examples/README.md
+  tests/                 headless smoke tests for the HTML demos (Playwright; CI: Demo Smoke)
 ```
 
 Reading order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) →

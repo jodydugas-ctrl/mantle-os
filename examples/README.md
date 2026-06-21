@@ -37,3 +37,18 @@ now **functionally implement and browser-test the four Gen-4 organ behaviors**: 
 The fuller Gen-4 reproductive/symbiotic tissue (egg/hatchery, anchor/symbiosis, graft, mem,
 compiler, ganglia, vault) is **not reimplemented in JS** — it lives in the `mantle/` Python package
 and the runnable `FIELD_GUIDE.md`. For anything authoritative, the `mantle/` package is ground truth.
+
+## Headless smoke tests (`tests/`)
+
+`tests/demo_smoke.mjs` (Playwright) gives the single-file demos their own runtime regression
+cover, complementing the Python gate. Each demo must mount, expose its engine, and pass its
+in-browser checks — the Spreadsheet's Stage-1 self-audit, and the Reference Agent's
+Genome/resolver/self-audit assertions (primer present, `activeBodyRefs` populated-only, dangling
+vs. unsupported ref labeling, the `B-GEN` audit row). Runs in CI as **Demo Smoke**; locally:
+
+```bash
+python -m http.server 8765 --directory examples &        # serve the demos
+cd examples/tests && npm install && npx playwright install chromium
+BASE_URL=http://localhost:8765 node demo_smoke.mjs
+```
+(Node lives only here; the rest of the project stays dependency-free. `node_modules/` is gitignored.)
