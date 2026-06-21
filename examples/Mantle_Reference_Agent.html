@@ -82,18 +82,18 @@ const RESERVED_SHARDS = Object.freeze([
 const ORGAN_ATLAS = Object.freeze([
   { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence; plans ahead (schedule_pulse) and feels pain (nociception, the NOW interrupt)", bands: [], phase1: "active",
     implementedBy: ["heartbeat loop", "save()", "HB.* queue", "heart.schedule / heart.cancel / heart.fireDue (planned future wakes)", "heart.pain (immediate distress wake)"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event", "a scheduled pulse fires on its due beat and not before (one-shot)", "pain wakes attention anchored to the stressor's coordinates"] },
-  { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index AND the genesis key (the cryptographic SELF), held in the BODY not the cube; rebirth = reformat across the cube lineage", bands: ["(Body store)"], phase1: "active",
-    implementedBy: ["bodyEntries .000–.003", "s.lineageIndex", "BODY_ENTRY", "organism.rebirth", "s.genesisKey (minted once at birth; never in a cube band, never in the MIND prompt)"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)", "the genesis key never crosses into a cube band or the model context"] },
+  { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index AND the genesis key (the cryptographic SELF), held in the BODY not the cube; rebirth = reformat across the cube lineage; reproduction (declare a new AppAI as an egg) and self-reconstruction (a SELF-locked seed vault)", bands: ["(Body store)"], phase1: "active",
+    implementedBy: ["bodyEntries .000–.003", "s.lineageIndex", "BODY_ENTRY", "organism.rebirth", "s.genesisKey (minted once at birth; never in a cube band, never in the MIND prompt)", "egg.author / egg.hatch (an AppAI declared as data, then instantiated)", "vault.seal / vault.reconstruct (the genome sealed so only SELF reopens it)"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)", "the genesis key never crosses into a cube band or the model context", "a hatched egg carries the required tissue (identity+truths+commandments) or is refused", "an OTHER body cannot reconstruct from the vault — the seed is bound to SELF"] },
   { organ: "Nervous", role: "signal routing — bridges, the unified reference resolver, deterministic Context Assembly", bands: ["prime", "(all)"], phase1: "active",
     implementedBy: ["resolveHydrationRef", "resolveCubeRef", "hydrateContextMessages", "PromptAssembler"], audit: ["context assembly deterministic/no-LLM", "zero unresolved refs reach a model (HF-B24)", "dangling ref → immune event"] },
   { organ: "Senses", role: "perception (afferent I/O) — ingest signals, classify REFLEX/ROUTINE/SIGNIFICANT, and perceive the surface (Human Surface Map)", bands: ["senses"], phase1: "active",
     implementedBy: ["SENSE_LEVEL", "organism.sense (redacts at the boundary)", "HUMAN_SURFACE_MAP", "reflexGetSurfaceMap (surface coverage)"], audit: ["classifier deterministic/no-LLM (HF-B09)", "one senses entry per signal", "REFLEX never touches the brain band (HF-B18)", "every visible control appears in the Human Surface Map (HF-B44 coverage)"] },
   { organ: "Immune", role: "defense/repair — integrity scan, quarantine, tombstone, dangling-ref & secret-boundary detection; SELF/OTHER discrimination (what the genesis key signs is SELF) and nociception (severe events become distress that escalates to a pain pulse)", bands: ["immune"], phase1: "active",
     implementedBy: ["scanAll/MRI", "quarantineZone", "redact()", "cubeMirror→immune band", "self.sign / self.is_self / self.fingerprint (anti-clone identity test)", "distress → heart.pain"], audit: ["scan each heartbeat", "secrets never logged (HF-B20)", "quarantined/tombstoned hidden from reads", "only the Body's own genesis key verifies as SELF; a clone's signature is OTHER", "a forged MAC never verifies as SELF"] },
-  { organ: "Limbs", role: "action & surface actuation (efferent I/O) — effectors, async arm delegation, dispatch lifecycle, calcified exec reflexes; operates controls (ControlBridge) and renders the App-Face Bridge with proofs", bands: ["brain", "app"], phase1: "dormant→active",
-    implementedBy: ["reflexGrowArm", "reflexConfigureArm", "DISPATCH_OP", "tVCWs/registry", "VCW exec driver (calcify/invoke)", "reflexPostAppFace", "reflexUseUserView", "actionProofs"], audit: ["authorship present & immutable (HF-B29)", "Body never authors INTENTION (HF-B30)", "exec hash+capability+trust gates (HF-B47/48/50)", "every control has a ControlBridge path + proof (HF-B44)", "faces via App-Face Bridge, not raw DOM (HF-B27)"] },
+  { organ: "Limbs", role: "action & surface actuation (efferent I/O) — effectors, async arm delegation, dispatch lifecycle, calcified exec reflexes; operates controls (ControlBridge) and renders the App-Face Bridge with proofs. The Arms ARE ganglia: parallel limbs that think into the VCW, their progress read by the parent with zero MODEL calls", bands: ["brain", "app"], phase1: "dormant→active",
+    implementedBy: ["reflexGrowArm (ganglia)", "reflexConfigureArm", "DISPATCH_OP", "tVCWs/registry", "VCW exec driver (calcify/invoke)", "reflexPostAppFace", "reflexUseUserView", "actionProofs"], audit: ["authorship present & immutable (HF-B29)", "Body never authors INTENTION (HF-B30)", "exec hash+capability+trust gates (HF-B47/48/50)", "every control has a ControlBridge path + proof (HF-B44)", "faces via App-Face Bridge, not raw DOM (HF-B27)", "host residency (anchor) and the graft egg act on a real host repo — framework-only, in the mantle/ Python package, not this single-page demo"] },
   { organ: "Memory", role: "recall & metabolism — durable identity/facts/events/discoveries persistence; hot→durable flush, on-demand allocation, compaction, reclaim/reuse; graded recall (contradicted values are deweighted to recoverable ghosts, never deleted)", bands: ["identity", "facts", "events", "discoveries"], phase1: "active",
-    implementedBy: ["s.organism cube bands", "bandForOpcode dual-write", "vcwEntries", "Cube.serialize/deserialize", "writeDeltaToShard", "OVERFLOW_THRESHOLD", "Cube.compact (reclaim/reuse)", "Cube.deweight + read weight-overlay", "memory.deweight / memory.ghosts"], audit: ["entries immutable + hashed (B-13)", "reads honor the veil", "no organ rewrites history (HF-B15)", "capacity compacts/reclaims, NEVER rebirth (HF-B14)", "overflow 0.75 / emergency 0.90", "compaction preserves visible history", "a deweight is an append-only event; the target entry is never mutated; a ghost stays recoverable"] },
+    implementedBy: ["s.organism cube bands", "bandForOpcode dual-write", "vcwEntries", "Cube.serialize/deserialize", "writeDeltaToShard", "OVERFLOW_THRESHOLD", "Cube.compact (reclaim/reuse)", "Cube.deweight + read weight-overlay", "memory.deweight / memory.ghosts", "mem.excrete / mem.digest (keyless knowledge plasmids shared between organisms)"], audit: ["entries immutable + hashed (B-13)", "reads honor the veil", "no organ rewrites history (HF-B15)", "capacity compacts/reclaims, NEVER rebirth (HF-B14)", "overflow 0.75 / emergency 0.90", "compaction preserves visible history", "a deweight is an append-only event; the target entry is never mutated; a ghost stays recoverable", "a MEM plasmid carries NO genesis key (always OTHER); digested knowledge enters as inferred, never fact"] },
   { organ: "Brain", role: "cognition (Phase 2) — the fused MIND; writes ONLY thoughts + brain; may calcify proven skills into Body reflexes", bands: ["brain", "thoughts"], phase1: "dormant",
     implementedBy: ["cognition/heartbeat MIND call", "MODEL.REQUEST", "thoughts band (veiled)"], audit: ["MIND writes only thoughts+brain (HF-M07/08)", "no Genome write path", "never executes ungated code (HF-M26)"] },
 ]);
@@ -797,13 +797,15 @@ const TOOL_SCHEMAS = [
   },
   {
     name: "reflexExecBinding",
-    description: "Execute a Zombie Primitive by name with arguments. Returns a deterministic result without LLM involvement. For multi-step button actions (e.g. operator key saving display to operand then clearing), define a functionBindings chain in customInstructions using {{bodyField}} templates in args — the chain resolves {{key}} references from live bodyFields before each step. For calculator ButtonGrid: set columns:5 in props to get a 5-column button grid instead of a single horizontal line.",
+    description: "Execute a Zombie Primitive by name with arguments. Returns a deterministic result without LLM involvement. Beyond the basics, Gen-4 organ primitives are available: heart.schedule/heart.cancel/heart.fireDue (plan future wakes), heart.pain (now-interrupt); memory.deweight/memory.ghosts (graded memory); self.sign/self.is_self/self.fingerprint (SELF/OTHER); and the reproductive/symbiotic tissue: mem.excrete/mem.digest (keyless knowledge plasmids — foreign knowledge enters as inferred, never fact), vault.seal/vault.reconstruct (a SELF-locked seed only you can reopen), egg.author/egg.hatch (declare + instantiate a new AppAI). For multi-step button actions, define a functionBindings chain in customInstructions using {{bodyField}} templates in args.",
     parameters: {
       type: "object",
       properties: {
         primitive: {
           type: "string",
-          enum: ["math.eval", "state.set", "state.get", "state.append", "string.transform", "list.op", "logic.eval", "convert.type", "datetime.now", "exec.eval"],
+          enum: ["math.eval", "state.set", "state.get", "state.append", "string.transform", "list.op", "logic.eval", "convert.type", "datetime.now", "exec.eval",
+                 "heart.schedule", "heart.cancel", "heart.fireDue", "heart.pain", "memory.deweight", "memory.ghosts",
+                 "self.sign", "self.is_self", "self.fingerprint", "mem.excrete", "mem.digest", "vault.seal", "vault.reconstruct", "egg.author", "egg.hatch"],
           description: "Name of the Zombie Primitive to execute",
         },
         args: {
@@ -1323,6 +1325,55 @@ const ZOMBIE_PRIMITIVES = {
   "self.fingerprint": (args, ctx) => ({ fingerprint: ctx.genesisKey ? selfKeyFp(ctx.genesisKey) : null }),
   "self.sign": (args, ctx) => ctx.genesisKey ? ({ mac: bodySign(ctx.genesisKey, args?.data) }) : ({ error: "no SELF to sign with" }),
   "self.is_self": (args, ctx) => ({ self: bodyVerify(ctx.genesisKey, args?.data, args?.mac) }),
+  // ── Gen-4 reproductive & symbiotic tissue (browser-feasible subset) ──────────
+  // MEM plasmid — keyless, portable knowledge (a "USB stick", not an organism). excrete distils
+  // selected knowledge into a key-LESS blob; digest takes an OTHER's plasmid, refuses anything
+  // carrying a genesis key (that would be an organism, not data), and re-derives its entries as
+  // INFERRED (provenance foreign-MEM) — foreign knowledge is never trusted straight into facts.
+  "mem.excrete": (args, ctx) => {
+    const band = args?.band || "discoveries";
+    let entries = [];
+    if (Array.isArray(args?.entries)) entries = args.entries.map((e) => ({ content: e }));
+    else { try { entries = ctx.organism ? ctx.organism.prime.read(band).map((e) => ({ content: e.content })) : []; } catch (_) {} }
+    return { plasmid: { format: "mem-vcw", genesisKey: null, band, entries, excretedAt: iso() } };  // NO key — always OTHER
+  },
+  "mem.digest": (args, ctx) => {
+    const p = args?.plasmid;
+    if (!p || p.format !== "mem-vcw") return { error: "not a MEM plasmid" };
+    if (p.genesisKey != null) return { rejected: true, reason: "carries a genesis key — that is an organism, not portable data" };
+    const digested = (p.entries || []).map((e) => ({ content: e.content, provenance: "foreign-MEM", status: "inferred" }));
+    if (ctx.organism) { try { for (const d of digested) ctx.organism.prime.append("discoveries", VCW.makeEntry(d, { author: "BODY", opcode: "INHERIT" })); } catch (_) {} }
+    return { digested: digested.length, status: "inferred", note: "foreign knowledge entered as inferred discoveries, never facts" };
+  },
+  // Seed vault — the organism's genome sealed so ONLY SELF can reopen it (the genesis key is the
+  // lock). An OTHER body cannot reconstruct from the seed.
+  "vault.seal": (args, ctx) => {
+    if (!ctx.genesisKey) return { error: "no SELF to seal with" };
+    const seed = { primer: ctx.bodyEntries ? ctx.bodyEntries["bodyentry.000"] : null,
+                   lineageIndex: ctx.lineageIndex || {}, keyFingerprint: selfKeyFp(ctx.genesisKey), sealedAt: iso() };
+    return { vault: { format: "mantle-seed", seed, mac: bodySign(ctx.genesisKey, seed) } };  // MAC binds it to SELF
+  },
+  "vault.reconstruct": (args, ctx) => {
+    const v = args?.vault;
+    if (!v || v.format !== "mantle-seed") return { error: "not a seed vault" };
+    if (!bodyVerify(ctx.genesisKey, v.seed, v.mac)) return { reconstructed: false, reason: "OTHER — only the sealing SELF can open this vault" };
+    return { reconstructed: true, primer: v.seed.primer, lineageIndex: v.seed.lineageIndex };
+  },
+  // Egg — a whole AppAI declared as DATA (not programs). author emits the declaration; hatch
+  // validates the required tissue and instantiates a fresh organism's genome from it.
+  "egg.author": (args, ctx) => ({
+    egg: { format: "mantle-egg", identity: args?.identity || { name: "UnnamedAppAI" }, truths: args?.truths || [],
+           commandments: args?.commandments || [], bands: args?.bands || ["facts", "events", "discoveries"], authoredAt: iso() },
+  }),
+  "egg.hatch": (args, ctx) => {
+    const egg = args?.egg;
+    if (!egg || egg.format !== "mantle-egg") return { error: "not a mantle egg" };
+    const missing = ["identity", "truths", "commandments"].filter((k) => !egg[k] || (Array.isArray(egg[k]) ? egg[k].length === 0 : !egg[k].name));
+    if (missing.length) return { hatched: false, missing };
+    let organism = null;
+    try { organism = new VCW.Organism({ primeGeneration: 0, lineageIndex: {} }, VCW.Cube.genesis(VCW.standardGenome(), 0)); } catch (_) {}
+    return { hatched: !!organism, identity: egg.identity, bands: organism ? Object.keys(organism.prime.bands) : [] };
+  },
 };
 
 // §Custom Instructions — mutable operational layer loaded before VCW

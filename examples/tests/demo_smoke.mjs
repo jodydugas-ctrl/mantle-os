@@ -71,6 +71,14 @@ async function checkReferenceAgent(page) {
       // Self-audit carries the Genome coherence row
       const r = runStage1SelfAudit(a, (typeof HUMAN_SURFACE_MAP !== "undefined" ? HUMAN_SURFACE_MAP : []), {});
       if (!r.rows.find((x) => x.code === "B-GEN")) fails.push("B-GEN self-audit row missing");
+      // Reproductive/symbiotic tissue (feasible subset): primitives present + functional
+      const repro = ["mem.excrete", "mem.digest", "vault.seal", "vault.reconstruct", "egg.author", "egg.hatch"];
+      const have = repro.filter((k) => typeof ZOMBIE_PRIMITIVES[k] === "function");
+      if (have.length !== repro.length) fails.push("reproductive primitives missing: " + have.length + "/" + repro.length);
+      const egg = ZOMBIE_PRIMITIVES["egg.author"]({ identity: { name: "t" }, truths: ["x"], commandments: ["y"] }, a).egg;
+      if (ZOMBIE_PRIMITIVES["egg.hatch"]({ egg }, a).hatched !== true) fails.push("egg.hatch did not hatch");
+      const v = ZOMBIE_PRIMITIVES["vault.seal"]({}, a).vault;
+      if (ZOMBIE_PRIMITIVES["vault.reconstruct"]({ vault: v }, a).reconstructed !== true) fails.push("vault SELF cannot reopen its own seal");
     } catch (e) {
       fails.push("threw: " + e.message);
     }
@@ -91,6 +99,14 @@ async function checkSpreadsheet(page) {
       const audit = mantleSelfAuditV23(bootMantleAgent());
       const verdict = audit.verdict || (audit.pass ? "PASS" : "FAIL");
       if (verdict !== "PASS") fails.push("self-audit verdict = " + verdict);
+      // Reproductive/symbiotic tissue (feasible subset): primitives functional via executeZombiePrimitive
+      const s = bootMantleAgent();
+      const egg = executeZombiePrimitive(s, "egg.author", { identity: { name: "t" }, truths: ["x"], commandments: ["y"] }).result.egg;
+      if (executeZombiePrimitive(s, "egg.hatch", { egg }).result.hatched !== true) fails.push("egg.hatch did not hatch");
+      const v = executeZombiePrimitive(s, "vault.seal", {}).result.vault;
+      if (executeZombiePrimitive(s, "vault.reconstruct", { vault: v }).result.reconstructed !== true) fails.push("vault SELF cannot reopen its own seal");
+      const p = executeZombiePrimitive(s, "mem.excrete", { entries: ["k"] }).result.plasmid;
+      if (p.genesisKey !== null) fails.push("MEM plasmid is not keyless");
     } catch (e) {
       fails.push("threw: " + e.message);
     }

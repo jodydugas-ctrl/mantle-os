@@ -530,7 +530,7 @@
       bodyWriteSurfaces: ["arm-spreadsheet", "senses", "brain", "events"],
       mindWriteAllowed: Array.from(MIND_WRITE_ALLOWED)
     });
-    const ZOMBIE_PRIMITIVES = Object.freeze(["math.eval", "state.set", "state.get", "string.transform", "list.op", "datetime.now", "heart.schedule", "heart.cancel", "heart.pain", "memory.deweight", "memory.ghosts", "self.sign", "self.is_self", "self.fingerprint"]);
+    const ZOMBIE_PRIMITIVES = Object.freeze(["math.eval", "state.set", "state.get", "string.transform", "list.op", "datetime.now", "heart.schedule", "heart.cancel", "heart.pain", "memory.deweight", "memory.ghosts", "self.sign", "self.is_self", "self.fingerprint", "mem.excrete", "mem.digest", "vault.seal", "vault.reconstruct", "egg.author", "egg.hatch"]);
     const FOUNDRY_OPS = Object.freeze(["FORGE", "CLONE", "DISTILL", "GRAFT", "CALCIFY", "SEAL"]);
     const BODY_ENTRY_OPS = Object.freeze(["ADD", "REMOVE", "ALTER"]);
     const SPEC_PRIORITY_STEPS = Object.freeze([
@@ -944,16 +944,16 @@ const redactSecrets = (v) => {
 const ORGAN_ATLAS = Object.freeze([
   { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence; plans ahead (scheduled wakes) and escalates pain (unscheduled wakes)", bands: [], phase1: "active",
     implementedBy: ["heartbeat()", "setInterval(HEARTBEAT_INTERVAL_MS)", "saveState() cadence", "heartbeatQueue", "schedulePulse()/cancelPulse() (heart.schedule)", "heart.pain (nociception — the NOW interrupt)"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event", "a scheduled pulse fires on its due beat and not before (SCHED-1)", "cognition is event-gated; pain/distress wakes attention with stressor coords (NOC-1..3)"] },
-  { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index + the genesis key (cryptographic SELF), held in the BODY not the cube; rebirth = reformat across the cube lineage", bands: ["(Body store)"], phase1: "active",
-    implementedBy: ["createBodyEntries (bodyentry.000–.003)", "state.lineageIndex", "mutateBodyEntry", "ORGANISM.rebirth", "mintGenesisKey()/bodySign() (self.sign/is_self/fingerprint)"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)", "the genesis key is Body-resident — never in a cube band, never in the MIND's prompt (SELF-1)"] },
+  { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index + the genesis key (cryptographic SELF), held in the BODY not the cube; rebirth = reformat across the cube lineage; reproduction (declare a new AppAI as an egg) and self-reconstruction (a SELF-locked seed vault)", bands: ["(Body store)"], phase1: "active",
+    implementedBy: ["createBodyEntries (bodyentry.000–.003)", "state.lineageIndex", "mutateBodyEntry", "ORGANISM.rebirth", "mintGenesisKey()/bodySign() (self.sign/is_self/fingerprint)", "egg.author / egg.hatch (an AppAI declared as data, then instantiated)", "vault.seal / vault.reconstruct (the genome sealed so only SELF reopens it)"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)", "the genesis key is Body-resident — never in a cube band, never in the MIND's prompt (SELF-1)", "a hatched egg carries the required tissue or is refused", "an OTHER body cannot reconstruct from the vault — the seed is bound to SELF"] },
   { organ: "Nervous", role: "signal routing — bridges, the unified reference resolver, deterministic Context Assembly", bands: ["prime", "(all)"], phase1: "active",
     implementedBy: ["resolveReference", "resolveCubeRef", "assembleContext", "hydrateProviderContext / buildRemoteMindPrompt"], audit: ["context assembly deterministic/no-LLM", "zero unresolved refs reach a model (HF-B24)", "dangling ref → immune event"] },
   { organ: "Senses", role: "perception (afferent I/O) — ingest signals, classify REFLEX/ROUTINE/SIGNIFICANT, and perceive the surface (Human Surface Map)", bands: ["senses"], phase1: "active",
     implementedBy: ["dispatchSense", "significant-event classifier", "HUMAN_SURFACE_MAP (surface coverage)", "senses band (redacted on write)"], audit: ["classifier deterministic/no-LLM (HF-B09)", "one senses entry per signal", "REFLEX never touches the brain band (HF-B18)", "every visible control appears in the Human Surface Map (HF-B44 coverage)"] },
   { organ: "Immune", role: "defense/repair — integrity scan, quarantine, tombstone, dangling-ref & secret-boundary detection; SELF/OTHER recognition; nociception (distress → unscheduled pulse)", bands: ["immune"], phase1: "active",
     implementedBy: ["crc8 integrity", "redactSecrets", "immune band (IMMUNE.LOG / RECALL_ERROR)", "WASTE_GUARD", "bodyVerify (self.is_self → SELF/OTHER)", "distress sense (heart.pain)"], audit: ["scan each heartbeat", "secrets never logged (HF-B20)", "quarantined/tombstoned hidden from reads", "what the Body cannot sign is OTHER (SELF-2)", "a severe event emits distress with stressor coords (NOC-2)"] },
-  { organ: "Limbs", role: "action & surface actuation (efferent I/O) — effectors, async arm delegation, dispatch lifecycle; operates/renders the surface (App-Face Bridge) with proofs", bands: ["brain", "app"], phase1: "dormant→active",
-    implementedBy: ["arm-spreadsheet / arm-maintenance limbs", "dispatch lifecycle (brain band)", "bodyProgramLimbs", "foundryOperation", "renderApp (App-Face Bridge)", "bodyActionProofs", "commitTextDraftOnBlur"], audit: ["authorship present & immutable (HF-B29)", "Body never authors INTENTION (HF-B30)", "exec hash+capability+trust gates (HF-B47/48/50)", "every control has a ControlBridge path + proof (HF-B44)", "faces via App-Face Bridge, not raw DOM (HF-B27)"] },
+  { organ: "Limbs", role: "action & surface actuation (efferent I/O) — effectors, async arm delegation, dispatch lifecycle; operates/renders the surface (App-Face Bridge) with proofs. The Arms ARE ganglia: parallel limbs whose progress the parent reads with zero MODEL calls", bands: ["brain", "app"], phase1: "dormant→active",
+    implementedBy: ["arm-spreadsheet / arm-maintenance limbs (ganglia)", "dispatch lifecycle (brain band)", "bodyProgramLimbs", "foundryOperation", "renderApp (App-Face Bridge)", "bodyActionProofs", "commitTextDraftOnBlur"], audit: ["authorship present & immutable (HF-B29)", "Body never authors INTENTION (HF-B30)", "exec hash+capability+trust gates (HF-B47/48/50)", "every control has a ControlBridge path + proof (HF-B44)", "faces via App-Face Bridge, not raw DOM (HF-B27)", "host residency (anchor) and the graft egg act on a real host repo — framework-only, in the mantle/ Python package, not this single-page demo"] },
   { organ: "Memory", role: "recall & metabolism — durable identity/facts/events/discoveries persistence; flush, on-demand allocation, compaction, reclaim/reuse; graded memory (deweight, never delete)", bands: ["identity", "facts", "events", "discoveries"], phase1: "active",
     implementedBy: ["state.crystals + ORGANISM cube bands", "writeDeltaToCrystal", "serializeState / hydrateState", "fillLevel / OVERFLOW_THRESHOLD (overflow→forgeCrystal)", "ORGANISM.prime.compact (reclaim/reuse)", "ORGANISM.prime.deweight + weightOverlay (memory.deweight/ghosts)"], audit: ["entries immutable + hashed (B-13)", "reads honor the veil", "no organ rewrites history (HF-B15)", "capacity compacts/reclaims, NEVER rebirth (HF-B14)", "overflow 0.75 / emergency 0.90", "compaction preserves visible history", "a deweighted entry is hidden yet recoverable as a ghost; the original is never mutated (MEMW-1)"] },
   { organ: "Brain", role: "cognition (Phase 2) — the fused MIND; writes ONLY thoughts + brain; may calcify proven skills into Body reflexes", bands: ["brain", "thoughts"], phase1: "dormant",
@@ -1488,6 +1488,42 @@ let ORGANISM = null;
       }
       if (name === "self.is_self") {   // SELF iff this Body's key verifies the mac; else OTHER
         return { result: bodyVerify(state.genesisKey, args && args.data, args && args.mac) };
+      }
+      // ── Gen-4 reproductive & symbiotic tissue (browser-feasible subset) ──────────
+      if (name === "mem.excrete") {   // keyless knowledge plasmid — a "USB stick", not an organism
+        const entries = Array.isArray(args && args.entries) ? args.entries.map(function (e) { return { content: e }; }) : [];
+        return { result: { plasmid: { format: "mem-vcw", genesisKey: null, entries: entries, excretedAt: isoNow() } } };
+      }
+      if (name === "mem.digest") {   // ingest an OTHER plasmid → re-derive as INFERRED; refuse anything keyed
+        const p = args && args.plasmid;
+        if (!p || p.format !== "mem-vcw") return { error: "not a MEM plasmid" };
+        if (p.genesisKey != null) return { result: { rejected: true, reason: "carries a genesis key — that is an organism, not portable data" } };
+        const digested = (p.entries || []).map(function (e) { return { content: e.content, provenance: "foreign-MEM", status: "inferred" }; });
+        digested.forEach(function (d) { writeDeltaToCrystal(state, "discoveries", d, "Body", "INHERIT"); });
+        return { result: { digested: digested.length, status: "inferred", note: "foreign knowledge entered as inferred discoveries, never facts" } };
+      }
+      if (name === "vault.seal") {   // seal the genome so ONLY SELF can reopen it (the genesis key is the lock)
+        if (!state.genesisKey) return { error: "no SELF to seal with" };
+        const seed = { primer: state.bodyEntries["bodyentry.000"], lineageIndex: state.lineageIndex || {}, keyFp: bodySign(state.genesisKey, "fp"), sealedAt: isoNow() };
+        return { result: { vault: { format: "mantle-seed", seed: seed, mac: bodySign(state.genesisKey, seed) } } };
+      }
+      if (name === "vault.reconstruct") {
+        const v = args && args.vault;
+        if (!v || v.format !== "mantle-seed") return { error: "not a seed vault" };
+        if (!bodyVerify(state.genesisKey, v.seed, v.mac)) return { result: { reconstructed: false, reason: "OTHER — only the sealing SELF can open this vault" } };
+        return { result: { reconstructed: true, primer: v.seed.primer, lineageIndex: v.seed.lineageIndex } };
+      }
+      if (name === "egg.author") {   // a whole AppAI declared as DATA (not programs)
+        return { result: { egg: { format: "mantle-egg", identity: (args && args.identity) || { name: "UnnamedAppAI" }, truths: (args && args.truths) || [], commandments: (args && args.commandments) || [], bands: (args && args.bands) || ["facts", "events", "discoveries"], authoredAt: isoNow() } } };
+      }
+      if (name === "egg.hatch") {   // validate the required tissue + instantiate a fresh organism's genome
+        const egg = args && args.egg;
+        if (!egg || egg.format !== "mantle-egg") return { error: "not a mantle egg" };
+        const missing = ["identity", "truths", "commandments"].filter(function (k) { return !egg[k] || (Array.isArray(egg[k]) ? egg[k].length === 0 : !egg[k].name); });
+        if (missing.length) return { result: { hatched: false, missing: missing } };
+        let bands = [];
+        try { const o = new VCW.Organism({ primeGeneration: 0, lineageIndex: {} }, VCW.Cube.genesis(VCW.standardGenome(), 0)); bands = Object.keys(o.prime.bands); } catch (e) {}
+        return { result: { hatched: bands.length > 0, identity: egg.identity, bands: bands } };
       }
       return { error: "Unknown zombie primitive." };
     }

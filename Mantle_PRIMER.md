@@ -273,7 +273,9 @@ Both paths converge on the same certified Body, then the same MIND fusion.
   `examples/*.html` reference apps (the Spreadsheet Agent and the Reference AppAI) and the
   `examples/*.yaml` alignment schema are aligned to **Gen-4**, and the two HTML demos are
   functionally rebuilt and browser-tested (graded memory · self/other · nociception ·
-  schedule_pulse) — read them too (see `examples/README.md`).
+  schedule_pulse · the browser-feasible reproductive/symbiotic subset: keyless MEM plasmids,
+  a SELF-locked seed vault, egg author/hatch, Arms-as-ganglia) — read them too, and
+  `examples/tests/` runs them headlessly in CI (see `examples/README.md`).
 - **Optional means optional.** Anything in `docs/Mantle_Extensions.md` (LIGATURE,
   polymorphic Body, extended Foundry, credential pools) is opt-in. Do not grow it
   unless the §0 block or the operator asks for it.
