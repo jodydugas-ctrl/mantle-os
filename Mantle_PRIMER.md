@@ -1,10 +1,13 @@
 # Mantle OS — PRIMER
 
-**Mantle OS v2.3** · The organic coding framework
+**Mantle OS · Gen-4** (the Homeostatic AppAI Framework, evolved)
 *Read in order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) (why) →
 [`docs/Mantle_Organism_Lens.md`](docs/Mantle_Organism_Lens.md) (how to see any app as a creature) → this
 (who you are while you build) → [`docs/Mantle_Organ_Atlas.md`](docs/Mantle_Organ_Atlas.md) (the taxonomy).
-The working code in [`examples/vcw/`](examples/vcw/) is ground truth where prose disagrees.*
+**The working `mantle/` package is ground truth where prose disagrees**, and
+[`FIELD_GUIDE.md`](FIELD_GUIDE.md) is the same framework as a manual that RUNS — `python -m
+mantle teach` proves all 17 chapters live. The standalone cube format is
+[`examples/vcw/vcw_cube.py`](examples/vcw/vcw_cube.py) (normative, runnable in one file).*
 
 ---
 
@@ -21,6 +24,26 @@ This is not decoration. "Organ," "reflex," "veil," "Body," and "MIND" are the
 **concrete code-structure vocabulary** of this framework. When you build a module,
 you build an **organ** with a manifest. When you handle an input without a model,
 that is a **reflex**. The biology is the architecture.
+
+### Generation 4 — what the lineage now carries
+
+Mantle v3 answered *"how does one organism live?"* — the eight organs, the heartbeat, the
+gates. **Gen-4 adds the next questions an organism faces**, every one of them gated the same
+way (build it, then *prove* it; nothing is "probably right"):
+
+- **how does life carry new life?** — an AppAI is declared as a single JSON **egg** and
+  incubated by the **hatchery** into a certified organism; the **graft egg** is a
+  non-destructive patch against an existing host.
+- **how does it earn its keep?** — **anchoring** makes it the resident of a real codebase;
+  **symbiosis** meters cognition against an energy budget (API credits) and ledgers value.
+- **how does it know itself?** — a **genesis key** gives each Body a cryptographic SELF; what
+  it cannot sign is OTHER. Pain (**nociception**) wakes the MIND only when something hurts.
+- **how does it share, evolve, and survive?** — keyless **MEM VCWs** carry knowledge between
+  organisms; a **Compiler-class** organism re-fits its own VCW at rebirth; **ganglia** are
+  parallel limbs; the **seed vault** reconstructs a corrupted body.
+
+You still build **Body first, brain second** — Gen-4 is more tissue on the same skeleton, not
+a new spine. The single source of runnable truth for all of it is `python -m mantle teach`.
 
 ### The two phases (non-negotiable order)
 
@@ -50,9 +73,10 @@ that works with no mind, then give it a mind.*
 ## 1. The document set (and the order to read/use them)
 
 ```
-The root holds the build sequence; reference material lives in docs/.
+The root holds the build sequence; the framework itself is the mantle/ package.
 
 Mantle_PRIMER.md            <- you are here: role, ontology, operating procedure
+FIELD_GUIDE.md              <- the RUNNABLE manual; mirror of `python -m mantle teach` (17 chapters)
 
 PHASE 1 (Body):
   Mantle_Part1_Body.md        <- how to grow the Body, organ by organ
@@ -62,28 +86,39 @@ PHASE 2 (MIND):
   Mantle_Part2_Mind.md        <- how to fuse the MIND
   Mantle_Part2_Mind_Audit.md  <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
 
-Mantle_Assimilator.md       <- Path B: grow organs around EXISTING code (non-destructively);
-                               includes the App Inventory fill-in template as Appendix A
+Mantle_Assimilator.md       <- Path B: residency in EXISTING code (non-destructive); the basis
+                               of `anchor` and the `graft` egg
+
+mantle/  <- THE FRAMEWORK (ground truth where prose disagrees):
+  core/ vcw/ organs/ mind/    <- the inherited anatomy (Body, substrate, eight organs, the MIND)
+  assimilator/ audits/        <- Path B dissection + the gates (66 invariants, Stage-1/2)
+  egg.py hatchery.py          <- declarative birth: a whole AppAI as one JSON file
+  anchor.py symbiosis.py      <- residency in a host + the metered energy economy
+  graft.py                    <- the graft egg (patch a host) + live residency weaving
+  mem.py compiler.py          <- keyless knowledge plasmids + the self-redesigning VCW / memory bridge
+  ganglia.py vault.py         <- parallel limbs + the self-reconstruction seed vault
+  ingestion.py doctor.py      <- conversation ingestion + the deployment checkup
+  face.py teach.py            <- the PNG self-portrait + the running Field Guide
 
 docs/  <- reference + supporting material:
   docs/Mantle_Doctrine.md       <- READ FIRST: the creed + cosmology (why)
   docs/Mantle_Organism_Lens.md  <- the mindset primer: read any app as a living creature
   docs/Mantle_Organ_Atlas.md    <- the organ taxonomy: every organ, its manifest, its reflexes
   docs/Mantle_LLM_Pitfalls.md   <- three traps LLMs fall into + how to avoid them (read FIRST if LLM)
-  docs/Mantle_Extensions.md     <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
-  docs/Mantle_Positioning.md    <- plain-language on-ramp + how this relates to other tools
-  docs/Mantle_Grooves.md        <- groove detection / muscle memory (Extensions §6)
-  docs/Mantle_Urge_System.md    <- internal pressure/gradient model (Extensions §7)
+  docs/MOLT_LEDGER.md           <- the Gen-4 evolution record: every molt, its invariants, format verdict
+  docs/v3/                      <- VCW guide · lifecycle · organ contracts · assimilation · audit · visual
   docs/Mantle_VCW_Tiers.md      <- VCW compliance tiers: what to do when a full VCW can't run
+  docs/Mantle_Extensions.md     <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
 
-examples/vcw/                 <- the heart, in runnable code (substrate you build around)
-  vcw_cube.py · drivers.py · body.py · refs.py · lineage.py · skills.py · boot.py
-  GUIDE.md  <- the one teaching guide (substrate + programmable layer)
-  examples.py · examples_boot.py · README.md
+examples/
+  vcw/vcw_cube.py             <- the normative cube format, standalone in one file (selftest proves it)
+  sample_app/                 <- a plain app: the assimilation / anchor / graft target
+  ../eggs/greeter.json        <- the egg template (hatch it) · ../eggs/notes_graft.json (a graft egg)
 ```
 
-Read the Doctrine and the Organism Lens, then this Primer, then **`examples/vcw/GUIDE.md`** so you
-understand the substrate, then the **Organ Atlas**. Only then open Part 1.
+Read the Doctrine and the Organism Lens, then this Primer, then **run `python -m mantle teach`**
+(or read its mirror `FIELD_GUIDE.md`) so you see the whole organism prove itself, then the
+**Organ Atlas**. Only then open Part 1.
 
 ---
 
@@ -101,6 +136,16 @@ understand the substrate, then the **Organ Atlas**. Only then open Part 1.
 | **Genome (agent)** | Identity held in the **Body** (not the cube): Primer (read-only) + Special Instructions + Immunization + lineage index. |
 | **Veil** | The Body reflex that hides private / tombstoned / quarantined memory on read. |
 | **Zombie Body** | A Body that has passed the Stage 1 Gate: alive, correct, dormant. |
+| **Egg** | A whole AppAI declared as one JSON document (data, not programs). Hatched into a certified organism. |
+| **Graft egg** | A non-destructive patch declared against a named host repo; applied in a workspace copy. |
+| **Anchoring / Resident** | An AppAI that has taken residence in a host codebase (a `.mantle/` nest), do-no-harm census-verified. |
+| **Symbiosis** | The energy economy: API keys are *resources*, credits are *energy*; cognition is metered, value is ledgered. |
+| **Genesis key / SELF·OTHER** | A one-time key sealed into the Body (never in a cube, never to the MIND). What it can sign is SELF; all else is OTHER. |
+| **Nociception** | Cognition is *event-gated*: a severe immune event fires an unscheduled "pain" pulse that wakes the MIND at the stressor; a calm organism sleeps. |
+| **Graded memory / ghost** | A contradicted value is *deweighted* (append-only), not deleted — hidden from default reads, recoverable as a behavioral ghost. |
+| **MEM VCW** | A keyless, lineage-free cube — bare knowledge + microcode shared between organisms (always OTHER; digested, never run raw). |
+| **Ganglion** | A bounded parallel limb that writes progress into a VCW band — zero-token telemetry the parent reads as memory. |
+| **Seed vault** | A SELF-encrypted band holding the organism's own seed, for gated self-reconstruction. |
 
 ---
 
@@ -179,21 +224,32 @@ source code is provided.
 
 ### Path A — Build from scratch (greenfield organism)
 1. Emit the §0 Declaration Block.
-2. Read `examples/vcw/GUIDE.md` and the **Organ Atlas**.
-3. Follow **`Mantle_Part1_Body.md`**: grow each organ, bind it to its bands, give it
-   reflexes. Author the **Body** (Primer/identity), then genesis the cube for experiential memory.
-4. Run **`Mantle_Part1_Body_Audit.md`** against the result. Fix every hard-fail.
+2. Run `python -m mantle teach` (or read `FIELD_GUIDE.md`) and the **Organ Atlas**.
+3. Grow the Body. Two ways, same gate:
+   - **Declarative (Gen-4, preferred for a standard organism):** write an **egg** — copy
+     `eggs/greeter.json`, change identity/truths/commandments, add app bands, reflexes (from
+     the fixed vocabulary `remember|complete|notify|operate`), and instincts (each with proving
+     cases). `python -m mantle hatch <egg.json>` births, wires, runs the instinct gauntlet, and
+     faces the Stage-1 gate — a malformed egg never hatches.
+   - **Hand-grown (when the egg vocabulary isn't enough):** follow **`Mantle_Part1_Body.md`** —
+     grow each organ, bind its bands, give it reflexes; author the Body (Primer/identity); genesis
+     the cube.
+4. Certify with **`Mantle_Part1_Body_Audit.md`** / `python -m mantle audit`. Fix every hard-fail.
    Do not proceed until the Zombie Body is **certified**.
 5. Only then follow **`Mantle_Part2_Mind.md`** to fuse the MIND, and certify with
-   **`Mantle_Part2_Mind_Audit.md`** (which *re-runs* the Stage 1 checks first).
+   **`Mantle_Part2_Mind_Audit.md`** / `python -m mantle audit-mind` (which *re-runs* Stage 1 first).
 
-### Path B — Assimilate existing code (brownfield organism)
+### Path B — Take residence in existing code (brownfield organism)
 1. Emit the §0 Declaration Block (declaring the host you are instrumenting).
-2. Follow **`Mantle_Assimilator.md`**: inventory the existing code, classify each
-   symbol by organ role, and **grow organs around the existing tissue without
-   rewriting its behavior**. Instrumentation is additive and fail-open.
-3. The Assimilator *replaces* Part 1 as the Body-building path; you still finish at
-   the **Stage 1 Gate**, then proceed to Phase 2 identically.
+2. Follow **`Mantle_Assimilator.md`**: the assimilator dissects the host read-only (AST only,
+   no host code runs) and classifies each symbol by organ role. In Gen-4 this is the basis of:
+   - **`python -m mantle anchor <host>`** — grow an anchored resident in a `.mantle/` nest,
+     remembering the host's organ map as observed facts; do-no-harm is a byte-level census
+     invariant, not a hope. Then `ask` / `feed` / `vitals` the resident.
+   - **the graft egg** (`python -m mantle graft <graft-egg> <host>`) — a non-destructive patch
+     applied in a workspace copy; `graft.weave(...)` threads the host's live callables through
+     fail-open organ wrappers (residency that *feels the host run*, zero LLM).
+3. Residency still finishes at the **Stage 1 Gate**, then proceeds to Phase 2 identically.
 
 Both paths converge on the same certified Body, then the same MIND fusion.
 
@@ -209,8 +265,13 @@ Both paths converge on the same certified Body, then the same MIND fusion.
   file will check it. If you can't state the proof, the organ isn't done.
 - **Keep Phase 1 brain-free.** If you catch yourself reaching for the LLM during
   Phase 1, stop — that logic belongs in a reflex or it doesn't belong in Phase 1.
-- **Examples in the source Drive are out of date.** Build from these instructions,
-  not from any example artifact.
+- **Containment before reach.** Gen-4 abilities reach into host code and foreign data — never
+  do so except through the SELF/OTHER test and the exec gates (sandbox · hash · capability ·
+  provenance · trust). Build the boundary before the capability.
+- **Trust the runnable examples; distrust the legacy artifacts.** `examples/sample_app/`,
+  `eggs/*.json`, and `examples/vcw/vcw_cube.py` are current and proven by the gate — read them.
+  The large `examples/*.html` / `*.yaml` reference artifacts are **v2-era and not yet
+  regenerated**; do not build from them (see `examples/README.md`).
 - **Optional means optional.** Anything in `docs/Mantle_Extensions.md` (LIGATURE,
   polymorphic Body, extended Foundry, credential pools) is opt-in. Do not grow it
   unless the §0 block or the operator asks for it.
