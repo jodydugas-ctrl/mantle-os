@@ -1,0 +1,120 @@
+// Headless smoke tests for the two Mantle OS reference HTML demos.
+//
+// The Python substrate is certified by `python -m mantle prove` (68 invariants); these tests
+// give the single-file *browser* demos their own runtime regression cover: each demo must mount
+// with no unexpected console errors, expose its engine, and PASS its in-browser self-audit
+// (Spreadsheet) / Genome+resolver checks (Reference Agent). Assertions mirror the manual
+// preview-harness checks used while developing the fixes.
+//
+// Usage: a static server must serve examples/ at $BASE_URL (default http://localhost:8765).
+//   python -m http.server 8765 --directory examples &
+//   node demo_smoke.mjs
+import { chromium } from "playwright";
+
+const BASE = process.env.BASE_URL || "http://localhost:8765";
+// Babel's "code generator has deoptimised ... exceeds the max of 500KB" note is emitted as a
+// console.error by @babel/standalone for the large inline scripts; it is benign and expected.
+const BENIGN = [/deoptimised/i, /exceeds the max of 500KB/i, /\[BABEL\]/i];
+
+function isBenign(text) {
+  return BENIGN.some((re) => re.test(text));
+}
+
+async function loadDemo(page, file, { mountSelector, waitForGlobal }) {
+  const errors = [];
+  page.on("console", (msg) => {
+    if (msg.type() === "error" && !isBenign(msg.text())) errors.push("console: " + msg.text());
+  });
+  page.on("pageerror", (err) => errors.push("pageerror: " + (err && err.message)));
+
+  await page.goto(`${BASE}/${file}?cb=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  // The engine globals are script/Babel-scope consts (reachable by bare name in the page realm,
+  // not on window). The Reference Agent compiles a ~500KB inline TSX via in-browser Babel, so give
+  // it room. A throwing predicate would reject the wait, so swallow the ReferenceError until defined.
+  await page.waitForFunction(
+    (g) => { try { return eval("typeof " + g) !== "undefined"; } catch (_) { return false; } },
+    waitForGlobal,
+    { timeout: 60000, polling: 250 }
+  );
+  if (mountSelector) {
+    await page.waitForSelector(mountSelector, { state: "attached", timeout: 60000 });
+  }
+  // Surface a boot-error overlay if the demo defines one.
+  const bootErr = await page.evaluate(() => {
+    const e = document.getElementById("boot-err");
+    return e && e.style.display === "block" ? e.textContent.slice(0, 200) : null;
+  });
+  if (bootErr) errors.push("boot-err: " + bootErr);
+  return errors;
+}
+
+async function checkReferenceAgent(page) {
+  const errors = await loadDemo(page, "Mantle_Reference_Agent.html", {
+    mountSelector: "#root > *",
+    waitForGlobal: "initS",
+  });
+  const result = await page.evaluate(() => {
+    const fails = [];
+    try {
+      if (typeof activeBodyRefs !== "function") fails.push("activeBodyRefs missing");
+      if (typeof ensureGenomeEntries !== "function") fails.push("ensureGenomeEntries missing");
+      const a = initS();
+      ensureGenomeEntries(a);
+      a.organism = new VCW.Organism({ primeGeneration: 0, lineageIndex: {} }, VCW.Cube.genesis(VCW.standardGenome(), 0));
+      // Genome present + dynamic refs (empty 003 excluded)
+      const refs = activeBodyRefs(a);
+      if (!refs.includes("<bodyentry.000>")) fails.push("primer ref missing from activeBodyRefs");
+      if (refs.includes("<bodyentry.003>")) fails.push("empty inheritance slot wrongly referenced");
+      // Dangling vs unsupported labeling
+      if (resolveHydrationRef(a, "<facts.11>").reason !== "dangling-reference") fails.push("dangling ref mislabeled");
+      if (resolveHydrationRef(a, "<totally_not_a_band.0>").reason !== "unsupported-reference-syntax") fails.push("unsupported ref mislabeled");
+      // Self-audit carries the Genome coherence row
+      const r = runStage1SelfAudit(a, (typeof HUMAN_SURFACE_MAP !== "undefined" ? HUMAN_SURFACE_MAP : []), {});
+      if (!r.rows.find((x) => x.code === "B-GEN")) fails.push("B-GEN self-audit row missing");
+    } catch (e) {
+      fails.push("threw: " + e.message);
+    }
+    return fails;
+  });
+  return errors.concat(result);
+}
+
+async function checkSpreadsheet(page) {
+  const errors = await loadDemo(page, "Mantle_Spreadsheet_Agent.html", {
+    mountSelector: null,
+    waitForGlobal: "bootMantleAgent",
+  });
+  const result = await page.evaluate(() => {
+    const fails = [];
+    try {
+      if (typeof bootMantleAgent !== "function") fails.push("bootMantleAgent missing");
+      const audit = mantleSelfAuditV23(bootMantleAgent());
+      const verdict = audit.verdict || (audit.pass ? "PASS" : "FAIL");
+      if (verdict !== "PASS") fails.push("self-audit verdict = " + verdict);
+    } catch (e) {
+      fails.push("threw: " + e.message);
+    }
+    return fails;
+  });
+  return errors.concat(result);
+}
+
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  let failures = [];
+  try {
+    const ref = await checkReferenceAgent(page);
+    console.log(ref.length ? "✗ Reference Agent:\n  " + ref.join("\n  ") : "✓ Reference Agent: mounts, Genome+resolver+self-audit OK");
+    const sheet = await checkSpreadsheet(page);
+    console.log(sheet.length ? "✗ Spreadsheet Agent:\n  " + sheet.join("\n  ") : "✓ Spreadsheet Agent: boots, self-audit PASS");
+    failures = ref.concat(sheet);
+  } finally {
+    await browser.close();
+  }
+  if (failures.length) {
+    console.error("\nDEMO SMOKE FAILED (" + failures.length + " issue(s)).");
+    process.exit(1);
+  }
+  console.log("\nDEMO SMOKE PASSED.");
+})();
