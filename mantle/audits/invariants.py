@@ -196,6 +196,20 @@ def t_dangling_ref_immune():
             "3 dangling refs -> 3 immune events, all resolved None")
 
 
+def t_body_genome_round_trip():
+    """HF-B02/B45: the Body genome (primer + self_record) survives save->load. A reloaded Body
+    keeps its primer, so a reloaded organism is never silently amnesiac. This guards the failure
+    the Reference Agent's logs exhibited: bodyentry.000 (the primer) going `missing-bodyentry` on
+    every model call after the crystal was reloaded because the Body slots were not persisted."""
+    org = _born()
+    before = org.body.boot_order()["primer"]
+    reloaded = Body.from_dict(org.body.to_dict())
+    after = reloaded.boot_order()["primer"]
+    record_ok = reloaded.self_record()["primer"] == org.body.self_record()["primer"]
+    return (bool(after) and after == before and record_ok,
+            "Body genome (primer + self_record) round-trips through to_dict/from_dict")
+
+
 def t_assembly_complete_and_veiled():
     """HF-M14 (Phase-1 half): Context Assembly is complete (no raw refs) and veiled."""
     org = _born()
@@ -1245,6 +1259,7 @@ TESTS = [
     ("B-14  veil-hides-thoughts",              t_veil_hides_thoughts),
     ("B-15  tombstone+quarantine-hidden",      t_tombstone_quarantine_hidden),
     ("HF-B24 dangling-ref->immune",            t_dangling_ref_immune),
+    ("HF-B02 body-genome-survives-reload",     t_body_genome_round_trip),
     ("HF-M14 assembly-complete+veiled",        t_assembly_complete_and_veiled),
     ("HF-B46 ancestral-read-only",             t_ancestral_readonly),
     ("HF-B46b seal-tamper-detected",           t_seal_tamper_detected),

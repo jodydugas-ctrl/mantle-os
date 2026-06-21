@@ -437,7 +437,7 @@ Then:
 ```bash
 python -m mantle hatch my_egg.json --out=my_nest/
 python -m mantle audit            # the full gate, anytime
-python -m mantle prove            # the 67 security invariants
+python -m mantle prove            # the 68 security invariants
 python -m mantle mind             # fuse the offline MIND and watch containment
 python -m mantle assimilate <existing-app> --dry-run    # Path B: dissect, don't rewrite
 ```

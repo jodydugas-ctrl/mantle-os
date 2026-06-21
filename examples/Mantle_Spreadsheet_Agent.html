@@ -1893,7 +1893,13 @@ let ORGANISM = null;
         requestedModel: state.openRouter.selectedModel || KEYFILE.DEFAULT_MODEL,
         role: "Prime",
         keyFingerprint: state.openRouter.keyFingerprint || keyFingerprint(state.openRouter.apiKey),
-        bodyRefs: ["<bodyentry.000>", "<bodyentry.001>", "<bodyentry.002>", "<bodyentry.003>"],
+        // Only the Body slots that are actually populated — never advertise an empty slot as a ref
+        // (so an emptied inheritance/special slot can't read as a phantom missing-bodyentry).
+        bodyRefs: ["000", "001", "002", "003"].filter(function (n) {
+          var e = state.bodyEntries["bodyentry." + n];
+          if (!e || e.content == null) return false;
+          return Array.isArray(e.content) ? e.content.length > 0 : String(e.content).length > 0;
+        }).map(function (n) { return "<bodyentry." + n + ">"; }),
         ts: isoNow()
       }, info || {});
       const write = writeDeltaToCrystal(state, "brain", payload, "Body", "MODEL.REQUEST");

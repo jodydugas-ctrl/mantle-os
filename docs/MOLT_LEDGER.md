@@ -273,8 +273,9 @@ should be re-pointed at Mantle's own README count at merge time.
 | 6 | M7 ganglia · M8 seed vault | GANG-1..2, VAULT-1..2 | COMPAT | ganglia.py, vault.py | body (seal/open_bytes) |
 | 7 | §3 metering · ingestion · doctor | METER-1, INGEST-1, DOCTOR-1 | COMPAT | ingestion.py, doctor.py | symbiosis, cli |
 | + | scheduled heartbeat (`schedule_pulse`) | SCHED-1 | COMPAT | — | organs/heart, mind/runtime |
+| + | post-review guard: Body genome survives reload | HF-B02 (`t_body_genome_round_trip`) | COMPAT | — | audits/invariants | (locks the save→load primer round-trip an external log review surfaced as a demo bug) |
 
-**Net:** 36 → **67 invariants green**; cube on-disk format **unchanged** (`vcw-cube-png-v2`) the
+**Net:** 36 → **68 invariants green**; cube on-disk format **unchanged** (`vcw-cube-png-v2`) the
 whole way — the anticipated v3 supersession never occurred. Shared-anatomy edits are small and
 additive; the bulk of the new capability is in new modules that carry whole into `main`.
 
