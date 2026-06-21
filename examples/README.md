@@ -18,15 +18,20 @@ These are proven by the framework's own gate — read and run them:
 The single best "example" is the framework proving itself: **`python -m mantle teach`** (mirror:
 [`../FIELD_GUIDE.md`](../FIELD_GUIDE.md)).
 
-## Legacy reference artifacts (do NOT build from these)
+## Self-contained reference demos (Gen-4-aligned)
 
-- `Mantle_Reference_Agent.html`
-- `Mantle_Spreadsheet_Agent.html`
-- `Mantle_MacroDroid_Schema.yaml`
+- `Mantle_Reference_Agent.html` — a single-file, in-browser **Reference AppAI** (React, runs an
+  organism with its own JS VCW-cube codec, organ atlas, reflexes, and rebirth/ancestor lineage).
+- `Mantle_Spreadsheet_Agent.html` — a single-file in-browser **spreadsheet AppAI** demo.
+- `Mantle_MacroDroid_Schema.yaml` — the **Path-B alignment contract** + MacroDroid JSON schema for
+  anchoring/grafting a Mantle resident onto a MacroDroid host.
 
-These large, generated artifacts were produced for the **v2-era** framework and predate the v3
-package and all of Gen-4 (the egg/hatchery/anchor/graft/mem/compiler/ganglia/vault tissue, the
-66-invariant gate, the self/other key, nociception, graded memory). They are kept for historical
-reference only and have **not** been regenerated against the current system. **Do not treat them
-as current examples** — use the runnable items above and the `mantle/` package (ground truth).
-Regenerating them against Gen-4 is a worthwhile but separate task.
+These were aligned to **Gen-4**: version labels, framework prose, ontology/system prompts, and
+doc references are current; the YAML's `mantle_alignment` contract is fully Gen-4 (with a
+`gen4_capabilities` block). They are honest about scope — the in-browser HTML demos run the
+**inherited Body / organ / VCW core**, which Gen-4 carries *unchanged* (same cube format
+`vcw-cube-png-v2`, same eight organs + the `<facts.N>` grammar), and their prompts now describe
+the Gen-4 hardening (self/other, event-gated nociception, graded memory). The fuller Gen-4
+reproductive/symbiotic tissue (egg/hatchery, anchor/symbiosis, graft, mem, compiler, ganglia,
+vault) is **not reimplemented in JS** — it lives in the `mantle/` Python package and the runnable
+`FIELD_GUIDE.md`. For anything authoritative, the `mantle/` package is ground truth.
