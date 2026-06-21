@@ -530,7 +530,7 @@
       bodyWriteSurfaces: ["arm-spreadsheet", "senses", "brain", "events"],
       mindWriteAllowed: Array.from(MIND_WRITE_ALLOWED)
     });
-    const ZOMBIE_PRIMITIVES = Object.freeze(["math.eval", "state.set", "state.get", "string.transform", "list.op", "datetime.now", "heart.schedule", "heart.cancel"]);
+    const ZOMBIE_PRIMITIVES = Object.freeze(["math.eval", "state.set", "state.get", "string.transform", "list.op", "datetime.now", "heart.schedule", "heart.cancel", "heart.pain", "memory.deweight", "memory.ghosts", "self.sign", "self.is_self", "self.fingerprint"]);
     const FOUNDRY_OPS = Object.freeze(["FORGE", "CLONE", "DISTILL", "GRAFT", "CALCIFY", "SEAL"]);
     const BODY_ENTRY_OPS = Object.freeze(["ADD", "REMOVE", "ALTER"]);
     const SPEC_PRIORITY_STEPS = Object.freeze([
@@ -712,10 +712,29 @@ const VCW = (() => {
   });
 
   // ---- the boot-driven Cube (mirrors lineage.Cube) -------------------------
+  // Gen-4 graded memory: a DEWEIGHT is an append-only event {target,weight}; reads apply this
+  // overlay — drop the bookkeeping, hide ghosts (weight<=0), order by descending weight. A band
+  // with no deweight activity is returned unchanged (no-op), so existing reads are unaffected.
+  function weightOverlay(entries, ghosts = false) {
+    const hasDw = entries.some(e => e && e.opcode === "DEWEIGHT");
+    if (!hasDw) return ghosts ? [] : entries;
+    const w = {};
+    for (const e of entries) if (e && e.opcode === "DEWEIGHT" && e.content && e.content.target != null) w[e.content.target] = +e.content.weight;
+    const live = [], gh = [];
+    for (const e of entries) {
+      if (e && e.opcode === "DEWEIGHT") continue;
+      const ew = (e && w[e.id] != null) ? w[e.id] : 1.0;
+      (ew <= 0 ? gh : live).push([ew, e]);
+    }
+    if (ghosts) return gh.map(x => x[1]);
+    live.sort((a, b) => b[0] - a[0]);   // stable enough; equal weights keep order
+    return live.map(x => x[1]);
+  }
+
   class Cube {
     constructor(generation = 0, identityInBody = true) {
       this.generation = generation; this.identityInBody = identityInBody; this.sealed = false;
-      this.bands = {}; this.bandLayers = {}; this.bandFree = {}; this.layers = {};
+      this.bands = {}; this.bandLayers = {}; this.bandFree = {}; this.layers = {}; this._nextId = {};
     }
     static genesis(genome, generation = 0) {
       const c = new Cube(generation);
@@ -743,16 +762,28 @@ const VCW = (() => {
     append(band, value) {
       if (this.sealed) throw new Error("generation " + this.generation + " is ANCESTRAL (read-only); experiential writes go to PRIME");
       const boot = this._boot(band), drv = this._drv(band); let tail = this.bandLayers[band].slice(-1)[0];
+      if (boot.encoding === "log-json" && value && value.id == null) {   // band-unique id (graded memory targets it)
+        if (this._nextId[band] == null) {
+          let mx = -1; for (const idx of this.bandLayers[band]) for (const e of this.layers[idx]) if (typeof e.id === "number" && e.id > mx) mx = e.id;
+          this._nextId[band] = mx + 1;
+        }
+        value.id = this._nextId[band]++;
+      }
       const cap = boot.params.max_entries_per_layer;
       if (cap && ENTRY_ENCODINGS.includes(boot.encoding) && this.layers[tail].length >= cap) tail = this._allocate(band);
       this.layers[tail] = drv.append(this.layers[tail], boot.params, value); return value;
     }
-    read(band, revealPrivate = false) {
+    read(band, revealPrivate = false, ghosts = false) {
       const boot = this._boot(band); if (boot.private && !revealPrivate) return [];
       const drv = this._drv(band);
-      if (boot.encoding === "log-json") { let out = []; for (const idx of this.bandLayers[band]) out = out.concat(drv.read(this.layers[idx], boot.params)); return out; }
+      if (boot.encoding === "log-json") { let out = []; for (const idx of this.bandLayers[band]) out = out.concat(drv.read(this.layers[idx], boot.params)); return weightOverlay(out, ghosts); }
       if (boot.encoding === "keyvalue") { const m = {}; for (const idx of this.bandLayers[band]) Object.assign(m, drv.read(this.layers[idx], boot.params)); return m; }
       return drv.read(this.layers[this.primaryLayer(band)], boot.params, revealPrivate);
+    }
+    deweight(band, targetId, weight = 0) {   // Gen-4: graded suppression — never mutates the target
+      if (this.sealed) throw new Error("generation " + this.generation + " is ANCESTRAL (read-only)");
+      this.append(band, makeEntry({ target: targetId, weight: +weight }, { opcode: "DEWEIGHT", source: "deweight" }));
+      return targetId;
     }
     retrieve(band, address) {
       const boot = this._boot(band); if (boot.private) return null; const drv = this._drv(band);
@@ -911,20 +942,20 @@ const redactSecrets = (v) => {
 
 // implementedBy localized to THIS agent's symbols (Mantle Spreadsheet Agent); role/bands/phase1/audit are framework-canonical.
 const ORGAN_ATLAS = Object.freeze([
-  { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence; plans ahead by scheduling future wakes", bands: [], phase1: "active",
-    implementedBy: ["heartbeat()", "setInterval(HEARTBEAT_INTERVAL_MS)", "saveState() cadence", "heartbeatQueue", "schedulePulse()/cancelPulse() (heart.schedule)"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event", "a scheduled pulse fires on its due beat and not before (SCHED-1)"] },
-  { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index, held in the BODY not the cube; rebirth = reformat across the cube lineage", bands: ["(Body store)"], phase1: "active",
-    implementedBy: ["createBodyEntries (bodyentry.000–.003)", "state.lineageIndex", "mutateBodyEntry", "ORGANISM.rebirth"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)"] },
+  { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence; plans ahead (scheduled wakes) and escalates pain (unscheduled wakes)", bands: [], phase1: "active",
+    implementedBy: ["heartbeat()", "setInterval(HEARTBEAT_INTERVAL_MS)", "saveState() cadence", "heartbeatQueue", "schedulePulse()/cancelPulse() (heart.schedule)", "heart.pain (nociception — the NOW interrupt)"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event", "a scheduled pulse fires on its due beat and not before (SCHED-1)", "cognition is event-gated; pain/distress wakes attention with stressor coords (NOC-1..3)"] },
+  { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index + the genesis key (cryptographic SELF), held in the BODY not the cube; rebirth = reformat across the cube lineage", bands: ["(Body store)"], phase1: "active",
+    implementedBy: ["createBodyEntries (bodyentry.000–.003)", "state.lineageIndex", "mutateBodyEntry", "ORGANISM.rebirth", "mintGenesisKey()/bodySign() (self.sign/is_self/fingerprint)"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)", "the genesis key is Body-resident — never in a cube band, never in the MIND's prompt (SELF-1)"] },
   { organ: "Nervous", role: "signal routing — bridges, the unified reference resolver, deterministic Context Assembly", bands: ["prime", "(all)"], phase1: "active",
     implementedBy: ["resolveReference", "resolveCubeRef", "assembleContext", "hydrateProviderContext / buildRemoteMindPrompt"], audit: ["context assembly deterministic/no-LLM", "zero unresolved refs reach a model (HF-B24)", "dangling ref → immune event"] },
   { organ: "Senses", role: "perception (afferent I/O) — ingest signals, classify REFLEX/ROUTINE/SIGNIFICANT, and perceive the surface (Human Surface Map)", bands: ["senses"], phase1: "active",
     implementedBy: ["dispatchSense", "significant-event classifier", "HUMAN_SURFACE_MAP (surface coverage)", "senses band (redacted on write)"], audit: ["classifier deterministic/no-LLM (HF-B09)", "one senses entry per signal", "REFLEX never touches the brain band (HF-B18)", "every visible control appears in the Human Surface Map (HF-B44 coverage)"] },
-  { organ: "Immune", role: "defense/repair — integrity scan, quarantine, tombstone, dangling-ref & secret-boundary detection", bands: ["immune"], phase1: "active",
-    implementedBy: ["crc8 integrity", "redactSecrets", "immune band (IMMUNE.LOG / RECALL_ERROR)", "WASTE_GUARD"], audit: ["scan each heartbeat", "secrets never logged (HF-B20)", "quarantined/tombstoned hidden from reads"] },
+  { organ: "Immune", role: "defense/repair — integrity scan, quarantine, tombstone, dangling-ref & secret-boundary detection; SELF/OTHER recognition; nociception (distress → unscheduled pulse)", bands: ["immune"], phase1: "active",
+    implementedBy: ["crc8 integrity", "redactSecrets", "immune band (IMMUNE.LOG / RECALL_ERROR)", "WASTE_GUARD", "bodyVerify (self.is_self → SELF/OTHER)", "distress sense (heart.pain)"], audit: ["scan each heartbeat", "secrets never logged (HF-B20)", "quarantined/tombstoned hidden from reads", "what the Body cannot sign is OTHER (SELF-2)", "a severe event emits distress with stressor coords (NOC-2)"] },
   { organ: "Limbs", role: "action & surface actuation (efferent I/O) — effectors, async arm delegation, dispatch lifecycle; operates/renders the surface (App-Face Bridge) with proofs", bands: ["brain", "app"], phase1: "dormant→active",
     implementedBy: ["arm-spreadsheet / arm-maintenance limbs", "dispatch lifecycle (brain band)", "bodyProgramLimbs", "foundryOperation", "renderApp (App-Face Bridge)", "bodyActionProofs", "commitTextDraftOnBlur"], audit: ["authorship present & immutable (HF-B29)", "Body never authors INTENTION (HF-B30)", "exec hash+capability+trust gates (HF-B47/48/50)", "every control has a ControlBridge path + proof (HF-B44)", "faces via App-Face Bridge, not raw DOM (HF-B27)"] },
-  { organ: "Memory", role: "recall & metabolism — durable identity/facts/events/discoveries persistence; flush, on-demand allocation, compaction, reclaim/reuse", bands: ["identity", "facts", "events", "discoveries"], phase1: "active",
-    implementedBy: ["state.crystals + ORGANISM cube bands", "writeDeltaToCrystal", "serializeState / hydrateState", "fillLevel / OVERFLOW_THRESHOLD (overflow→forgeCrystal)", "ORGANISM.prime.compact (reclaim/reuse)"], audit: ["entries immutable + hashed (B-13)", "reads honor the veil", "no organ rewrites history (HF-B15)", "capacity compacts/reclaims, NEVER rebirth (HF-B14)", "overflow 0.75 / emergency 0.90", "compaction preserves visible history"] },
+  { organ: "Memory", role: "recall & metabolism — durable identity/facts/events/discoveries persistence; flush, on-demand allocation, compaction, reclaim/reuse; graded memory (deweight, never delete)", bands: ["identity", "facts", "events", "discoveries"], phase1: "active",
+    implementedBy: ["state.crystals + ORGANISM cube bands", "writeDeltaToCrystal", "serializeState / hydrateState", "fillLevel / OVERFLOW_THRESHOLD (overflow→forgeCrystal)", "ORGANISM.prime.compact (reclaim/reuse)", "ORGANISM.prime.deweight + weightOverlay (memory.deweight/ghosts)"], audit: ["entries immutable + hashed (B-13)", "reads honor the veil", "no organ rewrites history (HF-B15)", "capacity compacts/reclaims, NEVER rebirth (HF-B14)", "overflow 0.75 / emergency 0.90", "compaction preserves visible history", "a deweighted entry is hidden yet recoverable as a ghost; the original is never mutated (MEMW-1)"] },
   { organ: "Brain", role: "cognition (Phase 2) — the fused MIND; writes ONLY thoughts + brain; may calcify proven skills into Body reflexes", bands: ["brain", "thoughts"], phase1: "dormant",
     implementedBy: ["callOpenRouterMind / runMind", "innerVoice (self-inquiry)", "recordModelRequest (MODEL.REQUEST)", "thoughts band (veiled)"], audit: ["MIND writes only thoughts+brain (HF-M07/08)", "no Genome write path", "never executes ungated code (HF-M26)"] },
 ]);
@@ -998,6 +1029,21 @@ let ORGANISM = null;
       }
       return (crc & 0xFF).toString(16).padStart(2, "0");
     }
+
+    // ---- Gen-4: the genesis key (cryptographic SELF). Minted ONCE at birth, held in the
+    // BODY (state.genesisKey), never in a cube band and never in the MIND's context. What the
+    // Body can sign is SELF; everything else is OTHER. (Synchronous FNV-1a keyed MAC.) --------
+    function mintGenesisKey() {
+      if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+        const a = new Uint8Array(32); crypto.getRandomValues(a);
+        return Array.from(a).map((b) => b.toString(16).padStart(2, "0")).join("");
+      }
+      return (Date.now().toString(16) + Math.random().toString(16).slice(2)).padEnd(64, "0");
+    }
+    function _fnv(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16).padStart(8, "0"); }
+    function keyFingerprint(key) { return _fnv("fp:" + key); }                 // public id; cannot reverse to the key
+    function bodySign(key, data) { return _fnv(key + "|" + (typeof data === "string" ? data : JSON.stringify(data))); }
+    function bodyVerify(key, data, mac) { return !!key && typeof mac === "string" && bodySign(key, data) === mac; }
 
     function deepCopy(value) {
       return JSON.parse(JSON.stringify(value));
@@ -1417,6 +1463,32 @@ let ORGANISM = null;
       if (name === "heart.cancel") {
         return { result: { cancelled: cancelPulse(state, args && args.reason) } };
       }
+      if (name === "heart.pain") {   // Gen-4 nociception — the NOW interrupt (companion to heart.schedule's later)
+        const reason = (args && args.reason) || "distress";
+        dispatchSense(state, "distress", { reason, band: args && args.band, ref: args && args.ref, scheduled: false });
+        logHeartbeatExecution(state, "HB.PAIN", "Unscheduled wake (pain): " + reason, (args && args.band) || "");
+        return { result: { woke: true, reason, band: args && args.band, ref: args && args.ref } };
+      }
+      if (name === "memory.deweight") {   // Gen-4 graded memory — suppress to a recoverable ghost
+        if (!state.organism) return { error: "no live organism" };
+        const band = (args && args.band) || "facts";
+        const id = state.organism.prime.deweight(band, args && args.id, (args && args.weight) || 0);
+        return { result: { band, deweighted: id } };
+      }
+      if (name === "memory.ghosts") {
+        if (!state.organism) return { error: "no live organism" };
+        return { result: state.organism.prime.read((args && args.band) || "facts", false, true) };
+      }
+      if (name === "self.fingerprint") {   // Gen-4 SELF/OTHER — the public id of this Body's key
+        return { result: state.genesisKey ? keyFingerprint(state.genesisKey) : null };
+      }
+      if (name === "self.sign") {
+        if (!state.genesisKey) return { error: "no SELF to sign with" };
+        return { result: bodySign(state.genesisKey, args && args.data) };
+      }
+      if (name === "self.is_self") {   // SELF iff this Body's key verifies the mac; else OTHER
+        return { result: bodyVerify(state.genesisKey, args && args.data, args && args.mac) };
+      }
       return { error: "Unknown zombie primitive." };
     }
 
@@ -1424,6 +1496,7 @@ let ORGANISM = null;
       const state = {
         keyfile: KEYFILE,
         bodyEntries: createBodyEntries(),
+        genesisKey: mintGenesisKey(),   // Gen-4: the cryptographic SELF — Body-resident, never in a cube
         crystals: {},
         prime: { refs: [], writeHeads: {} },
         activityLog: [],
@@ -2012,7 +2085,7 @@ let ORGANISM = null;
 
     function classifyEvent(eventType, data) {
       const reflex = new Set(["cell_navigate", "scroll", "focus", "heartbeat_tick", "hover"]);
-      const significant = new Set(["user_message", "formula_error", "crystal_critical_fill", "immune_anomaly", "rebirth_signal", "starvation", "resource_restore", "scheduled_pulse"]);
+      const significant = new Set(["user_message", "formula_error", "crystal_critical_fill", "immune_anomaly", "rebirth_signal", "starvation", "resource_restore", "scheduled_pulse", "distress"]);
       if (reflex.has(eventType)) return "REFLEX";
       if (significant.has(eventType)) return "SIGNIFICANT";
       if (data && data.isError) return "SIGNIFICANT";
