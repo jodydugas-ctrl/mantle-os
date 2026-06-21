@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.assimilator.report  --  the assimilation artifacts (Mantle v3)
+mantle.assimilator.report  --  the assimilation artifacts (Argonaut, of the Mantle lineage)
 
 Produces the Phase 0 artifacts the Stage-1 audit consumes: the APP_INVENTORY markdown
 (the read-only gate a human signs before any hook is inserted) and the machine-readable

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.cube  --  the boot-driven Cube (Mantle v3)
+mantle.vcw.cube  --  the boot-driven Cube (Argonaut, of the Mantle lineage)
 
 One cube = one generation of experiential memory: a stack of 800 real-PNG layers grouped
 into named BANDS, each band self-described by a boot sector that names a driver. Identity
@@ -208,16 +208,19 @@ class Cube:
         self.indexes.invalidate(band)
         return value
 
-    def read(self, band: str, reveal_private: bool = False) -> Any:
+    def read(self, band: str, reveal_private: bool = False, ghosts: bool = False) -> Any:
         boot = self._boot(band)
         if boot["private"] and not reveal_private:
             return []                                     # the veil (a Body reflex)
         drv = self._driver(band)
         if boot["encoding"] == "log-json":                # concatenate the visible stream
+            from .entry import weight_overlay
             out: List[Any] = []
             for idx in self.band_layers[band]:
                 out.extend(drv.read(self.layer_content(idx), boot["params"], reveal_private))
-            return out
+            # graded-memory overlay (M3): drop deweight bookkeeping, hide ghosts, order by
+            # weight. A band with no deweight activity is returned unchanged.
+            return weight_overlay(out, ghosts=ghosts)
         if boot["encoding"] == "keyvalue":
             merged: Dict[str, Any] = {}
             for idx in self.band_layers[band]:
@@ -278,6 +281,22 @@ class Cube:
             return False
         e["quarantined"] = True
         self.indexes.invalidate(band)
+        return True
+
+    def deweight(self, band: str, entry_id: int, weight: float = 0.0) -> bool:
+        """Graded suppression (M3): lower the effective weight of `entry_id` by APPENDING a
+        DEWEIGHT event -- the original entry is never touched (its hash stays valid; it
+        remains retrievable as a behavioral ghost). `weight=0.0` (default) fully suppresses
+        it from default reads; any positive weight keeps it, ranked by weight. Restoring is
+        the same operation with a higher weight. Belief history is preserved: every deweight
+        is itself an immutable, hashed event."""
+        if self.sealed:
+            raise PermissionError("generation %d is ANCESTRAL (read-only)" % self.generation)
+        if self._find_by_id(band, entry_id) is None:
+            return False
+        from .entry import make_entry, DEWEIGHT_OPCODE
+        self.append(band, make_entry({"target": entry_id, "weight": float(weight)},
+                                     opcode=DEWEIGHT_OPCODE, author="BODY", source="deweight"))
         return True
 
     # ---- metabolism (delegated; kept as methods for the Memory organ) ------

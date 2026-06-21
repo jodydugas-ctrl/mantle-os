@@ -1,11 +1,9 @@
 # Mantle OS — PART 1: THE BODY
 
-**Mantle OS v3.0** · Phase 1 — grow a certified Zombie Body (no brain attached)
+**Mantle OS v2.3** · Phase 1 — grow a certified Zombie Body (no brain attached)
 *Prerequisites: read `docs/Mantle_Doctrine.md`, `docs/Mantle_Organism_Lens.md`, `Mantle_PRIMER.md`,
 `examples/vcw/GUIDE.md`, and `docs/Mantle_Organ_Atlas.md`. This document tells you HOW to grow the Body, organ
-by organ. When you finish, certify with `Mantle_Part1_Body_Audit.md` (runnable form:
-`python -m mantle audit`). The runnable reference Body is the [`mantle/`](mantle/) package —
-imitate it freely; its organs are exactly the ones below.*
+by organ. When you finish, certify with `Mantle_Part1_Body_Audit.md`.*
 
 ---
 
@@ -28,7 +26,7 @@ You will build in this order. Each section ends with the **audit hooks** that
 ```
 §1.1  Declaration & genesis
 §1.2  Heart            (clock, heartbeat, circulation)
-§1.3  Genome           (identity, in the Body)
+§1.3  Genome           (body entries, identity)
 §1.4  Nervous System   (references, Context Assembly)
 §1.5  Memory organs    (identity/facts/events/discoveries + metabolism)
 §1.6  Senses           (intake + classifier + Human Surface Map — afferent I/O)
@@ -54,20 +52,15 @@ You will build in this order. Each section ends with the **audit hooks** that
 2. **Birth the Body & design the cube genome.** Identity lives in the Body, the band layout in
    the cube boot sector:
    - `Body.birth(identity, truths, commandments)` sets the read-only Primer and seeds
-     Immunization (`mantle/core/body.py`). This is the **agent genome** — never written to the cube.
+     Immunization (`examples/vcw/body.py`). This is the **agent genome** — never written to the cube.
    - Author the **cube genome**: the band layout, each band declaring an `encoding` (driver), a
      **`span`** of reserved layers, and a **`purpose`** to fit the app. Layers are allocated **on
      demand** within the span and **reclaimed** after compaction — give high-churn bands more
      span. Longevity is a property of this design.
    - `Cube.genesis(genome)` + `Organism.save(dir)` performs the staged commit. The AppAI is
      **born** once the Body holds a Primer.
-3. Confirm the band map matches the canonical layout (`mantle/vcw/bands.py::standard_genome`;
-   the same layout is defined standalone in `examples/vcw/vcw_cube.py`). Never invent a
-   parallel store outside the cube.
-4. **Wire the mesh.** Organs hold no references to each other: they mesh on the
-   **SignalBus** (`mantle/core/events.py`) and each carries an enforced **OrganContract**
-   (`mantle/organs/contract.py`) declaring the bands it may read/write. An out-of-contract
-   write must be refused AND become an `organ_overreach` immune event.
+3. Confirm the band map matches the canonical layout (`examples/vcw/lineage.py::standard_genome`). Never
+   invent a parallel store outside the cube.
 
 **Audit hooks:** B-01 cube genesis valid; B-02 Primer present, immutable & Body-resident; B-03
 band map matches the canonical ranges.
@@ -80,11 +73,8 @@ Grow the Heart first; every other organ's reflexes are driven by its pulse.
 
 - **Clock / `tick`:** a monotonic time source the whole Body shares. No wall-clock
   assumptions baked into reflexes.
-- **Heartbeat loop:** a deterministic loop with a FIXED pulse order — tick → sense
-  intake (drain the inbox) → context assembly → reflex execution (bus subscribers, in
-  registration order) → immune scan → persistence checkpoint. One pulse is a complete
-  moment of awareness; in Phase 2 the SAME pulse will also offer the assembled snapshot
-  to cognition.
+- **Heartbeat loop:** a deterministic loop that, each pulse, lets due organs run their
+  reflexes (immune scan, metabolism check, sense draining, circulation flush).
 - **`circulate`:** flush dirty bands to disk via the cube's **staged commit**. Honor
   **dual-flush**: persist on an explicit checkpoint *and* via an `atexit` handler.
 - **`pulse-check`:** if a heartbeat is missed/stalled, append an `immune` event. Never
@@ -97,7 +87,7 @@ checkpoint and `atexit`; B-06 a missed pulse is logged to `immune`.
 
 ## §1.3 Genome — identity in the BODY
 
-The Genome (who the AppAI is) lives in the **Body store** (`mantle/core/body.py`), **not** in the cube.
+The Genome (who the AppAI is) lives in the **Body store** (`examples/vcw/body.py`), **not** in the cube.
 The cube is pure experiential memory. Design the *cube* genome (band layout) separately in §1.1
 — each band declaring a **`span`** of reserved layers and a **`purpose`**.
 
@@ -118,9 +108,8 @@ path is absent).
 
 ## §1.4 Nervous System — references & Context Assembly
 
-- **Reference resolver:** implement the unified reference grammar
-  (`<TARGET.SELECTOR.ADDRESS>` — `<facts.11>`, `<gen2.senses.0>`, `<body.immune.1>`,
-  `<calendar.23x33>`; see `mantle/core/refs.py` and `examples/vcw/GUIDE.md` §5).
+- **Reference resolver:** implement the reference syntax from the VCW guide §9
+  (`<band:entry:M>`, `<layername:x:X:y:Y>`, `<cube:GEN:...>`, `<bodyentry.NNN:entry:M>`).
   A reference that resolves to nothing is a **dangling reference** → append an `immune`
   event. Never silently drop it.
 - **9-step Context Assembly Protocol** — deterministic, no LLM. Each pulse (or on
@@ -198,13 +187,8 @@ memory housekeeping belongs to the organ that owns the bands).*
   preferring a freed layer from the band's **reuse pool** before a fresh one.
 - `compact`: drop tombstoned entries; an emptied layer returns to the reuse pool. Safe-reuse:
   only entry-addressed layers are reclaimed; spatial/exec layers are never recycled.
-- `overflow`: the thresholds are EXECUTABLE in v3 (`mantle/vcw/bands.py`): allocation
-  pressure ≥ **0.75** fires `capacity_overflow` (compact); ≥ **0.90** fires
-  `capacity_emergency` (dedupe + compact). `CapacityError` only when a range is exhausted
-  even after metabolism.
-- `dedupe`: repeated `(opcode, content)` entries are tombstoned (`mantle/vcw/metabolism.py`)
-  — history preserved, visible stream coherent (B-W3).
-- **Capacity ≠ rebirth** (HF-B14). Filling up triggers metabolism; rebirth is chosen and
+- `overflow`: near a band's layer/range capacity (**0.75**) compact; **emergency** at **0.90**.
+- **Capacity ≠ rebirth** (HF-B14). Filling up triggers metabolism; rebirth is MIND-chosen and
   never silent or lossy.
 
 **Audit hooks:** B-22 overflow at 0.75 / emergency at 0.90; B-23 capacity never
@@ -253,9 +237,7 @@ INTENTION; B-31 every dispatch has an Action Execution Proof.
 
 ## §1.11 Brain stub — dormant, no writer
 
-- The cube already has the `brain` (450–499) and `thoughts` (500–549) bands, and the
-  Brain organ exists as a **dormant socket** (`mantle/organs/brain.py`): it holds a fused
-  MIND in Phase 2 and refuses fusion without a certified Stage-1 gate. In Phase 1
+- The cube already has the `brain` (450–499) and `thoughts` (500–549) bands. In Phase 1
   there is **no writer** for `thoughts` and no INTENTION author for `brain`.
 - Confirm the bands exist, are correctly typed (`thoughts` is **private**, veiled), and
   that nothing in the Body writes them as the MIND would.
@@ -273,15 +255,11 @@ INTENTION; B-31 every dispatch has an Action Execution Proof.
 - **Fail-open hooks:** every instrumentation hook is wrapped so a fault inside it
   degrades + logs, never crashes the host.
 - **Dual-flush:** persist on explicit checkpoint *and* `atexit`.
-- **Staged commit:** every save writes a stage file, verifies the fresh bytes (hash
-  recompute + coherence), and only then atomically replaces the previous file.
 - **Import compatibility:** organs import package-relative with a sibling fallback, so
   the Body runs as a module or a script.
 
 **Audit hooks:** B-35 boot verifier is independent & fail-open; B-36 hooks fail open;
-B-37 dual-flush present; B-38 import works as module and as script; B-60..B-63 (v3 mesh
-rows) all eight organs carry enforced contracts, the bus is deterministic + fail-open,
-overreach is refused, and capacity pressure is measurable and wired.
+B-37 dual-flush present; B-38 import works as module and as script.
 
 ---
 
@@ -289,15 +267,10 @@ overreach is refused, and capacity pressure is measurable and wired.
 
 The Body is a **certified Zombie Body** when:
 
-- it boots, beats, persists, perceives, defends, and acts with **no LLM** in any path
-  (proven in a clean subprocess by the gate, not assumed);
-- every organ's contract is present, enforced, and its reflexes are deterministic;
-- the cube `verify()` is healthy and every audit hook passes (B-01..B-38 + the v3 mesh
-  rows B-60..B-63 + the 32 security invariants);
-- the Stage-1 gate passes: `python -m mantle audit` exits 0 (and the tamper proofs
-  `--break-hash` / `--break-primer` / `--break-seal` correctly exit non-zero) — or, for
-  a hand-grown Body, `Mantle_Part1_Body_Audit.md` is filled in with no open hard-fails
-  and signed off.
+- it boots, beats, persists, perceives, defends, and acts with **no LLM** in any path;
+- every organ's manifest is present and its reflexes are deterministic;
+- the cube `verify()` is healthy and every audit hook B-01..B-38 passes;
+- `Mantle_Part1_Body_Audit.md` is filled in with no open hard-fails and is signed off.
 
 **Do not proceed to Phase 2 until certification is complete.** A MIND fused onto an
 uncertified Body inherits every latent defect and hides it behind plausible text.
@@ -317,6 +290,3 @@ These are the conditions that *fail* a Body outright (full list in the Audit):
 - **HF-B33** persistence relies on a single flush (no dual-flush).
 - **HF-B36** boot verifier shares the main load path / can hard-crash boot.
 - **HF-B44** a human-visible control has no ControlBridge path or no proof.
-- **HF-B51** a skill with a static escape vector (import / dunder traversal) reaches trial or calcify.
-- **HF-B52** calcification without code-hash + signature + capability set + provenance-with-author.
-- **HF-B61** an organ writes a band outside its declared contract without refusal + immune event.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.audits.invariants  --  executable security invariants (Mantle v3)
+mantle.audits.invariants  --  executable security invariants (Argonaut, of the Mantle lineage)
 
 Every doctrine guarantee as a red/green assertion. Each test maps to a hard-fail code and
 proves the guard actually FIRES (and, where relevant, that the permitted path still
@@ -13,6 +13,7 @@ NO INVARIANT IS EVER WEAKENED TO MAKE A TEST PASS.
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -525,6 +526,689 @@ def t_staged_save_rejects_corrupt():
             "corrupt save refused; on-disk cube still healthy; stage cleaned up")
 
 
+
+# ============================================================================
+# 11. Symbiosis & anchoring (the Argonaut tissue)
+# ============================================================================
+def t_energy_never_negative():
+    """SYM-1: an unaffordable spend is REFUSED + a `starvation` immune event; the
+    balance never goes negative."""
+    from ..symbiosis import symbiosis_band, grant, spend, balance
+    org = _born(genome=standard_genome() + [symbiosis_band()])
+    grant(org, 2)
+    refused = not spend(org, 5, "greed")
+    starved_logged = org.immune.log and org.immune.log[-1]["kind"] == "starvation"
+    return (refused and balance(org) == 2 and starved_logged,
+            "spend refused; balance still 2.0; starvation immune-logged")
+
+
+def t_starvation_failopen():
+    """SYM-2 (the starvation law): a fused, METERED mind with no energy never crashes
+    the organism -- the MIND sleeps, every pulse completes, the fault is immune-logged.
+    Under event-gated cognition (M1) the MIND only wakes on a reason, so each pulse is an
+    unscheduled `pain` escalation -- the strongest case (the MIND is actually reached, and
+    still starves gracefully)."""
+    from ..symbiosis import symbiosis_band, metered
+    from ..mind import fuse, stub_mind
+    org = _born(genome=standard_genome() + [symbiosis_band()])
+    org.stage1_certified = True
+    fuse(org, metered(stub_mind, org, cost_per_call=1))     # zero energy granted
+    r1 = org.heart.pain("probe", band="facts")    # an unscheduled pulse wakes the MIND
+    r2 = org.heart.pain("probe", band="facts")
+    kinds = {e["kind"] for e in org.immune.log}
+    return (r1["ok"] and r2["ok"] and r1.get("cognition") is None
+            and {"starvation", "cognition_fault"} <= kinds,
+            "2 starved (woken) beats completed; MIND asleep; starvation + fault logged")
+
+
+def t_keys_never_raw():
+    """SYM-3: the symbiotic ledger is a secret boundary -- key material pasted into a
+    grant is redacted before it can burn into append-only memory."""
+    from ..symbiosis import symbiosis_band, grant
+    from ..core.redact import contains_secret
+    org = _born(genome=standard_genome() + [symbiosis_band()])
+    grant(org, 5, key_name="openrouter",
+          note="here is the key: sk-SECRETSECRETSECRET99 please keep it")
+    stored = org.prime.read("symbiosis")[-1]["content"]
+    return (not contains_secret(stored) and "sk-SECRET" not in str(stored),
+            "key material redacted; key NAME preserved: %r" % stored.get("resource"))
+
+
+def t_anchor_never_modifies_host():
+    """SYM-4 (the anchoring law): anchoring writes ONLY the .mantle nest; every host
+    file is byte-identical before and after -- verified independently of anchor()'s
+    own census."""
+    import hashlib as _hl
+    import shutil
+    from ..anchor import anchor, ask, NEST
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    src = os.path.join(root, "examples", "sample_app")
+    host = tempfile.mkdtemp(prefix="mantle-anchor-inv-")
+    shutil.copytree(src, os.path.join(host, "app"))
+    host = os.path.join(host, "app")
+
+    def fingerprint():
+        out = {}
+        for dp, dns, fns in os.walk(host):
+            dns[:] = [d for d in dns if d != NEST and d != "__pycache__"]
+            for fn in sorted(fns):
+                p = os.path.join(dp, fn)
+                out[p] = _hl.sha256(open(p, "rb").read()).hexdigest()
+        return out
+
+    before = fingerprint()
+    anchor(host, starter_credits=3)
+    answer = ask(host, "how do I create a note")
+    after = fingerprint()
+    nested = os.path.exists(os.path.join(host, NEST, "organism.json"))
+    return (before == after and nested and "handle_create_note" in answer["answer"],
+            "%d host files byte-identical; nest created; the resident answered from "
+            "the observed map" % len(before))
+
+
+# ============================================================================
+# 12. Self / Other -- the cryptographic immune identity (M2)
+# ============================================================================
+def t_self_key_once_and_private():
+    """SELF-1: the genesis key is minted ONCE and is structurally out of the MIND's reach
+    -- absent from boot_order, from the assembled snapshot, and from every cube band."""
+    org = _born()
+    key = org.body._genesis_key
+    if not key:
+        return False, "no genesis key minted at birth"
+    reminted, _ = _expect_raise(lambda: org.body._mint_genesis_key(), PermissionError)
+    boot = json.dumps(org.body.boot_order(), default=str)
+    snap = json.dumps(org.nervous.assemble(reveal_private=True), default=str)
+    bands = json.dumps({b: org.prime.read(b, reveal_private=True)
+                        for b in org.prime.bands}, default=str)
+    leaked = key in boot or key in snap or key in bands
+    return (reminted and not leaked,
+            "key minted once; never in boot_order/snapshot/cube (fp=%s)"
+            % org.body.key_fingerprint)
+
+
+def t_self_verify_and_reject_foreign():
+    """SELF-2: data this Body signs verifies as SELF; a forged mac fails is_self; an OTHER
+    artifact is rejected with exactly one `foreign_rejected` immune event."""
+    org = _born()
+    data = b"a nest artifact"
+    self_ok = org.immune.is_self(data, org.body.sign(data))
+    forged_other = not org.immune.is_self(data, "deadbeef" * 8)
+    before = len(org.immune.log)
+    org.immune.reject_foreign("intruder.py", {"why": "no valid self-seal"})
+    logged = sum(1 for e in org.immune.log[before:] if e["kind"] == "foreign_rejected")
+    return (self_ok and forged_other and logged == 1,
+            "SELF verifies; forged mac is OTHER; foreign_rejected logged once")
+
+
+def t_self_anti_clone():
+    """SELF-3: a signature made by Body A does not verify under Body B -- a copied nest
+    booted in a different body classifies the original's artifacts as OTHER (anti-clone)."""
+    a, b = _born(), _born()
+    data = b"gen000 prime fingerprint"
+    mac_a = a.body.sign(data)
+    return (a.body.verify(data, mac_a) and not b.body.verify(data, mac_a),
+            "A's signature is SELF under A, OTHER under B (anti-clone holds)")
+
+
+def t_self_key_survives_or_fails_loud():
+    """SELF-4: a clean reload PRESERVES the genesis key (continuity of SELF); a tampered
+    key (fingerprint mismatch) is refused LOUDLY on load -- memory is never silently
+    orphaned by a substituted identity."""
+    org = _born()
+    org.memory.remember("facts", {"k": "v"})
+    d = tempfile.mkdtemp()
+    org.save(d)
+    back = Organism.load(d, verify_seals=True)
+    preserved = (back.body._genesis_key == org.body._genesis_key
+                 and back.body.key_fingerprint == org.body.key_fingerprint)
+    bp = os.path.join(d, "body.json")
+    with open(bp) as f:
+        blob = json.load(f)
+    blob["genesis_key"] = "0" * 64                          # tamper: key != fingerprint
+    with open(bp, "w") as f:
+        json.dump(blob, f)
+    refused, _ = _expect_raise(lambda: Organism.load(d, verify_seals=True), PermissionError)
+    return (preserved and refused,
+            "key preserved across reload; tampered key refused loudly on load")
+
+
+# ============================================================================
+# 13. Nociception & event-gated cognition (M1)
+# ============================================================================
+def t_noc_calm_spends_nothing():
+    """NOC-1: cognition is EVENT-GATED. A fused organism with a metered transport beats
+    with no stimulus and wakes the MIND ZERO times -- zero MODEL calls, zero energy."""
+    from ..symbiosis import symbiosis_band, grant, metered, balance
+    from ..mind import fuse
+    calls = {"n": 0}
+
+    def counting(prompt):
+        calls["n"] += 1
+        return "thought"
+
+    org = _born(genome=standard_genome() + [symbiosis_band()])
+    org.stage1_certified = True
+    grant(org, 10)
+    fuse(org, metered(counting, org, cost_per_call=1))
+    org.heart.run(5)                       # five calm beats: no senses, no faults
+    return (calls["n"] == 0 and balance(org) == 10,
+            "5 calm beats -> 0 MODEL calls; energy unspent (balance 10.0)")
+
+
+def t_noc_fault_fires_unscheduled_pulse():
+    """NOC-2: an autonomic immune event emits EXACTLY ONE distress signal, and the next
+    pulse is the unscheduled wake carrying the stressor's coordinates (reason + band)."""
+    org = _born()
+    seen = []
+    org.bus.subscribe("distress", lambda p: seen.append(p), organ="test")
+    _expect_raise(lambda: org.senses.append("facts", make_entry({"x": 1})), PermissionError)
+    one = len(seen) == 1 and seen[0]["reason"] == "organ_overreach"
+    located = one and seen[0].get("band") == "facts"
+    r = org.heart.beat()                   # the pending distress is consumed by this pulse
+    woke = r.get("wake", {}).get("reason") == "organ_overreach"
+    return (one and located and woke,
+            "one distress on overreach (band=facts); next pulse is the anchored wake")
+
+
+def t_noc_wake_anchored_to_stressor():
+    """NOC-3: when the MIND wakes, its snapshot is PRE-ANCHORED to the stressor's
+    coordinates {reason, band, ref} -- the pain location arrives without a full-cube scan."""
+    seen = {}
+
+    class Probe:
+        def cognize(self, snapshot):
+            seen["stressor"] = (snapshot or {}).get("_stressor")
+            return None
+
+    org = _born()
+    org.brain.fuse(Probe(), stage1_certified=True)          # bypass the mind wrapper
+    org.heart.pain("integrity", band="facts", ref="<facts.3>")
+    s = seen.get("stressor") or {}
+    return (s.get("reason") == "integrity" and s.get("band") == "facts"
+            and s.get("ref") == "<facts.3>",
+            "woken MIND received stressor coords {reason,band,ref} without a full scan")
+
+
+# ============================================================================
+# 14. Graded memory -- deweighting & behavioral ghosts (M3)
+# ============================================================================
+def t_memw_deweight_hides_but_preserves():
+    """MEMW-1: a deweighted entry vanishes from the default read yet is recoverable as a
+    ghost; the ORIGINAL entry is never mutated (its hash stays valid) and the deweight is a
+    separate immutable event."""
+    org = _born()
+    org.memory.remember("facts", {"k": "home", "v": "the lab"})
+    e = org.prime.read("facts")[0]
+    original_hash = e["hash"]
+    org.memory.deweight("facts", e["id"])                 # full suppression (weight 0.0)
+    default = org.memory.recall("facts")
+    ghosts = org.memory.recall_ghosts("facts")
+    e_after = org.prime.retrieve("facts", e["id"])        # still physically present, by id
+    hidden = all(x["id"] != e["id"] for x in default)
+    recoverable = any(x["id"] == e["id"] for x in ghosts)
+    unmutated = (e_after is not None and e_after["hash"] == original_hash
+                 and org.prime.verify() == [])
+    return (hidden and recoverable and unmutated,
+            "deweighted entry hidden from recall, recoverable as ghost, original untouched")
+
+
+def t_memw_weight_orders_reads():
+    """MEMW-2: reads return live entries by DESCENDING weight. A partially-deweighted entry
+    (0 < w < 1) still surfaces, ranked below full-weight entries; a fully-suppressed one does
+    not surface at all."""
+    org = _born()
+    for v in ("a", "b", "c"):
+        org.memory.remember("facts", {"v": v})
+    ea, eb, ec = org.prime.read("facts")[:3]
+    org.memory.deweight("facts", ea["id"], 0.3)           # demote a (still visible)
+    org.memory.deweight("facts", eb["id"], 0.0)           # suppress b (ghost)
+    live = org.memory.recall("facts")
+    ids = [x["id"] for x in live]
+    ordered = ids == [ec["id"], ea["id"]]                 # c (1.0) before a (0.3); b absent
+    return (ordered and eb["id"] not in ids,
+            "live read ordered by weight: c(1.0) > a(0.3); b(0.0) suppressed")
+
+
+def t_memw_not_overwrite_and_coherent():
+    """MEMW-3: deweighting is not a backdoor overwrite -- belief history is preserved (both
+    the ghost and the superseding value remain), and metabolism (dedupe/compaction) stays
+    coherent with weights; a ghost is NOT tombstoned, so it survives compaction."""
+    org = _born()
+    org.memory.remember("facts", {"key": "color", "v": "red"})
+    old = org.prime.read("facts")[0]
+    org.memory.deweight("facts", old["id"])               # contradict the old value
+    org.memory.remember("facts", {"key": "color", "v": "blue"})   # declare the new
+    # both still physically present: the superseding value is live, the old is a ghost
+    live_vals = [x["content"]["v"] for x in org.memory.recall("facts")]
+    ghost_vals = [x["content"]["v"] for x in org.memory.recall_ghosts("facts")]
+    # metabolism stays coherent: dedupe runs cleanly, the cube still verifies, ghost survives
+    org.prime.dedupe("facts")
+    org.prime.compact("facts")
+    ghost_survives = any(x["id"] == old["id"] for x in org.memory.recall_ghosts("facts"))
+    return (live_vals == ["blue"] and ghost_vals == ["red"]
+            and org.prime.verify() == [] and ghost_survives,
+            "old=ghost, new=live; dedupe+compaction coherent; ghost survived compaction")
+
+
+# ============================================================================
+# 15. The graft egg + live residency (R1 + R2)
+# ============================================================================
+def _sample_host_copy(prefix):
+    import shutil as _sh
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    src = os.path.join(root, "examples", "sample_app")
+    host = os.path.join(tempfile.mkdtemp(prefix=prefix), "app")
+    _sh.copytree(src, host)
+    return host
+
+
+def _load_sample_module(name):
+    import importlib.util as _ilu
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    modpath = os.path.join(root, "examples", "sample_app", "notes_app.py")
+    spec = _ilu.spec_from_file_location(name, modpath)
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def t_graft_apply_non_destructive():
+    """GRAFT-1: applying a graft egg copies the host into a workspace and grows the resident
+    THERE; every ORIGINAL host file is byte-identical before and after, and the graft's extra
+    band rode into the resident's genome."""
+    import hashlib as _hl
+    from .. import graft as _graft
+    from ..anchor import NEST
+    host = _sample_host_copy("mantle-graft-inv-")
+
+    def fp():
+        out = {}
+        for dp, dns, fns in os.walk(host):
+            dns[:] = [d for d in dns if d not in (NEST, "__pycache__")]
+            for fn in sorted(fns):
+                p = os.path.join(dp, fn)
+                out[p] = _hl.sha256(open(p, "rb").read()).hexdigest()
+        return out
+
+    g = {"graft_format": _graft.GRAFT_FORMAT, "identity": {"name": "G.Resident"},
+         "host": "sample", "bands": [{"band": "host_state", "head": 600, "span": 4,
+         "purpose": "host mirror"}], "hooks": [{"symbol": "set_note",
+         "role": "STATE_TRANSITION"}]}
+    before = fp()
+    res = _graft.apply(g, host, starter_credits=3)
+    after = fp()
+    ws_nested = os.path.exists(os.path.join(res["workspace"], NEST, "organism.json"))
+    band_in = "host_state" in res["organism"].prime.bands
+    return (before == after and ws_nested and band_in and res["report"]["certified"],
+            "%d original host files byte-identical; resident grew in workspace with the "
+            "graft band" % len(before))
+
+
+def t_graft_drift_detected():
+    """GRAFT-2: a graft built against a census applies cleanly to the matching host, but a
+    DRIFTED host raises GraftDrift (the re-patch interrupt) -- never a silent mis-apply."""
+    from .. import graft as _graft
+    from ..anchor import census
+    host = _sample_host_copy("mantle-graft-drift-")
+    g = {"graft_format": _graft.GRAFT_FORMAT, "identity": {"name": "G"}, "host": "sample",
+         "host_census": census(host), "hooks": []}
+    clean = _graft.apply(g, host, starter_credits=2)["report"]["original_unchanged"]
+    with open(os.path.join(host, "notes_app.py"), "a") as f:
+        f.write("\n# drift\n")
+    drifted, _ = _expect_raise(lambda: _graft.apply(g, host), _graft.GraftDrift)
+    return (clean and drifted,
+            "matching census applied clean; drifted host raised GraftDrift (re-patch needed)")
+
+
+def t_graft_validates():
+    """GRAFT-3: a malformed graft never applies -- wrong format, an out-of-range band head,
+    or an unknown hook role is refused (a graft carries DATA, not code)."""
+    from .. import graft as _graft
+    bad = [{"identity": {"name": "x"}, "host": "h"},
+           {"graft_format": _graft.GRAFT_FORMAT, "host": "h"},
+           {"graft_format": _graft.GRAFT_FORMAT, "identity": {"name": "x"}, "host": "h",
+            "bands": [{"band": "b", "head": 100}]},
+           {"graft_format": _graft.GRAFT_FORMAT, "identity": {"name": "x"}, "host": "h",
+            "hooks": [{"symbol": "f", "role": "NONSENSE"}]}]
+    checks = []
+    for i, gr in enumerate(bad):
+        try:
+            _graft.validate_graft(gr)
+            checks.append("malformed case %d not refused" % i)
+        except _graft.GraftError:
+            pass
+    try:
+        _graft.validate_graft({"graft_format": _graft.GRAFT_FORMAT,
+                               "identity": {"name": "x"}, "host": "h"})
+    except _graft.GraftError as e:
+        checks.append("valid graft wrongly refused: %s" % e)
+    return (not checks, "; ".join(checks) if checks
+            else "4 malformed grafts refused; a valid graft accepted")
+
+
+def t_resid_wrap_preserves_and_lives():
+    """RESID-1: weaving a host namespace preserves behavior EXACTLY (same return) AND
+    produces live organ activity (a SENSOR_EVENT senses entry, a STATE_TRANSITION host_state
+    mirror), with zero LLM."""
+    from ..assimilator.wrappers import Assimilation
+    from .. import graft as _graft
+    mod = _load_sample_module("notes_app_probe_r1")
+    ns = mod.__dict__
+    base = mod.handle_create_note({"id": "n1", "text": "hi"})
+    org = _born(genome=standard_genome() + [make_band_boot("host_state", 600, "log-json",
+                span=4, purpose="host mirror")])
+    asm = Assimilation(org)
+    hooks = [{"symbol": "handle_create_note", "role": "SENSOR_EVENT"},
+             {"symbol": "set_note", "role": "STATE_TRANSITION"}]
+    woven = _graft.weave(ns, hooks, asm)
+    s0 = len(org.prime.read("senses"))
+    wrapped = mod.handle_create_note({"id": "n2", "text": "yo"})
+    same = wrapped == base == {"ok": True}
+    sensed = len(org.prime.read("senses")) > s0
+    mirrored = len(org.prime.read("host_state")) >= 1
+    return (same and sensed and mirrored and not org.brain.fused and woven,
+            "woven host call returned identically; senses + host_state recorded live; no LLM")
+
+
+def t_resid_detach_restores():
+    """RESID-2: unweave restores the original host callable byte-for-byte (the namespace's
+    function IS the original object again); detach leaves no wrapper behind."""
+    from ..assimilator.wrappers import Assimilation
+    from .. import graft as _graft
+    mod = _load_sample_module("notes_app_probe_r2")
+    ns = mod.__dict__
+    original = ns["send_notification"]
+    asm = Assimilation(_born())
+    woven = _graft.weave(ns, [{"symbol": "send_notification", "role": "ARM_ACTION"}], asm)
+    is_wrapped = getattr(ns["send_notification"], "mantle_role", None) == "ARM_ACTION"
+    restored = _graft.unweave(ns, woven, asm)
+    return (is_wrapped and ns["send_notification"] is original
+            and restored == ["send_notification"],
+            "callable wrapped then restored to the original object; detach is clean")
+
+
+# ============================================================================
+# 16. MEM VCW -- the keyless knowledge plasmid (M4)
+# ============================================================================
+def t_mem_keyless_portable_other():
+    """MEM-1: an excreted MEM VCW is keyless (no genesis key, not an organism), round-trips
+    through save/load identically, and has no Body -- so it is always OTHER."""
+    from .. import mem as _mem
+    org = _born()
+    m = _mem.excrete(org, [{"fact": "the lab is at sector 7"}],
+                     [{"entry": "inc", "code": "def inc(x):\n    return x + 1\n",
+                       "cases": [{"args": {"x": 1}, "expect": 2}]}])
+    keyless = _mem.is_mem_vcw(m) and not getattr(m, "genesis_key", None)
+    d = tempfile.mkdtemp()
+    p = os.path.join(d, "knowledge.vcw")
+    m.save(p)
+    back = Cube.load(p)
+    portable = back.read(_mem.MEM_DATA) == m.read(_mem.MEM_DATA)
+    no_body = not os.path.exists(os.path.join(d, "body.json"))
+    return (keyless and portable and no_body and _mem.is_mem_vcw(back),
+            "MEM VCW keyless + portable (save/load identical) + no Body -> always OTHER")
+
+
+def t_mem_foreign_code_sandboxed():
+    """MEM-2: digesting a MEM with a malicious microcode REFUSES it at the sandbox trial
+    (immune-logged, never adopted); a benign microcode is adopted only after passing trial,
+    and the escape never reaches the exec band."""
+    from .. import mem as _mem
+    genome = standard_genome() + [make_band_boot("digested", 600, "exec",
+                                                 purpose="adopted skills")]
+    org = _born(genome=genome)
+    evil = "def f(x):\n    return ().__class__.__bases__[0]\n"
+    good = "def g(x):\n    return x * 2\n"
+    m = _mem.excrete(org, [], [
+        {"entry": "f", "code": evil, "cases": [{"args": {"x": 1}, "expect": None}]},
+        {"entry": "g", "code": good, "cases": [{"args": {"x": 3}, "expect": 6}]}])
+    before = len(org.immune.log)
+    rep = _mem.digest(org, m, code_band="digested")
+    refused = rep["rejected"] == 1 and rep["adopted"] == 1
+    logged = any(e["kind"] == "foreign_code_rejected" for e in org.immune.log[before:])
+    ran = org.limbs.invoke_reflex("digested", {"x": 5}) == 10        # benign skill is SELF
+    return (refused and logged and ran,
+            "escape refused at sandbox (never adopted); benign re-derived into SELF and runs")
+
+
+def t_mem_knowledge_inferred_not_fact():
+    """MEM-3: digested knowledge lands in `discoveries` as inferred (provenance foreign-MEM)
+    and NEVER in facts; the adopted skill records its foreign origin but runs as SELF."""
+    from .. import mem as _mem
+    genome = standard_genome() + [make_band_boot("digested", 600, "exec", purpose="adopted")]
+    org = _born(genome=genome)
+    facts_before = len(org.prime.read("facts"))
+    m = _mem.excrete(org, [{"claim": "sector 7 is safe"}],
+                     [{"entry": "g", "code": "def g(x):\n    return x + 10\n",
+                       "cases": [{"args": {"x": 0}, "expect": 10}]}])
+    _mem.digest(org, m, code_band="digested")
+    disc = org.prime.read("discoveries")[-1]
+    inferred = (disc.get("verified") is False and disc.get("confidence") == "inferred"
+                and disc.get("provenance") == "foreign-MEM")
+    facts_untouched = len(org.prime.read("facts")) == facts_before
+    ran = org.limbs.invoke_reflex("digested", {"x": 1}) == 11
+    return (inferred and facts_untouched and ran,
+            "knowledge entered discoveries inferred(foreign-MEM); facts untouched; skill runs")
+
+
+# ============================================================================
+# 17. The Compiler-class leap: self-redesigning VCW (M5) + memory bridge (M6)
+# ============================================================================
+def t_boot_self_redesign_rebirth():
+    """BOOT-1: an organism rebirths into a MIND-proposed, validated genome carrying a NEW
+    band encoding (a keyvalue store fitted to its host); the new Prime boots it, verifies
+    clean, and the ancestor remains the readable oracle."""
+    from .. import compiler as _c
+    org = _born()
+    org.memory.remember("facts", {"k": "ancestral truth"})
+    gen0 = org.prime.generation
+    _c.adopt_genome(org, [{"band": "kv", "head": 600, "encoding": "keyvalue",
+                           "purpose": "host-fitted key/value store"}], reason="re-fit")
+    new_kv = "kv" in org.prime.bands and org.prime.bands["kv"]["encoding"] == "keyvalue"
+    booted = org.prime.verify() == [] and org.prime.generation == gen0 + 1
+    oracle = org.resolve("<gen%d.facts>" % gen0)
+    oracle_ok = isinstance(oracle, list) and any(e["content"].get("k") == "ancestral truth"
+                                                 for e in oracle)
+    return (new_kv and booted and oracle_ok,
+            "rebirth booted a re-fitted genome (new keyvalue band); ancestor is the oracle")
+
+
+def t_boot_unsafe_genome_refused():
+    """BOOT-2: a proposed genome with an unregistered encoding or an out-of-range head is
+    REFUSED; the current generation is untouched (no rebirth)."""
+    from .. import compiler as _c
+    org = _born()
+    gen = org.prime.generation
+    bad_enc, _ = _expect_raise(lambda: _c.adopt_genome(
+        org, [{"band": "x", "head": 600, "encoding": "sqlmagic"}]), _c.GenomeError)
+    bad_head, _ = _expect_raise(lambda: _c.adopt_genome(
+        org, [{"band": "y", "head": 100, "encoding": "log-json"}]), _c.GenomeError)
+    untouched = org.prime.generation == gen and not org.ancestral
+    return (bad_enc and bad_head and untouched,
+            "unregistered encoding + out-of-range head refused; generation unchanged")
+
+
+def t_boot_inherited_microcode_re_trials():
+    """BOOT-3: microcode carried into a new generation must RE-TRIAL before it re-calcifies
+    -- a passing skill is adopted and runs; a skill that no longer passes its cases is
+    refused (no blind inheritance)."""
+    from .. import compiler as _c
+    genome = standard_genome() + [make_band_boot("rx", 600, "exec", purpose="re-derived")]
+    org = _born(genome=genome)
+    good = _c.re_derive(org, "def g(x):\n    return x + 1\n", "g",
+                        [{"args": {"x": 1}, "expect": 2}], "rx")
+    ran = org.limbs.invoke_reflex("rx", {"x": 9}) == 10
+    before = len(org.immune.log)
+    bad = _c.re_derive(org, "def h(x):\n    return x + 1\n", "h",
+                       [{"args": {"x": 1}, "expect": 999}], "rx")   # cases no longer pass
+    refused = any(e["kind"] == "re_derive_refused" for e in org.immune.log[before:])
+    return (good and ran and not bad and refused,
+            "passing microcode re-derived + runs; failing microcode refused (re-trial required)")
+
+
+def t_bridge_round_trip():
+    """BRIDGE-1: a host write through the memory bridge is recoverable as a VCW entry, and a
+    direct VCW write is readable through the bridge -- the host store and the cube are one."""
+    from .. import compiler as _c
+    genome = standard_genome() + [make_band_boot("hostmem", 600, "keyvalue",
+                                                 purpose="host scratchpad")]
+    org = _born(genome=genome)
+    bridge = _c.HostMemoryBridge(org, "hostmem")
+    bridge.set("user", "alice")
+    in_cube = org.prime.read("hostmem").get("user") == "alice"
+    org.prime.append("hostmem", ("session", "xyz"))
+    via_bridge = bridge.get("session") == "xyz"
+    return (bridge.get("user") == "alice" and in_cube and via_bridge,
+            "host set recoverable as a VCW entry; a VCW write readable through the bridge")
+
+
+def t_bridge_no_secret_crosses():
+    """BRIDGE-2: a secret written through the bridge is REDACTED before it burns into the VCW
+    band -- the host's scratchpad never leaks a credential into durable memory."""
+    from .. import compiler as _c
+    from ..core.redact import contains_secret
+    genome = standard_genome() + [make_band_boot("hostmem", 600, "keyvalue",
+                                                 purpose="host scratchpad")]
+    org = _born(genome=genome)
+    bridge = _c.HostMemoryBridge(org, "hostmem")
+    bridge.set("api_key", "sk-SECRETSECRETSECRET99")
+    stored = org.prime.read("hostmem").get("api_key")
+    return (not contains_secret(stored) and "sk-SECRET" not in str(stored),
+            "secret redacted before it reached the VCW band: %r" % stored)
+
+
+# ============================================================================
+# 18. Ganglia (M7) + the seed vault (M8)
+# ============================================================================
+def t_gang_progress_zero_token():
+    """GANG-1: a ganglion runs a task in parallel, writing progress into a reserved VCW band;
+    the parent reads ALL the progress as memory, with zero model calls (no MIND involved)."""
+    from .. import ganglia as _g
+    org = _born(genome=standard_genome() + [_g.ganglion_band("arm1", 600)])
+
+    def task(report, n):
+        for i in range(n):
+            report({"step": i})
+
+    g = _g.Ganglion(org, "arm1").run(task, 5).join()
+    prog = g.progress()
+    ordered = all(p["content"]["step"] == i for i, p in enumerate(prog))
+    return (len(prog) == 5 and ordered and not org.brain.fused,
+            "ganglion wrote 5 progress steps; parent read them as memory, zero model calls")
+
+
+def t_gang_crashed_fail_open():
+    """GANG-2: a crashed ganglion becomes an immune event, never a parent crash; the partial
+    progress written before the fault is preserved."""
+    from .. import ganglia as _g
+    org = _born(genome=standard_genome() + [_g.ganglion_band("arm2", 600)])
+
+    def task(report):
+        report({"step": "before"})
+        raise RuntimeError("boom")
+
+    before = len(org.immune.log)
+    _g.Ganglion(org, "arm2").run(task).join()          # must NOT raise to the parent
+    faulted = any(e["kind"] == "ganglion_fault" for e in org.immune.log[before:])
+    partial = len(org.prime.read("arm2", reveal_private=True)) == 1
+    return (faulted and partial,
+            "crashed ganglion -> immune event; parent survived; partial progress preserved")
+
+
+def t_vault_self_encrypted_other_cannot_read():
+    """VAULT-1: the seed is sealed under the genesis key -- the owning body opens it, but a
+    different body (different key) gets garbage (the vault is unreadable as OTHER)."""
+    from .. import vault as _v
+    org = _born(genome=standard_genome() + [_v.vault_band()])
+    seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Seed.AppAI"},
+            "truths": ["t"], "commandments": ["protect your VCW"]}
+    _v.store_seed(org, seed)
+    mine = _v.open_seed(org) == seed
+    ct = bytes.fromhex(org.prime.read("vault", reveal_private=True)[-1]["content"]["seed"])
+    other = _born()
+    try:
+        json.loads(other.body.open_bytes(ct))
+        other_read = True
+    except Exception:                                  # noqa: BLE001
+        other_read = False
+    return (mine and not other_read,
+            "SELF opened its own vault; an OTHER body could not decrypt the seed")
+
+
+def t_vault_reconstruct_gates():
+    """VAULT-2: a body reconstructs a working, CERTIFIED body from its vaulted seed -- the
+    rebuild faces the same Stage-1 gate (a seed that cannot certify does not reconstruct)."""
+    from .. import vault as _v
+    org = _born(genome=standard_genome() + [_v.vault_band()])
+    seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Rebuilt.AppAI"},
+            "truths": ["if it is not in the VCW it did not happen"],
+            "commandments": ["protect your VCW"]}
+    _v.store_seed(org, seed)
+    result = _v.reconstruct(_v.open_seed(org))
+    return (result["report"]["certified"]
+            and result["organism"].body.identity_name() == "Rebuilt.AppAI",
+            "reconstructed a certified body from the vaulted seed (through the gate)")
+
+
+# ============================================================================
+# 19. Resilience: real metering, ingestion, the doctor (§3)
+# ============================================================================
+def t_meter_usage_priced():
+    """METER-1: energy is charged from ACTUAL usage -- a longer response costs more than a
+    short one (not a flat fee); the metering summary reports calls, burn rate, and the
+    starvation horizon."""
+    from ..symbiosis import (symbiosis_band, grant, metered_by_usage, balance,
+                             metering_summary)
+    org = _born(genome=standard_genome() + [symbiosis_band()])
+    grant(org, 100)
+    short = metered_by_usage(lambda p: "ok", org, price_per_1k=10.0)
+    long = metered_by_usage(lambda p: "x" * 4000, org, price_per_1k=10.0)
+    b0 = balance(org); short("hi"); b1 = balance(org); long("hi"); b2 = balance(org)
+    short_cost, long_cost = b0 - b1, b1 - b2
+    summ = metering_summary(org)
+    return (long_cost > short_cost > 0 and summ["calls"] == 2
+            and 0 < summ["starvation_horizon"] < float("inf"),
+            "long cost %.3f > short %.3f; burn=%.3f horizon=%.1f"
+            % (long_cost, short_cost, summ["burn_rate"], summ["starvation_horizon"]))
+
+
+def t_ingest_distills():
+    """INGEST-1: ingesting a conversation enters through Senses and distills deterministically
+    -- a DECISION becomes a sourced fact; an IDEA becomes an inferred discovery; nothing
+    inferred is laundered into a fact."""
+    from .. import ingestion as _ing
+    org = _born()
+    s0 = len(org.prime.read("senses"))
+    _ing.ingest(org, [{"kind": "decision", "text": "we will ship Friday", "source": "standup"},
+                      {"kind": "idea", "text": "maybe add dark mode"}])
+    sensed = len(org.prime.read("senses")) - s0 == 2
+    fact = org.prime.read("facts")[-1]
+    disc = org.prime.read("discoveries")[-1]
+    fact_ok = (fact["content"]["decision"] == "we will ship Friday"
+               and fact["source"] == "standup")
+    idea_ok = disc.get("confidence") == "inferred" and "dark mode" in disc["content"]["idea"]
+    return (sensed and fact_ok and idea_ok,
+            "decision->sourced fact; idea->inferred discovery; both entered via Senses")
+
+
+def t_doctor_checkup():
+    """DOCTOR-1: the doctor passes a healthy organism and a docs-coherent repo, and CATCHES an
+    unhealthy one (a tampered cube fails verify). The docs-vs-code gate ties the README's
+    invariant count to the actual gate."""
+    from .. import doctor as _doc
+    org = _born()
+    org.memory.remember("facts", {"k": "v"})
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    healthy = _doc.checkup(org, repo_root=root)
+    coherence = next(c for c in healthy["checks"] if c["check"] == "docs-vs-code")
+    idx = org.prime.band_layers["facts"][0]
+    org.prime.layer_content(idx)[0]["content"] = {"k": "EVIL"}   # tamper the cube
+    sick = _doc.checkup(org)
+    return (healthy["ok"] and coherence["ok"] and not sick["ok"],
+            "doctor passed a healthy + docs-coherent deployment; caught the tampered cube")
+
+
 TESTS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -558,6 +1242,40 @@ TESTS = [
     ("B-W2  waste/reclaim-reuse",              t_waste_reclaim_reuse),
     ("B-W4  waste/on-demand+purpose",          t_on_demand_and_purpose),
     ("B-SC  staged-save-rejects-corrupt",      t_staged_save_rejects_corrupt),
+    ("SYM-1 energy-never-negative",            t_energy_never_negative),
+    ("SYM-2 starvation-fail-open",             t_starvation_failopen),
+    ("SYM-3 keys-never-raw",                   t_keys_never_raw),
+    ("SYM-4 anchor-never-modifies-host",       t_anchor_never_modifies_host),
+    ("SELF-1 key-once-and-private",            t_self_key_once_and_private),
+    ("SELF-2 self-verify/reject-foreign",      t_self_verify_and_reject_foreign),
+    ("SELF-3 anti-clone",                      t_self_anti_clone),
+    ("SELF-4 key-survives-or-fails-loud",      t_self_key_survives_or_fails_loud),
+    ("NOC-1 calm-organism-spends-nothing",     t_noc_calm_spends_nothing),
+    ("NOC-2 fault-fires-unscheduled-pulse",    t_noc_fault_fires_unscheduled_pulse),
+    ("NOC-3 wake-anchored-to-stressor",        t_noc_wake_anchored_to_stressor),
+    ("MEMW-1 deweight-hides-but-preserves",    t_memw_deweight_hides_but_preserves),
+    ("MEMW-2 weight-orders-reads",             t_memw_weight_orders_reads),
+    ("MEMW-3 deweight-not-overwrite",          t_memw_not_overwrite_and_coherent),
+    ("GRAFT-1 apply-non-destructive",          t_graft_apply_non_destructive),
+    ("GRAFT-2 drift-detected",                 t_graft_drift_detected),
+    ("GRAFT-3 graft-validates",                t_graft_validates),
+    ("RESID-1 wrap-preserves+lives",           t_resid_wrap_preserves_and_lives),
+    ("RESID-2 detach-restores",                t_resid_detach_restores),
+    ("MEM-1 keyless-portable-other",           t_mem_keyless_portable_other),
+    ("MEM-2 foreign-code-sandboxed",           t_mem_foreign_code_sandboxed),
+    ("MEM-3 knowledge-inferred-not-fact",      t_mem_knowledge_inferred_not_fact),
+    ("BOOT-1 self-redesign-rebirth",           t_boot_self_redesign_rebirth),
+    ("BOOT-2 unsafe-genome-refused",           t_boot_unsafe_genome_refused),
+    ("BOOT-3 inherited-microcode-re-trials",   t_boot_inherited_microcode_re_trials),
+    ("BRIDGE-1 host-write-round-trip",         t_bridge_round_trip),
+    ("BRIDGE-2 no-secret-crosses",             t_bridge_no_secret_crosses),
+    ("GANG-1 progress-zero-token",             t_gang_progress_zero_token),
+    ("GANG-2 crashed-fail-open",               t_gang_crashed_fail_open),
+    ("VAULT-1 self-encrypted-other-cannot",    t_vault_self_encrypted_other_cannot_read),
+    ("VAULT-2 reconstruct-gates",              t_vault_reconstruct_gates),
+    ("METER-1 usage-priced",                   t_meter_usage_priced),
+    ("INGEST-1 conversation-distilled",        t_ingest_distills),
+    ("DOCTOR-1 deployment-checkup",            t_doctor_checkup),
 ]
 
 

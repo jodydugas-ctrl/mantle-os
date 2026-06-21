@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.core.organism  --  the Organism: Body + Prime cube + ancestors + eight organs (Mantle v3)
+mantle.core.organism  --  the Organism: Body + Prime cube + ancestors + eight organs (Argonaut, of the Mantle lineage)
 
     Organism = BODY        (the Primer + lineage index -- identity, outside every cube)
              + PRIME cube  (one, hot, takes all experiential writes)
@@ -63,6 +63,11 @@ class Organism:
         self.memory = Memory(self)
         self.brain = Brain(self)
         self.prime.pressure_hook = self.memory.on_pressure   # capacity -> metabolism record
+        # nociception wiring (M1): the Heart wakes the MIND only on a reason -- a
+        # SIGNIFICANT signal (Senses) or distress (Immune). No reason -> the MIND sleeps.
+        self.bus.subscribe("significant", lambda p: self.heart.on_significant(p),
+                           organ="heart")
+        self.bus.subscribe("distress", lambda p: self.heart.on_distress(p), organ="heart")
         self._sync_lineage()
 
     # ---- birth ----------------------------------------------------------------
@@ -137,6 +142,16 @@ class Organism:
         self.bus.emit("rebirth", {"generation": new_gen, "reason": reason})
         return self
 
+    # ---- the SELF seal (M2): a signature over the identity-bearing artifacts ---------
+    def _self_seal_payload(self) -> bytes:
+        """The bytes the Body signs to mark a nest as SELF: the Primer + the Prime cube's
+        content fingerprint. Only this Body's genesis key produces a verifying mac, so a
+        cloned or forged nest fails the check (anti-clone)."""
+        payload = {"primer": self.body.self_record()["primer"],
+                   "prime_fingerprint": self.prime.fingerprint()}
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"),
+                          default=str).encode("utf-8")
+
     # ---- persistence (hot Prime; cold, write-once ancestors) ------------------------
     def save(self, directory: str) -> None:
         os.makedirs(directory, exist_ok=True)
@@ -152,6 +167,13 @@ class Organism:
             json.dump({"prime_generation": self.prime.generation,
                        "ancestral_generations": [c.generation for c in self.ancestral],
                        "stage1_certified": self.stage1_certified}, f, indent=2)
+        # the SELF seal: sign the nest as this Body's own (M2). Skipped only for a
+        # legacy Body with no genesis key.
+        if self.body.has_key:
+            seal = {"fingerprint": self.body.key_fingerprint,
+                    "mac": self.body.sign(self._self_seal_payload())}
+            with open(os.path.join(directory, "self_seal.json"), "w") as f:
+                json.dump(seal, f, indent=2)
 
     @classmethod
     def load(cls, directory: str, verify_seals: bool = False) -> "Organism":
@@ -167,6 +189,23 @@ class Organism:
         o.ancestral = [Cube.load(os.path.join(directory, "gen%03d.vcw" % g), lazy=True)
                        for g in org_meta["ancestral_generations"]]
         if verify_seals:
+            # the SELF check (M2): a key whose fingerprint no longer matches is a tampered
+            # or orphaned identity -- fail LOUDLY (an immune event AND a raise), never
+            # silently boot a body that cannot prove it is itself.
+            if o.body.has_key and not o.body.key_fingerprint_consistent():
+                o.immune_event("autoimmune_risk",
+                               {"problem": "genesis key fingerprint mismatch"})
+                raise PermissionError("autoimmune_risk: the genesis key does not match its "
+                                      "recorded fingerprint; refusing to boot a tampered SELF")
+            seal_path = os.path.join(directory, "self_seal.json")
+            if o.body.has_key and os.path.exists(seal_path):
+                with open(seal_path) as f:
+                    seal = json.load(f)
+                if not o.body.verify(o._self_seal_payload(), seal.get("mac", "")):
+                    # the nest does not verify as THIS Body's own (clone / forgery / a
+                    # substituted key+fingerprint pair) -- record it, do not trust silently.
+                    o.immune_event("autoimmune_risk",
+                                   {"problem": "self-seal does not verify under this key"})
             for c in o.ancestral:
                 for problem in c.verify_seal():
                     o.immune_event("ancestor_tamper",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.assimilator.scanner  --  read-only AST dissection of a host codebase (Mantle v3)
+mantle.assimilator.scanner  --  read-only AST dissection of a host codebase (Argonaut, of the Mantle lineage)
 
 Path B, Phase 0/1: BEFORE any hook is inserted, the host is dissected READ-ONLY. The
 scanner walks a Python project, parses every module, and classifies every meaningful

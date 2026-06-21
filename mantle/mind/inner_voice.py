@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.mind.inner_voice  --  the Inner Voice / Self-Inquiry skill (Mantle v3)
+mantle.mind.inner_voice  --  the Inner Voice / Self-Inquiry skill (Argonaut, of the Mantle lineage)
 
 The first skill most AppAIs learn: to speak to themselves. A framed, bounded sub-query to
 the MIND, separate from heartbeat cognition. Three modes:
@@ -43,7 +43,7 @@ class InnerVoice:
 
     def _frame(self, question: str, mode: str) -> str:
         name = self.org.body.identity_name()
-        return ("This is a Mantle Agent named %s. %sI have the following question for "
+        return ("This is a Argonaut Agent named %s. %sI have the following question for "
                 "you: %s" % (name, _STANCE.get(mode, ""), question))
 
     def ask(self, question: str, mode: str = "neutral") -> Optional[Tuple[str, str]]:

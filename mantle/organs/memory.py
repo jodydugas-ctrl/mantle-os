@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.memory  --  the Memory organ: recall & metabolism (Mantle v3)
+mantle.organs.memory  --  the Memory organ: recall & metabolism (Argonaut, of the Mantle lineage)
 
 Owns the durable knowledge bands -- identity, facts, events, discoveries -- AND their
 metabolism: the hot working-set -> durable flush cycle, on-demand layer allocation,
@@ -31,7 +31,11 @@ CONTRACT = OrganContract(
     reflexes=[
         {"name": "remember", "trigger": "an organ records knowledge",
          "effect": "append one immutable, hashed entry to the owned band"},
-        {"name": "recall", "trigger": "a read", "effect": "visible entries through the veil"},
+        {"name": "recall", "trigger": "a read", "effect": "visible entries through the veil, "
+         "ordered by weight (graded memory)"},
+        {"name": "deweight", "trigger": "a value is contradicted/superseded",
+         "effect": "lower its weight via an append-only event; it survives as a ghost, never "
+                   "overwritten or deleted (M3)"},
         {"name": "allocate", "trigger": "a band tail fills",
          "effect": "grow onto the next layer in range, preferring the reuse pool"},
         {"name": "compact", "trigger": "metabolism / pressure",
@@ -51,6 +55,8 @@ CONTRACT = OrganContract(
         "capacity != rebirth: thresholds trigger metabolism (0.75 overflow, 0.90 emergency)",
         "compaction preserves visible history",
         "inferred content is never auto-promoted to facts",
+        "deweighting is graded + append-only: a ghost is hidden by default yet recoverable, "
+        "and the original entry is never mutated",
     ],
 )
 
@@ -65,7 +71,19 @@ class Memory(Organ):
         return self.append(band, e)
 
     def recall(self, band: str) -> List[Dict[str, Any]]:
+        """Visible entries through the veil, ordered by weight (ghosts hidden)."""
         return self.org.prime.read(band)
+
+    # ---- graded memory (M3): deweight instead of delete -----------------------
+    def deweight(self, band: str, entry_id: int, weight: float = 0.0) -> bool:
+        """Lower an entry's weight (default: fully suppress) via an append-only event. The
+        entry becomes a behavioral ghost -- hidden from `recall`, still recoverable and never
+        overwritten. Restoring is the same call with a higher weight."""
+        return self.org.prime.deweight(band, entry_id, weight)
+
+    def recall_ghosts(self, band: str) -> List[Dict[str, Any]]:
+        """Surface the suppressed ghosts of a band -- the latent values the heavy path hid."""
+        return self.org.prime.read(band, ghosts=True)
 
     # ---- metabolism -------------------------------------------------------------
     def compact(self, band: str) -> Dict[str, Any]:

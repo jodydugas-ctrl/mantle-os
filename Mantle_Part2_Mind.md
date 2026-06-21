@@ -1,12 +1,8 @@
 # Mantle OS — PART 2: THE MIND
 
-**Mantle OS v3.0** · Phase 2 — fuse a brain into a certified Body
-*Prerequisite: a Body that has PASSED the Stage-1 gate (`python -m mantle audit` /
-`Mantle_Part1_Body_Audit.md`) with zero open hard-fails. If it has not, stop. Fusing a
-MIND onto an uncertified Body is forbidden — and in v3 it is REFUSED in code:
-`mantle.mind.fuse()` raises unless `organism.stage1_certified` is set by a passed gate
-(HF-M28). The runnable reference fusion is `python -m mantle mind` (offline stub
-transport; no key, no network); the reference MIND is `mantle/mind/mind.py`.*
+**Mantle OS v2.3** · Phase 2 — fuse a brain into a certified Body
+*Prerequisite: a Body that has PASSED `Mantle_Part1_Body_Audit.md` with zero open
+hard-fails. If it has not, stop. Fusing a MIND onto an uncertified Body is forbidden.*
 
 ---
 
@@ -17,9 +13,8 @@ a Phase-1 reflex.** Every check the Body passed in Stage 1 must still pass after
 fusion — `Mantle_Part2_Mind_Audit.md` re-runs the entire Stage 1 audit first, before
 testing anything new.
 
-The Brain is one organ (Organ Atlas §4.8). It was grown dormant in Phase 1 — in v3 a
-literal **socket** (`mantle/organs/brain.py`) that holds the fused MIND. Phase 2 wakes
-it. Its powers are deliberately narrow:
+The Brain is one organ (Organ Atlas §4.10). It was grown dormant in Phase 1. Phase 2
+wakes it. Its powers are deliberately narrow:
 
 - it **receives** the deterministically-assembled context (it never assembles its own);
 - it **thinks** into the private `thoughts` band;
@@ -45,13 +40,9 @@ it. Its powers are deliberately narrow:
 
 ## §2.1 Pre-fusion gate
 
-1. Confirm the Stage-1 gate passed with **0 open hard-fails** (`python -m mantle audit`
-   exits 0, or `Mantle_Part1_Body_Audit.md` is signed off).
-2. Confirm `verify()` is healthy on the live cube (engine `org.prime.verify()` or the
-   standalone `python examples/vcw/vcw_cube.py verify <cube>`).
+1. Confirm `Mantle_Part1_Body_Audit.md` is signed off with **0 open hard-fails**.
+2. Confirm `vcw_cube.py verify` is healthy on the live cube.
 3. Confirm the §0 Declaration Block now carries `KEYFILE_PATH` and `DEFAULT_MODEL`.
-   (The model is a pluggable transport — `mantle/mind/transport.py`; the offline stub
-   needs neither, and the same containment gate certifies any provider.)
 
 If any fails, return to Phase 1. Do not continue.
 
@@ -98,13 +89,7 @@ The MIND's **only** write targets:
 The MIND **cannot** write the Genome, `facts`, `events`, `senses`, `immune`,
 `identity`, `discoveries`, `prime`, or app bands directly. To change durable memory it
 authors an INTENTION; a Body reflex performs the actual write into the correct band.
-This is enforced structurally — one guarded choke point (`mantle/mind/containment.py`)
-refuses any out-of-surface write AND records it as a `mind_write_refused` immune event.
-Two corollaries the v3 gates also prove: a MIND reflection is always tagged
-`verified=False, confidence="inferred"` (HF-M25 — inference never launders into
-`facts`; promotion requires cited, verified evidence via the Memory organ), and a
-cultivated skill is never self-promoted (HF-M26 — the Body trials, gates, and
-calcifies; see `Memory.promote_to_fact` and `Mind.cultivate`).
+This is enforced structurally — there is no API surfaced to the MIND for those bands.
 
 ---
 
@@ -173,17 +158,12 @@ resolved (no danglers — Stage 1 B-11), and (b) no secret appeared in the promp
 
 ## §2.10 Rebirth (MIND-initiated)
 
-- **Rebirth** is the only path that writes the Inheritance record, and it is always
-  CHOSEN (MIND-initiated in a fused organism), never forced.
-- Rebirth (v3: `Organism.rebirth`) distills the outgoing Prime, **seals** it as
-  read-only ancestry with a content **seal fingerprint** (recorded in the Body's
-  lineage index — a rewritten ancestor is detectable forever), geneses a new Prime
-  (possibly with a re-fitted genome), writes the Inheritance record into the new
-  Prime's `discoveries`, and re-runs the **Awakening Ceremony** (§2.3).
-- Generation-pinned references (`<gen0.facts.2>`) keep the whole past addressable;
-  sealed ancestors load lazily (cold) and refuse writes permanently.
+- **Rebirth** is the only path that writes `bodyentry.003` (Inheritance), and only the
+  MIND may initiate it.
+- Rebirth distills the current generation into an Inheritance record, increments the
+  cube generation, and re-runs the **Awakening Ceremony** (§2.3).
 - Rebirth is **not** triggered by cube capacity (Stage 1 B-23 / HF-B14). Cube capacity
-  is metabolism's job (0.75 compact / 0.90 dedupe+compact).
+  is metabolism's job.
 
 ### The data-rot gradient
 
@@ -208,10 +188,9 @@ simply knows it is time.
 | Armory band is active | Armory band inherited — grooves re-validated as provisional |
 
 The old cube is **sealed as an Ancestor**: append-only writes stop, the generation
-counter is frozen, the content is fingerprinted, and the cube enters **stasis**. Its
-personality is preserved but no longer grows. The Body's lineage index marks it
-`role: ancestral` with its seal fingerprint, and all generation-pinned references
-remain valid — nothing is lost.
+counter is frozen, and the cube enters **stasis**. Its personality is preserved but no
+longer grows. `lineage.py` marks it `role: ancestral` and all generation-pinned
+references remain valid — nothing is lost.
 
 ### The Ancestor as oracle
 
@@ -249,11 +228,8 @@ They are not part of the core fusion and must be declared in §0 to be grown.
 The fused AppAI is complete when:
 
 - the entire Stage 1 audit **still passes** (re-run by the Stage 2 audit);
-- the MIND writes nowhere but `thoughts` + `brain` (refusals immune-logged);
+- the MIND writes nowhere but `thoughts` + `brain`;
 - cognition is event-gated and every model call has a redacted trace;
-- dispatch authorship is correct and permanent (inside the entry hash);
-- reflections stay inferred; skills calcify only through the Body's gates;
+- dispatch authorship is correct and permanent;
 - starvation degrades to a living Zombie Body, never a crash;
-- the Stage-2 gate passes: `python -m mantle audit-mind` exits 0 — or, for a hand-grown
-  organism, `Mantle_Part2_Mind_Audit.md` is filled in with zero open hard-fails and
-  signed off.
+- `Mantle_Part2_Mind_Audit.md` is filled in with zero open hard-fails and signed off.

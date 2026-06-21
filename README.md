@@ -6,7 +6,7 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 32 security invariants, the
+*The organism re-certifies on every commit: the Stage-1 gate, 66 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
 > **New here, or skeptical of the biology metaphor?** Start with
@@ -34,7 +34,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 32 security invariants, red/green
+python -m mantle prove         # 66 security invariants, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash
@@ -52,6 +52,28 @@ python -m mantle assimilate examples/sample_app --dry-run
 python examples/vcw/vcw_cube.py selftest      # every format rule proven in one run
 python examples/vcw/interop.py                # standalone <-> engine: identical bytes
 ```
+
+### The Gen-4 generation (inherited from the Argonaut line)
+
+The framework now carries the reproductive, symbiotic, and self-evolving tissue grown on the
+Argonaut branch — declarative birth, residency, knowledge-sharing, self-redesign, and
+self-reconstruction — all gated the same way (66 invariants, no standing law weakened). The
+runnable manual `FIELD_GUIDE.md` walks every one; [`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md)
+records the inheritance.
+
+```bash
+python -m mantle teach                         # the Field Guide, RUNNING — 16 chapters, each proven
+python -m mantle hatch eggs/greeter.json --out=nest/   # a whole AppAI from one JSON egg, certified
+python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
+python -m mantle graft eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
+python -m mantle doctor nest/                   # deployment checkup (incl. docs-vs-code coherence)
+```
+
+New abilities, by module: `egg`/`hatchery` (declarative birth) · `anchor`/`symbiosis` (residency
++ energy economy) · `graft` (patch-grafts + live residency) · `mem` (keyless knowledge plasmids) ·
+`compiler` (self-redesigning VCW + host memory bridge) · `ganglia` (parallel limbs) · `vault`
+(self-reconstruction) · `ingestion`/`doctor` (resilience) · `face` (self-portrait) · `teach`
+(the living manual). Self/Other identity and event-gated nociception harden the inherited organs.
 
 Pure standard library. No dependencies, no network, no keys — for any of the above.
 
@@ -117,7 +139,7 @@ mantle/                  the v3 framework (start here)
   organs/                the eight organs, each with an enforced contract
   mind/                  Phase 2 only: transports, containment, the MIND, AppAIRuntime
   assimilator/           Path B: read-only dissection, organ map, fail-open wrappers
-  audits/                Stage 1, Stage 2, and the 32 invariants
+  audits/                Stage 1, Stage 2, and the 66 invariants
 docs/
   Mantle_v3_Architecture.md     why the rewrite, and the shape of it
   Mantle_v3_Migration.md        old layout -> new layout, what tightened

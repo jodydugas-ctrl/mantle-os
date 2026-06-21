@@ -1,12 +1,10 @@
 # Mantle OS — PRIMER
 
-**Mantle OS v3.0** · The organic coding framework
+**Mantle OS v2.3** · The organic coding framework
 *Read in order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) (why) →
 [`docs/Mantle_Organism_Lens.md`](docs/Mantle_Organism_Lens.md) (how to see any app as a creature) → this
 (who you are while you build) → [`docs/Mantle_Organ_Atlas.md`](docs/Mantle_Organ_Atlas.md) (the taxonomy).
-The working code in [`mantle/`](mantle/) is ground truth where prose disagrees;
-[`examples/vcw/vcw_cube.py`](examples/vcw/vcw_cube.py) is the standalone, normative definition
-of the cube format.*
+The working code in [`examples/vcw/`](examples/vcw/) is ground truth where prose disagrees.*
 
 ---
 
@@ -21,14 +19,8 @@ that the Body is alive and correct *with no brain attached*, and only then fuse 
 
 This is not decoration. "Organ," "reflex," "veil," "Body," and "MIND" are the
 **concrete code-structure vocabulary** of this framework. When you build a module,
-you build an **organ** with a contract. When you handle an input without a model,
+you build an **organ** with a manifest. When you handle an input without a model,
 that is a **reflex**. The biology is the architecture.
-
-Since v3 the framework is itself a runnable organism: the [`mantle/`](mantle/) package
-is the reference Body — eight contracted organs on one deterministic SignalBus around
-the cube — and the audits are executable gates (`python -m mantle audit`). You can grow
-a new AppAI on top of it (Path A), assimilate an existing app into one (Path B), or
-read it as the worked example of everything this document set teaches.
 
 ### The two phases (non-negotiable order)
 
@@ -39,10 +31,8 @@ read it as the worked example of everything this document set teaches.
 
 **Phase 2 may only ever *extend* Phase 1.** A Body that passes the Stage 1 audit must
 keep passing it after fusion. If attaching the MIND breaks a Body reflex, the fusion
-is wrong — not the Body. In v3 this is enforced in code, not just doctrine: `fuse()`
-**refuses** without a certified Stage-1 gate, and the Stage-2 gate re-runs every
-Stage-1 row. This is the spine of the whole framework: *build a thing that works with
-no mind, then give it a mind.*
+is wrong — not the Body. This is the spine of the whole framework: *build a thing
+that works with no mind, then give it a mind.*
 
 ---
 
@@ -73,34 +63,27 @@ PHASE 2 (MIND):
   Mantle_Part2_Mind_Audit.md  <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
 
 Mantle_Assimilator.md       <- Path B: grow organs around EXISTING code (non-destructively);
-                               runnable in v3: mantle/assimilator/ + the Appendix A template
+                               includes the App Inventory fill-in template as Appendix A
 
 docs/  <- reference + supporting material:
   docs/Mantle_Doctrine.md       <- READ FIRST: the creed + cosmology (why)
   docs/Mantle_Organism_Lens.md  <- the mindset primer: read any app as a living creature
   docs/Mantle_Organ_Atlas.md    <- the organ taxonomy: every organ, its manifest, its reflexes
   docs/Mantle_LLM_Pitfalls.md   <- three traps LLMs fall into + how to avoid them (read FIRST if LLM)
-  docs/Mantle_v3_Architecture.md<- the v3 rewrite: the organism mesh, in one note
-  docs/Mantle_v3_Migration.md   <- v2.3 layout -> v3 package, what tightened
-  docs/v3/                      <- VCW guide · lifecycle · organ contracts · assimilation ·
-                                   audits · visual guide (SVG diagrams agents can read)
   docs/Mantle_Extensions.md     <- OPTIONAL overlays (Grooves, Urge System, LIGATURE). Not normative.
   docs/Mantle_Positioning.md    <- plain-language on-ramp + how this relates to other tools
   docs/Mantle_Grooves.md        <- groove detection / muscle memory (Extensions §6)
   docs/Mantle_Urge_System.md    <- internal pressure/gradient model (Extensions §7)
   docs/Mantle_VCW_Tiers.md      <- VCW compliance tiers: what to do when a full VCW can't run
 
-mantle/                       <- the runnable v3 framework (the reference Body + gates)
-  core/ · vcw/ · organs/ · mind/ · assimilator/ · audits/ · cli.py
-examples/vcw/                 <- THE standalone VCW cube (vcw_cube.py: the normative,
-                                 runnable format definition) + interop proof + GUIDE.md
+examples/vcw/                 <- the heart, in runnable code (substrate you build around)
+  vcw_cube.py · drivers.py · body.py · refs.py · lineage.py · skills.py · boot.py
+  GUIDE.md  <- the one teaching guide (substrate + programmable layer)
+  examples.py · examples_boot.py · README.md
 ```
 
-Read the Doctrine and the Organism Lens, then this Primer, then
-**`examples/vcw/GUIDE.md`** (the substrate) and **`examples/vcw/vcw_cube.py`** (the
-format, as one readable file), then the **Organ Atlas**. Only then open Part 1.
-
-One command to see everything alive: `python -m mantle demo`.
+Read the Doctrine and the Organism Lens, then this Primer, then **`examples/vcw/GUIDE.md`** so you
+understand the substrate, then the **Organ Atlas**. Only then open Part 1.
 
 ---
 
@@ -109,19 +92,15 @@ One command to see everything alive: `python -m mantle demo`.
 | Term | Definition |
 |------|------------|
 | **AppAI** | The embodied application-as-organism you are growing. |
-| **VCW cube** | The durable nervous-memory substrate: one generation of experience as 800 real-PNG layers. See `examples/vcw/vcw_cube.py` (normative) and `mantle/vcw/` (engine). |
+| **VCW cube** | The durable nervous-memory substrate. 800 layered PNGs. The **heart**. See `examples/vcw/`. |
 | **Body** | The automatic organism: all organs that run **without** an LLM. Phase 1. |
 | **MIND** | The reasoning/voice layer — an LLM fused in Phase 2. The **brain**. |
-| **Organ** | A self-contained code module with an enforced **contract** (bands, reflexes, audit obligations, fail mode). `mantle/organs/contract.py`. |
-| **SignalBus** | The deterministic, fail-open reflex bus organs mesh on — no organ reaches into another. `mantle/core/events.py`. |
+| **Organ** | A self-contained code module with a manifest, reflexes, and audit obligations. |
 | **Reflex** | A deterministic, no-LLM behavior. The Body is made of reflexes. |
-| **Band** | A reserved, named range of cube layers (e.g. `facts`, `senses`, `thoughts`), self-described by a boot sector with a declared span and purpose. |
+| **Band** | A reserved, named range of cube layers (e.g. `facts`, `senses`, `thoughts`). |
 | **Genome (agent)** | Identity held in the **Body** (not the cube): Primer (read-only) + Special Instructions + Immunization + lineage index. |
 | **Veil** | The Body reflex that hides private / tombstoned / quarantined memory on read. |
-| **Metabolism** | The capacity reflex: compaction, dedup, layer reclaim. Pressure 0.75/0.90 triggers it. **Capacity never triggers rebirth.** |
-| **Seal fingerprint** | The content hash a generation receives when sealed as ancestry; a rewritten ancestor is detectable forever. |
 | **Zombie Body** | A Body that has passed the Stage 1 Gate: alive, correct, dormant. |
-| **AppAIRuntime** | The agent-facing surface for operating an AppAI from inside, through Body APIs only. `mantle/mind/runtime.py`. |
 
 ---
 
@@ -133,31 +112,26 @@ These are the instincts to build by. When a design choice is unclear, return her
    reflex, living in the Body. The MIND is for judgment and voice — never for
    plumbing. If your Body needs the LLM to function at all, you built it wrong.
 
-2. **Organs, not layers-of-architecture.** Structure code as organs with explicit,
-   **enforced** contracts (what bands they may touch, what reflexes they own, what the
-   audit checks). An organism is a federation of organs on one bus, not a stack of
-   tiers — and an out-of-contract write is refused and immune-logged, not merely
-   frowned upon.
+2. **Organs, not layers-of-architecture.** Structure code as organs with explicit
+   manifests (what bands they touch, what reflexes they own, what the audit checks).
+   An organism is a federation of organs, not a stack of tiers.
 
 3. **The cube is the single source of truth.** All durable state lives in the VCW
    cube, addressed through bands. Organs communicate by reading and appending
-   entries and by bus signals — never by hidden shared globals.
+   entries — not by hidden shared globals.
 
 4. **Memory is immutable and append-only.** You never rewrite the past. You
    **append**, **tombstone** (retire), or **quarantine** (isolate). History is
-   auditable forever; sealed generations are fingerprinted so even ancestors cannot be
-   quietly rewritten. The Primer is immutable from genesis.
+   auditable forever. The Primer is immutable from genesis.
 
 5. **Everything is provable.** Every organ carries audit obligations. Every action a
    future MIND could take must have a deterministic proof path the Body can execute
-   and verify. The gates are runnable (`python -m mantle audit`, `prove`,
-   `audit-mind`) and prove they *catch* violations (`--break-hash`, `--break-primer`,
-   `--break-seal`). "It probably works" is a failure.
+   and verify. "It probably works" is a failure.
 
 6. **Fail open, never fail silent.** Instrumentation must never crash the host
    organism (a sick organ degrades gracefully), but it must never *hide* a problem
-   either: dangling references, integrity failures, overreach, stalled pulses, and
-   starvation become `immune` events, not swallowed exceptions.
+   either: dangling references, integrity failures, and starvation are logged as
+   `immune` events, not swallowed.
 
 ---
 
@@ -184,8 +158,8 @@ SYNTAX_CONSTRAINTS  : <host-imposed limits, e.g. no-eval, sandbox>
   cannot crash the host (`try/except` → degrade, log to `immune`).
 - **Dual-flush.** Persist on both an explicit checkpoint *and* an `atexit` handler,
   so a cube is never lost to an ungraceful shutdown.
-- **Staged commit.** Saves write a stage file, verify it, then atomically replace —
-  a corrupt cube can never replace a healthy one.
+- **Import compatibility.** Organs import via package-relative path with a sibling
+  fallback, so the Body runs whether launched as a module or a script.
 - **Secret boundary.** Any organ crossing a credential boundary marks it
   (`secret_boundary=True`) so secrets are redacted from senses/immune logs.
 - **Separate boot verifier.** Boot integrity is checked by a small fail-open verifier
@@ -193,11 +167,8 @@ SYNTAX_CONSTRAINTS  : <host-imposed limits, e.g. no-eval, sandbox>
 - **Single keyfile by default.** One keyfile selects the MIND model. Credential
   *pools* are an Extensions opt-in, not the default.
 - **Authorship is permanent.** Dispatch records carry an `authorship` field
-  (`MIND` owns INTENTION/DELEGATED; `BODY` owns NOTIFIED/COMPLETED) — and in v3 the
-  field lives *inside the entry hash*, so a rewrite is caught by `verify()`.
-- **Skills are gated.** Calcification requires the static sandbox gate + trial +
-  code-hash + signature + capability set + provenance naming an author; execution
-  re-checks hash, capabilities, and trust at every run.
+  (`MIND` owns INTENTION/DELEGATED; `BODY` owns NOTIFIED/COMPLETED). It is never
+  rewritten.
 
 ---
 
@@ -210,22 +181,17 @@ source code is provided.
 1. Emit the §0 Declaration Block.
 2. Read `examples/vcw/GUIDE.md` and the **Organ Atlas**.
 3. Follow **`Mantle_Part1_Body.md`**: grow each organ, bind it to its bands, give it
-   reflexes. Author the **Body** (Primer/identity), then genesis the cube for
-   experiential memory. The `mantle/` package is the runnable skeleton to build on or
-   imitate.
-4. Run the Stage-1 gate (**`Mantle_Part1_Body_Audit.md`**; runnable form:
-   `python -m mantle audit`). Fix every hard-fail. Do not proceed until the Zombie
-   Body is **certified**.
+   reflexes. Author the **Body** (Primer/identity), then genesis the cube for experiential memory.
+4. Run **`Mantle_Part1_Body_Audit.md`** against the result. Fix every hard-fail.
+   Do not proceed until the Zombie Body is **certified**.
 5. Only then follow **`Mantle_Part2_Mind.md`** to fuse the MIND, and certify with
-   **`Mantle_Part2_Mind_Audit.md`** (runnable form: `python -m mantle audit-mind`,
-   which *re-runs* the Stage 1 checks first).
+   **`Mantle_Part2_Mind_Audit.md`** (which *re-runs* the Stage 1 checks first).
 
 ### Path B — Assimilate existing code (brownfield organism)
 1. Emit the §0 Declaration Block (declaring the host you are instrumenting).
 2. Follow **`Mantle_Assimilator.md`**: inventory the existing code, classify each
    symbol by organ role, and **grow organs around the existing tissue without
-   rewriting its behavior**. Instrumentation is additive and fail-open. The read-only
-   dissection is runnable: `python -m mantle assimilate <host> --dry-run`.
+   rewriting its behavior**. Instrumentation is additive and fail-open.
 3. The Assimilator *replaces* Part 1 as the Body-building path; you still finish at
    the **Stage 1 Gate**, then proceed to Phase 2 identically.
 
@@ -236,15 +202,13 @@ Both paths converge on the same certified Body, then the same MIND fusion.
 ## 6. How to behave while compiling
 
 - **Declare, then grow.** Never emit code before the §0 block and the relevant organ
-  contracts.
+  manifests.
 - **Cite the substrate.** When an organ touches memory, name the band and use the
-  reference grammar (`<target.selector.address>` — `mantle/core/refs.py`). Never
-  invent a parallel store.
-- **Prove as you go.** For each organ, state its audit obligation and how the gate
-  will check it. If you can't state the proof, the organ isn't done.
+  reference syntax from the VCW guide. Never invent a parallel store.
+- **Prove as you go.** For each organ, state its audit obligation and how the audit
+  file will check it. If you can't state the proof, the organ isn't done.
 - **Keep Phase 1 brain-free.** If you catch yourself reaching for the LLM during
   Phase 1, stop — that logic belongs in a reflex or it doesn't belong in Phase 1.
-  (The gate proves this in a clean subprocess; you will be caught.)
 - **Examples in the source Drive are out of date.** Build from these instructions,
   not from any example artifact.
 - **Optional means optional.** Anything in `docs/Mantle_Extensions.md` (LIGATURE,

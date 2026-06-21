@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.metabolism  --  the memory metabolism (Mantle v3)
+mantle.vcw.metabolism  --  the memory metabolism (Argonaut, of the Mantle lineage)
 
 "Failure is not the end; waste is." Metabolism is how the organism keeps its working set
 lean WITHOUT ever losing identity or being forced into a lossy reset:

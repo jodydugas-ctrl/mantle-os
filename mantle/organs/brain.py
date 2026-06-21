@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.brain  --  the Brain organ: the dormant Phase-2 socket (Mantle v3)
+mantle.organs.brain  --  the Brain organ: the dormant Phase-2 socket (Argonaut, of the Mantle lineage)
 
 The Brain is the only organ that is FULLY DORMANT in Phase 1: the cube has the bands
 (`brain`, `thoughts`); nothing writes them. This module is deliberately just the SOCKET --

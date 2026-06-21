@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.core.body  --  the BODY store (Mantle v3)
+mantle.core.body  --  the BODY store (Argonaut, of the Mantle lineage)
 
 The Primer lives in the BODY, not in the VCW cube. The cube is pure experiential memory
 (read/append-only). The Body holds the agent's *defining* data and provides the small
@@ -19,12 +19,21 @@ fingerprint). That record, not any cube, is the continuity of the organism acros
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
+import secrets
 import time
 from typing import Any, Dict, List, Optional
 
 
 def _entry(content: Any, author: str = "BODY") -> Dict[str, Any]:
     return {"ts": time.time(), "author": author, "content": content}
+
+
+def _fingerprint(key: str) -> str:
+    """The PUBLIC id of a genesis key: sha256 of the key, 16 hex chars. Safe to show,
+    safe to persist in the clear -- it cannot be reversed into the key."""
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
 
 
 class Body:
@@ -35,6 +44,12 @@ class Body:
         self._special: List[Dict[str, Any]] = []
         self._immunization: List[Dict[str, Any]] = []
         self._primer_sealed = False
+        # the genesis key -- the cryptographic SELF (M2). Generated ONCE at birth, sealed
+        # into the Body, NEVER in any cube, NEVER in boot_order/self_record (so the MIND
+        # cannot leak what it does not know). It is the organism's immune identity: files
+        # it can sign/verify are SELF; everything else is OTHER.
+        self._genesis_key: Optional[str] = None
+        self._key_fingerprint: Optional[str] = None
         # lineage index: generation -> {"role": "prime"|"ancestral", "location": str,
         #                               "seal_fingerprint": str|None}
         self.lineage_index: Dict[int, Dict[str, Any]] = {}
@@ -52,10 +67,70 @@ class Body:
         # the Commandments seed the Immunization working copy (doctrine -> immune)
         for c in commandments:
             self._immunization.append(_entry(c, author="BODY"))
+        # mint the genesis key ONCE, at the moment the self comes online
+        self._mint_genesis_key()
 
     @property
     def primer_sealed(self) -> bool:
         return self._primer_sealed
+
+    # ---- the genesis key: the cryptographic SELF (M2) ----------------------
+    def _mint_genesis_key(self) -> None:
+        """Generate the one-time genesis key. Refused if one already exists -- the SELF
+        is minted once and never re-minted (mirrors the sealed Primer)."""
+        if self._genesis_key is not None:
+            raise PermissionError("the genesis key is minted once; it cannot be re-minted")
+        self._genesis_key = secrets.token_hex(32)
+        self._key_fingerprint = _fingerprint(self._genesis_key)
+
+    @property
+    def key_fingerprint(self) -> Optional[str]:
+        """The PUBLIC id of this Body's SELF. Safe to show; cannot reveal the key."""
+        return self._key_fingerprint
+
+    @property
+    def has_key(self) -> bool:
+        return self._genesis_key is not None
+
+    def sign(self, data: bytes) -> str:
+        """HMAC-SHA256 over `data` with the genesis key. Only this Body can produce it;
+        any other body produces a different mac -> the basis of SELF/OTHER recognition."""
+        if self._genesis_key is None:
+            raise PermissionError("no genesis key: this Body has no SELF to sign with")
+        return hmac.new(self._genesis_key.encode("utf-8"), data, hashlib.sha256).hexdigest()
+
+    def verify(self, data: bytes, mac: str) -> bool:
+        """True iff `mac` is THIS Body's signature over `data` (constant-time compare).
+        A mac from another body, or a forged mac, is OTHER -> False."""
+        if self._genesis_key is None or not isinstance(mac, str):
+            return False
+        return hmac.compare_digest(self.sign(data), mac)
+
+    # ---- SELF-encryption: the seed vault depends on this (M8) ---------------
+    def _keystream(self, n: int) -> bytes:
+        """A deterministic keystream derived from the genesis key (sha256 in counter mode).
+        Only this Body can reproduce it -- so only SELF can open what SELF sealed."""
+        out = bytearray()
+        counter = 0
+        seed = self._genesis_key.encode("utf-8")
+        while len(out) < n:
+            out += hashlib.sha256(seed + counter.to_bytes(8, "big")).digest()
+            counter += 1
+        return bytes(out[:n])
+
+    def seal_bytes(self, data: bytes) -> bytes:
+        """Encrypt `data` under the genesis key (XOR stream cipher). The ciphertext is
+        opaque to any other body: SELF can open it, OTHER cannot. The key never leaves the
+        Body -- so it can never reach the MIND or a cube."""
+        if self._genesis_key is None:
+            raise PermissionError("no genesis key: this Body has no SELF to seal with")
+        ks = self._keystream(len(data))
+        return bytes(a ^ b for a, b in zip(data, ks))
+
+    def open_bytes(self, ciphertext: bytes) -> bytes:
+        """Decrypt what THIS Body sealed (the cipher is symmetric). Another body's key
+        produces garbage -- the vault is unreadable as OTHER."""
+        return self.seal_bytes(ciphertext)
 
     # ---- Special Instructions: MIND guides, BODY applies -------------------
     def mind_propose_special(self, text: str) -> Dict[str, Any]:
@@ -120,8 +195,12 @@ class Body:
 
     # ---- persistence ------------------------------------------------------
     def to_dict(self) -> Dict[str, Any]:
+        # the genesis key persists with the Body (continuity of SELF across reloads). It
+        # lives in body.json, NEVER in a cube, and NEVER in boot_order/self_record above --
+        # so the MIND's snapshot can never carry it.
         return {"primer": self._primer, "special": self._special,
                 "immunization": self._immunization, "primer_sealed": self._primer_sealed,
+                "genesis_key": self._genesis_key, "key_fingerprint": self._key_fingerprint,
                 "lineage_index": {str(k): v for k, v in self.lineage_index.items()},
                 "prime_generation": self.prime_generation}
 
@@ -132,6 +211,17 @@ class Body:
         b._special = d.get("special", [])
         b._immunization = d.get("immunization", [])
         b._primer_sealed = d.get("primer_sealed", bool(b._primer))
+        b._genesis_key = d.get("genesis_key")
+        # recompute the fingerprint from the loaded key; a key whose recorded fingerprint
+        # disagrees is a tampered/replaced SELF -> caught loudly at the Organism load gate.
+        b._key_fingerprint = d.get("key_fingerprint")
         b.lineage_index = {int(k): v for k, v in d.get("lineage_index", {}).items()}
         b.prime_generation = d.get("prime_generation", 0)
         return b
+
+    def key_fingerprint_consistent(self) -> bool:
+        """True iff the loaded key still hashes to its recorded fingerprint. A False here
+        means the SELF was tampered with or orphaned -- the Organism raises on it (M2)."""
+        if self._genesis_key is None:
+            return self._key_fingerprint is None
+        return _fingerprint(self._genesis_key) == self._key_fingerprint

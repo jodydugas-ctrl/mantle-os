@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.mind.mind  --  the reference MIND fusion, provider-agnostic (Mantle v3)
+mantle.mind.mind  --  the reference MIND fusion, provider-agnostic (Argonaut, of the Mantle lineage)
 
 The MIND is a fused LLM, sharply bounded by the BODY -- and the boundary is executable:
 
@@ -73,7 +73,7 @@ class Mind:
         return answer
 
     def _frame(self, snapshot: Dict[str, Any]) -> str:
-        return ("You are the fused MIND of a Mantle AppAI named %s. Your context has been "
+        return ("You are the fused MIND of a AppAI named %s. Your context has been "
                 "assembled deterministically (every reference already resolved, the private "
                 "`thoughts` band veiled). Reflect briefly; you may propose Body changes but "
                 "you do not apply them.\n\nCONTEXT:\n%s"

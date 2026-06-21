@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.indexes  --  compact per-band read indexes (Mantle v3)
+mantle.vcw.indexes  --  compact per-band read indexes (Argonaut, of the Mantle lineage)
 
 The VCW's logical address for an entry is its index into the band's concatenated VISIBLE
 stream (so physical layer reuse never breaks a reference). v2 resolved that address by

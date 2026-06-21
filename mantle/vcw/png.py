@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.png  --  the pure-stdlib PNG codec (Mantle v3)
+mantle.vcw.png  --  the pure-stdlib PNG codec (Argonaut, of the Mantle lineage)
 
 Every VCW layer is a REAL, valid PNG image: the whole organism's memory is a directory of
 pictures you can open in any image viewer. This module is the lowest substrate primitive --

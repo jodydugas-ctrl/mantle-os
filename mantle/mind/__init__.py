@@ -1,4 +1,4 @@
-"""mantle.mind -- the bounded MIND (Phase 2 only; Mantle v3).
+"""mantle.mind -- the bounded MIND (Phase 2 only; Argonaut).
 
 NOTHING in mantle.core / mantle.vcw / mantle.organs imports this package: the import
 direction IS the Phase-1 guarantee. The model is a pluggable transport (a callable);

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.audits.stage1  --  the Stage-1 (Zombie Body) gate (Mantle v3)
+mantle.audits.stage1  --  the Stage-1 (Zombie Body) gate (Argonaut, of the Mantle lineage)
 
 Deterministic and LLM-free: every check reads the cube, runs Body reflexes, and runs
 verify(). No human judgment, no model, no network. The gate exits non-zero if ANY row
@@ -318,7 +318,7 @@ def main(argv):
     substrate_rows, mesh_rows, inv = ev["substrate_rows"], ev["mesh_rows"], ev["invariants"]
 
     print("=" * 74)
-    print("MANTLE OS v3 — STAGE 1 (ZOMBIE BODY) GATE  ·  source: %s" % source)
+    print("ARGONAUT OS — STAGE 1 (ZOMBIE BODY) GATE  ·  source: %s" % source)
     print("=" * 74)
     width = max(len(r["requirement"]) for r in substrate_rows + mesh_rows)
     print("  Substrate rows (the cube / Body store):")

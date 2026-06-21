@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.assimilator.wrappers  --  the fail-open hook runtime (Mantle v3)
+mantle.assimilator.wrappers  --  the fail-open hook runtime (Argonaut, of the Mantle lineage)
 
 Path B, Phase 5+: AFTER the Phase 0 inventory gate is signed, host behavior is threaded
 through the organism WITHOUT being changed. The hook runtime wraps host callables --

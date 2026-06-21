@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.entry  --  the one entry hasher + the one entry maker (Mantle v3)
+mantle.vcw.entry  --  the one entry hasher + the one entry maker (Argonaut, of the Mantle lineage)
 
 The rule is simple and total: the hash covers EVERY field of an entry EXCEPT the four
 volatile ones the Body is allowed to flip after the fact -- `id` (assigned on append),
@@ -49,3 +49,48 @@ def make_entry(content: Any, opcode: str = "WRITE", author: str = "BODY",
 def visible(entries) -> list:
     """The base visibility filter: tombstoned and quarantined entries never surface."""
     return [e for e in entries if not e.get("tombstone") and not e.get("quarantined")]
+
+
+# ---- graded memory: weight / deweighting / behavioral ghosts (M3) ----------
+# A weight is NOT a mutable field on an entry (that would break the immutable hash). It is
+# an OVERLAY computed from append-only DEWEIGHT events: each event records {target, weight},
+# and the latest event targeting an entry wins. An entry with no event has weight 1.0. An
+# entry whose effective weight drops to/under the ghost threshold vanishes from the default
+# read stream but stays physically present -- a recoverable "behavioral ghost". Long-term
+# depression, not deletion; nothing is ever overwritten.
+DEWEIGHT_OPCODE = "DEWEIGHT"
+GHOST_THRESHOLD = 0.0       # effective weight <= this is a ghost (hidden from default reads)
+
+
+def effective_weights(entries) -> dict:
+    """id -> effective weight, read from the append-only DEWEIGHT events (last wins)."""
+    w: dict = {}
+    for e in entries:
+        if e.get("opcode") == DEWEIGHT_OPCODE:
+            c = e.get("content") or {}
+            tid, wt = c.get("target"), c.get("weight")
+            if tid is not None and isinstance(wt, (int, float)) and not isinstance(wt, bool):
+                w[tid] = float(wt)
+    return w
+
+
+def weight_overlay(entries, ghosts: bool = False) -> list:
+    """Apply the graded-memory overlay to a base-visible stream (tombstone/quarantine
+    already filtered). DEWEIGHT bookkeeping entries are dropped from the output; remaining
+    entries are ordered by DESCENDING effective weight (stable). Default (`ghosts=False`)
+    hides suppressed entries (weight <= GHOST_THRESHOLD); `ghosts=True` returns ONLY those
+    suppressed ghosts, in stream order. A cube with no deweight activity is unchanged."""
+    has_event = any(e.get("opcode") == DEWEIGHT_OPCODE for e in entries)
+    if not has_event:
+        return [] if ghosts else list(entries)
+    wmap = effective_weights(entries)
+    live, ghost = [], []
+    for e in entries:
+        if e.get("opcode") == DEWEIGHT_OPCODE:
+            continue                              # bookkeeping never surfaces as content
+        ew = wmap.get(e.get("id"), 1.0)
+        (ghost if ew <= GHOST_THRESHOLD else live).append((ew, e))
+    if ghosts:
+        return [e for _w, e in ghost]
+    live.sort(key=lambda t: -t[0])               # stable: equal weights keep stream order
+    return [e for _w, e in live]

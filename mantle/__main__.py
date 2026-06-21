@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""python -m mantle -- the v3 entry point. See mantle/cli.py for the commands."""
+"""python -m mantle -- the entry point. See mantle/cli.py."""
 import sys
 
 from .cli import main
