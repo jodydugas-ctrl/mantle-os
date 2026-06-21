@@ -84,6 +84,20 @@ class AppAIRuntime:
         """Run a calcified reflex through the Limb (gates + proof apply)."""
         return self.org.limbs.invoke_reflex(band, args, granted)
 
+    # ================= plan ahead: schedule a future wake ======================
+    def schedule_pulse(self, reason: str = "scheduled", after: Optional[int] = None,
+                       at: Optional[int] = None, band: Optional[str] = None,
+                       ref: Optional[str] = None) -> int:
+        """Plan ahead: ask the Body to WAKE cognition on a future beat -- a countdown
+        (`after=N`) or a scheduled beat (`at=K`). Chain a thought to a later pulse instead
+        of polling every beat; the organism then stays asleep (event-gated) until due, so it
+        spends cognition only when it planned to. Returns the beat it will fire on."""
+        return self.org.heart.schedule_pulse(reason, after=after, at=at, band=band, ref=ref)
+
+    def scheduled_pulses(self) -> list:
+        """Inspect the planning queue (future wakes not yet fired)."""
+        return self.org.heart.scheduled()
+
     # ================= steer: propose; the Body applies ========================
     def propose_special_instruction(self, text: str) -> Dict[str, Any]:
         """Returns the intent AND the Body's application of it -- the two-step made

@@ -730,6 +730,32 @@ def t_noc_wake_anchored_to_stressor():
             "woken MIND received stressor coords {reason,band,ref} without a full scan")
 
 
+def t_sched_scheduled_pulse():
+    """SCHED-1: planning ahead. A scheduled pulse wakes cognition on the DUE beat and not
+    before -- the organism chains a thought to a future beat, stays asleep (event-gated)
+    until then, and the scheduled wake is one-shot (fires once)."""
+    woke = {"beats": []}
+
+    class Probe:
+        def cognize(self, snapshot):
+            woke["beats"].append((snapshot or {}).get("_stressor", {}))
+            return None
+
+    org = _born()
+    org.brain.fuse(Probe(), stage1_certified=True)
+    due = org.heart.schedule_pulse("continue-the-plan", after=3)   # plan a wake 3 beats out
+    org.heart.run(2)                                # beats 1,2: calm -> asleep
+    asleep_until_due = (not woke["beats"]) and due == 3 and len(org.heart.scheduled()) == 1
+    org.heart.beat()                               # beat 3: the scheduled wake fires
+    fired_on_due = (len(woke["beats"]) == 1 and woke["beats"][0].get("scheduled") is True
+                    and woke["beats"][0].get("reason") == "continue-the-plan")
+    org.heart.run(3)                               # beats 4,5,6: one-shot -> calm again
+    one_shot = len(woke["beats"]) == 1 and org.heart.scheduled() == []
+    return (asleep_until_due and fired_on_due and one_shot,
+            "scheduled at beat 3: asleep beats 1-2, woke once on beat 3 (scheduled flag), "
+            "calm after")
+
+
 # ============================================================================
 # 14. Graded memory -- deweighting & behavioral ghosts (M3)
 # ============================================================================
@@ -1253,6 +1279,7 @@ TESTS = [
     ("NOC-1 calm-organism-spends-nothing",     t_noc_calm_spends_nothing),
     ("NOC-2 fault-fires-unscheduled-pulse",    t_noc_fault_fires_unscheduled_pulse),
     ("NOC-3 wake-anchored-to-stressor",        t_noc_wake_anchored_to_stressor),
+    ("SCHED-1 scheduled-pulse-plans-ahead",    t_sched_scheduled_pulse),
     ("MEMW-1 deweight-hides-but-preserves",    t_memw_deweight_hides_but_preserves),
     ("MEMW-2 weight-orders-reads",             t_memw_weight_orders_reads),
     ("MEMW-3 deweight-not-overwrite",          t_memw_not_overwrite_and_coherent),

@@ -27,7 +27,7 @@ whole cube to find what hurts.
 from __future__ import annotations
 
 import atexit
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .contract import Organ, OrganContract
 
@@ -43,10 +43,14 @@ CONTRACT = OrganContract(
          "effect": "flush dirty state durably via the staged-commit sink (fail-open)"},
         {"name": "dual-flush", "trigger": "install",
          "effect": "persist on BOTH explicit checkpoint AND an atexit handler"},
+        {"name": "schedule-pulse", "trigger": "the organism plans ahead",
+         "effect": "wake cognition on a FUTURE beat (countdown/at) -- chain thoughts; "
+                   "stay asleep until then (event-gated)"},
     ],
     phase1="active",
     phase2_extension="the same pulse offers the snapshot to cognition ONLY on a wake "
-                     "(unscheduled pulse / SIGNIFICANT / distress); a calm organism sleeps",
+                     "(unscheduled pulse / SIGNIFICANT / distress / a SCHEDULED future wake); "
+                     "a calm organism sleeps",
     audit=[
         "heartbeat runs without an LLM (cognition slot empty in Phase 1)",
         "pulse order is fixed: tick, intake, assembly, reflexes, scan, checkpoint",
@@ -54,6 +58,7 @@ CONTRACT = OrganContract(
         "a missed pulse is logged, never swallowed",
         "cognition is event-gated: a calm fused organism wakes the MIND zero times",
         "a severe event fires exactly one unscheduled pulse anchored to the stressor",
+        "a scheduled pulse wakes cognition on the due beat and not before (one-shot)",
     ],
 )
 
@@ -71,6 +76,7 @@ class Heart(Organ):
         self.flushes = 0
         self._atexit_installed = False
         self._wake: Optional[Dict[str, Any]] = None   # pending pain coordinates (M1)
+        self._schedule: List[Dict[str, Any]] = []     # planned future wakes (scheduling)
 
     def set_circulate(self, sink: Optional[Callable[[], None]]) -> None:
         self._circulate_cb = sink
@@ -96,6 +102,57 @@ class Heart(Organ):
         its own reflexes and must escalate to cognition."""
         return self.beat(assemble=True,
                          wake={"reason": reason, "band": band, "ref": ref})
+
+    # ---- planning ahead: schedule a FUTURE wake (the scheduling command) ----
+    def schedule_pulse(self, reason: str = "scheduled", after: Optional[int] = None,
+                       at: Optional[int] = None, band: Optional[str] = None,
+                       ref: Optional[str] = None) -> int:
+        """Plan ahead. Ask the Body to WAKE cognition on a FUTURE beat -- a COUNTDOWN
+        (`after=N` beats from now) or a scheduled beat (`at=K`). This is how an AppAI
+        CHAINS THOUGHTS: if, during a thought batch, it knows it must process something
+        later, it schedules the continuation instead of polling every pulse. Because
+        cognition is event-gated (NOC), a calm organism then stays ASLEEP and spends
+        nothing until the scheduled beat -- so the organism plans how often it really needs
+        to run a task rather than thinking on every heartbeat. The due beat fires through
+        the same wake path as nociception (the woken snapshot carries `scheduled: True`).
+        Returns the beat the pulse will fire on. `pain` is the NOW version of this; this is
+        the LATER version."""
+        if after is not None:
+            due = self.beats + max(1, int(after))
+        elif at is not None:
+            due = max(self.beats + 1, int(at))          # always strictly in the future
+        else:
+            due = self.beats + 1
+        self._schedule.append({"due": due, "reason": reason, "band": band, "ref": ref})
+        return due
+
+    def scheduled(self) -> List[Dict[str, Any]]:
+        """The pending planning queue: future wakes not yet fired."""
+        return list(self._schedule)
+
+    def cancel_pulse(self, reason: Optional[str] = None) -> int:
+        """Cancel pending scheduled wakes -- all of them, or just those matching `reason`.
+        Returns how many were removed (plans change)."""
+        before = len(self._schedule)
+        if reason is None:
+            self._schedule = []
+        else:
+            self._schedule = [s for s in self._schedule if s.get("reason") != reason]
+        return before - len(self._schedule)
+
+    def _fire_due_schedules(self) -> Optional[Dict[str, Any]]:
+        """Pop any scheduled wakes that have come due (due beat <= now) and return one wake
+        dict for them (or None). Deterministic: planning is in beats, the organism's native
+        unit of time."""
+        if not self._schedule:
+            return None
+        due = [s for s in self._schedule if s["due"] <= self.beats]
+        if not due:
+            return None
+        self._schedule = [s for s in self._schedule if s["due"] > self.beats]
+        s = due[-1]
+        return {"reason": s["reason"], "band": s.get("band"), "ref": s.get("ref"),
+                "scheduled": True, "fired_at": self.beats}
 
     # ---- reflexes ---------------------------------------------------------
     def tick(self) -> int:
@@ -134,6 +191,11 @@ class Heart(Organ):
         report: Dict[str, Any] = {"beat": self.tick()}
         if wake is not None:
             self._wake = dict(wake)
+        due = self._fire_due_schedules()        # planning ahead: a scheduled wake comes due
+        if due is not None:
+            report["scheduled_wake"] = due
+            if self._wake is None:              # a live stressor this pulse takes precedence
+                self._wake = due
         self.bus.emit("pulse", {"beat": self.beats})                    # 1 tick
         report["ok"] = self.pulse_check()
         report["intake"] = self.org.senses.drain()                      # 2 sense intake

@@ -272,7 +272,14 @@ should be re-pointed at Mantle's own README count at merge time.
 | 5 | M5 self-redesign · M6 bridge | BOOT-1..3, BRIDGE-1..2 | COMPAT | compiler.py | — |
 | 6 | M7 ganglia · M8 seed vault | GANG-1..2, VAULT-1..2 | COMPAT | ganglia.py, vault.py | body (seal/open_bytes) |
 | 7 | §3 metering · ingestion · doctor | METER-1, INGEST-1, DOCTOR-1 | COMPAT | ingestion.py, doctor.py | symbiosis, cli |
+| + | scheduled heartbeat (`schedule_pulse`) | SCHED-1 | COMPAT | — | organs/heart, mind/runtime |
 
-**Net:** 36 → **66 invariants green**; cube on-disk format **unchanged** (`vcw-cube-png-v2`) the
+**Net:** 36 → **67 invariants green**; cube on-disk format **unchanged** (`vcw-cube-png-v2`) the
 whole way — the anticipated v3 supersession never occurred. Shared-anatomy edits are small and
 additive; the bulk of the new capability is in new modules that carry whole into `main`.
+
+*Post-merge addition: a **scheduled heartbeat** — `Heart.schedule_pulse(reason, after=N | at=K)`
+(+ `scheduled`/`cancel_pulse`, and `AppAIRuntime.schedule_pulse`). The organism plans a wake on a
+FUTURE beat to chain thoughts and run a task only as often as it needs, staying asleep
+(event-gated) until due. The `later` companion to nociception's `pain` (`now`). Proven by SCHED-1;
+teach/Field-Guide chapter "Planning Ahead"; examples updated descriptively.*

@@ -43,7 +43,7 @@ wakes it. Its powers are deliberately narrow:
 ## §2.1 Pre-fusion gate
 
 1. Confirm `Mantle_Part1_Body_Audit.md` is signed off with **0 open hard-fails**
-   (`python -m mantle audit` + `python -m mantle prove` → 66/66 green).
+   (`python -m mantle audit` + `python -m mantle prove` → 67/67 green).
 2. Confirm the live cube `verify()` is healthy.
 3. Confirm the §0 Declaration Block now carries `KEYFILE_PATH` and `DEFAULT_MODEL`.
 
@@ -126,6 +126,17 @@ Cognition is **event-gated**: no wake reason → no model call. A calm fused org
 every beat with the MIND asleep and spends **zero** energy (Part 2 §2.9). Proven by `NOC-1..3`;
 `org.heart.pain(reason, band, ref)` is the explicit interrupt vector. The Body keeps beating
 regardless.
+
+**Planning ahead — `schedule_pulse` (the scheduling command).** Besides waking NOW (`pain`),
+the organism can schedule a wake for a FUTURE beat — a countdown (`after=N` beats) or a
+scheduled beat (`at=K`): `org.heart.schedule_pulse(reason, after=N)` (also on the MIND's
+runtime, `AppAIRuntime.schedule_pulse`). This is how an AppAI **chains thoughts**: if, during a
+thought batch, it knows it must process something later, it schedules the continuation instead of
+thinking on every pulse — so it plans *how often it really needs to run a task* and stays asleep
+(spending nothing) until the due beat. The scheduled wake fires once, through the same path as
+nociception (the woken snapshot carries `scheduled: True`). Planning is measured in **beats** —
+the organism's native unit of time (it has no innate sense of wall-clock; a host maps seconds →
+beats). Proven by `SCHED-1`.
 
 ---
 
