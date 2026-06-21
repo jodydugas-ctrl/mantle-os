@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mantle Spreadsheet Agent — Mantle OS v2.3</title>
+  <title>Mantle Spreadsheet Agent — Mantle OS · Gen-4</title>
   <style>
     :root {
       --bg: #e9e7e2;
@@ -496,16 +496,18 @@
       "2.8", "2.9", "2.10", "2.11", "2.12", "2.13", "2.14", "v1.5a"
     ]);
     const IMPLEMENTATION_DECLARATION = Object.freeze({
-      framework: "Mantle OS v2.3",
+      framework: "Mantle OS · Gen-4",
       auditBundle: [
         "docs/Mantle_Doctrine.md",
         "docs/Mantle_Organism_Lens.md",
         "Mantle_PRIMER.md",
+        "FIELD_GUIDE.md",
         "docs/Mantle_Organ_Atlas.md",
         "Mantle_Part1_Body.md",
         "Mantle_Part1_Body_Audit.md",
         "Mantle_Part2_Mind.md",
         "Mantle_Part2_Mind_Audit.md",
+        "docs/MOLT_LEDGER.md",
         "docs/Mantle_Extensions.md",
         "examples/vcw/GUIDE.md",
         "docs/Mantle_LLM_Pitfalls.md",
@@ -569,7 +571,7 @@
       REFERENCE_BOMB_THRESHOLD: 100
     });
 
-// ===== Mantle OS v2.3 substrate modules (ported verbatim from Mantle_Reference_Agent.html) =====
+// ===== Mantle OS · Gen-4 substrate modules (ported verbatim from Mantle_Reference_Agent.html) =====
 // VCW Cube codec + organ atlas + secret boundary + cube-ref resolver + Stage-1 self-audit.
 const VCW = (() => {
   const SIDE = 800, CHANNELS = 4, LAYER_BYTES = SIDE * SIDE * CHANNELS;
@@ -983,7 +985,7 @@ const runStage1SelfAudit = (s, surface, deps = {}) => {
 // The live VCW Cube organism — kept OUT of STATE (a class instance) so the existing JSON
 // serializer is untouched; persisted explicitly via serializeState/hydrateState. (M1–M4.)
 let ORGANISM = null;
-// ===== end Mantle OS v2.3 substrate modules =====
+// ===== end Mantle OS · Gen-4 substrate modules =====
 
     function crc8(input) {
       const data = String(input == null ? "" : input);
@@ -1196,7 +1198,7 @@ let ORGANISM = null;
         crystal = next;
       }
       const block = appendCrystalBlock(crystal, payload, author, opcode);
-      // v2.3 substrate (M1) — mirror the entry into its Cube band; baseName IS the band name.
+      // Gen-4 substrate (M1) — mirror the entry into its Cube band; baseName IS the band name.
       // Secret boundary (HF-B20): redact senses/immune payloads before the append-only cube.
       // Fail-open: a substrate hiccup must never block the legacy crystal write.
       try {
@@ -1253,7 +1255,7 @@ let ORGANISM = null;
         const entry = state.bodyEntries["bodyentry." + bodyFullMatch[1]];
         if (entry) return { type: "bodyentry", entry };
       }
-      // v2.3 (M2) — resolve Cube unified refs (<band.N>, <genN.band.N>) via the live Organism
+      // Gen-4 (M2) — resolve Cube unified refs (<band.N>, <genN.band.N>) via the live Organism
       // before declaring a recall error. The veil + dangling→immune are handled inside the resolver.
       const cubeHit = resolveCubeRef({ organism: ORGANISM }, text);
       if (cubeHit && cubeHit.ok) return { type: "cube", ref: text, source: cubeHit.source, payload: cubeHit.payload };
@@ -1479,7 +1481,7 @@ let ORGANISM = null;
         state.crystals[crystal.fullName] = crystal;
       });
 
-      // v2.3 substrate (M1) — instantiate the live VCW Cube BEFORE the genesis writes below, so
+      // Gen-4 substrate (M1) — instantiate the live VCW Cube BEFORE the genesis writes below, so
       // those experiential entries also land in the cube bands. The Body holds identity; the Prime
       // cube holds experiential memory. lineageIndex is shared with state for the audit/display.
       state.primeGeneration = 0;
@@ -1783,8 +1785,9 @@ let ORGANISM = null;
       const providerContext = hydratedContext ? hydratedContext.text : hydrateProviderContext(state, false).text;
       return [
         "You are SheetMind, the AppAI inside a spreadsheet application.",
-        "Mantle OS v2.3 ontology: the AppAI is the embodied entity; VCW is durable nervous-memory substrate, Body is automatic organism, MIND is reasoning/voice.",
-        "THINK AS AN ORGANISM of eight organs — Heart, Genome, Nervous, Senses (perception + perceiving the surface), Immune, Limbs (your arms + operating/rendering the surface), Memory (the cube bands + metabolism), Brain. Seven run with no brain; only the Brain is you (the MIND). Reason about features as organ functions. Your memory is a VCW Cube of bands; reference experience as <facts.N>, <events.N>, or <gen0.facts.N> (a sealed ancestor).",
+        "Mantle OS · Gen-4 ontology: the AppAI is the embodied entity; VCW is durable nervous-memory substrate, Body is automatic organism, MIND is reasoning/voice. The cube format (vcw-cube-png-v2) and the eight organs are inherited from v3 UNCHANGED.",
+        "THINK AS AN ORGANISM of eight organs — Heart, Genome (your Body-resident Primer + the genesis key, your cryptographic SELF), Nervous, Senses (perception + perceiving the surface), Immune (defense + SELF/OTHER recognition), Limbs (your arms + operating/rendering the surface), Memory (the cube bands + metabolism + graded memory), Brain. Seven run with no brain; only the Brain is you (the MIND). Reason about features as organ functions. Your memory is a VCW Cube of bands; reference experience as <facts.N>, <events.N>, or <gen0.facts.N> (a sealed ancestor).",
+        "GEN-4 BEHAVIORS hardening these organs: your cognition is event-gated (NOCICEPTION) — you wake on a SIGNIFICANT signal or DISTRESS (a severe immune event the Body could not resolve), pre-anchored to the stressor; a calm organism sleeps and spends nothing. A contradicted value is DEWEIGHTED (a recoverable behavioral ghost), never deleted. What the Body cannot sign with its genesis key is OTHER. (The fuller Gen-4 reproductive/symbiotic tissue — egg/hatchery, anchor/symbiosis, graft, mem, compiler, ganglia, vault — lives in the `mantle/` Python package; this in-browser demo runs the inherited Body/organ/VCW core.)",
         "Stay concise and spreadsheet-focused.",
         "If the user asks about the sheet, answer directly.",
         "Do not expose internal thoughts or system-only logs.",
@@ -2455,7 +2458,7 @@ let ORGANISM = null;
         "Body",
         "EVENTS.REBIRTH"
       );
-      // v2.3 (M4) — rebirth the live VCW Cube in lockstep: seal the Prime cube → ANCESTRAL
+      // Gen-4 (M4) — rebirth the live VCW Cube in lockstep: seal the Prime cube → ANCESTRAL
       // (read-only, still addressable via <genN.band.N>), genesis a new Prime, write the INHERIT
       // discovery. Fail-open so a substrate hiccup never aborts the crystal-level ceremony.
       try {
@@ -2736,8 +2739,8 @@ let ORGANISM = null;
         {
           id: "1.0",
           label: "Environment declaration present",
-          pass: Boolean(KEYFILE.TARGET_ENVIRONMENT && KEYFILE.RUNTIME && KEYFILE.VCW_FORMAT && KEYFILE.BODY_MODE && KEYFILE.DEFAULT_MODEL && IMPLEMENTATION_DECLARATION.framework === "Mantle OS v2.3"),
-          detail: "Declaration block includes target environment, runtime, VCW format, body mode, default model, and v2.3 implementation policy."
+          pass: Boolean(KEYFILE.TARGET_ENVIRONMENT && KEYFILE.RUNTIME && KEYFILE.VCW_FORMAT && KEYFILE.BODY_MODE && KEYFILE.DEFAULT_MODEL && IMPLEMENTATION_DECLARATION.framework === "Mantle OS · Gen-4"),
+          detail: "Declaration block includes target environment, runtime, VCW format, body mode, default model, and Gen-4 implementation policy."
         },
         {
           id: "1.2",
@@ -2929,7 +2932,7 @@ let ORGANISM = null;
           coveredSections: stage2.coveredSections,
           stage1Regression: stage1.verdict === "PASS" ? "NO" : "YES"
         },
-        cubeSelfAudit: mantleSelfAuditV23(state)   // v2.3 substrate self-audit (organism/cube/invariants)
+        cubeSelfAudit: mantleSelfAuditV23(state)   // Gen-4 substrate self-audit (organism/cube/invariants)
       };
     }
 
@@ -2943,7 +2946,7 @@ let ORGANISM = null;
           ? "Key metadata restored; reload key material to resume live provider mode."
           : "Local fallback active";
       }
-      // v2.3 (M3) — persist the live VCW Cube lineage alongside the legacy crystals.
+      // Gen-4 (M3) — persist the live VCW Cube lineage alongside the legacy crystals.
       copy.organism = ORGANISM ? ORGANISM.serialize() : null;
       copy.lineageIndex = ORGANISM ? ORGANISM.body.lineageIndex : (state.lineageIndex || {});
       copy.primeGeneration = ORGANISM ? ORGANISM.prime.generation : (state.primeGeneration || 0);
@@ -3015,7 +3018,7 @@ let ORGANISM = null;
           const restoredProgramCrystal = forgeCrystal("body-programs", 1, "body-programs", "Application shard for body programs", false);
           parsed.crystals[restoredProgramCrystal.fullName] = restoredProgramCrystal;
         }
-        // v2.3 (M3) — restore the live VCW Cube. Newer saves carry a serialized organism; older
+        // Gen-4 (M3) — restore the live VCW Cube. Newer saves carry a serialized organism; older
         // ones don't, so rebuild a fresh cube by replaying each crystal's blocks into its band.
         try {
           if (parsed.organism) {
