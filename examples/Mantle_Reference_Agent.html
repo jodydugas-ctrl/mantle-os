@@ -2338,6 +2338,12 @@ const _dft1d = (arr) => {
   });
 };
 
+const _median = (a) => {
+  if (!a.length) return 0;
+  const s = [...a].sort((p, q) => p - q), m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+
 const scanChromatophoreBand = (state, rowStart, rowEnd) => {
   if (!state.pixelBuffer) return null;
   // First: CRC pre-scan on this band
@@ -2359,13 +2365,22 @@ const scanChromatophoreBand = (state, rowStart, rowEnd) => {
     yCol.push((r + g + b) / 3);
   }
   const xPow = _dft1d(xRow), yPow = _dft1d(yCol);
-  const maxX = Math.max(...xPow.slice(1)), maxY = Math.max(...yPow.slice(1));
+  // Work on the AC (non-DC) spectrum: the k=0 bin is just total luminance and would swamp any real
+  // signal, so it is excluded from both the peak and the baseline.
+  const acX = xPow.slice(1), acY = yPow.slice(1);
+  const maxX = acX.length ? Math.max(...acX) : 0, maxY = acY.length ? Math.max(...acY) : 0;
   const maxAxisPower = Math.max(maxX, maxY);
-  const allPow = [...xPow, ...yPow];
-  const mean = allPow.reduce((a, b) => a + b, 0) / allPow.length;
-  const variance = allPow.reduce((a, b) => a + (b - mean) ** 2, 0) / allPow.length;
-  const THRESHOLD = 50;
-  const anomalyDetected = (maxX > THRESHOLD && maxY > THRESHOLD) || crcErrors > 0;
+  const allAC = [...acX, ...acY];
+  const mean = allAC.reduce((a, b) => a + b, 0) / (allAC.length || 1);
+  const variance = allAC.reduce((a, b) => a + (b - mean) ** 2, 0) / (allAC.length || 1);
+  // A Hofstadter-Cross anomaly is a spectral OUTLIER: one periodic structure towering over the
+  // band's OWN baseline (the robust median, immune to the peak inflating its own threshold) on BOTH
+  // axes — a deliberately injected pattern. The old absolute threshold cried wolf the instant the
+  // picture-memory simply filled with normal dense data, painting every healthy cube as anomalous.
+  const PEAK_RATIO = 8;
+  const medX = _median(acX), medY = _median(acY);
+  const crossOutlier = medX > 0 && medY > 0 && maxX > PEAK_RATIO * medX && maxY > PEAK_RATIO * medY;
+  const anomalyDetected = crossOutlier || crcErrors > 0;
   return {
     rowStart, rowEnd, anomalyDetected,
     anomalyType: anomalyDetected ? (crcErrors > 0 ? "CRC-Error" : maxX > maxY ? "Hofstadter-X" : "Hofstadter-Y") : null,
@@ -10088,8 +10103,11 @@ function App() {
           // heartbeat (which must log via reflexLogBatchedHeartbeat) or a model that CLAIMS a
           // body/UI change it did not execute. An ordinary conversational reply needs no reflex
           // and is accepted as-is — no SYS.CORRECT, no retry (the Body does not nag a calm Mind).
+          // Match only COMPLETED-action phrasing ("I morphed", "added a module", "updated the
+          // layout") — NOT capability descriptions ("I can morph", "I'm able to add a canvas"),
+          // which answering "what can you do?" produces and which must not trip a correction.
           const wantsBodyChange =
-            /\b(morph|morphed|body\s+shifted|added\s+(?:a\s+)?(?:module|canvas)|removed\s+(?:a\s+)?(?:module|armspinner)|updated\s+layout)\b/i.test(
+            /\b(morphed|reshaped\s+(?:my|the)|body\s+shifted|added\s+(?:a\s+)?(?:module|canvas)|removed\s+(?:a\s+)?(?:module|armspinner)|updated\s+(?:the\s+)?layout)\b/i.test(
               r.text || ""
             );
           const requiresTool = hb || wantsBodyChange;
