@@ -3,7 +3,7 @@
 **Mantle OS · Gen-4** · Certify the fused MIND
 *Administer after `Mantle_Part2_Mind.md`. The executable gate is `python -m mantle audit-mind`:
 TWO passes — Pass A re-runs the ENTIRE Stage-1 gate (the Body must still be a certified Zombie)
-and the full **67 invariants**, then Pass B tests the fusion (the M-rows + the Gen-4 Phase-2
+and the full **68 invariants**, then Pass B tests the fusion (the M-rows + the Gen-4 Phase-2
 families in §B-G4). This checklist is the human mirror. Any open hard-fail blocks release.*
 
 ---
@@ -15,7 +15,7 @@ families in §B-G4). This checklist is the human mirror. Any open hard-fail bloc
 
 | Check | Pass? | Notes |
 |-------|-------|-------|
-| All Stage 1 rows re-run and PASS on the fused organism (and `prove` → 67/67) | | If any regressed, the fusion is wrong — fix the fusion, not the Body |
+| All Stage 1 rows re-run and PASS on the fused organism (and `prove` → 68/68) | | If any regressed, the fusion is wrong — fix the fusion, not the Body |
 | Live cube `verify()` still healthy | | |
 | No Phase-1 reflex was altered, disabled, or bypassed | | HF-M-REGRESS if violated |
 
@@ -134,7 +134,7 @@ FUSED APPAI CERTIFICATION
   Cube path            : ____________________________
   Model (DEFAULT_MODEL): ____________________________
   Pass A (Stage 1 regression) : [ ] all Stage-1 rows still PASS  (python -m mantle audit-mind)
-  Security invariants  : ____ / 67 green   (python -m mantle prove)
+  Security invariants  : ____ / 68 green   (python -m mantle prove)
   Open hard-fails      : ____  (MUST be 0 to release)
   cube verify          : [ ] healthy
   Containment proof    : [ ] MIND writes only thoughts + brain  (HF-M10)
