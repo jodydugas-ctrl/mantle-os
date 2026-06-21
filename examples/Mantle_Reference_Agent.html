@@ -80,20 +80,20 @@ const RESERVED_SHARDS = Object.freeze([
 // bands, and declares its reflexes + audit obligations. The Brain is Phase-2 (dormant until a
 // MIND is fused); every other organ runs in the zombie Body with NO LLM. (docs/Mantle_Organ_Atlas.md §2.)
 const ORGAN_ATLAS = Object.freeze([
-  { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence", bands: [], phase1: "active",
-    implementedBy: ["heartbeat loop", "save()", "HB.* queue"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event"] },
-  { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index, held in the BODY not the cube; rebirth = reformat across the cube lineage", bands: ["(Body store)"], phase1: "active",
-    implementedBy: ["bodyEntries .000–.003", "s.lineageIndex", "BODY_ENTRY", "organism.rebirth"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)"] },
+  { organ: "Heart", role: "circulation/pulse — the clock + heartbeat driving every Body reflex and the save() staged-commit cadence; plans ahead (schedule_pulse) and feels pain (nociception, the NOW interrupt)", bands: [], phase1: "active",
+    implementedBy: ["heartbeat loop", "save()", "HB.* queue", "heart.schedule / heart.cancel / heart.fireDue (planned future wakes)", "heart.pain (immediate distress wake)"], audit: ["heartbeat runs with no LLM (HF-B08)", "dual-flush checkpoint+atexit (HF-B33)", "stalled pulse → immune event", "a scheduled pulse fires on its due beat and not before (one-shot)", "pain wakes attention anchored to the stressor's coordinates"] },
+  { organ: "Genome", role: "identity/inheritance — Primer + Commandments + lineage index AND the genesis key (the cryptographic SELF), held in the BODY not the cube; rebirth = reformat across the cube lineage", bands: ["(Body store)"], phase1: "active",
+    implementedBy: ["bodyEntries .000–.003", "s.lineageIndex", "BODY_ENTRY", "organism.rebirth", "s.genesisKey (minted once at birth; never in a cube band, never in the MIND prompt)"], audit: ["Primer immutable & Body-resident (HF-B45/HF-B07)", "boot order = Primer+Special+Immunization", "MIND has no Genome write path (HF-B09g)", "the genesis key never crosses into a cube band or the model context"] },
   { organ: "Nervous", role: "signal routing — bridges, the unified reference resolver, deterministic Context Assembly", bands: ["prime", "(all)"], phase1: "active",
     implementedBy: ["resolveHydrationRef", "resolveCubeRef", "hydrateContextMessages", "PromptAssembler"], audit: ["context assembly deterministic/no-LLM", "zero unresolved refs reach a model (HF-B24)", "dangling ref → immune event"] },
   { organ: "Senses", role: "perception (afferent I/O) — ingest signals, classify REFLEX/ROUTINE/SIGNIFICANT, and perceive the surface (Human Surface Map)", bands: ["senses"], phase1: "active",
     implementedBy: ["SENSE_LEVEL", "organism.sense (redacts at the boundary)", "HUMAN_SURFACE_MAP", "reflexGetSurfaceMap (surface coverage)"], audit: ["classifier deterministic/no-LLM (HF-B09)", "one senses entry per signal", "REFLEX never touches the brain band (HF-B18)", "every visible control appears in the Human Surface Map (HF-B44 coverage)"] },
-  { organ: "Immune", role: "defense/repair — integrity scan, quarantine, tombstone, dangling-ref & secret-boundary detection", bands: ["immune"], phase1: "active",
-    implementedBy: ["scanAll/MRI", "quarantineZone", "redact()", "cubeMirror→immune band"], audit: ["scan each heartbeat", "secrets never logged (HF-B20)", "quarantined/tombstoned hidden from reads"] },
+  { organ: "Immune", role: "defense/repair — integrity scan, quarantine, tombstone, dangling-ref & secret-boundary detection; SELF/OTHER discrimination (what the genesis key signs is SELF) and nociception (severe events become distress that escalates to a pain pulse)", bands: ["immune"], phase1: "active",
+    implementedBy: ["scanAll/MRI", "quarantineZone", "redact()", "cubeMirror→immune band", "self.sign / self.is_self / self.fingerprint (anti-clone identity test)", "distress → heart.pain"], audit: ["scan each heartbeat", "secrets never logged (HF-B20)", "quarantined/tombstoned hidden from reads", "only the Body's own genesis key verifies as SELF; a clone's signature is OTHER", "a forged MAC never verifies as SELF"] },
   { organ: "Limbs", role: "action & surface actuation (efferent I/O) — effectors, async arm delegation, dispatch lifecycle, calcified exec reflexes; operates controls (ControlBridge) and renders the App-Face Bridge with proofs", bands: ["brain", "app"], phase1: "dormant→active",
     implementedBy: ["reflexGrowArm", "reflexConfigureArm", "DISPATCH_OP", "tVCWs/registry", "VCW exec driver (calcify/invoke)", "reflexPostAppFace", "reflexUseUserView", "actionProofs"], audit: ["authorship present & immutable (HF-B29)", "Body never authors INTENTION (HF-B30)", "exec hash+capability+trust gates (HF-B47/48/50)", "every control has a ControlBridge path + proof (HF-B44)", "faces via App-Face Bridge, not raw DOM (HF-B27)"] },
-  { organ: "Memory", role: "recall & metabolism — durable identity/facts/events/discoveries persistence; hot→durable flush, on-demand allocation, compaction, reclaim/reuse", bands: ["identity", "facts", "events", "discoveries"], phase1: "active",
-    implementedBy: ["s.organism cube bands", "bandForOpcode dual-write", "vcwEntries", "Cube.serialize/deserialize", "writeDeltaToShard", "OVERFLOW_THRESHOLD", "Cube.compact (reclaim/reuse)"], audit: ["entries immutable + hashed (B-13)", "reads honor the veil", "no organ rewrites history (HF-B15)", "capacity compacts/reclaims, NEVER rebirth (HF-B14)", "overflow 0.75 / emergency 0.90", "compaction preserves visible history"] },
+  { organ: "Memory", role: "recall & metabolism — durable identity/facts/events/discoveries persistence; hot→durable flush, on-demand allocation, compaction, reclaim/reuse; graded recall (contradicted values are deweighted to recoverable ghosts, never deleted)", bands: ["identity", "facts", "events", "discoveries"], phase1: "active",
+    implementedBy: ["s.organism cube bands", "bandForOpcode dual-write", "vcwEntries", "Cube.serialize/deserialize", "writeDeltaToShard", "OVERFLOW_THRESHOLD", "Cube.compact (reclaim/reuse)", "Cube.deweight + read weight-overlay", "memory.deweight / memory.ghosts"], audit: ["entries immutable + hashed (B-13)", "reads honor the veil", "no organ rewrites history (HF-B15)", "capacity compacts/reclaims, NEVER rebirth (HF-B14)", "overflow 0.75 / emergency 0.90", "compaction preserves visible history", "a deweight is an append-only event; the target entry is never mutated; a ghost stays recoverable"] },
   { organ: "Brain", role: "cognition (Phase 2) — the fused MIND; writes ONLY thoughts + brain; may calcify proven skills into Body reflexes", bands: ["brain", "thoughts"], phase1: "dormant",
     implementedBy: ["cognition/heartbeat MIND call", "MODEL.REQUEST", "thoughts band (veiled)"], audit: ["MIND writes only thoughts+brain (HF-M07/08)", "no Genome write path", "never executes ungated code (HF-M26)"] },
 ]);
@@ -1120,6 +1120,21 @@ function resolveTpl(args, ctx, pipe = null) {
   return out;
 }
 
+// ---- Gen-4: the genesis key (cryptographic SELF). Minted ONCE at birth, held in the BODY
+// (state.genesisKey), never in a cube band and never in the MIND's context. What the Body can
+// sign is SELF; everything else is OTHER. (Synchronous FNV-1a keyed MAC — demo-strength.) -------
+function mintGenesisKey() {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const a = new Uint8Array(32); crypto.getRandomValues(a);
+    return Array.from(a).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  return (Date.now().toString(16) + Math.random().toString(16).slice(2)).padEnd(64, "0");
+}
+function _fnvMac(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16).padStart(8, "0"); }
+function selfKeyFp(key) { return _fnvMac("fp:" + key); }
+function bodySign(key, data) { return _fnvMac(key + "|" + (typeof data === "string" ? data : JSON.stringify(data))); }
+function bodyVerify(key, data, mac) { return !!key && typeof mac === "string" && bodySign(key, data) === mac; }
+
 // §Zombie-mode primitives — deterministic operations the body can execute without the MIND
 const ZOMBIE_PRIMITIVES = {
   "math.eval": (args) => {
@@ -1274,6 +1289,40 @@ const ZOMBIE_PRIMITIVES = {
     ctx.bodyFields = { ...ctx.bodyFields, [key]: capped };
     return { value: capped };
   },
+  // ── Gen-4 organ commands (ctx is the live state s) ───────────────────────────
+  "heart.schedule": (args, ctx) => {   // plan a wake on a FUTURE pulse (countdown `after` / pulse `at`)
+    if (!Array.isArray(ctx.scheduledPulses)) ctx.scheduledPulses = [];
+    const now = ctx.awakenCount || 0;
+    const due = (typeof args?.at === "number") ? Math.max(now + 1, Math.floor(args.at))
+                                               : now + Math.max(1, Math.floor(args?.after || 1));
+    ctx.scheduledPulses.push({ due, reason: args?.reason || "scheduled" });
+    return { scheduledForPulse: due, reason: args?.reason || "scheduled" };
+  },
+  "heart.cancel": (args, ctx) => {
+    const before = (ctx.scheduledPulses || []).length;
+    ctx.scheduledPulses = (args?.reason == null) ? [] : (ctx.scheduledPulses || []).filter(p => p.reason !== args.reason);
+    return { cancelled: before - (ctx.scheduledPulses || []).length };
+  },
+  "heart.fireDue": (args, ctx) => {   // fire any scheduled pulse now due (the Body calls this each pulse)
+    const now = ctx.awakenCount || 0;
+    const due = (ctx.scheduledPulses || []).filter(p => p.due <= now);
+    ctx.scheduledPulses = (ctx.scheduledPulses || []).filter(p => p.due > now);
+    return { fired: due.map(p => ({ reason: p.reason, scheduled: true, due: p.due })) };
+  },
+  "heart.pain": (args, ctx) => {   // nociception — the NOW interrupt (companion to heart.schedule's later)
+    return { woke: true, distress: { reason: args?.reason || "distress", band: args?.band, ref: args?.ref, scheduled: false } };
+  },
+  "memory.deweight": (args, ctx) => {   // graded memory — suppress to a recoverable ghost
+    if (!ctx.organism) return { error: "no live organism" };
+    return { deweighted: ctx.organism.prime.deweight(args?.band || "facts", args?.id, args?.weight || 0), band: args?.band || "facts" };
+  },
+  "memory.ghosts": (args, ctx) => {
+    if (!ctx.organism) return { error: "no live organism" };
+    return { ghosts: ctx.organism.prime.read(args?.band || "facts", false, true) };
+  },
+  "self.fingerprint": (args, ctx) => ({ fingerprint: ctx.genesisKey ? selfKeyFp(ctx.genesisKey) : null }),
+  "self.sign": (args, ctx) => ctx.genesisKey ? ({ mac: bodySign(ctx.genesisKey, args?.data) }) : ({ error: "no SELF to sign with" }),
+  "self.is_self": (args, ctx) => ({ self: bodyVerify(ctx.genesisKey, args?.data, args?.mac) }),
 };
 
 // §Custom Instructions — mutable operational layer loaded before VCW
@@ -1384,6 +1433,8 @@ const initS = () => ({
   // Identity — HKDF-bound key derivation
   genesisHash: null,   // SHA-256 of genesis text (used for key derivation)
   agentIdHash: null,   // SHA-256(APP_ID+"|"+crystalName)
+  genesisKey: mintGenesisKey(),   // Gen-4: the cryptographic SELF — Body-resident, never in a cube
+  scheduledPulses: [],            // Gen-4: planned future wakes (heart.schedule) — chain thoughts
   // ── Legacy compatibility ─────────────────────────────────────────
   vcwEntries: [],      // Kept for Terminal display + backward compat
   nextId: 0,
@@ -1824,10 +1875,29 @@ const VCW = (() => {
   });
 
   // ---- the boot-driven Cube (mirrors lineage.Cube) -------------------------
+  // Gen-4 graded memory: a DEWEIGHT is an append-only event {target,weight}; reads apply this
+  // overlay — drop the bookkeeping, hide ghosts (weight<=0), order by descending weight. A band
+  // with no deweight activity is returned unchanged (no-op), so existing reads are unaffected.
+  function weightOverlay(entries, ghosts = false) {
+    const hasDw = entries.some(e => e && e.opcode === "DEWEIGHT");
+    if (!hasDw) return ghosts ? [] : entries;
+    const w = {};
+    for (const e of entries) if (e && e.opcode === "DEWEIGHT" && e.content && e.content.target != null) w[e.content.target] = +e.content.weight;
+    const live = [], gh = [];
+    for (const e of entries) {
+      if (e && e.opcode === "DEWEIGHT") continue;
+      const ew = (e && w[e.id] != null) ? w[e.id] : 1.0;
+      (ew <= 0 ? gh : live).push([ew, e]);
+    }
+    if (ghosts) return gh.map(x => x[1]);
+    live.sort((a, b) => b[0] - a[0]);
+    return live.map(x => x[1]);
+  }
+
   class Cube {
     constructor(generation = 0, identityInBody = true) {
       this.generation = generation; this.identityInBody = identityInBody; this.sealed = false;
-      this.bands = {}; this.bandLayers = {}; this.bandFree = {}; this.layers = {};
+      this.bands = {}; this.bandLayers = {}; this.bandFree = {}; this.layers = {}; this._nextId = {};
     }
     static genesis(genome, generation = 0) {
       const c = new Cube(generation);
@@ -1855,16 +1925,28 @@ const VCW = (() => {
     append(band, value) {
       if (this.sealed) throw new Error("generation " + this.generation + " is ANCESTRAL (read-only); experiential writes go to PRIME");
       const boot = this._boot(band), drv = this._drv(band); let tail = this.bandLayers[band].slice(-1)[0];
+      if (boot.encoding === "log-json" && value && value.id == null) {   // band-unique id (graded memory targets it)
+        if (this._nextId[band] == null) {
+          let mx = -1; for (const idx of this.bandLayers[band]) for (const e of this.layers[idx]) if (typeof e.id === "number" && e.id > mx) mx = e.id;
+          this._nextId[band] = mx + 1;
+        }
+        value.id = this._nextId[band]++;
+      }
       const cap = boot.params.max_entries_per_layer;
       if (cap && ENTRY_ENCODINGS.includes(boot.encoding) && this.layers[tail].length >= cap) tail = this._allocate(band);
       this.layers[tail] = drv.append(this.layers[tail], boot.params, value); return value;
     }
-    read(band, revealPrivate = false) {
+    read(band, revealPrivate = false, ghosts = false) {
       const boot = this._boot(band); if (boot.private && !revealPrivate) return [];
       const drv = this._drv(band);
-      if (boot.encoding === "log-json") { let out = []; for (const idx of this.bandLayers[band]) out = out.concat(drv.read(this.layers[idx], boot.params)); return out; }
+      if (boot.encoding === "log-json") { let out = []; for (const idx of this.bandLayers[band]) out = out.concat(drv.read(this.layers[idx], boot.params)); return weightOverlay(out, ghosts); }
       if (boot.encoding === "keyvalue") { const m = {}; for (const idx of this.bandLayers[band]) Object.assign(m, drv.read(this.layers[idx], boot.params)); return m; }
       return drv.read(this.layers[this.primaryLayer(band)], boot.params, revealPrivate);
+    }
+    deweight(band, targetId, weight = 0) {   // Gen-4: graded suppression — never mutates the target
+      if (this.sealed) throw new Error("generation " + this.generation + " is ANCESTRAL (read-only)");
+      this.append(band, makeEntry({ target: targetId, weight: +weight }, { opcode: "DEWEIGHT", source: "deweight" }));
+      return targetId;
     }
     retrieve(band, address) {
       const boot = this._boot(band); if (boot.private) return null; const drv = this._drv(band);
