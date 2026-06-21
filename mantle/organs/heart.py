@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.heart  --  the Heart organ: clock, heartbeat, circulation (Argonaut, of the Mantle lineage)
+mantle.organs.heart  --  the Heart organ: clock, heartbeat, circulation (Mantle OS · Gen-4)
 
 The Heart is the only organ whose Phase-1 state is unconditionally ACTIVE: the Body has a
 heartbeat with NO brain. Each pulse is a complete moment of awareness, in a fixed,

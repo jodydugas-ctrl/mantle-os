@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.graft  --  the GRAFT EGG and LIVE RESIDENCY (Argonaut · R1 + R2)
+mantle.graft  --  the GRAFT EGG and LIVE RESIDENCY (Mantle OS · R1 + R2)
 
 Two reframes the NEXT_MOLT roadmap demanded:
 

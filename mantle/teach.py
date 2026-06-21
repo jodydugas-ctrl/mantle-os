@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.teach  --  the EXECUTABLE Field Guide (Argonaut)
+mantle.teach  --  the EXECUTABLE Field Guide (Mantle OS · Gen-4)
 
 The best instruction manual for growing an AppAI is one that GROWS AN APPAI WHILE YOU
 READ IT. Each chapter below narrates one stage of a real organism's life, performs it

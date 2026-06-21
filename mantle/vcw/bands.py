@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 mantle.vcw.bands  --  boot sectors, the driver registry, the standard genome,
-                      and the capacity thresholds (Argonaut, of the Mantle lineage)
+                      and the capacity thresholds (Mantle OS · Gen-4)
 
 Two-level encoding:
   level 1  boot-sector format  = fixed & universal (the Body always understands it)

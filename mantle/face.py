@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.face  --  the CHROMATOPHORE: the organism draws its own portrait (Argonaut)
+mantle.face  --  the CHROMATOPHORE: the organism draws its own portrait (Mantle OS · Gen-4)
 
 An octopus renders its inner state on its skin -- color and pattern as a living
 display. The VCW already stores memory as real images; the face closes the loop: the

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.audits.invariants  --  executable security invariants (Argonaut, of the Mantle lineage)
+mantle.audits.invariants  --  executable security invariants (Mantle OS · Gen-4)
 
 Every doctrine guarantee as a red/green assertion. Each test maps to a hard-fail code and
 proves the guard actually FIRES (and, where relevant, that the permitted path still
@@ -528,7 +528,7 @@ def t_staged_save_rejects_corrupt():
 
 
 # ============================================================================
-# 11. Symbiosis & anchoring (the Argonaut tissue)
+# 11. Symbiosis & anchoring (the Gen-4 tissue)
 # ============================================================================
 def t_energy_never_negative():
     """SYM-1: an unaffordable spend is REFUSED + a `starvation` immune event; the

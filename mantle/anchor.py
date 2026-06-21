@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.anchor  --  ANCHORING: an AppAI takes residence in a codebase (Argonaut)
+mantle.anchor  --  ANCHORING: an AppAI takes residence in a codebase (Mantle OS · Gen-4)
 
 This is Path B made symbiotic -- the framework's primary act. An AppAI MERGES into an
 existing application: it dissects the host read-only, grows an anchored Body with a

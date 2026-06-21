@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.audits.stage1  --  the Stage-1 (Zombie Body) gate (Argonaut, of the Mantle lineage)
+mantle.audits.stage1  --  the Stage-1 (Zombie Body) gate (Mantle OS · Gen-4)
 
 Deterministic and LLM-free: every check reads the cube, runs Body reflexes, and runs
 verify(). No human judgment, no model, no network. The gate exits non-zero if ANY row

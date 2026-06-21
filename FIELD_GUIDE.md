@@ -1,4 +1,4 @@
-# THE FIELD GUIDE — growing an AppAI with Argonaut OS
+# THE FIELD GUIDE — growing an AppAI with Mantle OS
 
 *This manual runs. Every chapter below is also a live, gated demonstration:*
 
@@ -16,7 +16,7 @@ own gates stop an uncertified Body. Read here, run there; they are the same book
 
 An **AppAI** is software grown as a living creature: a deterministic **Body** of eight
 organs around a durable picture-memory (the **VCW cube**), proven alive and correct
-with **no AI attached**, and only then given a bounded **MIND**. Argonaut adds the
+with **no AI attached**, and only then given a bounded **MIND**. Generation 4 adds the
 reproductive step: a whole AppAI declared as one **egg** file, incubated by the
 **hatchery** into a certified organism.
 

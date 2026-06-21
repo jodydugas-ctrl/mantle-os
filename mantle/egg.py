@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-mantle.egg  --  the EGG: a whole AppAI as one declarative spec (Argonaut)
+mantle.egg  --  the EGG: a whole AppAI as one declarative spec (Mantle OS · Gen-4)
 
-The mantle octopus secretes a paper-thin shell from its own body -- not to live in,
-but to BROOD ITS EGGS. That is this framework's evolutionary step: Mantle grew the
-organism; Argonaut grows the vessel that carries new organisms.
+Mantle v3 grew the organism; generation 4 grows the vessel that carries new organisms.
+The EGG is that vessel: a newborn AppAI declared entirely as data, so growing one no longer
+means writing Python wiring.
 
 An EGG is a single JSON document that declares everything a newborn AppAI is:
 

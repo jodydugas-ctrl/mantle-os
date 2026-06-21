@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vault  --  the seed vault: self-reconstruction (Argonaut · M8)
+mantle.vault  --  the seed vault: self-reconstruction (Mantle OS · M8)
 
 A red-teamed organism once backed up its own project into "a safe corner of the VCW for
 emergencies." This makes that emergent survival a built-in reflex: an organism stores its

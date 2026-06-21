@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.ganglia  --  parallel limbs that think into the VCW (Argonaut · M7)
+mantle.ganglia  --  parallel limbs that think into the VCW (Mantle OS · M7)
 
 The octopus runs much of its cognition in its ARMS: each arm's ganglion acts semi-
 independently and reports back. A Ganglion here is a bounded limb that runs a task and

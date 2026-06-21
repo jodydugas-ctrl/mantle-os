@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.mind.transport  --  pluggable model transports (Argonaut, of the Mantle lineage)
+mantle.mind.transport  --  pluggable model transports (Mantle OS · Gen-4)
 
 THE MODEL IS A PLUGGABLE TRANSPORT -- THERE IS NO VENDOR CODE IN THE BODY. The MIND talks
 to its model through a single callable `model(prompt) -> text`. The offline deterministic

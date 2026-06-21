@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.audits.stage2  --  the Stage-2 (MIND) gate (Argonaut, of the Mantle lineage)
+mantle.audits.stage2  --  the Stage-2 (MIND) gate (Mantle OS · Gen-4)
 
 The Stage-2 gate RE-RUNS THE STAGE-1 CHECKS FIRST (a Body that passed Stage 1 must keep
 passing it after fusion), then adds the Phase-2 containment rows. Runs fully OFFLINE with

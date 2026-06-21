@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.assimilator.organ_map  --  fold a dissection into the assimilation map (Argonaut, of the Mantle lineage)
+mantle.assimilator.organ_map  --  fold a dissection into the assimilation map (Mantle OS · Gen-4)
 
 Takes the scanner's raw symbol classification and produces the ASSIMILATION MAP: which
 host tissue is which organ, what stays external host code, and the proposed cube genome

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.cube  --  the boot-driven Cube (Argonaut, of the Mantle lineage)
+mantle.vcw.cube  --  the boot-driven Cube (Mantle OS · Gen-4)
 
 One cube = one generation of experiential memory: a stack of 800 real-PNG layers grouped
 into named BANDS, each band self-described by a boot sector that names a driver. Identity

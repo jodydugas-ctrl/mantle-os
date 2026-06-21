@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.core.redact  --  the secret boundary (Argonaut, of the Mantle lineage)
+mantle.core.redact  --  the secret boundary (Mantle OS · Gen-4)
 
 A deterministic, LLM-free redactor applied at the sense/immune logging boundary so that
 secrets NEVER land in the VCW (HF-B20). The cube is append-only and inspectable as images --

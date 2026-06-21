@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.mind.mind  --  the reference MIND fusion, provider-agnostic (Argonaut, of the Mantle lineage)
+mantle.mind.mind  --  the reference MIND fusion, provider-agnostic (Mantle OS · Gen-4)
 
 The MIND is a fused LLM, sharply bounded by the BODY -- and the boundary is executable:
 

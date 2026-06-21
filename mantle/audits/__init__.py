@@ -1,4 +1,4 @@
-"""mantle.audits -- the gates (Argonaut, of the Mantle lineage).
+"""mantle.audits -- the gates (Mantle OS · Gen-4).
 
 Stage 1 certifies the Zombie Body (deterministic, LLM-free). Stage 2 re-runs every
 Stage-1 row after fusion and adds containment rows. The invariants prove every guard

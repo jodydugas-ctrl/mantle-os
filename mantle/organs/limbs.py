@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.limbs  --  the Limbs organ: action, the ONLY outbound boundary (Argonaut, of the Mantle lineage)
+mantle.organs.limbs  --  the Limbs organ: action, the ONLY outbound boundary (Mantle OS · Gen-4)
 
 ALL outbound actions leave the organism through Limbs. It owns:
 

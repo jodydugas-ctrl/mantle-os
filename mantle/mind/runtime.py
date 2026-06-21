@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.mind.runtime  --  the AppAI runtime: how an agent thinks AS the organism (Argonaut, of the Mantle lineage)
+mantle.mind.runtime  --  the AppAI runtime: how an agent thinks AS the organism (Mantle OS · Gen-4)
 
 A coding agent (or any LLM-driven operator) should experience the organism FROM INSIDE --
 through Body APIs, never raw file mutation. AppAIRuntime is that surface. Everything it

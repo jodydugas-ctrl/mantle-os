@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.doctor  --  a deployment checkup (Argonaut · §3)
+mantle.doctor  --  a deployment checkup (Mantle OS · §3)
 
 Most real-world breakage in a living organism is not a logic bug -- it is a STALE VIEW: a
 truncated write, a split copy on two drives, docs that drifted from the code. The doctor is

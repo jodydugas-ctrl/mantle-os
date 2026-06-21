@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.contract  --  the organ contract (Argonaut, of the Mantle lineage)
+mantle.organs.contract  --  the organ contract (Mantle OS · Gen-4)
 
 Every organ declares itself with a machine-readable contract: its role, the bands it may
 read and write, its reflex surface, its Phase-1 state, its Phase-2 extension, its audit
