@@ -6,7 +6,7 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 66 security invariants, the
+*The organism re-certifies on every commit: the Stage-1 gate, 67 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
 > **New here, or skeptical of the biology metaphor?** Start with
@@ -28,7 +28,7 @@ memory seals with a tamper-evident fingerprint.
 whole AppAI declared as one **egg**, **residency** in a host codebase with a metered energy
 economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
 keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, and a
-self-reconstruction **seed vault** — every one gated (36 → **66 invariants**). See the section
+self-reconstruction **seed vault** — every one gated (36 → **67 invariants**). See the section
 *The Gen-4 generation* below, the runnable [`FIELD_GUIDE.md`](FIELD_GUIDE.md), and
 [`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md).
 
@@ -42,7 +42,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 66 security invariants, red/green
+python -m mantle prove         # 67 security invariants, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash
@@ -65,12 +65,12 @@ python examples/vcw/interop.py                # standalone <-> engine: identical
 
 The framework now carries the reproductive, symbiotic, and self-evolving tissue grown on the
 Argonaut branch — declarative birth, residency, knowledge-sharing, self-redesign, and
-self-reconstruction — all gated the same way (66 invariants, no standing law weakened). The
+self-reconstruction — all gated the same way (67 invariants, no standing law weakened). The
 runnable manual `FIELD_GUIDE.md` walks every one; [`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md)
 records the inheritance.
 
 ```bash
-python -m mantle teach                         # the Field Guide, RUNNING — 16 chapters, each proven
+python -m mantle teach                         # the Field Guide, RUNNING — 17 chapters, each proven
 python -m mantle hatch eggs/greeter.json --out=nest/   # a whole AppAI from one JSON egg, certified
 python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
 python -m mantle graft eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
@@ -146,7 +146,7 @@ mantle/                  the framework (start here)
   vcw/                   the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
   organs/                the eight organs, each with an enforced contract (self/other + nociception)
   mind/                  Phase 2 only: transports, containment, the MIND, AppAIRuntime
-  assimilator/ audits/   Path B dissection + the gates (Stage 1, Stage 2, the 66 invariants)
+  assimilator/ audits/   Path B dissection + the gates (Stage 1, Stage 2, the 67 invariants)
   egg.py hatchery.py     Gen-4: declarative birth — a whole AppAI as one JSON file
   anchor.py symbiosis.py Gen-4: residency in a host + the metered energy economy
   graft.py               Gen-4: the graft egg (patch a host) + live residency weaving

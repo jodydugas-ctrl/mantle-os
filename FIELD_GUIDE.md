@@ -381,6 +381,29 @@ python -m mantle doctor nest/      # cube · seals · key · ledger · docs-vs-c
 reported); a conversation distils into a sourced fact and an inferred idea through Senses; the
 doctor passes a healthy, docs-coherent deployment and catches a tampered cube.
 
+## Chapter 18 · PLANNING AHEAD — the scheduled heartbeat
+
+Cognition is event-gated (Chapter 11): a calm organism sleeps and spends nothing, and a *severe*
+event wakes it NOW (`pain`). But an organism can also **plan**: `heart.schedule_pulse(reason,
+after=N)` schedules a wake for a **future beat** — a countdown (`after=N`) or a scheduled beat
+(`at=K`). This is how an AppAI **chains thoughts**: if, mid-thought, it knows it must process
+something later, it schedules the continuation instead of thinking on every pulse — so it plans
+*how often it really needs to run a task* and stays asleep until the due beat. The scheduled wake
+fires once, through the same path as nociception (the woken snapshot carries `scheduled: True`);
+the MIND can also call it from `AppAIRuntime.schedule_pulse`.
+
+Planning is measured in **beats** — the organism's native unit of time (it has no innate sense of
+the wall clock; a host maps seconds → beats). `pain` is the *now* version of this command;
+`schedule_pulse` is the *later* version, and `cancel_pulse` changes the plan.
+
+```python
+org.heart.schedule_pulse("continue-the-plan", after=3)   # wake me in 3 beats to continue
+# beats 1-2: the MIND sleeps (event-gated); beat 3: it wakes once, scheduled=True
+```
+
+**Proven live:** an organism plans a wake 3 beats out, sleeps until then (zero MODEL calls), and
+wakes exactly once on the due beat to continue its thought.
+
 ## Closing · THE PORTRAIT — the organism paints itself
 
 At the end of `teach` (and of every hatch), the organism renders its own state as a
@@ -414,7 +437,7 @@ Then:
 ```bash
 python -m mantle hatch my_egg.json --out=my_nest/
 python -m mantle audit            # the full gate, anytime
-python -m mantle prove            # the 66 security invariants
+python -m mantle prove            # the 67 security invariants
 python -m mantle mind             # fuse the offline MIND and watch containment
 python -m mantle assimilate <existing-app> --dry-run    # Path B: dissect, don't rewrite
 ```

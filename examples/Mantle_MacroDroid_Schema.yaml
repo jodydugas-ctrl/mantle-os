@@ -38,6 +38,7 @@ mantle_alignment:
     symbiosis: "metered cognition against an energy budget; starvation puts the MIND to sleep, the Body keeps beating (SYM-1..2). metered_by_usage prices by actual tokens (METER-1)."
     self_other: "the genesis key recognizes SELF vs OTHER; what the Body cannot sign is quarantined (SELF-1..4)."
     nociception: "cognition is event-gated — a severe immune event fires an unscheduled pulse that wakes the MIND at the stressor; a calm organism sleeps (NOC-1..3)."
+    scheduling: "planning ahead — heart.schedule_pulse(reason, after=N | at=K) wakes cognition on a FUTURE beat so the AppAI chains thoughts and runs a task only as often as it really needs, staying asleep until due. `pain` is the now version; `cancel_pulse` changes the plan (SCHED-1)."
     graded_memory: "a contradicted value is deweighted (append-only), not deleted — a recoverable behavioral ghost (MEMW-1..3)."
     others: "mem (keyless knowledge plasmids), compiler (self-redesigning VCW + host memory bridge), ganglia (parallel limbs), vault (self-reconstruction), doctor (deployment checkup)."
   organs:                               # eight canonical organs (docs/Mantle_Organ_Atlas.md §2)

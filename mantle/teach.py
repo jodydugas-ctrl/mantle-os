@@ -444,6 +444,36 @@ def ch_resilience(org: Organism) -> bool:
                      tally["decisions"], tally["ideas"]))
 
 
+def ch_scheduling(org: Organism) -> bool:
+    _say("\n— Chapter 17 · PLANNING AHEAD — the scheduled heartbeat —")
+    _say("Besides waking NOW (pain), an organism can SCHEDULE a wake for a future beat — a")
+    _say("countdown. It CHAINS a thought to later and stays asleep (spending nothing) until then,")
+    _say("planning how often it really needs to run a task instead of thinking on every pulse.")
+    woke = {"n": 0, "stressors": []}
+
+    class _Probe:
+        def cognize(self, snapshot):
+            woke["n"] += 1
+            woke["stressors"].append((snapshot or {}).get("_stressor", {}))
+            return None
+
+    if org.brain.fused:
+        org.brain.defuse()
+    org.brain.fuse(_Probe(), stage1_certified=True)
+    org.heart.beat()                 # absorb any pain still pending from earlier chapters
+    woke["n"], woke["stressors"] = 0, []
+    due = org.heart.schedule_pulse("continue-the-plan", after=3)   # plan a wake 3 beats out
+    org.heart.run(2)                 # calm: the MIND sleeps
+    asleep = woke["n"] == 0
+    org.heart.beat()                 # the scheduled beat arrives — the MIND wakes to continue
+    fired = (woke["n"] == 1 and woke["stressors"][0].get("scheduled") is True
+             and org.heart.beats == due)
+    org.brain.defuse()
+    return _prove("the organism planned a wake 3 beats out, slept until then, and woke exactly "
+                  "once to continue its thought", asleep and fired,
+                  "due beat=%d; woke=%d" % (due, woke["n"]))
+
+
 CHAPTERS: List[Tuple[str, Callable[[Organism], bool]]] = [
     ("Birth", ch1_birth), ("The Heartbeat", ch2_heartbeat),
     ("Senses", ch3_senses), ("Memory", ch4_memory), ("Immune", ch5_immune),
@@ -453,6 +483,7 @@ CHAPTERS: List[Tuple[str, Callable[[Organism], bool]]] = [
     ("Graded Memory", ch_graded_memory), ("Graft & Living Residency", ch_graft_residency),
     ("The MEM VCW", ch_mem_vcw), ("Self-Redesigning VCW & Memory Bridge", ch_compiler),
     ("Ganglia & the Seed Vault", ch_ganglia_vault), ("Resilience", ch_resilience),
+    ("Planning Ahead", ch_scheduling),
 ]
 
 

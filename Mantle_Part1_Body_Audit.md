@@ -4,7 +4,7 @@
 *Administer this audit against the Body produced by `Mantle_Part1_Body.md` (Path A) or
 `Mantle_Assimilator.md` (Path B). This checklist is the **human mirror of the executable gate**:
 `python -m mantle audit` runs the Stage-1 Zombie Body gate and `python -m mantle prove` runs all
-**66 security invariants** red/green (the tamper proofs `audit --break-hash/primer/seal` must each
+**67 security invariants** red/green (the tamper proofs `audit --break-hash/primer/seal` must each
 exit non-zero). Fill every `Pass?` cell; any open hard-fail blocks Phase 2. Checks cover the
 breakage axis (B-rows + hard-fails HF-Bxx), the Gen-4 tissue (SELF / NOC / MEMW — §A1.13), and the
 **waste axis** (B-W1..B-W4) — "Failure is not the end. Waste is."*
@@ -190,7 +190,7 @@ ZOMBIE BODY CERTIFICATION
   AppAI name        : ____________________________
   Cube path         : ____________________________
   cube verify       : [ ] healthy        (python -m mantle audit)
-  Security invariants: ____ / 66 green   (python -m mantle prove)
+  Security invariants: ____ / 67 green   (python -m mantle prove)
   Tamper proofs     : [ ] --break-hash  [ ] --break-primer  [ ] --break-seal  (each MUST fail)
   Open hard-fails   : ____  (MUST be 0 to proceed)
   Organs present    : Heart [ ] Genome [ ] Nervous [ ] Senses [ ] Immune [ ]
