@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.core.audit  --  shared scaffolding for the audit/test harnesses (Mantle v3)
+mantle.core.audit  --  shared scaffolding for the audit/test harnesses (Argonaut, of the Mantle lineage)
 
 Standardizes how checks are recorded and shown; every correctness assertion lives in its
 harness (mantle.audits). Fail-open: a buggy check is a FAIL with evidence, never a crash.

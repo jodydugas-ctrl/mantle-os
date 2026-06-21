@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.organs.heart  --  the Heart organ: clock, heartbeat, circulation (Mantle v3)
+mantle.organs.heart  --  the Heart organ: clock, heartbeat, circulation (Argonaut, of the Mantle lineage)
 
 The Heart is the only organ whose Phase-1 state is unconditionally ACTIVE: the Body has a
 heartbeat with NO brain. Each pulse is a complete moment of awareness, in a fixed,
@@ -16,6 +16,13 @@ deterministic order (the organism's native tempo):
 Phase 2 extension: the SAME pulse offers the assembled snapshot to the fused Brain
 (cognition) -- an extension of the reflex, never a replacement. In Phase 1 the Brain slot
 is empty and the identical loop runs whole. Nothing here imports a model.
+
+NOCICEPTION (M1): cognition is EVENT-GATED. The MIND is not offered every pulse -- it is
+woken only when something needs it: an unscheduled pulse (`pain`), a SIGNIFICANT signal,
+or a `distress` signal from the Immune System. A calm organism completes every beat with
+the MIND asleep and spends zero energy. When the MIND does wake, the snapshot is
+pre-anchored to the stressor's coordinates {reason, band, ref} so it does not scan the
+whole cube to find what hurts.
 """
 from __future__ import annotations
 
@@ -38,12 +45,15 @@ CONTRACT = OrganContract(
          "effect": "persist on BOTH explicit checkpoint AND an atexit handler"},
     ],
     phase1="active",
-    phase2_extension="the same pulse additionally offers the assembled snapshot to cognition",
+    phase2_extension="the same pulse offers the snapshot to cognition ONLY on a wake "
+                     "(unscheduled pulse / SIGNIFICANT / distress); a calm organism sleeps",
     audit=[
         "heartbeat runs without an LLM (cognition slot empty in Phase 1)",
         "pulse order is fixed: tick, intake, assembly, reflexes, scan, checkpoint",
         "dual-flush persists on checkpoint and atexit",
         "a missed pulse is logged, never swallowed",
+        "cognition is event-gated: a calm fused organism wakes the MIND zero times",
+        "a severe event fires exactly one unscheduled pulse anchored to the stressor",
     ],
 )
 
@@ -60,9 +70,32 @@ class Heart(Organ):
         self.last_beat = 0
         self.flushes = 0
         self._atexit_installed = False
+        self._wake: Optional[Dict[str, Any]] = None   # pending pain coordinates (M1)
 
     def set_circulate(self, sink: Optional[Callable[[], None]]) -> None:
         self._circulate_cb = sink
+
+    # ---- nociception: what wakes the MIND (M1) ----------------------------
+    def on_significant(self, payload: Dict[str, Any]) -> None:
+        """A SIGNIFICANT signal (unrecognized input) is a reason to think. Wired to the
+        `significant` bus signal Senses emits."""
+        self._wake = {"reason": "significant", "band": "senses", "ref": None,
+                      "action_id": payload.get("action_id"),
+                      "event_type": payload.get("event_type")}
+
+    def on_distress(self, payload: Dict[str, Any]) -> None:
+        """A severe immune event is PAIN. Wired to the Immune System's `distress` signal;
+        carries the stressor's coordinates so the woken MIND knows where it hurts."""
+        self._wake = {"reason": payload.get("reason"), "band": payload.get("band"),
+                      "ref": payload.get("ref")}
+
+    def pain(self, reason: str, band: Optional[str] = None,
+             ref: Optional[str] = None) -> Dict[str, Any]:
+        """The interrupt vector: issue an UNSCHEDULED pulse that wakes the MIND now,
+        carrying the pain coordinates. Used when the Body cannot resolve a stressor with
+        its own reflexes and must escalate to cognition."""
+        return self.beat(assemble=True,
+                         wake={"reason": reason, "band": band, "ref": ref})
 
     # ---- reflexes ---------------------------------------------------------
     def tick(self) -> int:
@@ -90,15 +123,21 @@ class Heart(Organ):
         return self.flushes
 
     # ---- the pulse ---------------------------------------------------------
-    def beat(self, assemble: bool = False) -> Dict[str, Any]:
+    def beat(self, assemble: bool = False,
+             wake: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """One complete pulse in the fixed order. Returns a beat report. `assemble`
-        forces context assembly even with no fused Brain (it is deterministic and free
-        of LLMs either way); with a fused Brain it always runs, and the SAME snapshot
-        is offered to cognition."""
+        forces context assembly even with no fused Brain (deterministic, LLM-free either
+        way). `wake` marks this pulse as unscheduled (a `pain` escalation). Cognition is
+        EVENT-GATED: the fused MIND is offered the snapshot ONLY when a wake is pending
+        this pulse (an unscheduled `wake`, a SIGNIFICANT signal raised during intake, or
+        a `distress` signal raised during the scan)."""
         report: Dict[str, Any] = {"beat": self.tick()}
+        if wake is not None:
+            self._wake = dict(wake)
         self.bus.emit("pulse", {"beat": self.beats})                    # 1 tick
         report["ok"] = self.pulse_check()
         report["intake"] = self.org.senses.drain()                      # 2 sense intake
+        #                                          (SIGNIFICANT -> on_significant -> _wake)
         snapshot = None
         fused = self.org.brain.fused
         if assemble or fused:
@@ -107,9 +146,15 @@ class Heart(Organ):
         # 4 reflex execution: bus subscribers fired during emit (registration order)
         if self.beats % self.scan_every == 0:
             report["scan_problems"] = len(self.org.immune.scan())       # 5 immune scan
+            #                                  (integrity etc. -> distress -> on_distress)
         report["flushes"] = self.circulate()                            # 6 checkpoint
-        if fused:                                                       # Phase-2 extension
-            report["cognition"] = self.org.brain.cognize(snapshot)
+        if self._wake is not None:                            # nociception result (M1)
+            report["wake"] = self._wake          # observable even with no fused Brain
+            if fused:                                         # Phase-2, EVENT-GATED
+                if snapshot is not None:
+                    snapshot["_stressor"] = self._wake  # pre-anchor to the pain coordinates
+                report["cognition"] = self.org.brain.cognize(snapshot)
+        self._wake = None                              # the pulse consumed the wake
         self.bus.emit("checkpoint", {"beat": self.beats})
         return report
 

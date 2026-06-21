@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.audits.stage2  --  the Stage-2 (MIND) gate (Mantle v3)
+mantle.audits.stage2  --  the Stage-2 (MIND) gate (Argonaut, of the Mantle lineage)
 
 The Stage-2 gate RE-RUNS THE STAGE-1 CHECKS FIRST (a Body that passed Stage 1 must keep
 passing it after fusion), then adds the Phase-2 containment rows. Runs fully OFFLINE with
@@ -122,7 +122,7 @@ def main(argv):
     invariants = [] if "--fast" in flags else _inv.run_all()
 
     print("=" * 74)
-    print("MANTLE OS v3 — STAGE 2 (MIND) GATE  ·  model: offline stub (provider-agnostic)")
+    print("ARGONAUT OS — STAGE 2 (MIND) GATE  ·  model: offline stub (provider-agnostic)")
     print("=" * 74)
     width = max(len(r["requirement"]) for r in mind_rows + stage1_rows)
     print("  Phase-2 containment rows:")

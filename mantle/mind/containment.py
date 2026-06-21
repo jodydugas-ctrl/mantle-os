@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.mind.containment  --  the bounded MIND write surface (Mantle v3)
+mantle.mind.containment  --  the bounded MIND write surface (Argonaut, of the Mantle lineage)
 
 The single choke point for every MIND write. The MIND may write ONLY:
 

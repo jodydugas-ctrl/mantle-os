@@ -1,4 +1,4 @@
-"""mantle.vcw -- the durable PNG-layer memory substrate (Mantle v3).
+"""mantle.vcw -- the durable PNG-layer memory substrate (Argonaut, of the Mantle lineage).
 
 Doctrine preserved: durable PNG-layer memory, named bands, immutable hashed entries, the
 veil, staged save -> verify -> atomic replace, append before overwrite, capacity triggers

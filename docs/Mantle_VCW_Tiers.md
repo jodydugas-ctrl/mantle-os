@@ -1,6 +1,6 @@
 # Mantle OS — VCW Compliance Tiers
 
-**Mantle OS v3.0** · Non-normative concept note.
+**Mantle OS v2.3** · Non-normative concept note.
 *Read this if your environment cannot create a file-backed VCW cube — or if you are
 building tooling for constrained runtimes.*
 
@@ -8,7 +8,7 @@ building tooling for constrained runtimes.*
 
 ## Why tiers exist
 
-The VCW cube (`mantle/vcw/` engine; `examples/vcw/vcw_cube.py` standalone) requires two things:
+The VCW cube (`examples/vcw/vcw_cube.py`) requires two things:
 
 1. A **Python runtime** — the codec is pure Python; there is no JavaScript equivalent.
 2. A **writable filesystem** — the cube is a real `.vcw` file (ZIP of PNGs) on disk.
@@ -116,7 +116,7 @@ instantiates locally. The deliverable includes:
 
 1. **§0 Declaration Block** — with `VCW_BACKEND: schema-only` and a note explaining
    that this organism requires local Python execution to run.
-2. **`body.py`** — the organism's Body subclass, importing from `mantle/core/body.py`.
+2. **`body.py`** — the organism's Body subclass, importing from `examples/vcw/body.py`.
 3. **`mind.py`** — the MIND subclass (if Phase 2 is in scope).
 4. **Organ modules** — one file per organ, each a Body reflex, no LLM in Phase 1.
 5. **`receptor.html`** — the human-facing surface (separate from the Body).

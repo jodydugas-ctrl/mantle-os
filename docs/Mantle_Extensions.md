@@ -1,6 +1,6 @@
 # Mantle OS — EXTENSIONS (Optional)
 
-**Mantle OS v3.0** · Opt-in overlays. **Not normative.**
+**Mantle OS v2.3** · Opt-in overlays. **Not normative.**
 *Nothing in this document is part of the core organism. Do not grow any of it unless
 the §0 Declaration Block or the operator explicitly asks. The core framework
 (`PRIMER`, `Organ Atlas`, `Part 1/2`, `Assimilator`) is complete without it.*
@@ -99,7 +99,7 @@ rotate among several model credentials (load-balancing, failover, multi-provider
 ## 5. Online skills (web lookup)
 
 The **Inner Voice / self-inquiry (ask-MIND)** skill is **core** (see `../Mantle_Part2_Mind.md` and
-`mantle/mind/inner_voice.py`): provenance = inferred-until-verified, with a waste budget. What is *optional*
+`examples/vcw/skills.py`): provenance = inferred-until-verified, with a waste budget. What is *optional*
 here is the **web-lookup transport** (e.g. OpenRouter `web_search`) that feeds it external data.
 
 Optional Phase-2 skills:

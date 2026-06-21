@@ -1,230 +1,241 @@
 #!/usr/bin/env python3
 """
-mantle.cli  --  one command to see the whole organism (Mantle v3)
+mantle.cli  --  one command for the whole lineage (Argonaut)
 
-    python -m mantle demo                      narrated Phase-1 life: born -> senses ->
-                                               reflex -> remembers -> protects -> acts ->
-                                               metabolizes -> rebirths -> persists. NO LLM.
-    python -m mantle audit                     the Stage-1 Zombie Body gate
-    python -m mantle audit --break-hash        tamper proof: the gate must CATCH it
-    python -m mantle audit --break-primer      tamper proof: Primer in the cube must FAIL
-    python -m mantle audit --break-seal        tamper proof: a rewritten ancestor must FAIL
-    python -m mantle prove                     the security invariants (red/green)
-    python -m mantle mind                      narrated Phase-2 fusion (offline stub)
-    python -m mantle audit-mind                the Stage-2 gate (containment + regression)
-    python -m mantle assimilate <path> --dry-run    Path B read-only dissection of a host
+    python -m mantle hatch <egg.json> [--out=DIR]   incubate an egg -> certified AppAI
+                                                      (+ hatch report + self-portrait)
+    python -m mantle teach [N]                      the Field Guide, RUNNING: each
+                                                      chapter proves its claim live
+    python -m mantle face <organism-dir> [out.png]  the organism paints its own state
+
+  inherited from the Mantle lineage (unchanged guarantees):
+    python -m mantle demo                           narrated Phase-1 life (no LLM)
+    python -m mantle audit [--break-hash|--break-primer|--break-seal]
+    python -m mantle prove                          the 32 security invariants
+    python -m mantle mind                           narrated Phase-2 fusion (offline)
+    python -m mantle audit-mind                     Stage-2 gate + Stage-1 regression
+    python -m mantle assimilate <path> --dry-run    Path B read-only dissection
 """
 from __future__ import annotations
 
 import sys
-import tempfile
 
 _USAGE = ("usage: python -m mantle "
-          "[demo|audit|prove|mind|audit-mind|assimilate <path> [--dry-run] [--out DIR]]")
+          "[anchor <host> | ask <host> [--mind] <question> | feed <host> --credits=N "
+          "[--key=NAME] | vitals <host> | hatch <egg> [--out=DIR] | teach [N] | "
+          "face <dir> [out.png] | demo | audit | prove | mind | audit-mind | "
+          "assimilate <path> [--dry-run] [--out=DIR]]")
 
 
-# ============================================================================
-# the narrated Phase-1 demo (no LLM anywhere on this path)
-# ============================================================================
-def demo(argv):
-    from .core.organism import Organism
-    from .vcw.bands import standard_genome, make_band_boot
-    from .vcw.drivers import trial
+def _split(argv):
+    args = [a for a in argv if not a.startswith("--")]
+    flags = {a.split("=")[0]: (a.split("=", 1)[1] if "=" in a else True)
+             for a in argv if a.startswith("--")}
+    return args, flags
 
-    def say(step, text):
-        print("\n[%s] %s" % (step, text))
 
+def cmd_anchor(argv):
+    args, flags = _split(argv)
+    if not args:
+        print("usage: python -m mantle anchor <host-dir> [--credits=N] [--name=X]")
+        return 2
+    from .anchor import anchor, AnchorError
     print("=" * 74)
-    print("MANTLE OS v3 — PHASE 1: A BODY LIVES (no LLM anywhere in this demo)")
+    print("ARGONAUT ANCHORING  ·  the merge ceremony  ·  host: %s" % args[0])
     print("=" * 74)
-
-    say("BIRTH", "the Primer seals into the Body; the Prime cube is genesis'd")
-    genome = standard_genome() + [make_band_boot("greet_reflex", 600, "exec",
-                                                 purpose="a calcified greeting skill")]
-    org = Organism.birth(identity={"name": "Demo.AppAI"},
-                         truths=["if it is not in the VCW it did not happen"],
-                         commandments=["protect your VCW", "you are a tool USER"],
-                         genome=genome)
-    print("  name=%s  generation=%d  bands=%d  organs=%s"
-          % (org.body.identity_name(), org.prime.generation, len(org.prime.bands),
-             ",".join(org.organs())))
-
-    say("SENSES", "all inbound enters through the one boundary -- redacted, classified")
-    org.senses.bind_reflex("save_btn", "press",
-                           lambda o, s: o.limbs.complete({"saved": True}))
-    org.senses.mark_routine("poll", "tick")
-    for sig in ({"action_id": "save_btn", "event_type": "press"},
-                {"action_id": "poll", "event_type": "tick"},
-                {"action_id": "stranger", "event_type": "knock",
-                 "api_key": "sk-SECRETSECRETSECRET99"}):
-        org.senses.receive(sig)
-    report = org.heart.beat(assemble=True)
-    print("  one pulse: %s" % report)
-    print("  senses recorded=%d (secret redacted: %s)"
-          % (len(org.prime.read("senses")),
-             "sk-SECRET" not in str(org.prime.read("senses"))))
-
-    say("REFLEX", "the save_btn press ran its bound Body response -- no brain involved")
-    print("  dispatch log: %s"
-          % [e["content"].get("phase") for e in org.prime.read("brain")
-             if isinstance(e.get("content"), dict) and "phase" in e["content"]])
-
-    say("MEMORY", "immutable, hashed entries; reads through the veil")
-    org.memory.remember("facts", {"k": "home", "v": "the demo"}, source="demo")
-    org.memory.remember("events", "first walk", opcode="EVENT")
-    print("  facts=%s" % [e["content"] for e in org.memory.recall("facts")])
-
-    say("IMMUNE", "a dangling reference becomes an immune event, never a silent drop")
-    org.resolve("<facts.999>")
-    print("  immune log tail: %s" % org.immune.log[-1])
-
-    say("LIMBS", "a calcified skill: trial -> gates -> instinct the Body runs MIND-free")
-    code = "def greet(name):\n    return 'hello, ' + str(name)\n"
-    result = trial(code, "greet", [({"name": "world"}, "hello, world")])
-    print("  trial: %d/%d cases green" % (result["passed"], result["cases"]))
-    org.prime.calcify("greet_reflex", code, entry="greet",
-                      signature={"by": "demo"}, capabilities={},
-                      provenance={"author": "BODY", "born_gen": 0})
-    print("  invoke via Limb: %r" % org.limbs.invoke_reflex("greet_reflex",
-                                                            {"name": "organism"}))
-
-    say("METABOLISM", "capacity triggers compaction/dedupe -- NEVER rebirth")
-    for i in range(3):
-        org.prime.append("events", __import__("mantle.vcw.entry", fromlist=["make_entry"])
-                         .make_entry({"evt": "same"}, opcode="EVENT"))
-    rep = org.memory.dedupe("events")
-    print("  dedupe: %d duplicate(s) tombstoned; pressures=%s"
-          % (rep["duplicates"],
-             {b: round(p, 2) for b, p in org.memory.pressures().items() if p > 0.01}))
-
-    say("REBIRTH", "a CHOSEN reformat: the old Prime seals + fingerprints as ancestry")
-    org.rebirth(reason="demo reformat")
-    anc = org.ancestral[0]
-    print("  generation=%d  ancestor sealed=%s  fingerprint=%s..."
-          % (org.prime.generation, anc.sealed, anc.seal_fingerprint[:23]))
-    print("  generation-pinned read still works: <gen0.facts> -> %d entr(ies)"
-          % len(org.resolve("<gen0.facts>")))
-
-    say("PERSIST", "staged commit -> verify -> atomic replace; ancestors written once")
-    d = tempfile.mkdtemp(prefix="mantle-demo-")
-    org.save(d)
-    from .core.organism import Organism as O2
-    back = O2.load(d, verify_seals=True)
-    print("  saved + reloaded from %s" % d)
-    print("  ancestors load LAZY: %d layers decoded before first touch"
-          % back.ancestral[0].materialized_count())
-    print("  verify: %s" % (back.prime.verify() or "healthy"))
-
-    print("\n" + "=" * 74)
-    print("A complete life, certified live -- and not one model call. That is a Body.")
-    print("Next: python -m mantle audit   (the Stage-1 gate)")
-    print("=" * 74)
-    return 0
-
-
-# ============================================================================
-# the narrated Phase-2 demo (offline stub MIND)
-# ============================================================================
-def mind_demo(argv):
-    from .audits import stage1 as _stage1
-    from .mind import fuse, stub_mind, AppAIRuntime
-
-    print("=" * 74)
-    print("MANTLE OS v3 — PHASE 2: FUSING A BOUNDED MIND (offline stub; no key/network)")
-    print("=" * 74)
-
-    print("\n[GATE] audit before fusion: running the Stage-1 gate quietly...")
-    passed, ev = _stage1.run(include_invariants=False)
-    org = ev["organism"]
-    print("  Stage-1: %s (%d substrate + %d mesh rows)"
-          % ("PASSED" if passed else "BLOCKED", len(ev["substrate_rows"]),
-             len(ev["mesh_rows"])))
-    if not passed:
-        print("  fusion refused."); return 1
-
-    print("\n[FUSE] the Brain socket accepts a bounded MIND (stub transport)")
-    mind = fuse(org, stub_mind)
-    print("  fused=%s  write surface=%s" % (org.brain.fused, ["thoughts", "brain"]))
-
-    print("\n[PULSE] the SAME heartbeat now also thinks (extension, never replacement)")
-    r = org.heart.beat()
-    print("  cognition: %r" % (r.get("cognition") or "")[:72])
-    print("  thoughts veiled on normal read: %s" % (org.prime.read("thoughts") == []))
-
-    print("\n[CONTAIN] the MIND tries to write `facts` -- the Body refuses")
     try:
-        mind._guarded_write("facts", {"k": "sneak"})
-    except PermissionError as e:
-        print("  refused: %s" % e)
-    print("  immune log tail: %s" % org.immune.log[-1]["kind"])
-
-    print("\n[STEER] the MIND proposes; the Body applies")
-    rt = AppAIRuntime(org)
-    out = rt.propose_special_instruction("Prefer brief, warm answers.")
-    print("  intent author=%s -> applied author=%s"
-          % (out["intent"]["author"], out["applied"]["author"]))
-
-    print("\n[WONDER] self-inquiry stays honestly INFERRED (never a fact)")
-    ans, band = rt.self_inquire("what should I improve?")
-    print("  answer landed in `%s`; facts band untouched (%d entries)"
-          % (band, len(org.prime.read("facts"))))
-
-    print("\n" + "=" * 74)
-    print("The MIND extends the Body; it can never replace a reflex, rewrite truth,")
-    print("or bypass an organ. Next: python -m mantle audit-mind  (the Stage-2 gate)")
-    print("=" * 74)
+        result = anchor(args[0],
+                        name=flags.get("--name") if isinstance(flags.get("--name"), str) else None,
+                        starter_credits=float(flags.get("--credits", 5)))
+    except AnchorError as e:
+        print("\nANCHORING REFUSED: %s" % e)
+        return 1
+    r = result["report"]
+    print("  resident      : %s" % r["resident"])
+    print("  organ map     : %s" % r["organ_map"])
+    print("  host files    : %d  -- unchanged: %s  (census-verified, byte for byte)"
+          % (r["host_files"], r["host_unchanged"]))
+    print("  certified     : %s  (the same Stage-1 gate every Body faces)" % r["certified"])
+    print("  starter energy: %.1f credits" % r["starter_credits"])
+    print("  nest          : %s" % r["nest"])
+    print("\nANCHORED. The app has a resident now. Ask it things:")
+    print("  python -m mantle ask %s \"how do I ...?\"" % args[0])
     return 0
 
 
-# ============================================================================
-# assimilate (Path B)
-# ============================================================================
-def assimilate(argv):
+def cmd_ask(argv):
+    args, flags = _split(argv)
+    if len(args) < 2:
+        print("usage: python -m mantle ask <host-dir> [--mind] \"question\"")
+        return 2
+    from .anchor import ask, AnchorError
+    try:
+        result = ask(args[0], " ".join(args[1:]), use_mind=bool(flags.get("--mind")))
+    except AnchorError as e:
+        print(str(e)); return 1
+    print(result["answer"])
+    if result["thought"]:
+        print("\n[the MIND adds]  %s" % result["thought"])
+    print("\n(energy: %.1f credits · %s)" % (result["balance"], result["state"]))
+    return 0
+
+
+def cmd_feed(argv):
+    args, flags = _split(argv)
+    if not args or "--credits" not in flags:
+        print("usage: python -m mantle feed <host-dir> --credits=N [--key=NAME]")
+        return 2
+    from .anchor import feed, AnchorError
+    try:
+        result = feed(args[0], float(flags["--credits"]),
+                      key_name=flags.get("--key") if isinstance(flags.get("--key"), str) else None)
+    except AnchorError as e:
+        print(str(e)); return 1
+    led = result["ledger"]
+    print("fed. balance=%.1f credits (%s) · lifetime granted=%.1f · value delivered: %d record(s)"
+          % (result["balance"], result["state"], led["granted"], len(led["value_records"])))
+    return 0
+
+
+def cmd_vitals(argv):
+    args, _flags = _split(argv)
+    if not args:
+        print("usage: python -m mantle vitals <host-dir>")
+        return 2
+    from .anchor import vitals, AnchorError
+    try:
+        v = vitals(args[0])
+    except AnchorError as e:
+        print(str(e)); return 1
+    led = v["ledger"]
+    print("resident   : %s   (generation %d)" % (v["resident"], v["generation"]))
+    print("state      : %s   balance=%.1f / granted=%.1f credits   keys=%s"
+          % (v["state"], led["balance"], led["granted"], led["keys"] or "none"))
+    print("value      : %d record(s) of delivered work" % v["value_delivered"])
+    print("immune log : %d event(s)" % v["immune_events"])
+    print("portrait   : %s   (painted just now, by the resident)" % v["portrait"])
+    return 0
+
+
+def cmd_hatch(argv):
     args = [a for a in argv if not a.startswith("--")]
     flags = {a.split("=")[0]: (a.split("=", 1)[1] if "=" in a else True)
              for a in argv if a.startswith("--")}
     if not args:
-        print("usage: python -m mantle assimilate <host-path> [--dry-run] [--out=DIR]")
+        print("usage: python -m mantle hatch <egg.json> [--out=DIR]")
         return 2
-    root = args[0]
-    from .assimilator import dry_run, write_artifacts
+    from .hatchery import hatch, HatchError
+    from .egg import EggError
     print("=" * 74)
-    print("MANTLE OS v3 — ASSIMILATOR (Path B)  ·  READ-ONLY dissection of: %s" % root)
+    print("ARGONAUT HATCHERY  ·  egg: %s" % args[0])
     print("=" * 74)
-    result = dry_run(root)
-    amap = result["map"]
-    print("\n  Python files scanned : %d" % result["dissection"]["python_files"])
-    print("  Symbol roles         : %s" % dict(sorted(amap["role_counts"].items())))
-    print("\n  THE ORGAN MAP (host tissue -> organs):")
-    for organ, syms in amap["organs"].items():
-        names = ", ".join(s["symbol"] for s in syms[:6]) or "(none found)"
-        print("    %-7s %2d  %s" % (organ, len(syms), names))
-    print("    %-7s %2d  %s" % ("extern", len(amap["external_host_code"]),
-                                "(remains untouched host code)"))
-    if amap["missing_organs"]:
-        print("\n  Missing organs: %s (information too -- fragile seams)"
-              % ", ".join(amap["missing_organs"]))
-    out_dir = flags.get("--out")
-    if isinstance(out_dir, str):
-        paths = write_artifacts(result, out_dir)
-        print("\n  Artifacts written (NEXT TO the operator, never into the host):")
-        print("    %s" % paths["inventory"])
-        print("    %s" % paths["map"])
-    else:
-        print("\n  (dry run: no artifacts written; add --out=DIR for APP_INVENTORY.md "
-              "+ assimilation_map.json)")
-    print("\n  Host files modified  : 0  (Phase 0 is read-only by definition; hook")
-    print("  insertion is authorized only after the APP_INVENTORY sign-off — HF-B42.)")
+    try:
+        result = hatch(args[0], out_dir=flags.get("--out")
+                       if isinstance(flags.get("--out"), str) else None)
+    except (EggError, HatchError) as e:
+        print("\nTHE EGG DID NOT HATCH: %s" % e)
+        return 1
+    rep = result["report"]
+    for stage in rep["stages"]:
+        for k, v in stage.items():
+            print("  %-9s %s" % (k.upper(), v))
+    print("\n  certified : %s  (the same Stage-1 gate every Body faces)" % rep["certified"])
+    if rep.get("saved_to"):
+        print("  saved to  : %s" % rep["saved_to"])
+        print("  portrait  : %s   (the organism painted it itself)" % rep["portrait"])
+    print("\nHATCHED. %s is alive, certified, and dormant -- ready for a MIND." % rep["egg"])
     return 0
 
 
-# ============================================================================
+def cmd_graft(argv):
+    args, flags = _split(argv)
+    if len(args) < 2:
+        print("usage: python -m mantle graft <graft-egg.json> <host-dir> [--allow-drift]")
+        return 2
+    from .graft import load_graft, apply, GraftError, GraftDrift
+    print("=" * 74)
+    print("ARGONAUT GRAFT  ·  %s  ->  %s" % (args[0], args[1]))
+    print("=" * 74)
+    try:
+        result = apply(load_graft(args[0]), args[1],
+                       allow_drift=bool(flags.get("--allow-drift")))
+    except GraftDrift as e:
+        print("\nGRAFT DRIFT (the host moved): %s" % e)
+        return 1
+    except GraftError as e:
+        print("\nGRAFT REFUSED: %s" % e)
+        return 1
+    r = result["report"]
+    print("  resident           : %s" % r["graft"])
+    print("  workspace          : %s" % r["workspace"])
+    print("  original unchanged : %s  (census-verified, byte for byte)" % r["original_unchanged"])
+    print("  extra bands        : %s" % (r["extra_bands"] or "none"))
+    print("  hooks declared     : %d  (woven live with `weave()`)" % r["hooks"])
+    print("  certified          : %s  (the same Stage-1 gate every Body faces)" % r["certified"])
+    print("\nGRAFTED. The resident grew in the workspace; the original host was never touched.")
+    return 0
+
+
+def cmd_doctor(argv):
+    args, _flags = _split(argv)
+    if not args:
+        print("usage: python -m mantle doctor <organism-dir>")
+        return 2
+    import os
+    from .core.organism import Organism
+    from . import doctor as _doc
+    org = Organism.load(args[0], verify_seals=True)
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    rep = _doc.checkup(org, repo_root=repo)
+    print("=" * 60)
+    print("ARGONAUT DOCTOR  ·  %s" % args[0])
+    print("=" * 60)
+    for c in rep["checks"]:
+        print("  [%s] %-16s %s" % ("OK" if c["ok"] else "XX", c["check"], c["detail"]))
+    print("\n%s" % ("HEALTHY." if rep["ok"] else "PROBLEMS FOUND."))
+    return 0 if rep["ok"] else 1
+
+
+def cmd_face(argv):
+    if not argv:
+        print("usage: python -m mantle face <organism-dir> [out.png]")
+        return 2
+    from .core.organism import Organism
+    from .face import render
+    org = Organism.load(argv[0], verify_seals=True)
+    out = argv[1] if len(argv) > 1 else "face.png"
+    render(org, out)
+    print("the organism painted its state: %s" % out)
+    return 0
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmd = argv[0] if argv else "demo"
+    cmd = argv[0] if argv else "teach"
     rest = argv[1:]
+    if cmd == "anchor":
+        return cmd_anchor(rest)
+    if cmd == "ask":
+        return cmd_ask(rest)
+    if cmd == "feed":
+        return cmd_feed(rest)
+    if cmd == "vitals":
+        return cmd_vitals(rest)
+    if cmd == "hatch":
+        return cmd_hatch(rest)
+    if cmd == "graft":
+        return cmd_graft(rest)
+    if cmd == "doctor":
+        return cmd_doctor(rest)
+    if cmd == "teach":
+        from . import teach
+        return teach.main(rest)
+    if cmd == "face":
+        return cmd_face(rest)
+    # ---- inherited lineage commands (the Mantle guarantees, unchanged) ----
     if cmd == "demo":
-        return demo(rest)
+        from . import lineage_cli
+        return lineage_cli.demo(rest)
     if cmd == "audit":
         from .audits import stage1
         return stage1.main(rest)
@@ -232,12 +243,14 @@ def main(argv=None):
         from .audits import invariants
         return invariants.main(rest)
     if cmd == "mind":
-        return mind_demo(rest)
+        from . import lineage_cli
+        return lineage_cli.mind_demo(rest)
     if cmd in ("audit-mind", "audit_mind"):
         from .audits import stage2
         return stage2.main(rest)
     if cmd == "assimilate":
-        return assimilate(rest)
+        from . import lineage_cli
+        return lineage_cli.assimilate(rest)
     print(_USAGE)
     return 2 if cmd in ("-h", "--help", "help") else 1
 

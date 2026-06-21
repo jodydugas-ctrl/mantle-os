@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.drivers  --  concrete payload protocols (Mantle v3)
+mantle.vcw.drivers  --  concrete payload protocols (Argonaut, of the Mantle lineage)
 
 Four drivers, registered on import:
 
