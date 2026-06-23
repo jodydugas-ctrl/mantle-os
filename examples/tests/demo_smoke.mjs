@@ -1,6 +1,6 @@
 // Headless smoke tests for the two Mantle OS reference HTML demos.
 //
-// The Python substrate is certified by `python -m mantle prove` (68 invariants); these tests
+// The Python substrate is certified by `python -m mantle prove` (73 invariants); these tests
 // give the single-file *browser* demos their own runtime regression cover: each demo must mount
 // with no unexpected console errors, expose its engine, and PASS its in-browser self-audit
 // (Spreadsheet) / Genome+resolver checks (Reference Agent). Assertions mirror the manual
@@ -79,6 +79,14 @@ async function checkReferenceAgent(page) {
       if (ZOMBIE_PRIMITIVES["egg.hatch"]({ egg }, a).hatched !== true) fails.push("egg.hatch did not hatch");
       const v = ZOMBIE_PRIMITIVES["vault.seal"]({}, a).vault;
       if (ZOMBIE_PRIMITIVES["vault.reconstruct"]({ vault: v }, a).reconstructed !== true) fails.push("vault SELF cannot reopen its own seal");
+      // Phenotype (M9): wearable SELF-encrypted app-faces — born default + express/wear round-trip + OTHER refused
+      const ph = ["phenotype.express", "phenotype.list", "phenotype.wear", "phenotype.active"];
+      const havePh = ph.filter((k) => typeof ZOMBIE_PRIMITIVES[k] === "function");
+      if (havePh.length !== ph.length) fails.push("phenotype primitives missing: " + havePh.length + "/" + ph.length);
+      if (ZOMBIE_PRIMITIVES["phenotype.active"]({}, a).active !== "origin") fails.push("default origin face not seeded");
+      ZOMBIE_PRIMITIVES["phenotype.express"]({ name: "t2", source: "<b>hi</b>" }, a);
+      if (ZOMBIE_PRIMITIVES["phenotype.wear"]({ name: "t2" }, a).source !== "<b>hi</b>") fails.push("phenotype.wear did not recover the sealed source");
+      if (typeof openFaceCipher === "function") { try { JSON.parse(openFaceCipher("00".repeat(32), a.phenotypes.find((f) => f.name === "t2").sealed)); fails.push("OTHER opened a sealed face"); } catch (_) {} }
     } catch (e) {
       fails.push("threw: " + e.message);
     }
@@ -107,6 +115,11 @@ async function checkSpreadsheet(page) {
       if (executeZombiePrimitive(s, "vault.reconstruct", { vault: v }).result.reconstructed !== true) fails.push("vault SELF cannot reopen its own seal");
       const p = executeZombiePrimitive(s, "mem.excrete", { entries: ["k"] }).result.plasmid;
       if (p.genesisKey !== null) fails.push("MEM plasmid is not keyless");
+      // Phenotype (M9): born wearing a default face + express/wear recovers the sealed source
+      if (executeZombiePrimitive(s, "phenotype.active", {}).result !== "origin") fails.push("spreadsheet default origin face not seeded");
+      executeZombiePrimitive(s, "phenotype.express", { name: "t2", source: "<b>hi</b>" });
+      const worn2 = executeZombiePrimitive(s, "phenotype.wear", { name: "t2" }).result;
+      if (!worn2 || worn2.name !== "t2" || worn2.bytes !== 9) fails.push("spreadsheet phenotype.wear failed");
     } catch (e) {
       fails.push("threw: " + e.message);
     }

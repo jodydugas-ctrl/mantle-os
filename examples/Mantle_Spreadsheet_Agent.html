@@ -530,7 +530,7 @@
       bodyWriteSurfaces: ["arm-spreadsheet", "senses", "brain", "events"],
       mindWriteAllowed: Array.from(MIND_WRITE_ALLOWED)
     });
-    const ZOMBIE_PRIMITIVES = Object.freeze(["math.eval", "state.set", "state.get", "string.transform", "list.op", "datetime.now", "heart.schedule", "heart.cancel", "heart.pain", "memory.deweight", "memory.ghosts", "self.sign", "self.is_self", "self.fingerprint", "mem.excrete", "mem.digest", "vault.seal", "vault.reconstruct", "egg.author", "egg.hatch"]);
+    const ZOMBIE_PRIMITIVES = Object.freeze(["math.eval", "state.set", "state.get", "string.transform", "list.op", "datetime.now", "heart.schedule", "heart.cancel", "heart.pain", "memory.deweight", "memory.ghosts", "self.sign", "self.is_self", "self.fingerprint", "mem.excrete", "mem.digest", "vault.seal", "vault.reconstruct", "egg.author", "egg.hatch", "phenotype.express", "phenotype.list", "phenotype.wear", "phenotype.active"]);
     const FOUNDRY_OPS = Object.freeze(["FORGE", "CLONE", "DISTILL", "GRAFT", "CALCIFY", "SEAL"]);
     const BODY_ENTRY_OPS = Object.freeze(["ADD", "REMOVE", "ALTER"]);
     const SPEC_PRIORITY_STEPS = Object.freeze([
@@ -1045,6 +1045,84 @@ let ORGANISM = null;
     function bodySign(key, data) { return _fnv(key + "|" + (typeof data === "string" ? data : JSON.stringify(data))); }
     function bodyVerify(key, data, mac) { return !!key && typeof mac === "string" && bodySign(key, data) === mac; }
 
+    // ---- Gen-4 (M9): wearable, SELF-encrypted app-faces (phenotypes) -------------
+    // One organism, many front-ends. A FACE is a whole front-end whose source is SEALED under
+    // the genesis key (a keystream XOR derived from the SELF key) and stored APPEND-ONLY. Only
+    // SELF can open or wear a face (OTHER's key yields garbage). The organism does not RUN a
+    // face — wearing recovers its source for a host (here, a sandboxed iframe) to render.
+    function _keystreamBytes(key, n) {
+      const out = new Uint8Array(n); let block = 0, pos = 0;
+      while (pos < n) { const h = _fnv(key + "#" + block); for (let i = 0; i < 8 && pos < n; i += 2) out[pos++] = parseInt(h.slice(i, i + 2), 16); block++; }
+      return out;
+    }
+    function sealText(key, text) {
+      const bytes = new TextEncoder().encode(text), ks = _keystreamBytes(key, bytes.length);
+      let bin = ""; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i] ^ ks[i]);
+      return btoa(bin);
+    }
+    function openText(key, b64) {
+      const bin = atob(b64), sealed = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) sealed[i] = bin.charCodeAt(i);
+      const ks = _keystreamBytes(key, sealed.length), out = new Uint8Array(sealed.length);
+      for (let i = 0; i < sealed.length; i++) out[i] = sealed[i] ^ ks[i];
+      return new TextDecoder().decode(out);
+    }
+    function phenotypeActive(state) {
+      const log = state.phenotypeLog || [];
+      if (log.length) return log[log.length - 1].wear;
+      const def = (state.phenotypes || []).find((f) => f.default);
+      return def ? def.name : null;
+    }
+    function phenotypeExpress(state, name, kind, source, opts) {
+      opts = opts || {}; name = String(name || "").trim();
+      if (!name) throw new Error("a face needs a name");
+      state.phenotypes = state.phenotypes || []; state.phenotypeLog = state.phenotypeLog || [];
+      if (state.phenotypes.some((f) => f.name === name)) throw new Error("a face named '" + name + "' already exists (faces are append-only)");
+      if (opts.default && state.phenotypes.some((f) => f.default)) throw new Error("a default face already exists");
+      const manifest = { name: name, kind: kind || "html", entry: opts.entry || "index.html", source: String(source || ""), sourceHash: "fnv:" + _fnv(String(source || "")), default: !!opts.default, ts: isoNow() };
+      state.phenotypes.push({ name: name, default: !!opts.default, sealed: sealText(state.genesisKey, JSON.stringify(manifest)) });
+      return { name: name, default: !!opts.default, sourceHash: manifest.sourceHash };
+    }
+    function phenotypeList(state) {
+      const active = phenotypeActive(state);
+      return (state.phenotypes || []).map((f) => ({ name: f.name, default: !!f.default, worn: f.name === active }));
+    }
+    function phenotypeOpen(state, name) {
+      const rec = (state.phenotypes || []).find((f) => f.name === name);
+      if (!rec) throw new Error("no face named '" + name + "'");
+      let manifest;
+      try { manifest = JSON.parse(openText(state.genesisKey, rec.sealed)); }
+      catch (e) { throw new Error("cannot open face '" + name + "': not this body's SELF (sealed as OTHER, or tampered)"); }
+      if (!manifest || ("fnv:" + _fnv(manifest.source)) !== manifest.sourceHash) throw new Error("face '" + name + "' failed its integrity check");
+      return manifest;
+    }
+    function phenotypeWear(state, name) {
+      const manifest = phenotypeOpen(state, name);                 // SELF + integrity gate
+      state.phenotypeLog = state.phenotypeLog || [];
+      state.phenotypeLog.push({ wear: name, ts: isoNow() });       // append-only — the active face is the latest WEAR
+      return { name: manifest.name, kind: manifest.kind, entry: manifest.entry, source: manifest.source };
+    }
+    // the default (origin) face every body is born wearing — a tiny self-describing surface, so
+    // the VCW always holds a SELF-encrypted copy of the organism's own front-end.
+    const DEFAULT_FACE_SOURCE = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Spreadsheet AppAI · origin face</title>" +
+      "<style>body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0}header{padding:14px 18px;background:#1e293b;font-weight:600}" +
+      "table{border-collapse:collapse;margin:18px}td{border:1px solid #334155;width:64px;height:30px;text-align:center;color:#94a3b8}" +
+      "td.h{background:#1e293b;color:#e2e8f0;font-weight:600}p{margin:0 18px 18px;color:#94a3b8}</style></head><body>" +
+      "<header>🧬 Spreadsheet AppAI — origin face</header><p>This is the front-end the organism was born wearing, sealed in its VCW. " +
+      "Save another face and wear it — same organism, different morphology.</p>" +
+      "<table><tr><td class=h></td><td class=h>A</td><td class=h>B</td><td class=h>C</td></tr>" +
+      "<tr><td class=h>1</td><td>12</td><td>34</td><td>=A1+B1</td></tr><tr><td class=h>2</td><td>7</td><td>9</td><td>16</td></tr></table></body></html>";
+    function seedDefaultFace(state) {
+      if (!state || !state.genesisKey) return;
+      state.phenotypes = state.phenotypes || []; state.phenotypeLog = state.phenotypeLog || [];
+      const def = state.phenotypes.find((f) => f.default);
+      if (def) {
+        try { phenotypeOpen(state, def.name); return; }        // a healthy default is already present
+        catch (e) { state.phenotypes = []; state.phenotypeLog = []; }   // self-heal a corrupt/legacy cache
+      }
+      try { phenotypeExpress(state, "origin", "html", DEFAULT_FACE_SOURCE, { default: true }); } catch (e) {}
+    }
+
     function deepCopy(value) {
       return JSON.parse(JSON.stringify(value));
     }
@@ -1525,6 +1603,17 @@ let ORGANISM = null;
         try { const o = new VCW.Organism({ primeGeneration: 0, lineageIndex: {} }, VCW.Cube.genesis(VCW.standardGenome(), 0)); bands = Object.keys(o.prime.bands); } catch (e) {}
         return { result: { hatched: bands.length > 0, identity: egg.identity, bands: bands } };
       }
+      if (name === "phenotype.express") {   // seal a whole front-end as a wearable face (SELF-encrypted, append-only)
+        if (!state.genesisKey) return { error: "no SELF to seal with" };
+        try { return { result: phenotypeExpress(state, args && args.name, (args && args.kind) || "html", (args && args.source) || "", args || {}) }; }
+        catch (e) { return { error: e.message }; }
+      }
+      if (name === "phenotype.list") return { result: phenotypeList(state) };
+      if (name === "phenotype.active") return { result: phenotypeActive(state) };
+      if (name === "phenotype.wear") {   // open (SELF + integrity) and express the face; returns the boot manifest a host renders
+        try { const b = phenotypeWear(state, args && args.name); return { result: { name: b.name, kind: b.kind, entry: b.entry, bytes: b.source.length } }; }
+        catch (e) { return { error: e.message }; }
+      }
       return { error: "Unknown zombie primitive." };
     }
 
@@ -1548,6 +1637,8 @@ let ORGANISM = null;
           { opcode: "HB.CACHE", summary: "Genesis cache warm-up", args: {} }
         ],
         scheduledPulses: [],   // Gen-4: planned future wakes (schedule_pulse) — chain thoughts
+        phenotypes: [],        // Gen-4 (M9): SELF-encrypted, append-only app-faces (the worn front-ends)
+        phenotypeLog: [],      // Gen-4 (M9): append-only wear-events — the active face is the latest
         nextPlanSummary: "Genesis queue primed with health and cache work.",
         lastPlannerReason: "Genesis queue primed with health and cache work.",
         lastHeartbeatExecution: [],
@@ -1566,6 +1657,8 @@ let ORGANISM = null;
           selectedColor: "#2458ad",
           selectedFill: "#dce9ff",
           chatInput: "",
+          faceName: "",
+          faceSource: "",
           terminalOpen: false,
           terminalTab: "chat"
         },
@@ -1673,6 +1766,7 @@ let ORGANISM = null;
       primeAddRef(state, "<" + healthProgram.crystal.fullName + ":block:" + healthProgram.block.blockNum + ">", "body-programs");
 
       awakeningCeremony(state, "genesis");
+      seedDefaultFace(state);   // Gen-4 (M9): born wearing its origin face, sealed in the VCW
       return state;
     }
 
@@ -3130,7 +3224,13 @@ let ORGANISM = null;
         parsed.dispatches = parsed.dispatches || [];
         parsed.activityLog = parsed.activityLog || [];
         parsed.messages = parsed.messages || [];
-        parsed.zombiePrimitives = parsed.zombiePrimitives || ZOMBIE_PRIMITIVES.slice();
+        parsed.zombiePrimitives = ZOMBIE_PRIMITIVES.slice();   // always the current capability allow-list
+        parsed.phenotypes = parsed.phenotypes || [];
+        parsed.phenotypeLog = parsed.phenotypeLog || [];
+        parsed.view = parsed.view || {};
+        parsed.view.faceName = parsed.view.faceName || "";
+        parsed.view.faceSource = parsed.view.faceSource || "";
+        seedDefaultFace(parsed);   // ensure the origin face is always present (older saves predate it)
         parsed.foundryOps = parsed.foundryOps || FOUNDRY_OPS.slice();
         parsed.auditReports = parsed.auditReports || [];
         parsed.heartbeatQueue = normalizeHeartbeatQueue(parsed.heartbeatQueue || []);
@@ -3206,6 +3306,29 @@ let ORGANISM = null;
     }
 
     const STATE = hydrateState();
+
+    function renderFacesPanel(state) {
+      const faces = phenotypeList(state);
+      const active = phenotypeActive(state);
+      let wornSrc = "";
+      try { if (active) wornSrc = phenotypeOpen(state, active).source; } catch (e) { wornSrc = ""; }
+      const rows = faces.length
+        ? faces.map((f) => `
+            <div class="system-row ${f.worn ? "" : ""}">
+              <div class="row-headline">
+                <strong>${escapeHtml(f.name)}</strong>
+                <span>${f.default ? '<span class="terminal-chip">DEFAULT</span> ' : ""}${f.worn ? '<span class="terminal-chip">WORN</span>' : ""}</span>
+              </div>
+              <div><button class="terminal-button ${f.worn ? "active" : "ghost"}" data-action="face-wear" data-name="${escapeHtml(f.name)}">${f.worn ? "Worn" : "Wear this face"}</button></div>
+            </div>`).join("")
+        : `<div class="terminal-note">No faces yet — seal one below.</div>`;
+      return `
+        <div class="terminal-note">One organism, many faces. Each front-end is <strong>SELF-encrypted</strong> in the VCW and stored <strong>append-only</strong>; wearing recovers a face's source and renders it live below. Only this body's genesis key can open a face.</div>
+        ${rows}
+        <div class="terminal-note">Now wearing: <strong>${escapeHtml(active || "(none)")}</strong> — rendered in an isolated sandbox:</div>
+        <iframe title="worn face" sandbox="allow-scripts" style="width:100%;height:240px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;background:#fff;" srcdoc="${escapeHtml(wornSrc)}"></iframe>
+      `;
+    }
 
     function renderApp() {
       const root = document.getElementById("app");
@@ -3335,6 +3458,7 @@ let ORGANISM = null;
                   <div class="terminal-switches">
                     <button class="terminal-button ${STATE.view.terminalTab === "chat" ? "active" : ""}" data-action="show-chat-log">Chat Log</button>
                     <button class="terminal-button ${STATE.view.terminalTab === "system" ? "active" : ""}" data-action="show-system-log">System Log</button>
+                    <button class="terminal-button ${STATE.view.terminalTab === "faces" ? "active" : ""}" data-action="show-faces">🧬 Faces</button>
                   </div>
                   <div class="terminal-actions">
                     <select id="model-select" style="width:auto;min-width:220px;background:#10141c;color:#eff5ff;border-color:rgba(255,255,255,0.12);">
@@ -3358,7 +3482,9 @@ let ORGANISM = null;
                 </div>
 
                 <div class="terminal-body">
-                  ${STATE.view.terminalTab === "chat"
+                  ${STATE.view.terminalTab === "faces"
+                    ? renderFacesPanel(STATE)
+                    : STATE.view.terminalTab === "chat"
                     ? (chatMessages.length
                       ? chatMessages.slice(-18).map((message) => `
                           <div class="chat-row ${escapeHtml(message.role)}">
@@ -3383,14 +3509,24 @@ let ORGANISM = null;
                       : `<div class="terminal-note">System log is currently empty.</div>`)}
                 </div>
 
-                <div class="terminal-compose">
+                ${STATE.view.terminalTab === "faces"
+                  ? `<div class="terminal-compose">
+                  <input id="face-name-input" placeholder="new face name (e.g. dashboard)" value="${escapeHtml(STATE.view.faceName || "")}" style="background:#10141c;color:#eff5ff;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;margin-bottom:6px;">
+                  <textarea id="face-source-input" placeholder="Paste the HTML source of a new front-end face...">${escapeHtml(STATE.view.faceSource || "")}</textarea>
+                  <div class="terminal-actions">
+                    <button class="terminal-button active" data-action="face-save">Seal Face into VCW</button>
+                    <button class="terminal-button" data-action="face-shed">Wear Default</button>
+                    <button class="terminal-button ghost" data-action="toggle-terminal">Close Terminal</button>
+                  </div>
+                </div>`
+                  : `<div class="terminal-compose">
                   <textarea id="chat-input" placeholder="Ask the spreadsheet AppAI to inspect, explain, or change something...">${escapeHtml(STATE.view.chatInput || "")}</textarea>
                   <div class="terminal-actions">
                     <button class="terminal-button active" data-action="send-chat">Send</button>
                     <button class="terminal-button" data-action="summarize">Summarize Sheet</button>
                     <button class="terminal-button ghost" data-action="toggle-terminal">Close Terminal</button>
                   </div>
-                </div>
+                </div>`}
               </div>
             </div>
 
@@ -3452,6 +3588,11 @@ let ORGANISM = null;
         });
       }
 
+      const faceNameInput = document.getElementById("face-name-input");
+      if (faceNameInput) faceNameInput.addEventListener("input", (event) => { STATE.view.faceName = event.target.value; });
+      const faceSourceInput = document.getElementById("face-source-input");
+      if (faceSourceInput) faceSourceInput.addEventListener("input", (event) => { STATE.view.faceSource = event.target.value; });
+
       const colorInput = document.getElementById("color-input");
       if (colorInput) colorInput.addEventListener("input", (event) => { STATE.view.selectedColor = event.target.value; saveState(); });
 
@@ -3503,11 +3644,23 @@ let ORGANISM = null;
         });
       }
 
+      document.querySelectorAll("[data-action='face-wear']").forEach((element) => {
+        element.addEventListener("click", () => { wearFaceUI(element.getAttribute("data-name")); });
+      });
+
       document.querySelectorAll("[data-action]").forEach((element) => {
         const action = element.getAttribute("data-action");
-        if (action === "select-cell") return;
+        if (action === "select-cell" || action === "face-wear") return;
         element.addEventListener("click", () => { void handleAction(action); });
       });
+    }
+
+    function wearFaceUI(name) {
+      const r = executeZombiePrimitive(STATE, "phenotype.wear", { name });
+      if (r && r.error) addMessage(STATE, "system", "Cannot wear face: " + r.error);
+      else addMessage(STATE, "system", "PHENOTYPE.WEAR — now wearing face '" + name + "' (" + (r.result && r.result.bytes) + " bytes of source recovered from the VCW).");
+      STATE.view.terminalOpen = true; STATE.view.terminalTab = "faces";
+      renderApp();
     }
 
     async function handleAction(action) {
@@ -3530,6 +3683,26 @@ let ORGANISM = null;
         STATE.view.terminalOpen = true;
         STATE.view.terminalTab = "system";
         return renderApp();
+      }
+      if (action === "show-faces") {
+        STATE.view.terminalOpen = true;
+        STATE.view.terminalTab = "faces";
+        return renderApp();
+      }
+      if (action === "face-save") {
+        const name = String(STATE.view.faceName || "").trim();
+        const source = String(STATE.view.faceSource || "");
+        if (!name || !source.trim()) { addMessage(STATE, "system", "Provide a face name and HTML source to seal a face."); return renderApp(); }
+        const r = executeZombiePrimitive(STATE, "phenotype.express", { name, kind: "html", source });
+        if (r && r.error) addMessage(STATE, "system", "Face not saved: " + r.error);
+        else { addMessage(STATE, "system", "PHENOTYPE.EXPRESS — sealed face '" + name + "' into the VCW (SELF-encrypted, append-only)."); STATE.view.faceName = ""; STATE.view.faceSource = ""; }
+        return renderApp();
+      }
+      if (action === "face-shed") {
+        const def = (STATE.phenotypes || []).find((f) => f.default);
+        if (def) wearFaceUI(def.name);
+        else addMessage(STATE, "system", "No default face to wear.");
+        return;
       }
       if (action === "load-key-file") {
         const input = document.getElementById("openrouter-file-input");

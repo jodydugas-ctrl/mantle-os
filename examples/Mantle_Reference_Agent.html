@@ -1137,6 +1137,66 @@ function selfKeyFp(key) { return _fnvMac("fp:" + key); }
 function bodySign(key, data) { return _fnvMac(key + "|" + (typeof data === "string" ? data : JSON.stringify(data))); }
 function bodyVerify(key, data, mac) { return !!key && typeof mac === "string" && bodySign(key, data) === mac; }
 
+// ---- Gen-4 (M9): wearable, SELF-encrypted app-faces (phenotypes) -------------
+// One organism, many front-ends. A FACE is a whole front-end whose source is SEALED under the
+// genesis key (a keystream XOR derived from the SELF key) and stored APPEND-ONLY in the Body.
+// Only SELF can open or wear a face (OTHER's key yields garbage). Wearing recovers the source
+// for a host to render — here, it posts to the existing app-face Display surface.
+function _faceKeystream(key, n) {
+  const out = new Uint8Array(n); let block = 0, pos = 0;
+  while (pos < n) { const h = _fnvMac(key + "#" + block); for (let i = 0; i < 8 && pos < n; i += 2) out[pos++] = parseInt(h.slice(i, i + 2), 16); block++; }
+  return out;
+}
+function sealFace(key, text) {
+  const bytes = new TextEncoder().encode(text), ks = _faceKeystream(key, bytes.length);
+  let bin = ""; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i] ^ ks[i]);
+  return btoa(bin);
+}
+function openFaceCipher(key, b64) {
+  const bin = atob(b64), sealed = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) sealed[i] = bin.charCodeAt(i);
+  const ks = _faceKeystream(key, sealed.length), out = new Uint8Array(sealed.length);
+  for (let i = 0; i < sealed.length; i++) out[i] = sealed[i] ^ ks[i];
+  return new TextDecoder().decode(out);
+}
+const DEFAULT_FACE_SOURCE_RA = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Mantle Agent · origin face</title>" +
+  "<style>body{font-family:system-ui;margin:0;background:#0b1220;color:#dbeafe}header{padding:14px 18px;background:#111827;font-weight:600}" +
+  "p{margin:14px 18px;color:#93c5fd}code{background:#1f2937;padding:2px 6px;border-radius:4px}</style></head><body>" +
+  "<header>🧬 Mantle Agent — origin face</header><p>This is the front-end the organism was born wearing, sealed in its VCW. " +
+  "Express another face and wear it — same nervous system, different morphology. Only this body's SELF key can open a face.</p></body></html>";
+function phenotypeActive(ctx) {
+  const log = ctx.phenotypeLog || [];
+  if (log.length) return log[log.length - 1].wear;
+  const def = (ctx.phenotypes || []).find((f) => f.default);
+  return def ? def.name : null;
+}
+function phenotypeExpress(ctx, name, kind, source, opts) {
+  opts = opts || {}; name = String(name || "").trim();
+  if (!name) throw new Error("a face needs a name");
+  if (!ctx.genesisKey) throw new Error("no SELF to seal with");
+  ctx.phenotypes = ctx.phenotypes || []; ctx.phenotypeLog = ctx.phenotypeLog || [];
+  if (ctx.phenotypes.some((f) => f.name === name)) throw new Error("a face named '" + name + "' already exists (faces are append-only)");
+  if (opts.default && ctx.phenotypes.some((f) => f.default)) throw new Error("a default face already exists");
+  const manifest = { name, kind: kind || "html", entry: opts.entry || "index.html", source: String(source || ""), sourceHash: "fnv:" + _fnvMac(String(source || "")), default: !!opts.default, ts: iso() };
+  ctx.phenotypes.push({ name, default: !!opts.default, sealed: sealFace(ctx.genesisKey, JSON.stringify(manifest)) });
+  return { name, default: !!opts.default, sourceHash: manifest.sourceHash };
+}
+function phenotypeOpen(ctx, name) {
+  const rec = (ctx.phenotypes || []).find((f) => f.name === name);
+  if (!rec) throw new Error("no face named '" + name + "'");
+  let m; try { m = JSON.parse(openFaceCipher(ctx.genesisKey, rec.sealed)); }
+  catch (e) { throw new Error("cannot open face '" + name + "': not this body's SELF (sealed as OTHER, or tampered)"); }
+  if (!m || ("fnv:" + _fnvMac(m.source)) !== m.sourceHash) throw new Error("face '" + name + "' failed its integrity check");
+  return m;
+}
+function ensureDefaultFace(ctx) {
+  if (!ctx || !ctx.genesisKey) return;
+  ctx.phenotypes = ctx.phenotypes || []; ctx.phenotypeLog = ctx.phenotypeLog || [];
+  const def = ctx.phenotypes.find((f) => f.default);
+  if (def) { try { phenotypeOpen(ctx, def.name); return; } catch (e) { ctx.phenotypes = []; ctx.phenotypeLog = []; } }
+  try { phenotypeExpress(ctx, "origin", "html", DEFAULT_FACE_SOURCE_RA, { default: true }); } catch (e) {}
+}
+
 // §Zombie-mode primitives — deterministic operations the body can execute without the MIND
 const ZOMBIE_PRIMITIVES = {
   "math.eval": (args) => {
@@ -1374,6 +1434,30 @@ const ZOMBIE_PRIMITIVES = {
     try { organism = new VCW.Organism({ primeGeneration: 0, lineageIndex: {} }, VCW.Cube.genesis(VCW.standardGenome(), 0)); } catch (_) {}
     return { hatched: !!organism, identity: egg.identity, bands: organism ? Object.keys(organism.prime.bands) : [] };
   },
+  // Phenotype — wearable, SELF-encrypted app-faces. One organism expresses many front-ends; the
+  // source is sealed under the genesis key (OTHER cannot open), stored append-only. Wearing
+  // recovers the source and posts it to the app-face surface a host renders.
+  "phenotype.express": (args, ctx) => {
+    ensureDefaultFace(ctx);
+    try { return phenotypeExpress(ctx, args?.name, args?.kind || "html", args?.source || "", args || {}); }
+    catch (e) { return { error: e.message }; }
+  },
+  "phenotype.list": (args, ctx) => {
+    ensureDefaultFace(ctx);
+    const active = phenotypeActive(ctx);
+    return { faces: (ctx.phenotypes || []).map((f) => ({ name: f.name, default: !!f.default, worn: f.name === active })) };
+  },
+  "phenotype.active": (args, ctx) => { ensureDefaultFace(ctx); return { active: phenotypeActive(ctx) }; },
+  "phenotype.wear": (args, ctx) => {
+    ensureDefaultFace(ctx);
+    try {
+      const m = phenotypeOpen(ctx, args?.name);              // SELF + integrity gate
+      ctx.phenotypeLog = ctx.phenotypeLog || [];
+      ctx.phenotypeLog.push({ wear: m.name, ts: iso() });    // append-only — active face = latest WEAR
+      ctx.bodyFields = { ...ctx.bodyFields, "app.face.post": "Wearing face '" + m.name + "' (" + m.source.length + " bytes recovered from the VCW)" };
+      return { name: m.name, kind: m.kind, entry: m.entry, bytes: m.source.length, source: m.source };
+    } catch (e) { return { error: e.message }; }
+  },
 };
 
 // §Custom Instructions — mutable operational layer loaded before VCW
@@ -1486,6 +1570,8 @@ const initS = () => ({
   agentIdHash: null,   // SHA-256(APP_ID+"|"+crystalName)
   genesisKey: mintGenesisKey(),   // Gen-4: the cryptographic SELF — Body-resident, never in a cube
   scheduledPulses: [],            // Gen-4: planned future wakes (heart.schedule) — chain thoughts
+  phenotypes: [],                 // Gen-4 (M9): SELF-encrypted, append-only app-faces (the worn front-ends)
+  phenotypeLog: [],               // Gen-4 (M9): append-only wear-events — the active face is the latest
   // ── Legacy compatibility ─────────────────────────────────────────
   vcwEntries: [],      // Kept for Terminal display + backward compat
   nextId: 0,

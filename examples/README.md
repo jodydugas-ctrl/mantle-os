@@ -44,7 +44,14 @@ Both demos also expose a **browser-feasible subset of the reproductive/symbiotic
 primitives: keyless knowledge plasmids (`mem.excrete` / `mem.digest` — foreign knowledge digests as
 *inferred*, never fact), a **SELF-locked seed vault** (`vault.seal` / `vault.reconstruct` — an OTHER
 body cannot reopen it), and **egg** author/hatch (declare a new AppAI as data, then instantiate it);
-the Arms serve as **ganglia**. The parts that act on a real *host repo* — host residency (`anchor`),
+the Arms serve as **ganglia**. Both demos now also carry **wearable app-faces (M9 phenotype)**:
+each is *born wearing* a default `origin` face, and you can seal additional front-ends into the
+VCW and wear them — `phenotype.express` / `phenotype.list` / `phenotype.wear` / `phenotype.active`,
+SELF-encrypted (an OTHER body's key yields garbage) and append-only. The **Spreadsheet** demo
+surfaces this as a **🧬 Faces** terminal tab: list faces, paste HTML to seal a new one, and click
+*Wear* to render the worn face live in a sandboxed frame. The **Reference Agent** wires `wear` to its
+existing **app-face Display**, so the worn face shows on the body surface. The parts that act on a
+real *host repo* — host residency (`anchor`),
 the **graft egg**, and the self-redesigning **compiler** — are inherently out of reach for a
 single-page demo and remain **framework-only** in the `mantle/` Python package and the runnable
 `FIELD_GUIDE.md`. For anything authoritative, the `mantle/` package is ground truth.
