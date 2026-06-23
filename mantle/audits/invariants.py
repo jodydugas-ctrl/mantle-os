@@ -1249,6 +1249,91 @@ def t_doctor_checkup():
             "doctor passed a healthy + docs-coherent deployment; caught the tampered cube")
 
 
+# ============================================================================
+# 20. Phenotype: wearable, SELF-encrypted app-faces stored in the VCW (M9)
+# ============================================================================
+def _pheno_org():
+    from ..phenotype import phenotype_bands
+    org = _born(genome=standard_genome() + phenotype_bands())
+    org.limbs.register_control("grid", {"kind": "grid"}, lambda v: None)
+    return org
+
+
+def t_pheno_self_open_and_integrity():
+    """PHENO-1: a face sealed by SELF is openable by SELF and its source round-trips byte-
+    identical (source_hash verifies). A tampered sealed chunk fails the integrity check."""
+    from .. import phenotype as _ph
+    org = _pheno_org()
+    src = "<html><body>origin surface</body></html>"
+    _ph.express(org, "origin", "html", src, entry="index.html",
+                controls=[{"id": "grid"}], default=True)
+    opened = _ph.open_face(org, "origin")
+    round_trips = (opened["source"] == src
+                   and opened["source_hash"] == _ph.code_hash(src))
+    # tamper the sealed bytes -> opening must refuse (cannot decrypt to a valid manifest)
+    idx = org.prime.band_layers[_ph.PHENO_BAND][0]
+    org.prime.layer_content(idx)[0]["content"]["b64"] = "Zm9vYmFy"   # "foobar"
+    tamper_caught = _expect_raise(lambda: _ph.open_face(org, "origin"), _ph.PhenotypeError)[0]
+    return (round_trips and tamper_caught,
+            "SELF round-trips the source byte-identical; a tampered seal is refused")
+
+
+def t_pheno_other_cannot_read():
+    """PHENO-2: a face sealed by one body is UNREADABLE/UN-WEARABLE as OTHER -- a copied nest in
+    a different body (a different genesis key) gets garbage, not the source."""
+    from .. import phenotype as _ph
+    a = _pheno_org()
+    _ph.express(a, "origin", "html", "<html>secret surface</html>", default=True)
+    b = _pheno_org()                                  # a different body == a different key
+    _ph.restore(b, _ph.snapshot(a))                   # copy the sealed entries into OTHER
+    other_blind = _expect_raise(lambda: _ph.open_face(b, "origin"), _ph.PhenotypeError)[0]
+    self_sees = _ph.open_face(a, "origin")["source"] == "<html>secret surface</html>"
+    return (other_blind and self_sees,
+            "SELF reads its own face; OTHER (different key) is refused")
+
+
+def t_pheno_wear_append_only():
+    """PHENO-3: wearing is append-only -- the active face is the LATEST wear-event, every change
+    is an accreted immutable event, and no prior entry is overwritten (the cube still verifies)."""
+    from .. import phenotype as _ph
+    org = _pheno_org()
+    _ph.express(org, "origin", "html", "<html>a</html>", controls=[{"id": "grid"}], default=True)
+    _ph.express(org, "sheet", "html", "<html>b</html>", controls=[{"id": "grid"}])
+    _ph.wear(org, "origin"); _ph.wear(org, "sheet"); _ph.wear(org, "origin")
+    wear_events = [e for e in _ph._raw_entries(org, _ph.WEAR_BAND)
+                   if e.get("opcode") == _ph.WEAR_OPCODE]
+    active_is_latest = _ph.active_face(org) == "origin" and len(wear_events) == 3
+    coherent = org.prime.verify() == []
+    return (active_is_latest and coherent,
+            "3 append-only wear-events; active == latest; cube still coheres (no overwrite)")
+
+
+def t_pheno_default_survives_rebirth():
+    """PHENO-4: the default (origin) face is always present after birth and SURVIVES a chosen
+    rebirth -- the genesis key persists, so the carried-forward face is still openable, and the
+    old generation keeps its own readable copy in the sealed ancestor."""
+    from .. import phenotype as _ph
+    org = _pheno_org()
+    src = "<html>origin</html>"
+    _ph.express(org, "origin", "html", src, controls=[{"id": "grid"}], default=True)
+    _ph.rebirth_with_faces(org, reason="invariant")
+    survived = (org.prime.generation == 1 and _ph._default_name(org) == "origin"
+                and _ph.open_face(org, "origin")["source"] == src)
+    ancestor_keeps_it = any(c.generation == 0 for c in org.ancestral)
+    return (survived and ancestor_keeps_it,
+            "default carried into gen 1 (still openable); gen 0 sealed as a readable ancestor")
+
+
+def t_pheno_socket_required():
+    """PHENO-5: a face may only plug into controls the nervous system can drive -- a face that
+    declares a control with no socket in the Human Surface Map is refused at wear time."""
+    from .. import phenotype as _ph
+    org = _pheno_org()                                # socket has only 'grid'
+    _ph.express(org, "phone", "html", "<html>phone</html>", controls=[{"id": "camera"}])
+    refused = _expect_raise(lambda: _ph.wear(org, "phone"), _ph.PhenotypeError)[0]
+    return (refused, "a face reaching for an unsocketed control ('camera') is refused")
+
+
 TESTS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -1318,6 +1403,11 @@ TESTS = [
     ("METER-1 usage-priced",                   t_meter_usage_priced),
     ("INGEST-1 conversation-distilled",        t_ingest_distills),
     ("DOCTOR-1 deployment-checkup",            t_doctor_checkup),
+    ("PHENO-1 self-open+integrity",            t_pheno_self_open_and_integrity),
+    ("PHENO-2 other-cannot-read",              t_pheno_other_cannot_read),
+    ("PHENO-3 wear-append-only",               t_pheno_wear_append_only),
+    ("PHENO-4 default-survives-rebirth",       t_pheno_default_survives_rebirth),
+    ("PHENO-5 socket-required",                t_pheno_socket_required),
 ]
 
 

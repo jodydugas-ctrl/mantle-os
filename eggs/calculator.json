@@ -1,0 +1,33 @@
+{
+  "egg_format": "mantle-egg-v1",
+  "identity": {
+    "name": "Calculator.AppAI",
+    "purpose": "a calculator that is born wearing its own front-end, sealed in its VCW"
+  },
+  "truths": [
+    "if it is not in the VCW it did not happen"
+  ],
+  "commandments": [
+    "protect your VCW",
+    "you are a tool USER",
+    "do your finest work with the tools and limbs you have"
+  ],
+  "genome": [
+    {"band": "tape", "head": 610, "encoding": "log-json", "span": 20,
+     "purpose": "the running calculation tape (app band)"}
+  ],
+  "controls": [
+    {"id": "keypad", "label": "Keypad", "type": "buttons"},
+    {"id": "display", "label": "Display", "type": "text"}
+  ],
+  "face": {
+    "name": "origin",
+    "kind": "html",
+    "entry": "index.html",
+    "controls": [
+      {"id": "keypad", "label": "Keypad", "type": "buttons"},
+      {"id": "display", "label": "Display", "type": "text"}
+    ],
+    "source": "<!doctype html><html><head><meta charset=\"utf-8\"><title>Calculator.AppAI</title><style>body{font-family:system-ui;background:#0f172a;color:#e2e8f0}#display{font-size:2rem;text-align:right;padding:.5rem;background:#1e293b}button{width:3rem;height:3rem;font-size:1.2rem}</style></head><body><h1>Calculator.AppAI</h1><div id=\"display\" data-control=\"display\">0</div><div id=\"keypad\" data-control=\"keypad\"><button>7</button><button>8</button><button>9</button><button>/</button><button>4</button><button>5</button><button>6</button><button>*</button><button>1</button><button>2</button><button>3</button><button>-</button><button>0</button><button>.</button><button>=</button><button>+</button></div><script>(function(){var d=document.getElementById('display'),e='';document.getElementById('keypad').addEventListener('click',function(ev){var k=ev.target.textContent;if(!k)return;if(k==='='){try{e=String(Function('return '+e)());}catch(_){e='ERR';}}else{e=(e==='0'||e==='ERR'?'':e)+k;}d.textContent=e||'0';});})();</script></body></html>"
+  }
+}

@@ -274,8 +274,9 @@ should be re-pointed at Mantle's own README count at merge time.
 | 7 | §3 metering · ingestion · doctor | METER-1, INGEST-1, DOCTOR-1 | COMPAT | ingestion.py, doctor.py | symbiosis, cli |
 | + | scheduled heartbeat (`schedule_pulse`) | SCHED-1 | COMPAT | — | organs/heart, mind/runtime |
 | + | post-review guard: Body genome survives reload | HF-B02 (`t_body_genome_round_trip`) | COMPAT | — | audits/invariants | (locks the save→load primer round-trip an external log review surfaced as a demo bug) |
+| 9 | M9 phenotype — wearable app-faces | PHENO-1..5 | COMPAT | phenotype.py | egg, hatchery, organism (rebirth helper), cli, teach |
 
-**Net:** 36 → **68 invariants green**; cube on-disk format **unchanged** (`vcw-cube-png-v2`) the
+**Net:** 36 → **73 invariants green**; cube on-disk format **unchanged** (`vcw-cube-png-v2`) the
 whole way — the anticipated v3 supersession never occurred. Shared-anatomy edits are small and
 additive; the bulk of the new capability is in new modules that carry whole into `main`.
 
@@ -284,3 +285,53 @@ additive; the bulk of the new capability is in new modules that carry whole into
 FUTURE beat to chain thoughts and run a task only as often as it needs, staying asleep
 (event-gated) until due. The `later` companion to nociception's `pain` (`now`). Proven by SCHED-1;
 teach/Field-Guide chapter "Planning Ahead"; examples updated descriptively.*
+
+---
+
+## Molt 9 — M9 phenotype: wearable app-faces stored in the VCW
+
+**The leap.** One stable organism (Body + append-only cube + eight organs) can now express MANY
+front-facing surfaces — a spreadsheet, a CLI, a calculator, a phone shell — as interchangeable
+**phenotypes**. A *face* is a whole front-end whose source is **sealed under the genesis key** into a
+private VCW band. The Compiler does not run apps; it **wears** them. Same self, different expressed
+morphology — the *invariant substrate* (nervous system + VCW) never changes; only the *swappable
+layer* (the face) does.
+
+**New module `mantle/phenotype.py`** — modeled on the seed vault (`vault.py`), one band richer:
+- two reserved PRIVATE bands — `phenotypes` (head 640, the SELF-encrypted source, one ciphertext
+  chunk per layer, large faces span layers) and `phenotype_log` (head 660, the append-only
+  wear-events);
+- `express` (seal a face), `list_faces` (a key-free catalog), `open_face` (SELF-only + integrity),
+  `wear` (return a host boot manifest), `shed`, `active_face`, and `snapshot`/`restore`/
+  `rebirth_with_faces` for rebirth survival.
+
+**The default (origin) face.** Every hatched organism is BORN wearing its origin surface — sealed in
+its VCW from the first breath (`hatchery.incubate` seeds it from the egg's optional `face` block, or
+a generated stub). Even if no other face is added, the organism always holds an encrypted copy of
+its own source: a self-reconstruction / security guarantee, the sibling of the seed vault. The
+genesis key persists across `rebirth()`, so carried-forward faces stay openable; the old generation
+keeps its own readable copy in the sealed ancestor.
+
+**Laws (all proven red/green):**
+- `PHENO-1` SELF opens its own face; the source round-trips byte-identical; a tampered seal is refused.
+- `PHENO-2` an OTHER body (different genesis key) cannot read/wear a sealed face.
+- `PHENO-3` wearing is append-only — the active face is the latest wear-event; the cube still coheres.
+- `PHENO-4` the default face is present after birth and survives a chosen rebirth.
+- `PHENO-5` a face may only plug into controls the nervous system can drive (socket conformance).
+
+**Surfaces touched (shared anatomy, all additive):** `egg.py` (optional `face` block — data, never
+exec'd, so no gauntlet), `hatchery.py` (always seed a default face + carry the phenotype bands),
+`core/organism.py` is **untouched** (rebirth survival lives in `phenotype.rebirth_with_faces`, so core
+stays pure), `cli.py` (`face-list`/`face-save`/`face-wear`), `audits/invariants.py` (PHENO-1..5),
+`teach.py` + `FIELD_GUIDE.md` (chapter "Wearing a Face"). New artifacts: `eggs/calculator.json` (an
+egg that declares its origin face) and `examples/phenotype_demo.py` (the whole story, end to end).
+
+**Format/compat verdict:** `COMPAT`. A new app band + `log-json` entries; no `core`/`vcw`/`organs`
+schema change. Cube format `vcw-cube-png-v2` unchanged.
+
+**Design note (intentional):** SELF-encryption was chosen over raw cross-body portability — faces are
+bound to the organism's genesis key, so a copied nest in a *foreign* body cannot wear them. The Body
+ABI holds within the organism's own lineage (the key persists across rebirth), not across foreign
+bodies. Portable, signed-but-cleartext faces remain a possible future variant.
+
+**Net after Molt 9:** 68 → **73 invariants green**; teach 17 → **18 chapters**; format COMPAT.

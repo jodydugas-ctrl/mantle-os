@@ -30,6 +30,7 @@ from .vcw.drivers import trial
 from .audits import stage1
 from . import egg as _egg
 from . import face as _face
+from . import phenotype as _phenotype
 
 
 class HatchError(Exception):
@@ -56,6 +57,21 @@ def _bind_reflex(org: Organism, spec: Dict[str, Any]) -> None:
     org.senses.bind_reflex(spec["action_id"], spec["event_type"], arc)
 
 
+def _default_face_stub(egg: Dict[str, Any]) -> Dict[str, Any]:
+    """A minimal origin face for an egg that declares none -- a real (tiny) HTML surface naming
+    the organism and a button per declared control. The guarantee ('always carries a copy of
+    its source') is never empty."""
+    name = egg["identity"]["name"]
+    controls = list(egg.get("controls", []))
+    buttons = "".join("<button data-control=\"%s\">%s</button>"
+                      % (c["id"], c.get("label", c["id"])) for c in controls)
+    source = ("<!doctype html><html><head><meta charset=\"utf-8\"><title>%s</title></head>"
+              "<body><h1>%s</h1><p>%s</p><div id=\"controls\">%s</div></body></html>"
+              % (name, name, egg["identity"].get("purpose", "a Mantle AppAI"), buttons))
+    return {"name": "origin", "kind": "html", "source": source, "entry": "index.html",
+            "controls": controls}
+
+
 def incubate(egg: Dict[str, Any], *, warmup_beats: int = 3,
              run_gate: bool = True) -> Dict[str, Any]:
     """Egg -> living organism. Returns {organism, report}. Raises HatchError if any
@@ -64,11 +80,20 @@ def incubate(egg: Dict[str, Any], *, warmup_beats: int = 3,
     report: Dict[str, Any] = {"egg": egg["identity"]["name"], "stages": []}
 
     # 1. BIRTH
-    genome = standard_genome() + [
+    app_bands = [
         make_band_boot(b["band"], b["head"], b.get("encoding", "log-json"),
                        params=b.get("params"), private=bool(b.get("private")),
                        span=b.get("span", 1), purpose=b.get("purpose", b["band"]))
         for b in egg.get("genome", [])]
+    # every hatched organism carries the phenotype bands -- so it always holds a SELF-encrypted
+    # copy of its own origin source (the default face), even if no other face is ever added.
+    pheno_bands = _phenotype.phenotype_bands()
+    used_heads = {b["head"] for b in app_bands}
+    for pb in pheno_bands:
+        if pb["head"] in used_heads:
+            raise HatchError("egg app band collides with the reserved phenotype band head %d "
+                             "(reserved: %d-655 and 660-661)" % (pb["head"], pb["head"]))
+    genome = standard_genome() + app_bands + pheno_bands
     org = Organism.birth(identity=egg["identity"], truths=list(egg["truths"]),
                          commandments=list(egg["commandments"]), genome=genome)
     report["stages"].append({"birth": {"bands": len(org.prime.bands),
@@ -86,6 +111,22 @@ def incubate(egg: Dict[str, Any], *, warmup_beats: int = 3,
     report["stages"].append({"wire": {"reflexes": len(egg.get("reflexes", [])),
                                       "routines": len(egg.get("routines", [])),
                                       "controls": len(egg.get("controls", []))}})
+
+    # 2b. THE DEFAULT (ORIGIN) FACE -- always seeded, so the VCW carries an encrypted copy of
+    # the organism's own source from birth. From the egg's `face` block if present, else a
+    # minimal stub derived from the identity + the wired controls. A face's controls become
+    # part of the body's native socket (stub bridges), so the origin face is always wearable.
+    face = egg.get("face") or _default_face_stub(egg)
+    for c in face.get("controls", []):
+        cid = c["id"]
+        if cid not in org.senses.surface_map:
+            org.limbs.register_control(cid, {k: v for k, v in c.items() if k != "id"},
+                                       lambda value, _cid=cid: None)
+    _phenotype.express(org, face["name"], face["kind"], face["source"],
+                       entry=face.get("entry", ""), controls=face.get("controls", []),
+                       capabilities=face.get("capabilities"), default=True)
+    report["stages"].append({"face": {"default": face["name"], "kind": face["kind"],
+                                      "bytes": len(face["source"])}})
 
     # 3. INSTINCTS (the gauntlet -- a refused candidate aborts the hatch)
     for sk in egg.get("instincts", []):

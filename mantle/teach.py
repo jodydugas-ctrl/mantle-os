@@ -474,6 +474,43 @@ def ch_scheduling(org: Organism) -> bool:
                   "due beat=%d; woke=%d" % (due, woke["n"]))
 
 
+def ch_phenotype(org: Organism) -> bool:
+    _say("\n— Chapter 18 · WEARING A FACE (M9) —")
+    _say("One organism, many front-ends. A PHENOTYPE is a whole app-face — its source sealed")
+    _say("under the genesis key into a private VCW band. The organism does not RUN apps; it WEARS")
+    _say("them. Every save and every change of face is an append-only, immutable event; only SELF")
+    _say("can read or wear a face; and a face may only plug into controls the body can drive.")
+    from . import phenotype as _ph
+    worker = Organism.birth(
+        identity={"name": "Faced.AppAI"},
+        truths=["if it is not in the VCW it did not happen"],
+        commandments=["protect your VCW"],
+        genome=standard_genome() + _ph.phenotype_bands())
+    worker.limbs.register_control("grid", {"kind": "grid"}, lambda v: None)
+    origin = "<!doctype html><title>Faced.AppAI</title><body>origin surface</body>"
+    sheet = "<!doctype html><title>Sheet</title><body>a grid of cells</body>"
+    _ph.express(worker, "origin", "html", origin, controls=[{"id": "grid"}], default=True)
+    _ph.express(worker, "spreadsheet", "html", sheet, controls=[{"id": "grid"}])
+    _ph.wear(worker, "spreadsheet")
+    round_trip = _ph.open_face(worker, "spreadsheet")["source"] == sheet
+    worn = _ph.active_face(worker) == "spreadsheet"
+    # OTHER (a different body, a different key) cannot read the sealed face
+    other = Organism.birth(identity={"name": "Thief.AppAI"}, truths=["t"],
+                           commandments=["protect your VCW"],
+                           genome=standard_genome() + _ph.phenotype_bands())
+    _ph.restore(other, _ph.snapshot(worker))
+    try:
+        _ph.open_face(other, "origin"); other_blind = False
+    except _ph.PhenotypeError:
+        other_blind = True
+    return _prove("the organism sealed two faces into its VCW, wore one (its source recovered "
+                  "byte-identical), kept the change append-only, and an OTHER body could not "
+                  "read the sealed face",
+                  round_trip and worn and other_blind,
+                  "worn=%s; SELF round-trips the source; OTHER refused"
+                  % _ph.active_face(worker))
+
+
 CHAPTERS: List[Tuple[str, Callable[[Organism], bool]]] = [
     ("Birth", ch1_birth), ("The Heartbeat", ch2_heartbeat),
     ("Senses", ch3_senses), ("Memory", ch4_memory), ("Immune", ch5_immune),
@@ -483,7 +520,7 @@ CHAPTERS: List[Tuple[str, Callable[[Organism], bool]]] = [
     ("Graded Memory", ch_graded_memory), ("Graft & Living Residency", ch_graft_residency),
     ("The MEM VCW", ch_mem_vcw), ("Self-Redesigning VCW & Memory Bridge", ch_compiler),
     ("Ganglia & the Seed Vault", ch_ganglia_vault), ("Resilience", ch_resilience),
-    ("Planning Ahead", ch_scheduling),
+    ("Planning Ahead", ch_scheduling), ("Wearing a Face", ch_phenotype),
 ]
 
 

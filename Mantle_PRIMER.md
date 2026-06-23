@@ -6,7 +6,7 @@
 (who you are while you build) → [`docs/Mantle_Organ_Atlas.md`](docs/Mantle_Organ_Atlas.md) (the taxonomy).
 **The working `mantle/` package is ground truth where prose disagrees**, and
 [`FIELD_GUIDE.md`](FIELD_GUIDE.md) is the same framework as a manual that RUNS — `python -m
-mantle teach` proves all 17 chapters live. The standalone cube format is
+mantle teach` proves all 18 chapters live. The standalone cube format is
 [`examples/vcw/vcw_cube.py`](examples/vcw/vcw_cube.py) (normative, runnable in one file).*
 
 ---
@@ -76,7 +76,7 @@ that works with no mind, then give it a mind.*
 The root holds the build sequence; the framework itself is the mantle/ package.
 
 Mantle_PRIMER.md            <- you are here: role, ontology, operating procedure
-FIELD_GUIDE.md              <- the RUNNABLE manual; mirror of `python -m mantle teach` (17 chapters)
+FIELD_GUIDE.md              <- the RUNNABLE manual; mirror of `python -m mantle teach` (18 chapters)
 
 PHASE 1 (Body):
   Mantle_Part1_Body.md        <- how to grow the Body, organ by organ
