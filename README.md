@@ -173,6 +173,8 @@ Reading order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) →
 [`docs/Mantle_v3_Architecture.md`](docs/Mantle_v3_Architecture.md) →
 [`docs/v3/Organism_Lifecycle.md`](docs/v3/Organism_Lifecycle.md) → the code.
 Prefer pictures? [`docs/v3/Visual_Guide.md`](docs/v3/Visual_Guide.md).
+The underlying doctrine (the agent-facing spellbook the design follows) lives in
+[`docs/grimoire/`](docs/grimoire/README.md).
 When prose and code disagree, **the working code in `mantle/` is ground truth** (and
 `examples/vcw/vcw_cube.py` is the standalone, normative definition of the cube format).
 
@@ -187,10 +189,12 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
 
 - **Path A — grow from scratch.** `Mantle_Part1_Body.md`, then the Stage-1 gate, then
   Phase 2. The `mantle/` package is the runnable skeleton.
-- **Path B — assimilate existing code.** `Mantle_Assimilator.md` +
-  [`docs/v3/Assimilation_Guide.md`](docs/v3/Assimilation_Guide.md): dissect read-only, map organs,
-  sign the inventory, wrap fail-open. Both paths converge on the same certified Body and
-  the same MIND fusion.
+- **Path B — assimilate existing code.** Canonical doctrine:
+  [`docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md`](docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md)
+  (NECROMANCY — operational detail); runnable cheatsheet:
+  [`docs/v3/Assimilation_Guide.md`](docs/v3/Assimilation_Guide.md). Dissect read-only, map organs,
+  sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same
+  MIND fusion.
 
 ## Status & license
 

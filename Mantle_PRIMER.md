@@ -86,8 +86,10 @@ PHASE 2 (MIND):
   Mantle_Part2_Mind.md        <- how to fuse the MIND
   Mantle_Part2_Mind_Audit.md  <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
 
-Mantle_Assimilator.md       <- Path B: residency in EXISTING code (non-destructive); the basis
-                               of `anchor` and the `graft` egg
+Path B (assimilate EXISTING code, non-destructive; the basis of `anchor` and the `graft` egg):
+  docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md  <- CANONICAL doctrine (NECROMANCY operational detail)
+  Mantle_Assimilator.md                        <- stub / quick-ref pointer
+  docs/v3/Assimilation_Guide.md                <- runnable command cheatsheet
 
 mantle/  <- THE FRAMEWORK (ground truth where prose disagrees):
   core/ vcw/ organs/ mind/    <- the inherited anatomy (Body, substrate, eight organs, the MIND)
@@ -241,8 +243,10 @@ source code is provided.
 
 ### Path B — Take residence in existing code (brownfield organism)
 1. Emit the §0 Declaration Block (declaring the host you are instrumenting).
-2. Follow **`Mantle_Assimilator.md`**: the assimilator dissects the host read-only (AST only,
-   no host code runs) and classifies each symbol by organ role. In Gen-4 this is the basis of:
+2. Follow the canonical doctrine in **`docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md`**
+   (NECROMANCY — operational detail): the assimilator dissects the host read-only (AST for
+   Python, tree-sitter for `.js/.mjs/.go/.rs`; no host code runs) and classifies each symbol by
+   organ role. In Gen-4 this is the basis of:
    - **`python -m mantle anchor <host>`** — grow an anchored resident in a `.mantle/` nest,
      remembering the host's organ map as observed facts; do-no-harm is a byte-level census
      invariant, not a hope. Then `ask` / `feed` / `vitals` the resident.

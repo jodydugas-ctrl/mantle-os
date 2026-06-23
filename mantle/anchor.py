@@ -2,6 +2,10 @@
 """
 mantle.anchor  --  ANCHORING: an AppAI takes residence in a codebase (Mantle OS · Gen-4)
 
+Doctrine of record: docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md (NECROMANCY -- operational
+detail). Dissection here REUSES the single canonical scanner (assimilator.dry_run ->
+scan_project); anchor adds no scanning of its own.
+
 This is Path B made symbiotic -- the framework's primary act. An AppAI MERGES into an
 existing application: it dissects the host read-only, grows an anchored Body with a
 VCW cube and a nervous system in a `.mantle/` nest INSIDE the host's directory, and
