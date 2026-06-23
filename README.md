@@ -173,6 +173,8 @@ Reading order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) →
 [`docs/Mantle_v3_Architecture.md`](docs/Mantle_v3_Architecture.md) →
 [`docs/v3/Organism_Lifecycle.md`](docs/v3/Organism_Lifecycle.md) → the code.
 Prefer pictures? [`docs/v3/Visual_Guide.md`](docs/v3/Visual_Guide.md).
+The underlying doctrine (the agent-facing spellbook the design follows) lives in
+[`docs/grimoire/`](docs/grimoire/README.md).
 When prose and code disagree, **the working code in `mantle/` is ground truth** (and
 `examples/vcw/vcw_cube.py` is the standalone, normative definition of the cube format).
 
