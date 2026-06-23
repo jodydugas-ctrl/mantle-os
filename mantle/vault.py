@@ -2,6 +2,10 @@
 """
 mantle.vault  --  the seed vault: self-reconstruction (Mantle OS · M8)
 
+Doctrine of record: docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md (RESURGERE; the egg and
+assimilation share ONE substrate -- "One substrate, two casts"). reconstruct() carries
+pre-classified roles into hatchery.incubate and re-scans nothing.
+
 A red-teamed organism once backed up its own project into "a safe corner of the VCW for
 emergencies." This makes that emergent survival a built-in reflex: an organism stores its
 own SEED -- the declarative egg (or graft) that defines it -- in a SELF-ENCRYPTED, veiled

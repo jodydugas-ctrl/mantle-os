@@ -22,6 +22,11 @@ symbol (function, method, class) into exactly one ORGAN ROLE:
 Classification is deterministic: name patterns + call-graph evidence (which stdlib /
 framework calls the body makes), no LLM, no execution of host code. The scanner NEVER
 writes anything; its output feeds organ_map + report.
+
+This module is the single canonical scanner/classifier for the whole framework: anchor,
+graft, and the egg/RESURGERE reconstruct path all reuse it (no second copy exists). The
+doctrine of record is docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md, section "NECROMANCY --
+operational detail".
 """
 from __future__ import annotations
 
@@ -124,16 +129,27 @@ def scan_file(path: str, rel: str) -> Dict[str, Any]:
 
 def scan_project(root: str) -> Dict[str, Any]:
     """Scan a host project directory READ-ONLY. Returns the raw dissection: every
-    Python module's symbols with deterministic organ roles. Modifies NOTHING."""
+    Python module's symbols with deterministic organ roles, plus any .js/.mjs/.go/.rs
+    modules if the optional tree-sitter scanner (scanner_ts) is installed. Modifies
+    NOTHING."""
+    try:
+        from . import scanner_ts
+        multilang = scanner_ts.available()
+    except ImportError:
+        scanner_ts = None
+        multilang = False
+
     files: List[Dict[str, Any]] = []
     py_count = 0
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames
                        if d not in (".git", "__pycache__", "node_modules", ".venv", "venv")]
         for fn in sorted(filenames):
+            full = os.path.join(dirpath, fn)
             if fn.endswith(".py"):
                 py_count += 1
-                full = os.path.join(dirpath, fn)
                 files.append(scan_file(full, os.path.relpath(full, root)))
+            elif multilang and os.path.splitext(fn)[1].lower() in scanner_ts.LANGS:
+                files.append(scanner_ts.scan_file(full, os.path.relpath(full, root)))
     return {"root": os.path.abspath(root), "python_files": py_count, "files": files,
-            "read_only": True}
+            "read_only": True, "multilang": multilang}

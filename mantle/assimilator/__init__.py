@@ -13,3 +13,6 @@ from .report import dry_run, render_inventory, write_artifacts
 __all__ = ["scan_project", "scan_file", "classify_symbol", "ROLES",
            "build_map", "propose_genome", "ROLE_TO_ORGAN", "ORGANS",
            "Assimilation", "dry_run", "render_inventory", "write_artifacts"]
+
+# scanner_ts is intentionally not imported here: it depends on the optional
+# tree-sitter stack and is reached via mantle.assimilator.scanner_ts directly.

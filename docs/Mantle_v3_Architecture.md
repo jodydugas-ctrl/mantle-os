@@ -147,7 +147,11 @@ a host app into organ roles; **organ_map** folds the classification into an assi
 emits the APP_INVENTORY artifact (the signed Phase 0 gate) plus a JSON map; **wrappers** is the
 fail-open hook runtime that threads host behavior through Senses/Limbs/Memory/Immune without
 changing it. `python -m mantle assimilate <path> --dry-run` runs the read-only pipeline against
-any host (a sample app ships in `examples/sample_app/`).
+any host (a sample app ships in `examples/sample_app/`). The scanner is Python-AST by default and
+multi-language (`.js/.mjs/.go/.rs`) via the optional `scanner_ts` (tree-sitter) when
+`mantle-os[multilang]` is installed. The doctrine these modules implement is the single canonical
+NECROMANCY section in
+[`docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md`](grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md).
 
 ## 7. The gates
 
