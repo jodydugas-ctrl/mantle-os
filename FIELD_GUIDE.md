@@ -404,6 +404,45 @@ org.heart.schedule_pulse("continue-the-plan", after=3)   # wake me in 3 beats to
 **Proven live:** an organism plans a wake 3 beats out, sleeps until then (zero MODEL calls), and
 wakes exactly once on the due beat to continue its thought.
 
+## Chapter 19 · WEARING A FACE — one organism, many front-ends
+
+The Body, the eight organs, and the append-only VCW are the *invariant substrate* — the nervous
+system. A **phenotype** (a *face*) is the *swappable layer*: a whole front-end — a spreadsheet, a
+CLI, a calculator, a phone shell — whose source is sealed into a private VCW band. The organism
+does not *run* apps; it **wears** them. Same self underneath, different expressed morphology.
+
+Four laws keep it honest:
+
+- **SELF-encrypted** (Chapter 10): a face is sealed under the genesis key, so it is unreadable —
+  and un-wearable — as OTHER. A copied nest in another body gets garbage, not the source.
+- **Source, never executed here:** wearing returns a *boot manifest* (source + entry + the controls
+  it needs) that a **host** renders. The organism never exec's a front-end — that is exactly what
+  the skill sandbox (Chapter 6) forbids.
+- **Append-only** (Chapter 4): every save and every change of face is an immutable, hashed event.
+  The active face is the *latest* wear-event; the biography is never rewritten.
+- **The socket:** a face declares the `controls` it expresses and may only plug into controls the
+  nervous system can actually drive (the Human Surface Map). A face reaching for an unsocketed
+  control is refused.
+
+And **the default face**: every hatched organism is *born wearing* its origin surface — the app it
+was made from — sealed into its VCW from the first breath. Even if no other face is ever added, the
+organism always holds an encrypted copy of its own source: a self-reconstruction guarantee, the
+sibling of the seed vault (Chapter 16). Faces survive a chosen rebirth (the genesis key persists),
+and the old generation keeps its own readable copy in the sealed ancestor.
+
+```bash
+python -m mantle hatch eggs/calculator.json --out=nest/   # born wearing its origin face
+python -m mantle face-save nest/ spreadsheet examples/Mantle_Spreadsheet_Agent.html --kind=html
+python -m mantle face-list nest/                          # origin (default, worn) + spreadsheet
+python -m mantle face-wear nest/ spreadsheet              # the boot manifest a host renders
+python examples/phenotype_demo.py                         # the whole story, end to end
+```
+
+**Proven live:** an organism is born wearing its origin face, seals a second face (the real
+179 KB spreadsheet surface) into its VCW, wears it (the source recovers byte-for-byte), keeps the
+change append-only, refuses to be read by an OTHER body, and carries its default face across a
+rebirth — all with no model call.
+
 ## Closing · THE PORTRAIT — the organism paints itself
 
 At the end of `teach` (and of every hatch), the organism renders its own state as a
@@ -437,7 +476,7 @@ Then:
 ```bash
 python -m mantle hatch my_egg.json --out=my_nest/
 python -m mantle audit            # the full gate, anytime
-python -m mantle prove            # the 68 security invariants
+python -m mantle prove            # the 73 security invariants
 python -m mantle mind             # fuse the offline MIND and watch containment
 python -m mantle assimilate <existing-app> --dry-run    # Path B: dissect, don't rewrite
 ```

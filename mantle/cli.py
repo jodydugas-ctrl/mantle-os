@@ -23,7 +23,8 @@ import sys
 _USAGE = ("usage: python -m mantle "
           "[anchor <host> | ask <host> [--mind] <question> | feed <host> --credits=N "
           "[--key=NAME] | vitals <host> | hatch <egg> [--out=DIR] | teach [N] | "
-          "face <dir> [out.png] | demo | audit | prove | mind | audit-mind | "
+          "face <dir> [out.png] | face-list <dir> | face-save <dir> <name> <src> [--default] | "
+          "face-wear <dir> <name> | demo | audit | prove | mind | audit-mind | "
           "assimilate <path> [--dry-run] [--out=DIR]]")
 
 
@@ -209,6 +210,71 @@ def cmd_face(argv):
     return 0
 
 
+def cmd_face_list(argv):
+    args, _flags = _split(argv)
+    if not args:
+        print("usage: python -m mantle face-list <organism-dir>")
+        return 2
+    from .core.organism import Organism
+    from . import phenotype as ph
+    org = Organism.load(args[0], verify_seals=True)
+    faces = ph.list_faces(org)
+    if not faces:
+        print("(this organism carries no faces -- no phenotype band)")
+        return 0
+    print("worn  default  parts  name")
+    for f in faces:
+        print("  %s     %s       %3d   %s"
+              % ("*" if f["worn"] else " ", "*" if f["default"] else " ",
+                 f["parts"], f["name"]))
+    return 0
+
+
+def cmd_face_save(argv):
+    args, flags = _split(argv)
+    if len(args) < 3:
+        print("usage: python -m mantle face-save <organism-dir> <name> <source-file> "
+              "[--kind=html] [--entry=index.html] [--default]")
+        return 2
+    from .core.organism import Organism
+    from . import phenotype as ph
+    directory, name, source_file = args[0], args[1], args[2]
+    with open(source_file, "r", encoding="utf-8") as f:
+        source = f.read()
+    org = Organism.load(directory, verify_seals=True)
+    try:
+        rec = ph.express(org, name, flags.get("--kind", "html"), source,
+                         entry=flags.get("--entry", "") if isinstance(flags.get("--entry"), str) else "",
+                         default=bool(flags.get("--default")))
+    except ph.PhenotypeError as e:
+        print("FACE NOT SAVED: %s" % e)
+        return 1
+    org.save(directory)
+    print("sealed face %r (%d chunk(s), %s) into the VCW -- SELF-encrypted, append-only."
+          % (rec["name"], rec["parts"], rec["source_hash"]))
+    return 0
+
+
+def cmd_face_wear(argv):
+    args, _flags = _split(argv)
+    if len(args) < 2:
+        print("usage: python -m mantle face-wear <organism-dir> <name>")
+        return 2
+    from .core.organism import Organism
+    from . import phenotype as ph
+    org = Organism.load(args[0], verify_seals=True)
+    try:
+        boot = ph.wear(org, args[1])
+    except ph.PhenotypeError as e:
+        print("CANNOT WEAR: %s" % e)
+        return 1
+    org.save(args[0])
+    print("now wearing %r (kind=%s, entry=%s, %d byte(s) of source, %d control(s))"
+          % (boot["name"], boot["kind"], boot["entry"] or "-",
+             len(boot["source"]), len(boot["controls"])))
+    return 0
+
+
 # ---- back-compat API surface (the v2.3 reference shims in examples/vcw/ call these
 # directly: examples_boot.py -> cli.demo, examples_mind.py -> cli.mind_demo) ----------
 def demo(argv=None):
@@ -244,6 +310,12 @@ def main(argv=None):
         return teach.main(rest)
     if cmd == "face":
         return cmd_face(rest)
+    if cmd in ("face-list", "face_list"):
+        return cmd_face_list(rest)
+    if cmd in ("face-save", "face_save"):
+        return cmd_face_save(rest)
+    if cmd in ("face-wear", "face_wear"):
+        return cmd_face_wear(rest)
     # ---- inherited lineage commands (the Mantle guarantees, unchanged) ----
     if cmd == "demo":
         from . import lineage_cli

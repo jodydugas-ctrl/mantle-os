@@ -14,6 +14,12 @@ These are proven by the framework's own gate — read and run them:
   graft egg (`python -m mantle graft eggs/notes_graft.json examples/sample_app`).
 - **`../eggs/greeter.json`** — the egg template; `python -m mantle hatch eggs/greeter.json`.
   **`../eggs/notes_graft.json`** — a graft egg targeting `sample_app`.
+  **`../eggs/calculator.json`** — an egg that declares its own **origin face** (a real HTML
+  calculator front-end), so the hatched AppAI is born wearing it.
+- **`phenotype_demo.py`** — wearable app-faces, end to end (M9): `python examples/phenotype_demo.py`.
+  Hatches the calculator (born wearing its origin face), seals the real
+  `Mantle_Spreadsheet_Agent.html` surface as a second face, wears it (source recovers byte-for-byte),
+  shows an OTHER body cannot read the sealed faces, and carries the default face across a rebirth.
 
 The single best "example" is the framework proving itself: **`python -m mantle teach`** (mirror:
 [`../FIELD_GUIDE.md`](../FIELD_GUIDE.md)).

@@ -94,6 +94,17 @@ def validate(egg: Dict[str, Any]) -> Dict[str, Any]:
         if not cases:
             raise EggError("%s: an instinct must carry proving cases (trial is the "
                            "gate that earns trust)" % where)
+
+    # an optional ORIGIN FACE: the front-end the AppAI is born wearing (its default
+    # phenotype). It is DATA (sealed under SELF at hatch, never executed), so it carries no
+    # gauntlet -- it is stored, not run.
+    face = egg.get("face")
+    if face is not None:
+        _need(face, "name", str, "egg.face")
+        _need(face, "kind", str, "egg.face")
+        _need(face, "source", str, "egg.face")
+        for j, c in enumerate(face.get("controls", [])):
+            _need(c, "id", str, "egg.face.controls[%d]" % j)
     return egg
 
 

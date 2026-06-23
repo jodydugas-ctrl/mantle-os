@@ -6,7 +6,7 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 68 security invariants, the
+*The organism re-certifies on every commit: the Stage-1 gate, 73 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
 > **New here, or skeptical of the biology metaphor?** Start with
@@ -27,8 +27,10 @@ memory seals with a tamper-evident fingerprint.
 **Gen-4** adds the reproductive, symbiotic, and self-evolving tissue on the same skeleton: a
 whole AppAI declared as one **egg**, **residency** in a host codebase with a metered energy
 economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
-keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, and a
-self-reconstruction **seed vault** — every one gated (36 → **68 invariants**). See the section
+keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, a
+self-reconstruction **seed vault**, and **wearable app-faces** (one organism expresses many
+SELF-encrypted front-ends as interchangeable phenotypes) — every one gated (36 → **73
+invariants**). See the section
 *The Gen-4 generation* below, the runnable [`FIELD_GUIDE.md`](FIELD_GUIDE.md), and
 [`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md).
 
@@ -42,7 +44,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 68 security invariants, red/green
+python -m mantle prove         # 73 security invariants, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash
@@ -65,12 +67,13 @@ python examples/vcw/interop.py                # standalone <-> engine: identical
 
 The framework now carries the reproductive, symbiotic, and self-evolving tissue grown on the
 Argonaut branch — declarative birth, residency, knowledge-sharing, self-redesign, and
-self-reconstruction — all gated the same way (68 invariants, no standing law weakened). The
+self-reconstruction, and wearable faces — all gated the same way (73 invariants, no standing
+law weakened). The
 runnable manual `FIELD_GUIDE.md` walks every one; [`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md)
 records the inheritance.
 
 ```bash
-python -m mantle teach                         # the Field Guide, RUNNING — 17 chapters, each proven
+python -m mantle teach                         # the Field Guide, RUNNING — 18 chapters, each proven
 python -m mantle hatch eggs/greeter.json --out=nest/   # a whole AppAI from one JSON egg, certified
 python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
 python -m mantle graft eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
@@ -146,15 +149,16 @@ mantle/                  the framework (start here)
   vcw/                   the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
   organs/                the eight organs, each with an enforced contract (self/other + nociception)
   mind/                  Phase 2 only: transports, containment, the MIND, AppAIRuntime
-  assimilator/ audits/   Path B dissection + the gates (Stage 1, Stage 2, the 68 invariants)
+  assimilator/ audits/   Path B dissection + the gates (Stage 1, Stage 2, the 73 invariants)
   egg.py hatchery.py     Gen-4: declarative birth — a whole AppAI as one JSON file
   anchor.py symbiosis.py Gen-4: residency in a host + the metered energy economy
   graft.py               Gen-4: the graft egg (patch a host) + live residency weaving
   mem.py compiler.py     Gen-4: keyless knowledge plasmids + the self-redesigning VCW / memory bridge
   ganglia.py vault.py    Gen-4: parallel limbs + the self-reconstruction seed vault
   ingestion.py doctor.py Gen-4: conversation ingestion + the deployment checkup
+  phenotype.py           Gen-4: wearable, SELF-encrypted app-faces (one body, many front-ends)
   face.py teach.py       the PNG self-portrait + the running Field Guide
-FIELD_GUIDE.md           the runnable manual (mirror of `python -m mantle teach`, 17 chapters)
+FIELD_GUIDE.md           the runnable manual (mirror of `python -m mantle teach`, 18 chapters)
 eggs/                    greeter.json (hatch it) · notes_graft.json (a graft egg)
 docs/
   MOLT_LEDGER.md         the Gen-4 evolution record: every molt, its invariants, format verdict
