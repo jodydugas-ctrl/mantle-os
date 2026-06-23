@@ -22,6 +22,11 @@ symbol (function, method, class) into exactly one ORGAN ROLE:
 Classification is deterministic: name patterns + call-graph evidence (which stdlib /
 framework calls the body makes), no LLM, no execution of host code. The scanner NEVER
 writes anything; its output feeds organ_map + report.
+
+This module is the single canonical scanner/classifier for the whole framework: anchor,
+graft, and the egg/RESURGERE reconstruct path all reuse it (no second copy exists). The
+doctrine of record is docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md, section "NECROMANCY --
+operational detail".
 """
 from __future__ import annotations
 

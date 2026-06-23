@@ -189,10 +189,12 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
 
 - **Path A — grow from scratch.** `Mantle_Part1_Body.md`, then the Stage-1 gate, then
   Phase 2. The `mantle/` package is the runnable skeleton.
-- **Path B — assimilate existing code.** `Mantle_Assimilator.md` +
-  [`docs/v3/Assimilation_Guide.md`](docs/v3/Assimilation_Guide.md): dissect read-only, map organs,
-  sign the inventory, wrap fail-open. Both paths converge on the same certified Body and
-  the same MIND fusion.
+- **Path B — assimilate existing code.** Canonical doctrine:
+  [`docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md`](docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md)
+  (NECROMANCY — operational detail); runnable cheatsheet:
+  [`docs/v3/Assimilation_Guide.md`](docs/v3/Assimilation_Guide.md). Dissect read-only, map organs,
+  sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same
+  MIND fusion.
 
 ## Status & license
 

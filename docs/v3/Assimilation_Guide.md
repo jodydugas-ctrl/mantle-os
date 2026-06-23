@@ -1,10 +1,10 @@
-# Mantle OS v3 — Assimilation Guide (Path B, runnable)
+# Mantle OS v3 — Assimilation Guide (Path B, runnable cheatsheet)
 
-Path B grows organs around EXISTING code, non-destructively. v3 makes the
-`Mantle_Assimilator.md` doctrine runnable: `mantle/assimilator/` dissects a host,
-maps its tissue to organs, emits the Phase-0 artifacts, and threads host behavior
-through the organism with fail-open, reversible wrappers. **The prime directive: do no
-harm.** The host runs exactly as before — plus now it has a nervous system and a memory.
+> **Canonical doctrine moved.** The full assimilation/scanning doctrine now lives in one place:
+> **[`docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md`](../grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md)**,
+> section **NECROMANCY — operational detail (the assimilation manual)**. This file is now just the
+> runnable command cheatsheet. **The prime directive: do no harm** — the host runs exactly as
+> before, plus a nervous system and a memory.
 
 ## 1. Dry run (Phase 0 — read-only, gated)
 
@@ -13,32 +13,14 @@ python -m mantle assimilate <host-path> --dry-run
 python -m mantle assimilate <host-path> --out=./assimilation   # + artifacts
 ```
 
-This scans every Python module (AST only — host code is never executed, never modified),
-classifies every symbol into an organ role, and prints the **assimilation map**:
+Scans every module (Python via `ast`; `.js/.mjs/.go/.rs` via the optional tree-sitter scanner,
+`pip install mantle-os[multilang]` — host code is never executed, never modified), classifies
+every symbol into an organ role, and prints the **assimilation map** (Heart / Senses / Limbs /
+Memory / Immune / Brain affordance / external host code). With `--out=DIR` it writes
+`APP_INVENTORY.md` (with the **unsigned READ-ONLY sign-off**) and `assimilation_map.json` next to
+the operator, never inside the host tree. **Hook insertion before the sign-off is HF-B42.**
 
-- what is **Heart** (main loops, schedulers, clocks)
-- what is **Senses** (handlers, routes, listeners, triggers)
-- what is **Limbs** (outbound calls, renders, effectors)
-- what is **Memory** (state transitions, persistence writes)
-- what is **Immune** (validation, retries, secret boundaries)
-- what is a **Brain affordance** (LLM/judgment points — left dormant)
-- what **remains external host code** (pure utilities; untouched)
-
-A missing organ is information too: an app with no immune tissue is fragile — the
-assimilation should compensate.
-
-With `--out=DIR` it writes `APP_INVENTORY.md` (Appendix-A format, pre-filled, with the
-**unsigned READ-ONLY sign-off**) and `assimilation_map.json`. Artifacts land next to the
-operator, never inside the host tree. **Hook insertion before the sign-off is HF-B42.**
-
-## 2. The proposed genome
-
-The dry run proposes a cube genome sized to the host's observed shape (high-churn
-surfaces get more span and faster reclaim; durable knowledge gets room), including two
-app bands: `host_state` (mirrored transitions) and `host_actions` (wrapped effector
-calls). Author the final genome from this draft in Phase 3.
-
-## 3. Wrapping (Phase 5+ — only after the gate is signed)
+## 2. Wrapping (Phase 5+ — only after the gate is signed)
 
 ```python
 from mantle import Organism
@@ -54,26 +36,12 @@ send_notification  = asm.wrap("ARM_ACTION",   send_notification)
 save_notes         = asm.wrap("PERSISTENCE_WRITE", save_notes)
 ```
 
-Wrapper guarantees (each is an invariant, not a hope):
+Wrapper guarantees: behavior preserved (HF-B40) · fail-open (HF-B32) · reversible via `asm.ledger`
+/ `asm.unwrap(fn)` (HF-B41) · redacted at the secret boundary. See the canonical doctrine for the
+full hook table, hard-fails, and the APP_INVENTORY template.
 
-1. **Behavior preserved (HF-B40).** Same args, same return, same exceptions — the wrap
-   adds observation only.
-2. **Fail-open (HF-B32).** A fault inside any hook degrades to an immune event; it can
-   never crash the host.
-3. **Reversible (HF-B41).** Every wrap is ledgered (`asm.ledger`) and undoable
-   (`asm.unwrap(fn)` returns the original).
-4. **Redacted.** Everything crossing into the cube passes the secret boundary first.
+## 3. Convergence
 
-What each role gets: SENSOR_EVENT/REFLEX → a classified `senses` entry per call;
-ARM_ACTION/DISPLAY_RENDER → an Action Execution Proof (ok or failed) through Limbs;
-STATE_TRANSITION/PERSISTENCE_WRITE → a mirrored `host_state` entry; any raised host
-exception → a `host_error` immune event (and the exception still propagates to the host,
-unchanged).
-
-## 4. Convergence
-
-When the host's surfaces are mapped (Human Surface Map + ControlBridges for every
-human-visible control), validation layers pass, and the heartbeat/persistence run with no
-host LLM, administer the same Stage-1 gate as Path A (`python -m mantle audit`, or
-`stage1.run(org)` against the live assimilated organism). Zero open hard-fails → the same
-MIND fusion, the same Stage-2 gate. Both paths converge on the same certified creature.
+When surfaces are mapped, validation layers pass, and heartbeat/persistence run with no host LLM,
+administer the same Stage-1 gate as Path A (`python -m mantle audit`). Zero open hard-fails → the
+same MIND fusion and Stage-2 gate. Both paths converge on the same certified creature.

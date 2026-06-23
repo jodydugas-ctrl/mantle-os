@@ -380,7 +380,7 @@ spell_block:
     anchoring_law: "anchor never modifies one host file; the nest is additive ('.mantle/' only); a sha256 census of every host file proves it unchanged (mantle/anchor.py)"
     resident_loop: "anchor -> ask (free) / ask --mind (spends energy) -> feed --credits -> vitals; detach restores the host"
     maps_to: "N3 inventory = Phase 0 gate; N6/N8 hooks+residency = Phase 5+; HF-B42/HF-B40 enforce do-no-harm"
-  language_agnostic:                  # PROPOSED forward design — current scanner.py is Python-AST-only
+  language_agnostic:                  # SHIPPED — Python via ast.parse; .js/.mjs/.go/.rs via scanner_ts (tree-sitter)
     problem: "Phase-0 dissection (mantle/assimilator/scanner.py) uses ast.parse — Python only. The role/organ model is language-NEUTRAL; only the PARSER is language-bound. Do not rewrite the classifier; replace the parser surface."
     four_phase_view:
       phase0_dissect: "read-only structure + I/O-boundary + call-graph extraction -> signed inventory; zero host changes (= the existing N1-N5 + Phase-0 gate)"
@@ -393,10 +393,228 @@ spell_block:
       - "build-time code generation is NOT MIND fusion: no MIND writes to brain/thoughts at runtime; HF-MIND (fusion before Stage-1) still holds. The LLM is a script author, not the resident's mind."
       - "do-no-harm holds: where a language cannot be woven without editing host files, fall back to the graft WORKSPACE-COPY model so the host census stays byte-identical (HF-B40/HF-B42)."
     open_decision: "Phase 0 is deterministic and runs BEFORE the LLM, so non-Python dissection needs either (a) a multi-language parser (e.g. tree-sitter) for real ASTs, or (b) an agnostic surface scan (files/imports/I-O via patterns) with deep structure deferred to the Phase-1 MIND. Recommend (a) tree-sitter for fidelity, with (b) as a zero-dependency fallback."
-    prototype: "RESOLVED to (a) and VALIDATED. `scanner_ts` (tree-sitter) dissects a JS host and emits the same {symbol, kind, line, role} records, REUSING `scanner.classify_symbol` unchanged. A JS twin of examples/sample_app produced an EXACT organ-map match {brain:1, heart:2, immune:2, limbs:2, memory:2, senses:1}; host bytes unchanged (read-only). Finding fed back into Phase 1: name-hints are snake_case-biased, so camelCase is normalized (camelCase->snake) before the neutral classifier runs. See scanner_ts_prototype.py + FINDINGS_multilang_scanner.md."
+    shipped: "RESOLVED to (a) and SHIPPED as `mantle/assimilator/scanner_ts.py` (tree-sitter). `scan_project` routes .js/.mjs/.go/.rs through it when the optional `tree_sitter` stack is installed (`pip install mantle-os[multilang]`), and falls back to Python-only otherwise — no behavior change for existing users. It dissects a non-Python host and emits the same {symbol, kind, line, role} records, REUSING `scanner.classify_symbol` unchanged. A JS twin of examples/sample_app produced an EXACT organ-map match {brain:1, heart:2, immune:2, limbs:2, memory:2, senses:1}; host bytes unchanged (read-only), verified by examples/tests/test_multilang_parity.py. Finding fed back into Phase 1: name-hints are snake_case-biased, so camelCase is normalized (camelCase->snake) before the neutral classifier runs."
 ```
 
 **Cast body:** Run the domain gate first. Preserve Phase 1 determinism. Treat the MIND as bounded and optional. Treat OTHER as evidence only until digested, verified, and re-derived into SELF under Body authority.
+
+---
+
+## NECROMANCY — operational detail (the assimilation manual)
+
+> **Canonical source.** This subsection is the single source of truth for the assimilation /
+> scanning doctrine. It absorbs what was formerly split across `Mantle_Assimilator.md` and
+> `docs/v3/Assimilation_Guide.md` (now stubs that point here). The abstract N0–N11 pipeline in
+> the NECROMANCY spell block above maps onto the concrete phases below; the `code_anchors` block
+> ties both to the real source under `mantle/assimilator/`.
+
+**One substrate, two casts (egg and assimilation are the same thing).** NECROMANCY (assimilate /
+anchor / graft an existing host) and RESURGERE (reconstruct a body from an egg or seed) run on
+the *same* dissection substrate: one scanner (`mantle/assimilator/scanner.py`,
+`classify_symbol` / `scan_project` / `ROLES`), one organ-role model, and one fail-open hook
+runtime (`mantle/assimilator/wrappers.py`). The only difference is provenance of the roles: a
+host is *scanned* to derive roles; an **egg carries pre-classified roles** and is hatched without
+re-scanning (`mantle/vault.py:reconstruct` → `hatchery.incubate`); a **graft seed** re-applies
+the host weave via the same `anchor()`/`scanner_ts` path on reconstruct (see RESURGERE
+`language_inheritance`). There is never a second scanner or a second role table.
+
+### N·0 The prime directive: do no harm
+You are given a living host codebase. You will **not rewrite its behavior** — you grow organs
+around the existing tissue through additive, fail-open instrumentation. The host runs exactly as
+before, plus a nervous system and a memory. Three invariants govern every edit:
+
+1. **Additive only.** Insert hooks; never change control flow or logic. Every inserted line is
+   marked `# MANTLE_HOOK_INSERTED` and recorded in a rewrite ledger.
+2. **Fail-open always.** Every hook degrades and logs to `immune` on fault; it can never crash
+   the host (HF-B32).
+3. **Reversible.** The rewrite ledger lets every inserted hook be located and removed, restoring
+   the original source byte-for-byte.
+
+### N·0a Phase 0 — App Inventory & Organ Map (READ-ONLY, GATED)
+Before a single hook is inserted, produce a complete **App Inventory & Organ Map**: a read-only
+reconnaissance mapping the host's architecture onto the organ taxonomy. Touching host code before
+this artifact exists and is signed is a hard fail (**HF-B42**). Map every architectural surface:
+
+| Host surface | Target organ | Addressing / notes |
+|--------------|--------------|--------------------|
+| UI / editor / frontend | **Senses** (perceive) + **Limbs** (operate) | Human Surface Map + ControlBridge/App-Face Bridge |
+| execution / run engine | **Heart** (pulse) + **Limbs** (effectors) | the host's main run loop |
+| credential / secret store | **Immune** | mark every crossing `secret_boundary=True` |
+| webhook / inbound HTTP routes | **Senses** | sensor intake → classifier |
+| trigger / scheduler / cron nodes | **Senses** + **Heart** | timed reflexes |
+| AI / LLM / LangChain nodes | **Brain** affordance | `MIND_AFFORDANCE`; dormant until Phase 2 |
+| database / persistence layer | **Memory** (+ metabolism) | map stores → bands; flush/compaction/reclaim |
+| CLI / server boot path | **Heart** (boot) + boot verifier | the entry point |
+| worker / queue / job mode | **Limbs** | async limb delegation |
+| frontend / backend boundary | **Senses** (in) + **Limbs** (out) | the I/O membrane |
+| config / environment | **Body** (Special Instructions) + **Immune** | secrets redacted |
+
+**The Phase 0 gate:** the inventory artifact is produced, the surface→organ map is complete, the
+proposed genome (band layout + per-layer purpose/driver/span) is drafted, and a human signs the
+READ-ONLY line. Only then may Phase 5+ insert any hook.
+
+### N·1 The pipeline (17 phases)
+Deterministic, no-LLM. Each phase has an output artifact the Stage-1 audit can inspect. **Phases
+0–4 are read-only; instrumentation begins at Phase 5, only after the Phase-0 gate is signed.**
+
+```
+Phase 0   Inventory & Organ Map  READ-ONLY, GATED — map host surfaces → organs (N·0a)
+Phase 1   Symbol classification  tag every symbol with its organ role (N·2)
+Phase 2   Genome                 synthesize body entries from the host's identity
+Phase 3   Bands                  map host state/data onto reserved + app bands
+Phase 4   Security & boundary    find secret boundaries; mark secret_boundary=True
+Phase 5   Hook runtime           install the fail-open hook functions (N·3)
+Phase 6   References             build the reference resolver over host data
+Phase 7   Interfaces             map the host's public interfaces to organ I/O
+Phase 8   Zombie primitives      ensure heartbeat/persistence work with no host LLM
+Phase 9   Arms                   wrap host actions/effectors as Limbs (with proofs)
+Phase 10  Tiers                  attach metabolism (overflow/compaction/tiering)
+Phase 11  Rebirth                install the (dormant) rebirth path
+Phase 12  Foundry                optional ops (Extensions) — skip unless §0 opts in
+Phase 13  Memory palace          bind host persistence writes to memory bands
+Phase 14  Economics / keyfile    stage the keyfile + model selection (dormant until P2)
+Phase 15  Surface parity         build the Human Surface Map + ControlBridge over the host UI
+Phase 16  MIND readiness         confirm the Body is a certified Zombie; ready for fusion
+```
+
+### N·2 Symbol classification (Phase 1)
+Tag every meaningful host symbol with exactly one organ role. This is the map from existing code
+to the organ taxonomy, and it is the same `ROLES` table the deterministic classifier emits
+(`mantle/assimilator/scanner.py`).
+
+| Role tag | Organ | Meaning |
+|----------|-------|---------|
+| `REFLEX` | Senses | a pure, deterministic reaction — wrap as a Body reflex |
+| `SENSOR_EVENT` | Senses | receives external input — route through intake + classifier |
+| `ARM_ACTION` | Limbs | performs an external action/effect — wrap as a Limb with a proof |
+| `DISPLAY_RENDER` | Limbs | renders human-visible output — bind to the App-Face Bridge |
+| `STATE_TRANSITION` | Memory | mutates app state — mirror into the correct memory band |
+| `PERSISTENCE_WRITE` | Memory | writes durable storage — bind to a memory band (+ metabolism) |
+| `HEARTBEAT` | Heart | the main loop / scheduler / clock |
+| `MIND_AFFORDANCE` | Brain | a judgment point — dormant; becomes a Phase-2 extension |
+| `SECRET_BOUNDARY` | Immune | crosses a credential/secret edge — mark `secret_boundary=True` |
+| `ERROR_DEFENSE` | Immune | validation / error handling / retries |
+| `INTERNAL_UTILITY` | — | pure helper — instrument only if it touches the above |
+| `DEPRECATED` | — | dead code — record in the gap report; never instrument |
+
+Every symbol either has a role or is explicitly `INTERNAL_UTILITY`/`DEPRECATED`. **Language
+note:** only the *parser* is language-bound; this role model is neutral — see `language_agnostic`
+in the spell block (shipped as `mantle/assimilator/scanner_ts.py`).
+
+### N·3 The hook runtime (Phase 5)
+Install these fail-open hooks (`mantle/assimilator/wrappers.py`). Each wraps host behavior
+additively and writes to the cube; each is individually `try/except → degrade + log to immune`.
+
+| Hook | Binds to | Writes |
+|------|----------|--------|
+| `mantle_touch` | any instrumented entry | a lightweight access trace |
+| `mantle_focus` / `mantle_display` | a `DISPLAY_RENDER` | App-Face Bridge focus / declarative render (non-recursive!) |
+| `mantle_sense` | a `SENSOR_EVENT` | a classified `senses` entry |
+| `mantle_state_write` | a `STATE_TRANSITION` | the mirrored memory band entry |
+| `mantle_persistence_write` | a `PERSISTENCE_WRITE` | memory band + tiering hook |
+| `mantle_external_call` | an `ARM_ACTION` | dispatch + Action Execution Proof |
+| `mantle_error` | any | an `immune` error event (never re-raised into host) |
+| `mantle_enter` / `mantle_exit` | a `SECRET_BOUNDARY` | redacted enter/exit (secret stripped) |
+
+**Critical hook invariants:** non-recursive display (HF-B35); fail-open (HF-B32); dual-flush via
+checkpoint + `atexit` (HF-B33); import compatibility, package-relative with sibling fallback
+(HF-B34); a separate, independent fail-open boot verifier (HF-B36).
+
+### N·4 Synthesize the BODY, surface parity, validation, artifacts
+- **Body (Phase 2):** synthesize identity from the host's own — Primer (read-only: name, purpose,
+  entry point, §0 declaration, Commandments), Immunization (invariants found during inventory),
+  Special Instructions (Body-applies), and the lineage index (host = generation 0). Identity
+  lives in the Body store, never the cube (HF-B45).
+- **Surface parity (Phase 15):** walk the host UI/CLI/API; build the Human Surface Map (every
+  human-operable control → id + descriptor in a band); for each, a ControlBridge path + an Action
+  Execution Proof (`attempted/ok/method/ref/reason`); bind rendering to the App-Face Bridge, not
+  raw host mutation (HF-B27). A visible control with no ControlBridge path or proof is HF-B44.
+- **Layered validation:** syntax → import smoke → hook invocation → surface parity → host smoke
+  (the host's original happy path runs unchanged, now with a live cube alongside). Stop and fix
+  at the first failing layer.
+- **Artifacts the Stage-1 audit consumes:** the signed App Inventory & Organ Map; the symbol
+  classification table; the rewrite ledger (every reversible `# MANTLE_HOOK_INSERTED`); the gap
+  report; the Human Surface Map + ControlBridge proofs; the layered-validation results.
+- **Convergence:** with zero open hard-fails, administer Stage-1 (`mantle audit`) and proceed to
+  Phase 2 (MIND) exactly as the from-scratch path does.
+
+### N·5 Assimilation hard-fails (Path B specifics)
+In addition to the shared HF-Bxx list (see the Stage-1 audit):
+
+| Code | Condition |
+|------|-----------|
+| HF-B42 | A host file was modified before the Phase-0 inventory gate was produced & signed |
+| HF-B32 | A hook can crash the host (not fail-open) |
+| HF-B33 | No dual-flush (single point of persistence) |
+| HF-B34 | Import fails as module or as script |
+| HF-B35 | A display hook re-enters its own render path |
+| HF-B36 | Boot verifier is entangled with the host's startup / can crash it |
+| HF-B40 | A host behavior was changed, not merely instrumented (non-additive edit) |
+| HF-B41 | An inserted hook is missing its `# MANTLE_HOOK_INSERTED` marker / ledger entry |
+| HF-B44 | A human-visible control has no ControlBridge path or no proof |
+
+### N·Appendix — App Inventory & Organ Map (copy-and-fill template)
+*Phase-0 artifact (READ-ONLY). Copy this out to a file next to the host (e.g. `APP_INVENTORY.md`),
+fill it in completely **before modifying any host code**, and sign the READ-ONLY line. Producing
+and signing it is the gate that authorizes instrumentation (N·0a); touching host code first is
+**HF-B42**.*
+
+**A.1 Host identity (→ the BODY Primer):** name · purpose (one line) · language(s)/runtime ·
+repo/root path · entry point(s) · boot path (start → ready) · build/run command.
+
+**A.2 §0 Declaration (carry into the Body Primer):**
+```
+TARGET_LANGUAGE      : …
+TARGET_RUNTIME       : …
+TARGET_STORAGE       : where the .vcw cube / organism dir will live
+BODY_MODE            : standard
+VCW_FORMAT           : vcw-cube-png-v2
+KEYFILE_PATH         : (Phase 2 only)
+DEFAULT_MODEL        : (Phase 2 only)
+INTENTIONALLY_OMITTED: organs/surfaces deliberately not instrumented + why
+SYNTAX_CONSTRAINTS   : host-imposed limits
+```
+
+**A.3 Architectural surface → organ map:** one row per surface the host actually has (use the
+N·0a table columns: Host surface · Present? · Location · Target organ · Notes); mark absent ones
+"none".
+
+**A.4 Symbol-role summary (preview of Phase 1):** approximate counts per role (the N·2 table) so
+the scope is visible before instrumentation.
+
+**A.5 Secret boundaries (→ Immune):** boundary · location · secret kind · redaction note (mark
+`secret_boundary=True`).
+
+**A.6 Persistence stores → memory bands:** host store · what it holds · target band
+(facts/events/discoveries/app band) · driver/encoding (log-json / keyvalue / spatial).
+
+**A.7 Proposed cube genome (band layout):** author bands to fit THIS host's data-flow. Defaults:
+identity (head 100), facts (150), events (200, size to event rate), discoveries (250), senses
+(300, size to inbound traffic), immune (400), brain (450), thoughts (500, veiled/private), app
+band (550+). Each declares a `span` and `purpose`; high-churn surfaces get more span + faster
+reclaim.
+
+**A.8 Human Surface Map (preview):** control/affordance · location · ControlBridge feasible? ·
+proof plan (`attempted/ok/method/ref/reason`).
+
+**A.9 Gap report:** deprecated/dead code · unclassifiable symbols · un-instrumentable surfaces
+(and why) · risks/blockers.
+
+**A.11 READ-ONLY sign-off (the Phase-0 gate):**
+```
+APP INVENTORY COMPLETE — NO HOST CODE MODIFIED
+  Host                 : ____________________________
+  Inventory author     : ____________________________
+  Surfaces mapped      : ____ / ____   (all present surfaces have an organ)
+  Proposed genome      : [ ] drafted
+  Secret boundaries    : [ ] all identified
+  Files modified so far: 0   (MUST be 0)
+  Approved to instrument (Phase 1+): [ ]  by ____________  date __________
+
+  >>> Hook insertion (Phase 5+) is authorized ONLY after this line is signed. <<<
+```
+
+---
 
 ### VITALS-CHECKUP [V]
 
@@ -773,6 +991,7 @@ spell_block:
     reconstruct_is_birth: "`reconstruct` rebuilds through the hatchery, so the fresh body faces the SAME Stage-1 gate; a tampered seed cannot smuggle an uncertified body into the world"
     self_redesign: "mantle/compiler.py (M5): at a chosen rebirth the MIND PROPOSES a new genome; the BODY VALIDATES (encoding must be a registered driver, heads in range, no collisions) before rebirthing; the ancestor stays the readable ORACLE; inherited microcode RE-TRIALS before it re-calcifies"
     language_inheritance: "a seed that is a GRAFT (a diff against a host) re-applies the host weave on reconstruct, so RESURGERE inherits NECROMANCY's language-agnostic dissection (the same `scanner_ts` path). A seed that is a whole EGG carries its own TARGET_LANGUAGE and needs no host parser. Either way the rebuilt body faces the same Stage-1 gate."
+    shared_substrate: "egg and assimilation are the SAME substrate — one scanner, one ROLES table, one wrappers.py. RESURGERE never re-implements dissection; the egg carries pre-classified roles (vault.reconstruct -> hatchery.incubate) and a graft re-runs anchor()/scanner_ts. See NECROMANCY 'operational detail' subsection ('One substrate, two casts')."
 ```
 
 **Cast body:** Run the domain gate first. Preserve Phase 1 determinism. Treat the MIND as bounded and optional. Treat OTHER as evidence only until digested, verified, and re-derived into SELF under Body authority.
