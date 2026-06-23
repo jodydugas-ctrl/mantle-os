@@ -16,6 +16,11 @@ keywords = ["ai", "framework", "llm", "agents", "organic-coding", "vcw", "mantle
 authors = [{ name = "jodydugas-ctrl" }]
 dependencies = []
 
+[project.optional-dependencies]
+# Multi-language assimilator dissection (NECROMANCY language_agnostic path): without this,
+# `mantle.assimilator.scan_project` dissects Python only -- no behavior change for existing users.
+multilang = ["tree_sitter==0.21.3", "tree_sitter_languages==1.10.2"]
+
 [project.urls]
 Homepage = "https://github.com/jodydugas-ctrl/mantle-os"
 Repository = "https://github.com/jodydugas-ctrl/mantle-os"
