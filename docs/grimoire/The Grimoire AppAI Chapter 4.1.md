@@ -3,7 +3,7 @@
 ## Companion to the Grimoire (the chapter)
 
 **Version:** 4.1 (Unified Edition)  
-**File:** `GRIMOIRE_APPAI_DOMAIN_v1_1.md`  
+**File:** `The Grimoire AppAI Chapter 4.1.md`  
 **Audience:** LLM agents, AppAI builders, Mantle-style runtimes, and agent orchestrators.  
 **Purpose:** Domain-specific spells for AppAI work: birth, assimilation, residency, memory, limbs, diagnostics, metabolism, controlled reconstruction, and retirement.
 
@@ -11,7 +11,7 @@
 
 ## PREREQUISITE & EXTENSION RULE
 
-This file extends the Core Grimoire (Version 4.1, `THE_GRIMOIRE_CORE_v3_2.md`). Load the Core first. This project is exactly two files: the Grimoire (book) and this AppAI Chapter.
+This file extends the Core Grimoire (Version 4.1, `The Grimoire 4.1.md`). Load the Core first. This project is exactly two files: the Grimoire (book) and this AppAI Chapter.
 
 **Version lock:** the Grimoire and the AppAI Chapter are version-locked — they always carry the same version number. Advancing either advances both; a version bump to one re-stamps the other to match in the same pass, even if its content did not otherwise change. The Core's `CONCORD` spell performs and verifies this lock. Current version: **4.1**.
 
