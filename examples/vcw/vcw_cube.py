@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-vcw_cube.py  --  the VCW Cube, standalone and fully defined  (Mantle OS v3)
+vcw_cube.py  --  the VCW Cube, standalone and fully defined  (Mantle OS)
 
 THIS FILE IS THE NORMATIVE, RUNNABLE DEFINITION OF THE VCW CUBE FORMAT.
 It is pure standard library (json, zlib, struct, zipfile, hashlib, os, time), imports

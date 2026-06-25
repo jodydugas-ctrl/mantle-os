@@ -32,3 +32,8 @@ package-lock.json
 playwright-report/
 test-results/
 
+
+# Python build / editable-install artifacts
+*.egg-info/
+build/
+dist/

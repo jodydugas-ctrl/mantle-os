@@ -30,15 +30,19 @@ Mantle has a small number of load-bearing principles. Changes should respect the
 
 ## Before you open a pull request
 
-- Run the substrate audit and invariants from the `examples/vcw/` directory:
+- Install the package editable (it lives under `src/`, src-layout) so `mantle` is importable,
+  then run the gates:
 
   ```bash
-  cd vcw
-  python audit.py
-  python test_invariants.py
+  pip install -e .            # or: export PYTHONPATH=src
+  python -m mantle audit      # the Stage-1 Zombie Body gate
+  python -m mantle prove      # the 73 security invariants
   ```
 
-- Make sure `python audit.py` still reports the **Stage 1 gate passed** (no open hard-fails).
+  The standalone cube codec proves itself too: `python examples/vcw/vcw_cube.py selftest`
+  and `python examples/vcw/interop.py`.
+
+- Make sure `python -m mantle audit` still reports the **Stage 1 gate passed** (no open hard-fails).
 - Keep Phase 1 brain-free: Phase-1 organs must not depend on an LLM to function.
 
 ## Style

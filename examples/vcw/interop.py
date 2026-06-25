@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 interop.py  --  proof that the standalone codec and the production engine speak the
-                SAME bytes (Mantle OS v3)
+                SAME bytes (Mantle OS)
 
 Direction A: the ENGINE (mantle/vcw/cube.py) saves a cube; this directory's standalone
 `vcw_cube.py` loads it, verifies every hash, reads through the veil, APPENDS to it, and

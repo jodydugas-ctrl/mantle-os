@@ -1,0 +1,44 @@
+name: Demo Smoke (headless browser)
+
+# The single-file HTML reference demos (examples/*.html) run a whole organism in the browser.
+# The Python substrate is certified by the Zombie Body Audit workflow; this one gives the demos
+# their own runtime regression cover: each must mount, expose its engine, and PASS its in-browser
+# self-audit / Genome+resolver checks. (Loads React/Babel from the unpkg CDN, so it needs network.)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  demo-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Playwright (chromium only)
+        working-directory: examples/tests
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Serve examples/ (static)
+        run: |
+          python -m http.server 8765 --directory examples &
+          # wait for the server to answer before launching the browser
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8765/Mantle_Spreadsheet_Agent.html -o /dev/null; then break; fi
+            sleep 0.5
+          done
+
+      - name: Smoke-test both demos (mount + self-audit)
+        working-directory: examples/tests
+        env:
+          BASE_URL: http://localhost:8765
+        run: node demo_smoke.mjs

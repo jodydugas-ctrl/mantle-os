@@ -1,9 +1,9 @@
-# The VCW Substrate — Teaching Guide (Mantle OS v3)
+# The VCW Substrate — Teaching Guide (Mantle OS)
 
 *One sitting, concepts → bytes → code. The normative companion is
 [`vcw_cube.py`](vcw_cube.py) in this directory — a standalone, pure-stdlib implementation
 whose docstring defines the format field by field. The production engine is
-[`mantle/vcw/`](../../mantle/vcw/). When prose and code disagree, the code is ground truth.*
+[`src/mantle/vcw/`](../../src/mantle/vcw/). When prose and code disagree, the code is ground truth.*
 
 ---
 
@@ -102,8 +102,8 @@ own reflexes.
 
 Everything above is substrate. The organism around it — the eight contracted organs, the
 SignalBus, the heartbeat, the gates, the bounded MIND, the assimilator — lives in
-[`mantle/`](../../mantle/) and is documented in [`docs/v3/`](../../docs/v3/). Start with
+[`src/mantle/`](../../src/mantle/) and is documented in [`documents/guides/`](../../documents/guides/). Start with
 `python -m mantle demo`, then `python -m mantle audit`.
 
 The promise this guide can make, because CI enforces it: **what `vcw_cube.py` defines,
-`mantle/vcw/` implements, byte for byte** (`python interop.py`).
+`src/mantle/vcw/` implements, byte for byte** (`python interop.py`).

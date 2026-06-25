@@ -1,0 +1,151 @@
+import assert from "node:assert/strict";
+import { pathToFileURL } from "node:url";
+
+const BASE = process.env.BASE_URL || "http://localhost:8765";
+const PLAYWRIGHT_IMPORT = process.env.PLAYWRIGHT_MODULE_PATH
+  ? pathToFileURL(process.env.PLAYWRIGHT_MODULE_PATH).href
+  : "playwright";
+const { chromium } = await import(PLAYWRIGHT_IMPORT);
+
+function isExternal(url) {
+  const parsed = new URL(url);
+  return !["localhost", "127.0.0.1", "::1"].includes(parsed.hostname);
+}
+
+async function waitForBody(page) {
+  await page.goto(`${BASE}/notepad_appai/?cb=${Date.now()}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000
+  });
+  await page.waitForFunction(() => Boolean(window.NotepadAppAI), { timeout: 10000 });
+  await page.evaluate(() => {
+    localStorage.setItem("mantle.notepad.ledger.v1", JSON.stringify([
+      { id: "legacy-1", timestamp: "2026-06-25T00:00:00.000Z", type: "buffer_changed", detail: { chars: 1 } },
+      { id: "legacy-2", timestamp: "2026-06-25T00:00:01.000Z", type: "buffer_changed", detail: { chars: 2 } }
+    ]));
+  });
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.waitForFunction(() => Boolean(window.NotepadAppAI), { timeout: 10000 });
+}
+
+async function runChecks(page) {
+  const failures = await page.evaluate(async () => {
+    const fails = [];
+    const body = window.NotepadAppAI;
+    const editor = document.getElementById("editor");
+    const selection = () => editor.value.slice(editor.selectionStart, editor.selectionEnd);
+    const expect = (condition, message) => { if (!condition) fails.push(message); };
+
+    try {
+      const declaration = body.readDeclaration();
+      const organMap = body.readOrganMap();
+      const parity = body.readParityMatrix();
+      expect(declaration.default_model === "none in Phase 1", "AppAI declaration does not disable models");
+      expect(organMap.organs && organMap.organs.Brain && /dormant/i.test(organMap.organs.Brain.join(" ")), "Organ map lacks dormant Brain");
+      expect(parity.length >= 10 && parity.every((row) => row.status === "PASS"), "Parity matrix is incomplete or not green");
+      expect(body.phase1NoModelCalls() === true, "Phase-1 no-model policy missing");
+      expect(body.brainStatus().mind === "dormant" && body.brainStatus().mayMutate === false, "Brain affordance is not dormant");
+      expect(!body.getLedger().some((entry) => entry.type === "buffer_changed"), "Legacy buffer_changed rows survived ledger migration");
+      expect(body.getLedger().some((entry) => entry.type === "ledger_migration" && entry.detail.count === 2), "Legacy ledger migration summary missing");
+
+      body.setText("", "typing.txt", true);
+      const beforeTyping = body.getLedger().length;
+      editor.focus();
+      for (const value of ["a", "ab", "abc"]) {
+        editor.value = value;
+        editor.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      const duringTyping = body.getLedger().slice(beforeTyping);
+      expect(!duringTyping.some((entry) => entry.type === "buffer_changed" || entry.type === "buffer_committed"), "Focused typing wrote noisy buffer ledger entries");
+      editor.blur();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const afterBlur = body.getLedger().slice(beforeTyping);
+      const blurCommits = afterBlur.filter((entry) => entry.type === "buffer_committed");
+      expect(!afterBlur.some((entry) => entry.type === "buffer_changed"), "Legacy per-keystroke buffer_changed entries still exist");
+      expect(blurCommits.length === 1 && blurCommits[0].detail.chars === 3 && blurCommits[0].detail.reason === "editor_blur", "Editor blur did not write one clean buffer commit");
+
+      body.setText("draft text", "draft.txt", false);
+      expect(body.isDirty() === true, "edit buffer did not become dirty");
+      body.setConfirmAdapter(() => false);
+      expect(await body.newFile() === false, "New ignored a rejected unsaved-change prompt");
+      expect(editor.value === "draft text", "Rejected New changed the buffer");
+      body.setConfirmAdapter(() => true);
+      expect(await body.newFile() === true, "New did not proceed after accepted unsaved-change prompt");
+      expect(editor.value === "" && body.isDirty() === false, "New did not clear and save-clean the buffer");
+
+      const file = new File(["alpha beta\nalpha beta"], "sample.txt", { type: "text/plain" });
+      expect(await body.loadTextFile(file) === true, "Open failed for a valid text File");
+      expect(editor.value === "alpha beta\nalpha beta", "Open did not load exact text");
+      expect(body.isDirty() === false, "Open did not mark loaded text clean");
+
+      expect(body.findNext("beta", { matchCase: true }) === true, "Find Next failed");
+      expect(selection() === "beta", "Find Next did not select the match");
+      expect(body.replaceCurrent("beta", "BETA", { matchCase: true }) === true, "Replace current failed");
+      expect(editor.value.startsWith("alpha BETA"), "Replace current changed the wrong text");
+      expect(body.replaceAll("alpha", "ALPHA", { matchCase: true }) === 2, "Replace All count was wrong");
+      expect(editor.value === "ALPHA BETA\nALPHA beta", "Replace All produced unexpected buffer");
+
+      const lineTwoPos = body.goToLine(2);
+      expect(lineTwoPos === editor.value.indexOf("\n") + 1, "Go To line placed caret incorrectly");
+      expect(body.toggleWordWrap(true) === true, "Word Wrap did not toggle on");
+      expect(editor.classList.contains("word-wrap"), "Word Wrap class missing");
+
+      const writes = [];
+      body.setSaveAdapter(async ({ mode, text, fileName }) => {
+        writes.push({ mode, text, fileName });
+        if (mode === "saveAs") return { fileName: "saved-as.txt" };
+        return { fileName: fileName || "sample.txt" };
+      });
+
+      body.setText("saved\nbody", "sample.txt", false);
+      expect(await body.saveFile() === true, "Save failed through Body/Limb adapter");
+      expect(writes.at(-1).mode === "save" && writes.at(-1).text === "saved\nbody", "Save wrote unexpected payload");
+      expect(body.isDirty() === false, "Save did not mark buffer clean");
+
+      body.setText("save as body", "sample.txt", false);
+      expect(await body.saveAsFile() === true, "Save As failed through Body/Limb adapter");
+      expect(writes.at(-1).mode === "saveAs" && writes.at(-1).fileName === "sample.txt", "Save As call was malformed");
+      expect(document.getElementById("titleText").textContent.includes("saved-as.txt"), "Save As did not update document name");
+
+      const badFile = { name: "locked.txt", size: 3, text: async () => { throw new Error("locked file"); } };
+      expect(await body.loadTextFile(badFile) === false, "Bad/locked file did not fail gracefully");
+      expect(body.getLedger().some((entry) => entry.type === "immune_event"), "Immune event missing for bad file");
+
+      const proofs = body.getProofs();
+      expect(proofs.some((p) => p.ok && p.method.includes("save")), "Save proof missing");
+      expect(proofs.some((p) => p.ok && p.method.includes("save-as")), "Save As proof missing");
+      expect(proofs.some((p) => p.ok && p.method === "File.text"), "Open proof missing");
+      expect(proofs.some((p) => !p.ok && p.method === "File.text"), "Failed open proof missing");
+    } catch (err) {
+      fails.push(`threw: ${err.message}`);
+    }
+    return fails;
+  });
+  assert.deepEqual(failures, []);
+}
+
+(async () => {
+  const browser = await chromium.launch(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {});
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const consoleErrors = [];
+  const externalRequests = [];
+  page.on("console", (msg) => { if (msg.type() === "error") consoleErrors.push(msg.text()); });
+  page.on("pageerror", (err) => consoleErrors.push(err.message));
+  page.on("request", (request) => {
+    if (isExternal(request.url())) externalRequests.push(request.url());
+  });
+
+  try {
+    await waitForBody(page);
+    await runChecks(page);
+    await page.screenshot({ path: "../notepad_appai/stage1-screenshot.png", fullPage: true });
+  } finally {
+    await browser.close();
+  }
+
+  assert.deepEqual(consoleErrors, []);
+  assert.deepEqual(externalRequests, []);
+  console.log("✓ Mantle Notepad AppAI: launch/edit/open/save/find/replace/wrap/errors/AppAI gates passed");
+  console.log("✓ Phase-1 evidence: no external network requests observed");
+  console.log("✓ Screenshot: examples/notepad_appai/stage1-screenshot.png");
+})();

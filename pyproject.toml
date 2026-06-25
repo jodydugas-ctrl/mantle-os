@@ -1,14 +1,21 @@
 # Mantle OS — project metadata.
 #
-# The core substrate (examples/vcw/) is intentionally PURE STANDARD LIBRARY: there are no runtime
-# dependencies to install. This file exists to declare the project, pin a Python floor, and give
-# tools a single place to read metadata from. It does not turn the demo into a pip-installable
-# package (the modules are meant to be read and run in place, as the framework intends).
+# The framework is PURE STANDARD LIBRARY: there are no runtime dependencies (the optional
+# `multilang` extra only adds tree-sitter for multi-language dissection). The package lives
+# under src/ (src-layout); install it editable to run in place:
+#
+#     pip install -e .          # then: python -m mantle teach
+#
+# (or set PYTHONPATH=src). The on-disk VCW format and every gate are unchanged.
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "mantle-os"
-version = "4.5.0"
-description = "Mantle OS (Gen-4): the Homeostatic AppAI Framework — grow software like a living organism, then give it a mind. Reproduction, symbiosis, and self-evolution on the certified Body."
+version = "1.0.0"
+description = "Mantle OS: the Homeostatic AppAI Framework — grow software like a living organism, then give it a mind. Reproduction, symbiosis, and self-evolution on the certified Body."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.8"
@@ -24,3 +31,6 @@ multilang = ["tree_sitter==0.21.3", "tree_sitter_languages==1.10.2"]
 [project.urls]
 Homepage = "https://github.com/jodydugas-ctrl/mantle-os"
 Repository = "https://github.com/jodydugas-ctrl/mantle-os"
+
+[tool.setuptools.packages.find]
+where = ["src"]

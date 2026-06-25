@@ -2,7 +2,7 @@
 
 **An organic coding framework — grow software like a living organism, then give it a mind.**
 
-> Mantle OS · Gen-4 · The Homeostatic AppAI Framework, evolved (reproduction · symbiosis · self-evolution).
+> Mantle OS · The Homeostatic AppAI Framework (reproduction · symbiosis · self-evolution).
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
@@ -10,12 +10,12 @@
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
 > **New here, or skeptical of the biology metaphor?** Start with
-> [`docs/Mantle_Positioning.md`](docs/Mantle_Positioning.md) — a plain-language summary and an honest
+> [`documents/Mantle_Positioning.md`](documents/Mantle_Positioning.md) — a plain-language summary and an honest
 > list of limitations. *(Non-normative.)*
 
 > **Before you build, assimilate, or operate an AppAI, read the Grimoire first.** It is the
 > doctrine the entire framework follows — the foundational literature, not an appendix. Start in
-> [`docs/grimoire/`](docs/grimoire/README.md): the **Core Spellbook** is required first reading;
+> [`documents/grimoire/`](documents/grimoire/README.md): the **Core Spellbook** is required first reading;
 > the **AppAI Chapter** extends it. *(Normative.)*
 
 Mantle OS is a framework for **organic coding**. Instead of writing a "program" with a
@@ -24,27 +24,25 @@ Mantle OS is a framework for **organic coding**. Instead of writing a "program" 
 durable memory substrate; the Body is proven alive and correct *with no AI attached*; only
 then is a **MIND** (an LLM) fused — and it may only ever *extend* what already lives.
 
-**v3 ("homeostatic")**: the organism now regulates itself. Capacity pressure triggers
-**metabolism** — compaction, deduplication, layer reuse — never a lossy reset. Every organ
-carries an enforced contract. Every failure becomes an immune event. Every generation of
-memory seals with a tamper-evident fingerprint.
+**Homeostatic.** The organism regulates itself. Capacity pressure triggers **metabolism** —
+compaction, deduplication, layer reuse — never a lossy reset. Every organ carries an enforced
+contract. Every failure becomes an immune event. Every generation of memory seals with a
+tamper-evident fingerprint.
 
-**Gen-4** adds the reproductive, symbiotic, and self-evolving tissue on the same skeleton: a
-whole AppAI declared as one **egg**, **residency** in a host codebase with a metered energy
+Beyond the certified Body, an AppAI carries reproductive, symbiotic, and self-evolving tissue:
+a whole AppAI declared as one **egg**, **residency** in a host codebase with a metered energy
 economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
 keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, a
 self-reconstruction **seed vault**, and **wearable app-faces** (one organism expresses many
-SELF-encrypted front-ends as interchangeable phenotypes) — every one gated (36 → **73
-invariants**). See the section
-*The Gen-4 generation* below, the runnable [`FIELD_GUIDE.md`](FIELD_GUIDE.md), and
-[`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md).
+SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **73
+invariants**. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
 
 ---
 
 ## Mantle OS is not a Python framework
 
 It is easy to assume Mantle OS is "for Python" — the reference implementation in
-[`mantle/`](mantle/) is Python and every example on this page is written that way. **That is an
+[`src/mantle/`](src/mantle/) is Python and every example on this page is written that way. **That is an
 artifact of the examples, not the framework.** Mantle OS does not care which AI, which container,
 or which programming language you bring.
 
@@ -78,6 +76,10 @@ grown *around* what already lives in the host, without demanding the host be rew
 ## Quick start
 
 ```bash
+# one-time setup — the package lives under src/ (src-layout), so install it editable
+# (pure standard library; this just puts `mantle` on the import path). Or: export PYTHONPATH=src
+pip install -e .
+
 # Phase 1 — a Body lives (not one model call anywhere on this path)
 python -m mantle demo          # narrated life: born -> senses -> reflex -> remembers ->
                                #   protects -> acts -> calcifies -> metabolizes ->
@@ -102,20 +104,18 @@ python examples/vcw/vcw_cube.py selftest      # every format rule proven in one 
 python examples/vcw/interop.py                # standalone <-> engine: identical bytes
 ```
 
-### The Gen-4 generation (inherited from the Argonaut line)
+### Reproduction, symbiosis, and self-evolution
 
-The framework now carries the reproductive, symbiotic, and self-evolving tissue grown on the
-Argonaut branch — declarative birth, residency, knowledge-sharing, self-redesign, and
-self-reconstruction, and wearable faces — all gated the same way (73 invariants, no standing
-law weakened). The
-runnable manual `FIELD_GUIDE.md` walks every one; [`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md)
-records the inheritance.
+Beyond the certified Body, the framework carries reproductive, symbiotic, and self-evolving
+tissue — declarative birth, residency, knowledge-sharing, self-redesign, self-reconstruction,
+and wearable faces — all gated the same way (73 invariants, no standing law weakened). The
+runnable manual [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
 
 ```bash
 python -m mantle teach                         # the Field Guide, RUNNING — 18 chapters, each proven
-python -m mantle hatch eggs/greeter.json --out=nest/   # a whole AppAI from one JSON egg, certified
+python -m mantle hatch examples/eggs/greeter.json --out=nest/   # a whole AppAI from one JSON egg, certified
 python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
-python -m mantle graft eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
+python -m mantle graft examples/eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
 python -m mantle doctor nest/                   # deployment checkup (incl. docs-vs-code coherence)
 ```
 
@@ -123,7 +123,7 @@ New abilities, by module: `egg`/`hatchery` (declarative birth) · `anchor`/`symb
 + energy economy) · `graft` (patch-grafts + live residency) · `mem` (keyless knowledge plasmids) ·
 `compiler` (self-redesigning VCW + host memory bridge) · `ganglia` (parallel limbs) · `vault`
 (self-reconstruction) · `ingestion`/`doctor` (resilience) · `face` (self-portrait) · `teach`
-(the living manual). Self/Other identity and event-gated nociception harden the inherited organs.
+(the living manual). Self/Other identity and event-gated nociception harden the eight organs.
 
 Pure standard library. No dependencies, no network, no keys — for any of the above.
 
@@ -183,43 +183,44 @@ every Stage-1 row to prove it.
 ## Repository layout
 
 ```
-mantle/                  the framework (start here)
-  core/                  Body (+ the genesis key), SignalBus, references, redaction, the Organism
-  vcw/                   the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
-  organs/                the eight organs, each with an enforced contract (self/other + nociception)
-  mind/                  Phase 2 only: transports, containment, the MIND, AppAIRuntime
-  assimilator/ audits/   Path B dissection + the gates (Stage 1, Stage 2, the 73 invariants)
-  egg.py hatchery.py     Gen-4: declarative birth — a whole AppAI as one JSON file
-  anchor.py symbiosis.py Gen-4: residency in a host + the metered energy economy
-  graft.py               Gen-4: the graft egg (patch a host) + live residency weaving
-  mem.py compiler.py     Gen-4: keyless knowledge plasmids + the self-redesigning VCW / memory bridge
-  ganglia.py vault.py    Gen-4: parallel limbs + the self-reconstruction seed vault
-  ingestion.py doctor.py Gen-4: conversation ingestion + the deployment checkup
-  phenotype.py           Gen-4: wearable, SELF-encrypted app-faces (one body, many front-ends)
-  face.py teach.py       the PNG self-portrait + the running Field Guide
-FIELD_GUIDE.md           the runnable manual (mirror of `python -m mantle teach`, 18 chapters)
-eggs/                    greeter.json (hatch it) · notes_graft.json (a graft egg)
-docs/
-  MOLT_LEDGER.md         the Gen-4 evolution record: every molt, its invariants, format verdict
+src/                     the framework package — `pip install -e .` (or PYTHONPATH=src) to run
+  mantle/                (start here)
+    core/                Body (+ the genesis key), SignalBus, references, redaction, the Organism
+    vcw/                 the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
+    organs/              the eight organs, each with an enforced contract (self/other + nociception)
+    mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
+    assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, the 73 invariants)
+    egg.py hatchery.py   declarative birth — a whole AppAI as one JSON file
+    anchor.py symbiosis.py residency in a host + the metered energy economy
+    graft.py             the graft egg (patch a host) + live residency weaving
+    mem.py compiler.py   keyless knowledge plasmids + the self-redesigning VCW / memory bridge
+    ganglia.py vault.py  parallel limbs + the self-reconstruction seed vault
+    ingestion.py doctor.py conversation ingestion + the deployment checkup
+    phenotype.py         wearable, SELF-encrypted app-faces (one body, many front-ends)
+    face.py teach.py     the PNG self-portrait + the running Field Guide
+    paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
+documents/               the books and the living doctrine
   grimoire/              the two version-locked Grimoire files: Core + AppAI chapter
-  Mantle_v3_Architecture.md · Mantle_v3_Migration.md · v3/ (VCW · lifecycle · contracts · audit · visual)
-  assets/                diagrams (SVG, agent-readable) + rendered art
+  FIELD_GUIDE.md         the runnable manual (mirror of `python -m mantle teach`, 18 chapters)
+  Mantle_Architecture.md · guides/ (VCW · lifecycle · contracts · audit · visual)
   Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
-examples/
+  assets/                diagrams (SVG, agent-readable) + rendered art
+examples/                example AppAIs + the normative substrate
+  eggs/                  greeter.json (hatch it) · calculator.json · notes_graft.json (a graft egg)
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
-  *.html / *.yaml        Gen-4 reference demos (the two HTML apps functionally implement the
+  *.html / *.yaml        reference demos (the two HTML apps functionally implement the
                          organ behaviors and are browser-tested) — see examples/README.md
   tests/                 headless smoke tests for the HTML demos (Playwright; CI: Demo Smoke)
 ```
 
-Reading order: [`docs/Mantle_Doctrine.md`](docs/Mantle_Doctrine.md) →
-[`docs/Mantle_Organism_Lens.md`](docs/Mantle_Organism_Lens.md) →
-[`docs/Mantle_v3_Architecture.md`](docs/Mantle_v3_Architecture.md) →
-[`docs/v3/Organism_Lifecycle.md`](docs/v3/Organism_Lifecycle.md) → the code.
-Prefer pictures? [`docs/v3/Visual_Guide.md`](docs/v3/Visual_Guide.md).
+Reading order: [`documents/Mantle_Doctrine.md`](documents/Mantle_Doctrine.md) →
+[`documents/Mantle_Organism_Lens.md`](documents/Mantle_Organism_Lens.md) →
+[`documents/Mantle_Architecture.md`](documents/Mantle_Architecture.md) →
+[`documents/guides/Organism_Lifecycle.md`](documents/guides/Organism_Lifecycle.md) → the code.
+Prefer pictures? [`documents/guides/Visual_Guide.md`](documents/guides/Visual_Guide.md).
 The underlying doctrine (the agent-facing spellbook the design follows) lives in
-[`docs/grimoire/`](docs/grimoire/README.md).
-When prose and code disagree, **the working code in `mantle/` is ground truth** (and
+[`documents/grimoire/`](documents/grimoire/README.md).
+When prose and code disagree, **the working code in `src/mantle/` is ground truth** (and
 `examples/vcw/vcw_cube.py` is the standalone, normative definition of the cube format).
 
 ## Design principles (binding)
@@ -232,12 +233,12 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
 ## Two build paths
 
 - **Path A — grow from scratch.** `Mantle_Part1_Body.md`, then the Stage-1 gate, then
-  Phase 2. The `mantle/` package is the runnable skeleton.
+  Phase 2. The `src/mantle/` package is the runnable skeleton.
 - **Path B — assimilate existing code** (any language, including apps that already have agents).
   Canonical doctrine:
-  [`docs/grimoire/The Grimoire AppAI Chapter 4.4.md`](docs/grimoire/The%20Grimoire%20AppAI%20Chapter%204.4.md)
+  [`documents/grimoire/The Grimoire AppAI Chapter 4.4.md`](documents/grimoire/The%20Grimoire%20AppAI%20Chapter%204.4.md)
   (NECROMANCY — operational detail); runnable cheatsheet:
-  [`docs/v3/Assimilation_Guide.md`](docs/v3/Assimilation_Guide.md). Dissect read-only, map organs,
+  [`documents/guides/Assimilation_Guide.md`](documents/guides/Assimilation_Guide.md). Dissect read-only, map organs,
   sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same
   MIND fusion.
 

@@ -1,8 +1,8 @@
 name: Zombie Body Audit
 
-# "Everything is provable" — so prove it on every commit. Gen-4: the Stage-1 gate, the 73
-# security invariants, the Stage-2 gate, three tamper proofs, both narrated demos, and the
-# assimilation dry-run. Plus the back-compat reference suite, unchanged. Pure standard library.
+# "Everything is provable" — so prove it on every commit: the Stage-1 gate, the 73 security
+# invariants, the Stage-2 gate, three tamper proofs, both narrated demos, the assimilation
+# dry-run, and the standalone cube codec. Pure standard library.
 
 on:
   push:
@@ -17,6 +17,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+
+      - name: Install Mantle (editable, src-layout)
+        run: pip install -e .
 
       - name: Stage-1 Zombie Body gate
         run: python -m mantle audit
@@ -48,18 +51,12 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Install Mantle (editable, src-layout)
+        run: pip install -e .
+
       - name: The standalone cube codec proves every format rule
         working-directory: examples/vcw
         run: python vcw_cube.py selftest
 
       - name: One format, two faithful implementations (standalone <-> engine)
         run: python examples/vcw/interop.py
-
-      - name: Back-compat shims still drive the gates (v2.3 commands keep working)
-        working-directory: examples/vcw
-        run: |
-          python audit.py --fast
-          python test_invariants.py
-          python audit_mind.py --fast
-          python examples_boot.py
-          python examples_mind.py

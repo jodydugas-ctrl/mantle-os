@@ -6,7 +6,7 @@ is the **normative, runnable definition of the cube format** — how a cube is b
 is read and appended, how the veil works, how entries are hashed, how a generation seals,
 and how persistence stays atomic. It imports nothing from the `mantle` package, and the
 bytes it writes are identical to the production engine's
-([`mantle/vcw/cube.py`](../../mantle/vcw/cube.py)) — [`interop.py`](interop.py) proves
+([`src/mantle/vcw/cube.py`](../../src/mantle/vcw/cube.py)) — [`interop.py`](interop.py) proves
 both directions on every CI run.
 
 ```bash
@@ -38,11 +38,7 @@ python bench.py
 | `interop.py` | proof the standalone and the engine speak the same bytes |
 | `GUIDE.md` | the substrate teaching guide (concepts → code) |
 | `bench.py` | tiny timing harness for the standalone codec |
-| `audit.py` / `audit_mind.py` / `test_invariants.py` | back-compat shims → `mantle/audits/` (the v2.3 commands keep working from here) |
-| `examples_boot.py` / `examples_mind.py` | back-compat shims → `python -m mantle demo` / `mind` |
-| `__main__.py` | `python -m vcw …` → forwards to `python -m mantle …` |
 
-The v2.3 implementation that used to live here (lineage.py, drivers.py, organs/, mind.py,
-…) grew up into the [`mantle/`](../../mantle/) package — see
-[`docs/Mantle_v3_Migration.md`](../../docs/Mantle_v3_Migration.md) for the exact map.
-Old history is always one `git log` away.
+The full engine lives in [`src/mantle/vcw/`](../../src/mantle/vcw/); this directory keeps the
+standalone, normative definition of the cube format and proves it matches the engine
+byte-for-byte (`interop.py`).

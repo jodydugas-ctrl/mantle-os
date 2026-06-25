@@ -37,7 +37,7 @@ def main():
     _say("=" * 70)
 
     # 1. hatch -- born wearing the origin face
-    egg = _egg.load(os.path.join(ROOT, "eggs", "calculator.json"))
+    egg = _egg.load(os.path.join(HERE, "eggs", "calculator.json"))
     org = incubate(egg)["organism"]
     _say("\n1. hatched %s -- certified=%s" % (org.body.identity_name(), org.stage1_certified))
     _say("   it is BORN wearing its origin face; faces in its VCW: %s"
