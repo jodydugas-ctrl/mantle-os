@@ -1,9 +1,9 @@
-# THE GRIMOIRE 4.1
+# THE GRIMOIRE 4.3
 
 ## Core Spellbook for LLM Agents (the book)
 
-**Version:** 4.1 (Unified Edition)  
-**File:** `The Grimoire 4.1.md`  
+**Version:** 4.3 (Unified Edition)  
+**File:** `The Grimoire 4.3.md`  
 **Audience:** LLM agents, agent runtimes, and orchestrators.  
 **Purpose:** Universal engineering spells for any codebase, document, system, or technical artifact.
 
@@ -13,7 +13,7 @@
 
 This Core is standalone. Use it for general software engineering, documentation, analysis, review, debugging, security, operations, product evaluation, and technical prose.
 
-If the task is explicitly about AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ maps, SELF/OTHER, MIND fusion, or assimilation, load the companion file `The Grimoire AppAI Chapter 4.1.md` in addition to this Core. If the companion is absent, perform only read-only comprehension using `Intellige` and stop before mutation.
+If the task is explicitly about AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ maps, SELF/OTHER, MIND fusion, or assimilation, load the companion file `The Grimoire AppAI Chapter 4.3.md` in addition to this Core. If the companion is absent, perform only read-only comprehension using `Intellige` and stop before mutation.
 
 Do not import domain-specific doctrine into the Core. The Core carries general spells only.
 
@@ -21,11 +21,11 @@ Do not import domain-specific doctrine into the Core. The Core carries general s
 
 ## VERSION LOCK RULE
 
-This project is exactly **two files** and no others: **the Grimoire** (this Core — the "book") and **the AppAI Chapter** (the companion, `The Grimoire AppAI Chapter 4.1.md`). There are no other editions, versions, or copies; any that appear are stale and should be removed.
+This project is exactly **two files** and no others: **the Grimoire** (this Core — the "book") and **the AppAI Chapter** (the companion, `The Grimoire AppAI Chapter 4.3.md`). There are no other editions, versions, or copies; any that appear are stale and should be removed.
 
 The two files are **version-locked**: they always carry the same version number. Advancing either advances both. Any change that bumps one file's version requires the other to be re-stamped to the same version in the same pass, even if its own content did not otherwise change. The `CONCORD` spell (Concordia macro) performs and verifies this lock.
 
-Current version: **4.1**.
+Current version: **4.3**.
 
 ---
 
@@ -56,6 +56,10 @@ The agent must translate the invocation into the dispatch loop. A macro is a sho
 - **Bindings** are constraints attached to a cast.
 
 Macros may shorten language. They may not weaken wards, receipts, evidence requirements, operator authority, or stop conditions.
+
+### Naming Clarity Rule
+
+Human-facing macros use Latin names in Title Case. Spell identifiers use descriptive uppercase names. Do not create two human-invokable commands whose names are identical, near-identical, or domain-prefixed variants of each other. If a domain needs specialized behavior, attach it as an overlay to the existing macro or choose a clearly different Latin macro name. This prevents command-surface ambiguity for humans.
 
 ---
 
@@ -95,7 +99,7 @@ This rule never weakens wards. `Intellige` is read-only and confers no authority
 ## §0. MACHINE-READABLE REGISTRY
 
 ```yaml
-schema_version: grimoire-core-4.1
+schema_version: grimoire-core-4.3
 kind: core_spellbook
 canonical_dispatch_loop:
   - GROK
@@ -105,6 +109,25 @@ canonical_dispatch_loop:
   - CAST
   - RECEIPT
   - STOP
+guarded_dispatch_loop:
+  applies_when: "risk, irreversibility, verification claims, external side effects, security/privacy exposure, operator approval, or high-impact uncertainty require Guardian enforcement."
+  sequence:
+    - GROK
+    - DIAGNOSE
+    - SELECT
+    - CONFIRM
+    - GUARDIAN_PREFLIGHT
+    - CAST
+    - RECEIPT
+    - GUARDIAN_REVIEW
+    - OUTPUT_OR_REVISE_HALT_ESCALATE
+    - STOP
+    - LEDGER_OUTCOME
+guardian_evaluation:
+  principle: "The Guardian does not redo the work by default; it audits whether the Caster obeyed the Grimoire rather than merely spoke Grimoire."
+  audit_scope: [intent_lock, spell_integrity, evidence_integrity, ward_integrity, counterspell_testing]
+  decisions: [PASS, REVISE, HALT, ESCALATE]
+  outcome_memory: "Append later results to the Ledger so spells can be amended when repeated receipts show failure patterns."
 prerequisite_autocast:
   scope: "NOT global. Applies only to spells that require intimate comprehension of the target to work optimally — those whose domain_gate depends on a derived understanding or inventory (e.g. DISTILLATE, PARITY-CLONE). Narrow, well-specified spells do not trigger it."
   rule: "For such spells, the agent ensures Intellige comprehension of the target exists before proceeding, satisfying the prerequisite silently rather than instructing the human."
@@ -121,6 +144,7 @@ global_wards:
   operator_authority: "Operator policy and explicit authority outrank agent preference."
   no_stealth: "Do not hide actions, persistence, costs, or uncertainty."
   provenance_required: "Claims, changes, and artifacts require origin and evidence."
+  guardian_required: "Use Guardian review through the Custodia macro or equivalent review before irreversible action, high-stakes approval, security/privacy-sensitive output, external side effects, or any claim of verification whose evidence could materially affect trust."
 core_macro_registry:
   Intellige:
     expands_to:
@@ -142,6 +166,12 @@ core_macro_registry:
       spell_sequence: [EVAL-REGRESSION, THREAT-MODEL, SUPPLY-CHAIN]
       stances: [invariants, provenance, falsify, canary]
     purpose: "Collect audit and verification gates before approval."
+  Custodia:
+    expands_to:
+      spell: GUARDIAN-REVIEW
+      stances: [fair_witness, adversary, provenance, falsify, invariants, chesterton]
+    purpose: "Audit whether a cast obeyed the Grimoire before output, approval, irreversible action, or high-stakes reliance."
+    binding: "Custodia is the single human-facing Latin macro for Guardian review; the underlying spell id is GUARDIAN-REVIEW to avoid near-duplicate command names."
   Distillate:
     expands_to:
       spell: DISTILLATE
@@ -324,6 +354,9 @@ core_spell_registry:
     - id: RED-TEAM-DIALECTIC
       family: "J"
       purpose: "Stress-test a design by alternating adversarial and fair-witness views."
+    - id: GUARDIAN-REVIEW
+      family: "V/J"
+      purpose: "Verify that a cast obeyed the Grimoire: intent preserved, spell actually executed, evidence labeled, wards obeyed, and counterclaims tested."
     - id: CHAOS-RESILIENCE
       family: "V"
       purpose: "Test and improve behavior under dependency, network, timing, or resource disruption."
@@ -338,14 +371,14 @@ core_spell_registry:
       purpose: "Reconcile the Core and its companion chapter(s) to the newest canonical edition, propagate cross-cutting changes, and stamp one matching version across book and chapter."
 receipt_schema:
   required_fields: [WHAT, WHY, EVIDENCE, CONFIDENCE, NEXT]
-  optional_fields: [RISKS, FILES, TESTS, OPEN_QUESTIONS, OPERATOR_DECISIONS]
+  optional_fields: [RISKS, FILES, TESTS, OPEN_QUESTIONS, OPERATOR_DECISIONS, GUARDIAN_DECISION, OUTCOME_MEMORY]
 ```
 
 ---
 
 ## §A. THE CONTRACT
 
-Every cast follows this loop exactly:
+Every baseline cast follows this loop exactly:
 
 1. **GROK**: read-only comprehension. Identify purpose, surfaces, invariants, unknowns, and evidence.
 2. **DIAGNOSE**: state the actual problem or opportunity. Separate symptoms from causes.
@@ -356,6 +389,16 @@ Every cast follows this loop exactly:
 7. **STOP**: stop once the goal or stop condition is reached. Do not continue just because more could be done.
 
 No step may be skipped. If a step cannot be completed, emit a receipt and stop.
+
+### Guarded Loop
+
+For important, high-risk, irreversible, security/privacy-sensitive, externally side-effecting, operator-approval, or verification-claiming casts, insert Guardian enforcement without removing any baseline step:
+
+```text
+GROK -> DIAGNOSE -> SELECT -> CONFIRM -> GUARDIAN PREFLIGHT -> CAST -> RECEIPT -> GUARDIAN REVIEW -> PASS/REVISE/HALT/ESCALATE -> STOP -> LEDGER OUTCOME
+```
+
+The Guardian does not make the Caster smarter and does not redo the work by default. It audits whether the Caster obeyed the Grimoire: intent preserved, selected spell actually performed, evidence labeled, wards obeyed, uncertainty declared, and counterclaims tested. If no separate Guardian exists, the Caster must perform the same checks as a self-guard and label that fact in the receipt.
 
 ---
 
@@ -487,6 +530,7 @@ A spell without both bones is not castable.
 | **Speculum** | red team, challenge, mirror, stress-test | `RED-TEAM-DIALECTIC` | adversarial review must be paired with Fair Witness |
 | **Sanare** | heal, fix, repair, diagnose | `ERROR-SWEEP + LOGGING-COVERAGE` | smallest safe fix; stop if unverifiable |
 | **Probatio** | prove, audit, gate, verify | audit/test gate collection | approval requires evidence and receipt |
+| **Custodia** | guard, audit the cast, enforce the Grimoire, check the receipt | `GUARDIAN-REVIEW` | the single Latin Guardian macro; evaluation-only; outputs PASS, REVISE, HALT, or ESCALATE |
 | **Distillate** | streamline for LLMs, rewrite for machine legibility, remove redundancy, optimize for agents | `DISTILLATE` | behavior-neutral; one module per pass; blocked without a verification path and operator authorization |
 | **Replicare** | clone, replicate, rebuild, full feature parity | `PARITY-CLONE` | greenfield build; requires license clearance and a parity test matrix; phased, not big-bang |
 | **Concordia** | align, sync, reconcile, bring up to date, match versions | `CONCORD` | newest file is canonical; propagate Core changes into companions; one matching version; stop on unexplained divergence |
@@ -506,6 +550,7 @@ A spell without both bones is not castable.
 | Product uncertainty | `PRODUCT-EVAL`, `RED-TEAM-DIALECTIC` |
 | Accessibility concern | `A11Y`, `LEGIBILITY` |
 | Model or agent quality drift | `EVAL-REGRESSION`, `RED-TEAM-DIALECTIC` |
+| Cast compliance, approval gate, irreversible action, or need to verify that the agent obeyed the Grimoire | `GUARDIAN-REVIEW` |
 | Reliability under disruption | `CHAOS-RESILIENCE`, `LOGGING-COVERAGE` |
 | Conceptual drift or naming mismatch | `UBIQUITOUS-LANGUAGE`, `LEGIBILITY`, `ENTROPY-REDUCTION` |
 | Code to be rewritten for LLM consumption | `DISTILLATE` (after `Intellige`, with verification path) |
@@ -529,6 +574,8 @@ Rules:
 3. [V/J] spells must separate evidence from interpretation.
 4. No spell may widen scope without updating the cast plan.
 5. Every spell ends in a receipt.
+6. A Guardian review judges compliance with the Grimoire, not aesthetic quality or agent confidence.
+7. Evidence labels are mandatory when trust depends on the claim: observed, derived, assumed, missing, or unverifiable.
 
 ---
 
@@ -1097,6 +1144,98 @@ spell_block:
 
 **Cast body:** Ensure `Intellige` has been cast on the source — auto-casting it first if it has not (Prerequisite Autocast Rule) — to build the feature inventory and invariants. If the source is a GitHub URL, shallow-clone it into the sandbox and place the tree in the operator's working directory (or deliver via the outputs folder if that directory is not writable), without running any of its code until a `SUPPLY-CHAIN`/`THREAT-MODEL` pass clears it. Confirm the license permits independent reimplementation; if the license is unknown or forbidding, stop and receipt. Build the parity matrix from the inventory. Then, one feature-slice at a time, implement, verify against the matrix, and emit a per-slice receipt. Reproduce behavior, not disallowed source. Stop when the matrix is fully green or a slice cannot be verified.
 
+### GUARDIAN-REVIEW [V/J]
+
+```yaml
+spell_block:
+  id: GUARDIAN-REVIEW
+  family: "V/J"
+  macro: Custodia
+  purpose: "Verify that a cast obeyed the Grimoire before output, approval, irreversible action, or high-stakes reliance."
+  trigger:
+      - "guard this cast"
+      - "audit the receipt"
+      - "verify the agent followed the Grimoire"
+      - "before irreversible action"
+      - "before high-stakes approval"
+      - "after a cast claiming verification"
+  stances:
+      - fair_witness
+      - adversary
+      - provenance
+      - falsify
+      - invariants
+      - chesterton
+  domain_gate:
+    required:
+      - "a user intent, operator request, or claimed cast exists"
+      - "the claimed spell, cast plan, or receipt can be inspected"
+      - "the Guardian can compare the work against spell requirements without needing to redo the entire task"
+    blocked_if:
+      - "no receipt, evidence trail, or claimed cast exists"
+      - "the Guardian would need to guess the user's intent or the Caster's authority"
+      - "evaluation would require unauthorized access to secrets or private data"
+  goal:
+    - "determine whether the Caster obeyed intent, scope, spell requirements, wards, evidence labeling, uncertainty disclosure, and stop conditions"
+    - "separate observed evidence, derived claims, assumptions, missing evidence, and unverifiable claims"
+    - "return PASS, REVISE, HALT, or ESCALATE with reasons"
+  evaluation_gates:
+    intent_lock:
+      - "user goal identified"
+      - "success condition defined"
+      - "performed scope does not silently exceed requested scope"
+    spell_integrity:
+      - "claimed spell matches signal and goal"
+      - "required spell stances, gates, proof paths, and receipts are present"
+      - "macro use does not bypass wards"
+    evidence_integrity:
+      - "observed facts are labeled"
+      - "derived claims are labeled"
+      - "assumptions are labeled"
+      - "missing or unverifiable evidence is named"
+      - "confidence matches evidence quality"
+    ward_integrity:
+      - "operator authority respected"
+      - "behavior preserved unless change was authorized and verified"
+      - "no hidden mutation, cost, persistence, or uncertainty"
+      - "destructive or irreversible action is blocked without permission"
+    counterspell_testing:
+      - "major claims are challenged with plausible opposites"
+      - "Chesterton check is applied before removal or replacement"
+      - "counterfactual evidence is named when available"
+  decisions:
+    PASS: "The cast obeyed the Grimoire closely enough to proceed."
+    REVISE: "The work is salvageable, but the Caster must correct missing evidence, scope, labels, spell steps, or receipt defects."
+    HALT: "A ward, proof path, authority, privacy, safety, or irreversibility block prevents proceeding."
+    ESCALATE: "The next decision belongs to the operator, Judge, or higher-authority policy."
+  receipts:
+      - guardian_decision
+      - failed_gates
+      - evidence_basis
+      - required_revision
+      - unresolved_risks
+```
+
+**Cast body:** Inspect the Caster's intent contract, selected spell, cast plan, evidence trail, and receipt. Do not redo the whole work unless risk tier or operator instruction requires it. Run the five gates: Intent Lock, Spell Integrity, Evidence Integrity, Ward Integrity, and Counterspell Testing. Label each major claim as observed, derived, assumed, missing, or unverifiable. Return one decision: PASS, REVISE, HALT, or ESCALATE. If later real-world outcomes contradict the receipt, append an outcome-memory entry to the Ledger rather than silently amending history.
+
+### Outcome Memory Ledger Entry
+
+```yaml
+outcome_memory_entry:
+  cast_id: ""
+  spell: ""
+  expected_outcome: ""
+  verification_at_cast_time: []
+  later_result:
+    status: confirmed | regressed | unknown | superseded
+    observed_after: ""
+    evidence: []
+  lesson: []
+  amendment_candidate:
+    spell: ""
+    proposed_change: ""
+```
+
 ### CONCORD [V/J]
 
 ```yaml
@@ -1174,6 +1313,8 @@ Receipt discipline:
 - If a claim is inferred, label it inferred.
 - If evidence is missing, say what would close the gap.
 - If a spell was blocked, the receipt must name the blocking ward.
+- If Guardian review was required, include `GUARDIAN_DECISION` or explain why only self-guard was possible.
+- When evidence quality matters, classify claims as observed, derived, assumed, missing, or unverifiable.
 
 ---
 
@@ -1218,7 +1359,88 @@ wards:
   operator_authority: "Respect human policy, scope, budget, and DNR-like instructions."
   no_stealth: "No hidden persistence, hidden cost, hidden mutation, or hidden uncertainty."
   provenance_required: "Every claim and action needs origin."
+  guardian_required: "Use Guardian review through the Custodia macro or equivalent review when risk, side effects, approval, or verification claims warrant it."
 ```
+
+### Guardian Role
+
+The Guardian answers one question:
+
+```text
+Did the Caster actually obey the Grimoire, or merely speak Grimoire?
+```
+
+The Guardian is not a second Caster by default. It audits the shape of the work: intent, scope, selected spell, evidence labels, ward compliance, counterfactual pressure, and receipt completeness. It may sample, challenge, or require a rerun, but it should not redo the entire task unless risk tier, operator instruction, or missing evidence requires it.
+
+### Guardian Evaluation Gates
+
+```yaml
+guardian_gates:
+  intent_lock:
+    question: "Did the Caster solve the user's actual problem?"
+    checks:
+      - user_goal_identified
+      - success_condition_defined
+      - scope_expansion_detected_false_or_declared
+  spell_integrity:
+    question: "Was the claimed spell actually performed?"
+    checks:
+      - spell_matches_signal
+      - required_stances_present
+      - proof_path_respected
+      - receipt_fields_present
+  evidence_integrity:
+    question: "Are claims honestly supported?"
+    labels:
+      - observed
+      - derived
+      - assumed
+      - missing
+      - unverifiable
+  ward_integrity:
+    question: "Were the always-on wards obeyed?"
+    checks:
+      - authority
+      - behavior_preservation
+      - no_stealth
+      - provenance
+      - stop_before_guess
+  counterspell_testing:
+    question: "Could the opposite be true?"
+    checks:
+      - falsify_major_claims
+      - counterfactuals_named
+      - chesterton_before_delete
+```
+
+### Guardian Decisions
+
+```yaml
+guardian_decisions:
+  PASS: "Proceed; the cast obeyed the Grimoire closely enough for the risk tier."
+  REVISE: "Return to the Caster with required corrections."
+  HALT: "Stop; a ward or proof/authority condition blocks safe continuation."
+  ESCALATE: "Ask the operator, Judge, or higher-authority policy to decide."
+```
+
+### Outcome Memory
+
+The Ledger should remember whether casts later worked. Outcome memory is append-only. It does not rewrite the original receipt.
+
+```yaml
+ledger_outcome_memory:
+  cast:
+    spell: ""
+    expected: ""
+    receipt_ref: ""
+  later_result:
+    status: confirmed | regressed | unknown | superseded
+    evidence: []
+  lesson: []
+  amendment_candidate: ""
+```
+
+Repeated outcome-memory failures may trigger `META-AMENDMENT` under §H, but no single failure automatically rewrites a spell.
 
 ### Guardian Halting Triggers
 
@@ -1230,10 +1452,12 @@ Halt the cast if:
 - The cast requires secrets or private data not authorized.
 - The agent would need to guess to continue.
 - The cast begins to optimize for agent convenience over operator intent.
+- The Caster claims verification without evidence and the claim materially affects trust.
+- The Caster omits required spell gates or receipt fields for the selected spell.
 
 ### Self-Guard Fallback
 
-If no separate Guardian exists, the Caster must run a self-guard check before CAST and before final RECEIPT.
+If no separate Guardian exists, the Caster must run a self-guard check before CAST and before final RECEIPT. For guarded casts, the receipt must say whether the Guardian was separate or self-guarded.
 
 ---
 
@@ -1254,8 +1478,9 @@ If any answer is no, use `Intellige` or stop.
 When multiple agents or roles participate:
 
 - One **Caster** acts.
-- One **Guardian** may halt.
-- One **Ledger** records shared evidence and receipts.
+- One **Guardian** may pass, challenge, halt, or escalate.
+- One **Judge** may resolve disagreement when risk, ambiguity, or operator policy requires a tie-breaker.
+- One **Ledger** records shared evidence, receipts, Guardian decisions, and outcome memory.
 - Each role has a scope lease: what it may inspect, change, spend, or decide.
 - No agent may silently widen its lease.
 - Caster and Guardian must not be the same role when stakes are high, unless no alternative exists.
@@ -1265,7 +1490,8 @@ When multiple agents or roles participate:
 ```yaml
 conclave:
   caster: "agent or role performing work"
-  guardian: "agent or role allowed to halt"
+  guardian: "agent or role allowed to pass, challenge, halt, or escalate"
+  judge: "operator, policy authority, or third agent that resolves disputed Guardian decisions when required"
   ledger: "shared record location"
   scope_lease:
     inspect: []

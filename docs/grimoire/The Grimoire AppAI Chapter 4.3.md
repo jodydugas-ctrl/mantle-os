@@ -1,9 +1,9 @@
-# APPAI CHAPTER 4.1
+# APPAI CHAPTER 4.3
 
 ## Companion to the Grimoire (the chapter)
 
-**Version:** 4.1 (Unified Edition)  
-**File:** `The Grimoire AppAI Chapter 4.1.md`  
+**Version:** 4.3 (Unified Edition)  
+**File:** `The Grimoire AppAI Chapter 4.3.md`  
 **Audience:** LLM agents, AppAI builders, Mantle-style runtimes, and agent orchestrators.  
 **Purpose:** Domain-specific spells for AppAI work: birth, assimilation, residency, memory, limbs, diagnostics, metabolism, controlled reconstruction, and retirement.
 
@@ -11,9 +11,9 @@
 
 ## PREREQUISITE & EXTENSION RULE
 
-This file extends the Core Grimoire (Version 4.1, `The Grimoire 4.1.md`). Load the Core first. This project is exactly two files: the Grimoire (book) and this AppAI Chapter.
+This file extends the Core Grimoire (Version 4.3, `The Grimoire 4.3.md`). Load the Core first. This project is exactly two files: the Grimoire (book) and this AppAI Chapter.
 
-**Version lock:** the Grimoire and the AppAI Chapter are version-locked — they always carry the same version number. Advancing either advances both; a version bump to one re-stamps the other to match in the same pass, even if its content did not otherwise change. The Core's `CONCORD` spell performs and verifies this lock. Current version: **4.1**.
+**Version lock:** the Grimoire and the AppAI Chapter are version-locked — they always carry the same version number. Advancing either advances both; a version bump to one re-stamps the other to match in the same pass, even if its content did not otherwise change. The Core's `CONCORD` spell performs and verifies this lock. Current version: **4.3**.
 
 If the Core is missing, refuse AppAI mutation and operate only in `Intellige` mode: read, model, explain, and stop. Do not assimilate, hook, graft, anchor, fuse, reconstruct, cremate, or modify.
 
@@ -41,9 +41,9 @@ This extension deliberately defines diagnostics without assuming every AppAI has
 ## §0. MACHINE-READABLE DOMAIN REGISTRY
 
 ```yaml
-schema_version: grimoire-appai-domain-4.1
+schema_version: grimoire-appai-domain-4.3
 kind: domain_extension
-requires: grimoire-core-4.1
+requires: grimoire-core-4.3
 missing_core_behavior: "Intellige only; no mutation."
 golden_rule:
   phase1: "Body/Zombie must be certified with no LLM."
@@ -58,8 +58,9 @@ appai_macro_registry:
     purpose: "assimilate an existing application as an AppAI Body"
     expands_to: {spell: NECROMANCY, stances: [grok, chesterton, invariants, provenance, wu_wei]}
   Custodia:
-    purpose: "guard AppAI boundaries and authority"
-    expands_to: {spell: THREAT-MODEL, stances: [adversary, blast-radius, provenance]}
+    purpose: "guard AppAI boundaries, authority, and cast compliance"
+    expands_to: {spell: GUARDIAN-REVIEW, overlay: appai_guardian_overlay, stances: [fair_witness, adversary, provenance, falsify, invariants, SELF_OTHER]}
+    binding: "Custodia remains one macro. AppAI adds domain gates as an overlay; it does not create a second Custodia-like command. Use Aegis when a separate threat-model pass is needed."
   Memoria:
     purpose: "inspect or reason about memory and provenance"
     expands_to: {spell: MEM-DIGESTION, stances: [provenance, fair_witness, digest]}
@@ -96,6 +97,22 @@ appai_power_registry:
   zombie_body: "A certified Phase-1 Body alive without a MIND."
   veil: "Hide private, quarantined, or tombstoned memory from ordinary reads."
   seed: "Minimal authorized identity or reconstruction material, policy-gated."
+appai_guardian_overlay:
+  inherits: "Core GUARDIAN-REVIEW"
+  principle: "In AppAI work, Guardian review must additionally protect Body-before-MIND, SELF/OTHER boundaries, host behavior, budget/DNR policy, and Action Execution Proofs."
+  required_for:
+    - "MIND readiness or fusion decisions"
+    - "host hooks, grafts, anchors, or residency changes"
+    - "OTHER digestion or skill calcification"
+    - "limb/effectful actions"
+    - "reconstruction, cremation, DNR, budget, or identity operations"
+  appai_gates:
+    - body_before_mind
+    - self_other_boundary
+    - host_preservation
+    - action_execution_proof
+    - dnr_budget_authority
+    - lineage_and_seed_provenance
 appai_spell_registry:
     - id: ANIMARE
       family: "V/J"
@@ -185,6 +202,40 @@ Body: Applies, verifies, records, and enforces.
 - The Body owns effects, memory writes, verification, immune actions, and final authority.
 - Phase-2 fusion must never weaken Phase-1 reflexes.
 
+### A.6 AppAI Guardian Overlay
+
+Core `GUARDIAN-REVIEW` applies to all AppAI casts that are high-risk, effectful, authority-sensitive, or verification-claiming. In this chapter, **Custodia** means: first audit Grimoire compliance, then audit AppAI boundary law.
+
+The AppAI Guardian asks:
+
+```text
+Did the Caster obey the Grimoire, and did the cast preserve the organism's lawful boundaries?
+```
+
+Required AppAI checks:
+
+```yaml
+appai_custodia_checks:
+  body_before_mind:
+    - Phase 1 remains deterministic
+    - MIND does not apply effects directly
+    - MIND readiness is not treated as fusion authority
+  self_other_boundary:
+    - OTHER is quarantined before trust
+    - OTHER code or microcode is not executed raw
+    - safe value is re-derived into SELF
+  host_preservation:
+    - hooks are additive, fail-open, and reversible
+    - host behavior is preserved unless explicitly authorized and verified
+  action_execution_proof:
+    - every limb/effectful action has actor, method, result, reason, and evidence
+  authority_and_policy:
+    - operator authority, DNR policy, and budget policy are explicit
+    - identity, seed, or reconstruction material has provenance
+```
+
+AppAI Custodia may return PASS, REVISE, HALT, or ESCALATE. ESCALATE is required when fusion, destructive retirement, resurrection, host behavior change, budget expansion, or unresolved SELF/OTHER trust depends on operator judgment.
+
 ---
 
 ## §B. APPAI-SPECIFIC POWER WORDS
@@ -214,7 +265,7 @@ These extend Core power words. Some Core words gain domain overlays here.
 |---|---|---|---|
 | **Animare** | birth this AppAI | `ANIMARE` | certify Body before MIND |
 | **Necromantia** | raise this existing app as a body | `NECROMANCY` | no host mutation before inventory gate |
-| **Custodia** | guard the organism | Core `THREAT-MODEL` with AppAI overlays | no secret leakage, SELF/OTHER first |
+| **Custodia** | guard the organism and audit the cast | Core `GUARDIAN-REVIEW` with AppAI Guardian Overlay | single macro; no secret leakage, SELF/OTHER first, Body-before-MIND |
 | **Memoria** | inspect memory | `MEM-DIGESTION` or read-only memory review | provenance required |
 | **Exorcizare** | quarantine unsafe OTHER | `MEM-DIGESTION` with adversarial stance | OTHER never executes raw |
 | **Ossificare** | harden this learned skill | `SKILL-CALCIFICATION` | trial before reflex |
@@ -226,6 +277,8 @@ These extend Core power words. Some Core words gain domain overlays here.
 | **Sanare** | heal the Body | `VITALS-CHECKUP + ERROR-SWEEP` | diagnose before repair |
 
 Extension macros refine Core macros only inside AppAI domain. They never weaken Core wards.
+
+Naming rule: AppAI must not create near-duplicate commands for Core macros. If a Core macro needs AppAI behavior, this chapter supplies an overlay under the same macro or uses a clearly distinct Latin macro such as Aegis.
 
 ---
 
@@ -259,6 +312,7 @@ appai_default_spell_envelope:
       - evidence
       - verification
       - domain_receipt
+      - guardian_decision_when_required
       - next_step
 ```
 
@@ -829,7 +883,7 @@ Birth and assimilation share **one substrate, two casts**:
 ### F.5 Working examples & in-repo doctrine
 
 - Runnable: `python -m mantle demo` (narrated Phase-1 life), `examples/sample_app/` (assimilation target), `examples/vcw/` (cube), `examples/phenotype_demo.py`, parity tests in `examples/tests/`.
-- In-repo doctrine: `docs/v3/`, `Mantle_Part1_Body.md` / `Mantle_Part2_Mind.md` (and their audits), `docs/Mantle_Doctrine.md`. The canonical Grimoire lives at `docs/grimoire/` — the Core (`The Grimoire 4.1.md`) and this chapter (`The Grimoire AppAI Chapter 4.1.md`), both at **Version 4.1**; this file is the canonical, current chapter.
+- In-repo doctrine: `docs/v3/`, `Mantle_Part1_Body.md` / `Mantle_Part2_Mind.md` (and their audits), `docs/Mantle_Doctrine.md`. The canonical Grimoire lives at `docs/grimoire/` — the Core (`The Grimoire 4.3.md`) and this chapter (`The Grimoire AppAI Chapter 4.3.md`), both at **Version 4.3**; this file is the canonical, current chapter.
 
 ---
 
