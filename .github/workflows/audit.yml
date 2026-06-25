@@ -1,6 +1,6 @@
 name: Zombie Body Audit
 
-# "Everything is provable" — so prove it on every commit. Gen-4: the Stage-1 gate, the 68
+# "Everything is provable" — so prove it on every commit. Gen-4: the Stage-1 gate, the 73
 # security invariants, the Stage-2 gate, three tamper proofs, both narrated demos, and the
 # assimilation dry-run. Plus the back-compat reference suite, unchanged. Pure standard library.
 
@@ -28,7 +28,7 @@ jobs:
           if python -m mantle audit --break-seal --fast;   then echo "FAIL: --break-seal not caught";   exit 1; fi
           echo "OK: all three tampering paths were correctly caught"
 
-      - name: Security invariants (68 red/green)
+      - name: Security invariants (73 red/green)
         run: python -m mantle prove
 
       - name: Stage-2 MIND gate (containment + full Stage-1 regression, offline stub)
