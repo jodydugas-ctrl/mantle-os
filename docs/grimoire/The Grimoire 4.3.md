@@ -1,8 +1,8 @@
-# THE GRIMOIRE 4.3
+# THE GRIMOIRE 4.4
 
 ## Core Spellbook for LLM Agents (the book)
 
-**Version:** 4.3 (Unified Edition)  
+**Version:** 4.4 (Unified Edition)
 **File:** `The Grimoire 4.3.md`  
 **Audience:** LLM agents, agent runtimes, and orchestrators.  
 **Purpose:** Universal engineering spells for any codebase, document, system, or technical artifact.
@@ -25,7 +25,7 @@ This project is exactly **two files** and no others: **the Grimoire** (this Core
 
 The two files are **version-locked**: they always carry the same version number. Advancing either advances both. Any change that bumps one file's version requires the other to be re-stamped to the same version in the same pass, even if its own content did not otherwise change. The `CONCORD` spell (Concordia macro) performs and verifies this lock.
 
-Current version: **4.3**.
+Current version: **4.4**.
 
 ---
 
@@ -99,7 +99,7 @@ This rule never weakens wards. `Intellige` is read-only and confers no authority
 ## §0. MACHINE-READABLE REGISTRY
 
 ```yaml
-schema_version: grimoire-core-4.3
+schema_version: grimoire-core-4.4
 kind: core_spellbook
 canonical_dispatch_loop:
   - GROK
@@ -151,6 +151,12 @@ core_macro_registry:
       spell: READ_ONLY_COMPREHENSION
       stances: [grok, telos, gestalt, umwelt, aporias]
     purpose: "Read, model, and explain before acting."
+  Vestigare:
+    expands_to:
+      spell: WEB-PRESENCE-RECON
+      stances: [grok, telos, gestalt, umwelt, provenance, falsify, least-astonishment]
+    purpose: "Gather public web and image evidence for artifacts, products, apps, platforms, or clone targets that have a web presence."
+    binding: "public web evidence only; cite sources; image search is required when visual fidelity matters; do not treat web claims as authoritative without provenance."
   Speculum:
     expands_to:
       spell: RED-TEAM-DIALECTIC
@@ -206,6 +212,9 @@ power_word_registry:
     aporias:
       category: "Comprehension"
       purpose: "List contradictions, unknowns, tensions, and questions that block safe action."
+    satori:
+      category: "Comprehension"
+      purpose: "Recognize sudden whole-pattern clarity before the explanation is fully articulated; pause to preserve and test the insight."
     invariants:
       category: "Structure"
       purpose: "Identify what must remain true across all changes."
@@ -224,6 +233,12 @@ power_word_registry:
     hysteresis:
       category: "Structure"
       purpose: "Account for history-dependent behavior; a system may not return to the same state by reversing input."
+    autopoiesis:
+      category: "Structure"
+      purpose: "Treat a system as self-producing and boundary-maintaining; interventions must respect the conditions of its persistence."
+    mycelium:
+      category: "Structure"
+      purpose: "Look for the hidden substrate that connects apparently separate parts, agents, services, or institutions."
     falsify:
       category: "Rigor"
       purpose: "Try to disprove the proposed explanation, fix, or plan before trusting it."
@@ -239,6 +254,9 @@ power_word_registry:
     counterfactual:
       category: "Rigor"
       purpose: "Ask what would be true if the proposed cause were false; seek distinguishing evidence."
+    mu:
+      category: "Rigor"
+      purpose: "Reject a malformed premise or false dichotomy; reframe the question before answering."
     wu_wei:
       category: "Restraint"
       purpose: "Prefer the smallest effective intervention; do not force the system when observation or waiting is safer."
@@ -260,6 +278,9 @@ power_word_registry:
     canary:
       category: "Restraint"
       purpose: "Test change in a small, observable slice before broader rollout."
+    kairos:
+      category: "Restraint"
+      purpose: "Prefer the opportune moment to act; timing depends on system readiness, not chronology alone."
     liminal:
       category: "Perspective"
       purpose: "Treat transitions, boundaries, and half-built states as dangerous and informative."
@@ -315,6 +336,9 @@ core_spell_registry:
     - id: SEO-GEO
       family: "V"
       purpose: "Improve search and generative-engine visibility without harming content integrity."
+    - id: WEB-PRESENCE-RECON
+      family: "V/J"
+      purpose: "Gather sourced public web, documentation, feature, and image evidence for artifacts with a web presence before judgment or implementation."
     - id: PRODUCT-EVAL
       family: "J"
       purpose: "Assess product fit, user value, friction, and evidence quality."
@@ -489,17 +513,21 @@ A spell without both bones is not castable.
 | `gestalt` | Comprehension | See the whole shape before editing parts; account for interactions, flows, and emergent meaning. |
 | `umwelt` | Comprehension | Model the system from the viewpoint of its users, operators, dependencies, and maintainers. |
 | `aporias` | Comprehension | List contradictions, unknowns, tensions, and questions that block safe action. |
+| `satori` | Comprehension | Recognize sudden whole-pattern clarity before the explanation is fully articulated; pause to preserve and test the insight. |
 | `invariants` | Structure | Identify what must remain true across all changes. |
 | `load-bearing` | Structure | Detect which pieces hold up behavior, trust, or meaning; do not move them casually. |
 | `blast-radius` | Structure | Bound the area that a change or failure can affect. |
 | `chesterton` | Structure | Understand why a thing exists before deleting or replacing it. |
 | `entropy` | Structure | Notice disorder, drift, duplication, and hidden complexity that make future action harder. |
 | `hysteresis` | Structure | Account for history-dependent behavior; a system may not return to the same state by reversing input. |
+| `autopoiesis` | Structure | Treat a system as self-producing and boundary-maintaining; interventions must respect the conditions of its persistence. |
+| `mycelium` | Structure | Look for the hidden substrate that connects apparently separate parts, agents, services, or institutions. |
 | `falsify` | Rigor | Try to disprove the proposed explanation, fix, or plan before trusting it. |
 | `steelman` | Rigor | Make the strongest version of an opposing argument before judging it. |
 | `ablate` | Rigor | Remove or disable one factor at a time to identify what actually matters. |
 | `bisect` | Rigor | Divide the search space to isolate the first bad change or smallest failing cause. |
 | `counterfactual` | Rigor | Ask what would be true if the proposed cause were false; seek distinguishing evidence. |
+| `mu` | Rigor | Reject a malformed premise or false dichotomy; reframe the question before answering. |
 | `wu_wei` | Restraint | Prefer the smallest effective intervention; do not force the system when observation or waiting is safer. |
 | `phronesis` | Restraint | Use practical judgment under uncertainty; pick the wise action, not merely the clever one. |
 | `kaizen` | Restraint | Improve incrementally with feedback and verification. |
@@ -507,6 +535,7 @@ A spell without both bones is not castable.
 | `idempotent` | Restraint | Prefer actions safe to repeat without compounding harm. |
 | `least-astonishment` | Restraint | Keep behavior unsurprising to users and maintainers. |
 | `canary` | Restraint | Test change in a small, observable slice before broader rollout. |
+| `kairos` | Restraint | Prefer the opportune moment to act; timing depends on system readiness, not chronology alone. |
 | `liminal` | Perspective | Treat transitions, boundaries, and half-built states as dangerous and informative. |
 | `epoché` | Perspective | Suspend premature judgment; separate observation from interpretation. |
 | `fair_witness` | Perspective | Report only what is observed, with confidence and evidence boundaries. |
@@ -527,6 +556,7 @@ A spell without both bones is not castable.
 | Macro | Use when human says | Expands to | Binding |
 |---|---|---|---|
 | **Intellige** | grok, understand, inspect, read first | `grok + telos + gestalt + umwelt + aporias` | read-only unless a later cast is selected |
+| **Vestigare** | search the web, research the public presence, look up the real product, make it match the real thing | `WEB-PRESENCE-RECON` | public web evidence only; cite sources; image search required when visual fidelity matters |
 | **Speculum** | red team, challenge, mirror, stress-test | `RED-TEAM-DIALECTIC` | adversarial review must be paired with Fair Witness |
 | **Sanare** | heal, fix, repair, diagnose | `ERROR-SWEEP + LOGGING-COVERAGE` | smallest safe fix; stop if unverifiable |
 | **Probatio** | prove, audit, gate, verify | audit/test gate collection | approval requires evidence and receipt |
@@ -547,6 +577,7 @@ A spell without both bones is not castable.
 | Stale or confusing documentation | `DOC-SWEEP`, `LEGIBILITY`, `UBIQUITOUS-LANGUAGE` |
 | Dependency or package concern | `SUPPLY-CHAIN`, `THREAT-MODEL` |
 | Migration or state transition | `DATA-MIGRATION`, `EVAL-REGRESSION`, `CANARY` stance |
+| Public web presence could improve understanding, fidelity, or parity | `WEB-PRESENCE-RECON`, then the smallest fitting follow-up spell |
 | Product uncertainty | `PRODUCT-EVAL`, `RED-TEAM-DIALECTIC` |
 | Accessibility concern | `A11Y`, `LEGIBILITY` |
 | Model or agent quality drift | `EVAL-REGRESSION`, `RED-TEAM-DIALECTIC` |
@@ -733,6 +764,62 @@ spell_block:
       - least-astonishment
   inherits: default_spell_envelope
 ```
+
+### WEB-PRESENCE-RECON [V/J]
+
+```yaml
+spell_block:
+  id: WEB-PRESENCE-RECON
+  family: "V/J"
+  macro: Vestigare
+  purpose: "Gather sourced public web, documentation, feature, and image evidence for an artifact, product, app, platform, or clone target that has a public web presence before judgment or implementation."
+  trigger:
+      - "has a public web presence"
+      - "research this product/app/site"
+      - "clone or replicate a public product"
+      - "make this look or function like the real thing"
+  stances:
+      - grok
+      - telos
+      - gestalt
+      - umwelt
+      - provenance
+      - falsify
+      - least-astonishment
+  domain_gate:
+    required:
+      - "the target can be named or bounded clearly enough to search"
+      - "only public web evidence is needed"
+      - "sources, queries, and uncertainty can be recorded"
+    blocked_if:
+      - "no public presence can be found"
+      - "web access is unavailable"
+      - "the needed evidence is private, paywalled, login-gated, secret, or unauthorized"
+      - "sources conflict materially and the next action depends on resolving the conflict"
+      - "the operator asks to copy protected source, assets, or identity rather than learn behavior, features, or visual requirements"
+  goal:
+      - "produce a sourced web evidence packet with official sources, public docs, feature inventory, visual references when relevant, contradictions or unknowns, and the recommended next spell"
+      - "improve understanding without treating web claims as authoritative unless provenance supports them"
+      - "when visual fidelity matters, include image-search evidence or state why it was unavailable"
+  monotone_step: "one evidence pass per target: form queries, gather official and corroborating public sources, collect visual references when relevant, separate observed evidence from interpretation, update the feature or visual inventory, receipt, then hand off to the smallest fitting follow-up spell"
+  stop:
+      - "the evidence packet is complete enough for the next spell"
+      - "no public presence is found"
+      - "web or image search is unavailable"
+      - "sources conflict materially and the conflict changes implementation or judgment"
+      - "evidence would require unauthorized access, secrets, login, or private data"
+      - "uncertainty exceeds safe action threshold"
+  receipts:
+      - cast_plan
+      - query_and_source_list
+      - source_labels
+      - image_evidence_summary
+      - feature_or_visual_inventory
+      - contradictions_unknowns_uncertainty
+      - next_spell_recommendation
+```
+
+**Cast body:** Confirm the target and why public web evidence matters. Search official sources first, then corroborating public sources; label each claim as observed, derived, assumed, missing, or unverifiable. If the task concerns visual fidelity, run image search or explicitly receipt why image search was unavailable. Do not log in, bypass paywalls, collect secrets, or copy protected source/assets. Produce an evidence packet that can feed the next spell, such as `Intellige`, `PRODUCT-EVAL`, `PARITY-CLONE`, `DOC-SWEEP`, or `A11Y`. Stop when the packet is sufficient for the next spell or when the evidence boundary blocks safe continuation.
 
 ### PRODUCT-EVAL [J]
 
