@@ -87,7 +87,7 @@ PHASE 2 (MIND):
   Mantle_Part2_Mind_Audit.md  <- the Stage 2 Gate; Phase-1 regression + Phase-2 checks
 
 Path B (assimilate EXISTING code, non-destructive; the basis of `anchor` and the `graft` egg):
-  docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md  <- CANONICAL doctrine (NECROMANCY operational detail)
+  docs/grimoire/The Grimoire AppAI Chapter 4.1.md  <- CANONICAL doctrine (NECROMANCY operational detail)
   Mantle_Assimilator.md                        <- stub / quick-ref pointer
   docs/v3/Assimilation_Guide.md                <- runnable command cheatsheet
 
@@ -243,7 +243,7 @@ source code is provided.
 
 ### Path B — Take residence in existing code (brownfield organism)
 1. Emit the §0 Declaration Block (declaring the host you are instrumenting).
-2. Follow the canonical doctrine in **`docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md`**
+2. Follow the canonical doctrine in **`docs/grimoire/The Grimoire AppAI Chapter 4.1.md`**
    (NECROMANCY — operational detail): the assimilator dissects the host read-only (AST for
    Python, tree-sitter for `.js/.mjs/.go/.rs`; no host code runs) and classifies each symbol by
    organ role. In Gen-4 this is the basis of:

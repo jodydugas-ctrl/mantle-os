@@ -13,6 +13,11 @@ Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 > [`docs/Mantle_Positioning.md`](docs/Mantle_Positioning.md) — a plain-language summary and an honest
 > list of limitations. *(Non-normative.)*
 
+> **Before you build, assimilate, or operate an AppAI, read the Grimoire first.** It is the
+> doctrine the entire framework follows — the foundational literature, not an appendix. Start in
+> [`docs/grimoire/`](docs/grimoire/README.md): the **Core Spellbook** is required first reading;
+> the **AppAI Chapter** extends it. *(Normative.)*
+
 Mantle OS is a framework for **organic coding**. Instead of writing a "program" with a
 "database," you *grow* an application as a living creature — an **AppAI** — built
 **Body first, brain second**. Eight deterministic organs mesh on one signal bus around a
@@ -33,6 +38,40 @@ SELF-encrypted front-ends as interchangeable phenotypes) — every one gated (36
 invariants**). See the section
 *The Gen-4 generation* below, the runnable [`FIELD_GUIDE.md`](FIELD_GUIDE.md), and
 [`docs/MOLT_LEDGER.md`](docs/MOLT_LEDGER.md).
+
+---
+
+## Mantle OS is not a Python framework
+
+It is easy to assume Mantle OS is "for Python" — the reference implementation in
+[`mantle/`](mantle/) is Python and every example on this page is written that way. **That is an
+artifact of the examples, not the framework.** Mantle OS does not care which AI, which container,
+or which programming language you bring.
+
+What Mantle OS actually does is grow a **fully independent nervous system — including the
+autonomic, self-regulating systems (heartbeat, immune response, metabolism) — and install it
+into a container.** That nervous system fused with its container *is* an **AppAI**. The single
+hard requirement on the container is that it can **store a VCW cube file** (the append-only
+picture-memory substrate). Given that, Mantle OS can join **most AIs** to **most containers**:
+
+| AppAI | Body / container | Where its VCW lives | Language |
+| --- | --- | --- | --- |
+| **Home.app** | a smart-home embedded in a wall | a Raspberry Pi behind the drywall | — |
+| **Buddy** | a cell phone | on the handset | — |
+| **Tree.app** | cloud infrastructure | in the cloud | — |
+| **The Compiler** | a Windows application | with the app on Windows | C |
+
+The mind can be any AI; the body can be any container; the code can be any language. The system
+does not care which combination you choose — that is the point.
+
+This versatility is exactly why **assimilation** (the **NECROMANCY** spell; `python -m mantle
+assimilate`) is so powerful: it can turn *most existing applications* into an AppAI —
+**including applications that already contain agents.** The Compiler, for example, runs both its
+AppAI agent **and** its own pre-existing **Hermes** agent side by side; the nervous system is
+grown *around* what already lives in the host, without demanding the host be rewritten.
+
+> The Python below is the reference body. Read it as "here is one way to grow an organism," not
+> "here is the only language an organism can be grown in."
 
 ---
 
@@ -193,8 +232,9 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
 
 - **Path A — grow from scratch.** `Mantle_Part1_Body.md`, then the Stage-1 gate, then
   Phase 2. The `mantle/` package is the runnable skeleton.
-- **Path B — assimilate existing code.** Canonical doctrine:
-  [`docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md`](docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md)
+- **Path B — assimilate existing code** (any language, including apps that already have agents).
+  Canonical doctrine:
+  [`docs/grimoire/The Grimoire AppAI Chapter 4.1.md`](docs/grimoire/The%20Grimoire%20AppAI%20Chapter%204.1.md)
   (NECROMANCY — operational detail); runnable cheatsheet:
   [`docs/v3/Assimilation_Guide.md`](docs/v3/Assimilation_Guide.md). Dissect read-only, map organs,
   sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same

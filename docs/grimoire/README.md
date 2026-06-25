@@ -1,22 +1,39 @@
 # The Grimoire
 
-The doctrine behind Mantle OS — the spellbook the framework's design follows. These are
-agent-facing reference documents (written for LLM agents, runtimes, and orchestrators), and
-they are the source of truth for the concepts the code implements (organs, the VCW substrate,
-the AppAI growth paths, and the NECROMANCY assimilation pipeline).
+**Read this first.** The Grimoire is the doctrine behind Mantle OS — the spellbook the
+framework's design follows, and the foundational literature anyone (human or agent) should read
+*before* building, assimilating, or operating an AppAI. It is agent-facing reference material
+(written for LLM agents, runtimes, and orchestrators) and it is the source of truth for the
+concepts the code implements: organs, the VCW substrate, the AppAI growth paths, and the
+NECROMANCY assimilation pipeline.
 
-| Document | Scope |
-| --- | --- |
-| [THE_GRIMOIRE_CORE_v3_0.md](THE_GRIMOIRE_CORE_v3_0.md) | The Core Spellbook — universal engineering spells for any codebase, document, or system. Standalone; load this first. |
-| [GRIMOIRE_APPAI_DOMAIN_v1_0.md](GRIMOIRE_APPAI_DOMAIN_v1_0.md) | The AppAI Domain Extension — domain spells for AppAI work: birth (ANIMARE), assimilation (NECROMANCY), residency, memory, limbs, metabolism, reconstruction, and retirement. Extends the Core. |
+## The two files — and the reading order
+
+The Grimoire is **exactly two version-locked files** — there are no other editions; any that
+appear are stale and should be removed. The two files always carry the same version number
+(currently **4.1**): advancing either advances both.
+
+| Read | Document | Scope |
+| --- | --- | --- |
+| **1st** | [The Grimoire 4.1.md](The%20Grimoire%204.1.md) | **The Core Spellbook** — universal engineering spells for any codebase, document, or system. Standalone; **load this first.** It is the introduction; the rest does not make sense without it. |
+| **2nd** | [The Grimoire AppAI Chapter 4.1.md](The%20Grimoire%20AppAI%20Chapter%204.1.md) | **The AppAI Domain Extension** — domain spells for AppAI work: birth (ANIMARE), assimilation (NECROMANCY), residency, memory, limbs, metabolism, reconstruction, and retirement. **Extends the Core; never use it alone.** |
+
+The Core is self-contained: it covers general software engineering, documentation, analysis,
+review, security, and operations. The moment a task touches AppAI, Mantle OS, `.mantle/` nests,
+VCW cubes, zombie bodies, organ maps, SELF/OTHER, MIND fusion, or assimilation, the AppAI
+Chapter is loaded **in addition to** the Core. If the Core is absent, the Chapter permits only
+read-only comprehension (cast `Intellige`) and forbids any mutation.
 
 ## Relationship to the code
 
-The AppAI extension's **NECROMANCY** spell defines the read-only, language-agnostic dissection
+The AppAI Chapter's **NECROMANCY** spell defines the read-only, language-agnostic dissection
 pipeline that `mantle/assimilator/` implements:
 
 - `language_agnostic` doctrine ↔ [`mantle/assimilator/scanner_ts.py`](../../mantle/assimilator/scanner_ts.py) (tree-sitter parser) + [`scanner.py`](../../mantle/assimilator/scanner.py) (neutral classifier, reused across languages).
 - The organ/role model ↔ `scanner.classify_symbol` and [`organ_map.py`](../../mantle/assimilator/organ_map.py).
 
-When the doctrine and the code disagree, treat the code as authoritative for current behavior
-and the Grimoire as the design intent; reconcile by updating whichever is stale.
+The Python package in [`mantle/`](../../mantle/) is the **reference implementation**, not the
+boundary of the doctrine: the Grimoire is language-, AI-, and container-agnostic by design (see
+the project [`README.md`](../../README.md)). When the doctrine and the code disagree, treat the
+code as authoritative for current behavior and the Grimoire as the design intent; reconcile by
+updating whichever is stale.

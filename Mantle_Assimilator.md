@@ -6,7 +6,7 @@
 > App-Inventory gate, the 17-phase pipeline, the symbol-role table, the hook runtime, the
 > hard-fail list, and the APP_INVENTORY template — now lives in **one canonical home**:
 >
-> 👉 **[`docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md`](docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md)**,
+> 👉 **[`docs/grimoire/The Grimoire AppAI Chapter 4.1.md`](docs/grimoire/The%20Grimoire%20AppAI%20Chapter%204.1.md)**,
 > section **NECROMANCY — operational detail (the assimilation manual)**.
 >
 > This consolidation reflects that **the egg and assimilation are the same thing**: NECROMANCY
