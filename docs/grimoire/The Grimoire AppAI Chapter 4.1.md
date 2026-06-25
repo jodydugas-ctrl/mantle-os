@@ -829,7 +829,7 @@ Birth and assimilation share **one substrate, two casts**:
 ### F.5 Working examples & in-repo doctrine
 
 - Runnable: `python -m mantle demo` (narrated Phase-1 life), `examples/sample_app/` (assimilation target), `examples/vcw/` (cube), `examples/phenotype_demo.py`, parity tests in `examples/tests/`.
-- In-repo doctrine: `docs/v3/`, `Mantle_Part1_Body.md` / `Mantle_Part2_Mind.md` (and their audits), `docs/Mantle_Doctrine.md`. The repo also vendors an older grimoire snapshot at `docs/grimoire/`; the canonical, current chapter is **this file (Version 4.1)**.
+- In-repo doctrine: `docs/v3/`, `Mantle_Part1_Body.md` / `Mantle_Part2_Mind.md` (and their audits), `docs/Mantle_Doctrine.md`. The canonical Grimoire lives at `docs/grimoire/` — the Core (`The Grimoire 4.1.md`) and this chapter (`The Grimoire AppAI Chapter 4.1.md`), both at **Version 4.1**; this file is the canonical, current chapter.
 
 ---
 
