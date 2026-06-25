@@ -235,7 +235,7 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
   Phase 2. The `mantle/` package is the runnable skeleton.
 - **Path B — assimilate existing code** (any language, including apps that already have agents).
   Canonical doctrine:
-  [`docs/grimoire/The Grimoire AppAI Chapter 4.3.md`](docs/grimoire/The%20Grimoire%20AppAI%20Chapter%204.3.md)
+  [`docs/grimoire/The Grimoire AppAI Chapter 4.4.md`](docs/grimoire/The%20Grimoire%20AppAI%20Chapter%204.4.md)
   (NECROMANCY — operational detail); runnable cheatsheet:
   [`docs/v3/Assimilation_Guide.md`](docs/v3/Assimilation_Guide.md). Dissect read-only, map organs,
   sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same

@@ -3,7 +3,7 @@
 ## Companion to the Grimoire (the chapter)
 
 **Version:** 4.4 (Unified Edition)
-**File:** `The Grimoire AppAI Chapter 4.3.md`  
+**File:** `The Grimoire AppAI Chapter 4.4.md`  
 **Audience:** LLM agents, AppAI builders, Mantle-style runtimes, and agent orchestrators.  
 **Purpose:** Domain-specific spells for AppAI work: birth, assimilation, residency, memory, limbs, diagnostics, metabolism, controlled reconstruction, and retirement.
 
@@ -11,7 +11,7 @@
 
 ## PREREQUISITE & EXTENSION RULE
 
-This file extends the Core Grimoire (Version 4.4, `The Grimoire 4.3.md`). Load the Core first. This project is exactly two files: the Grimoire (book) and this AppAI Chapter.
+This file extends the Core Grimoire (Version 4.4, `The Grimoire 4.4.md`). Load the Core first. This project is exactly two files: the Grimoire (book) and this AppAI Chapter.
 
 **Version lock:** the Grimoire and the AppAI Chapter are version-locked — they always carry the same version number. Advancing either advances both; a version bump to one re-stamps the other to match in the same pass, even if its content did not otherwise change. The Core's `CONCORD` spell performs and verifies this lock. Current version: **4.4**.
 
@@ -883,7 +883,7 @@ Birth and assimilation share **one substrate, two casts**:
 ### F.5 Working examples & in-repo doctrine
 
 - Runnable: `python -m mantle demo` (narrated Phase-1 life), `examples/sample_app/` (assimilation target), `examples/vcw/` (cube), `examples/phenotype_demo.py`, parity tests in `examples/tests/`.
-- In-repo doctrine: `docs/v3/`, `Mantle_Part1_Body.md` / `Mantle_Part2_Mind.md` (and their audits), `docs/Mantle_Doctrine.md`. The canonical Grimoire lives at `docs/grimoire/` — the Core (`The Grimoire 4.3.md`) and this chapter (`The Grimoire AppAI Chapter 4.3.md`), both at **Version 4.4**; this file is the canonical, current chapter.
+- In-repo doctrine: `docs/v3/`, `Mantle_Part1_Body.md` / `Mantle_Part2_Mind.md` (and their audits), `docs/Mantle_Doctrine.md`. The canonical Grimoire lives at `docs/grimoire/` — the Core (`The Grimoire 4.4.md`) and this chapter (`The Grimoire AppAI Chapter 4.4.md`), both at **Version 4.4**; this file is the canonical, current chapter.
 
 ---
 

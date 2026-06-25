@@ -1,7 +1,7 @@
 # Mantle OS v3 — Assimilation Guide (Path B, runnable cheatsheet)
 
 > **Canonical doctrine moved.** The full assimilation/scanning doctrine now lives in one place:
-> **[`docs/grimoire/The Grimoire AppAI Chapter 4.3.md`](../grimoire/The%20Grimoire%20AppAI%20Chapter%204.3.md)**,
+> **[`docs/grimoire/The Grimoire AppAI Chapter 4.4.md`](../grimoire/The%20Grimoire%20AppAI%20Chapter%204.4.md)**,
 > section **NECROMANCY — operational detail (the assimilation manual)**. This file is now just the
 > runnable command cheatsheet. **The prime directive: do no harm** — the host runs exactly as
 > before, plus a nervous system and a memory.

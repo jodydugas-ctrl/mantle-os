@@ -15,8 +15,8 @@ appear are stale and should be removed. The two files always carry the same vers
 
 | Read | Document | Scope |
 | --- | --- | --- |
-| **1st** | [The Grimoire 4.3.md](The%20Grimoire%204.3.md) | **The Core Spellbook** -- universal engineering spells for any codebase, document, or system. Standalone; **load this first.** It is the introduction; the rest does not make sense without it. Current internal version: **4.4**. |
-| **2nd** | [The Grimoire AppAI Chapter 4.3.md](The%20Grimoire%20AppAI%20Chapter%204.3.md) | **The AppAI Domain Extension** -- domain spells for AppAI work: birth (ANIMARE), assimilation (NECROMANCY), residency, memory, limbs, metabolism, reconstruction, and retirement. **Extends the Core; never use it alone.** Current internal version: **4.4**. |
+| **1st** | [The Grimoire 4.4.md](The%20Grimoire%204.4.md) | **The Core Spellbook** -- universal engineering spells for any codebase, document, or system. Standalone; **load this first.** It is the introduction; the rest does not make sense without it. |
+| **2nd** | [The Grimoire AppAI Chapter 4.4.md](The%20Grimoire%20AppAI%20Chapter%204.4.md) | **The AppAI Domain Extension** -- domain spells for AppAI work: birth (ANIMARE), assimilation (NECROMANCY), residency, memory, limbs, metabolism, reconstruction, and retirement. **Extends the Core; never use it alone.** |
 
 The Core is self-contained: it covers general software engineering, documentation, analysis,
 review, security, operations, product evaluation, and public web-presence research. The moment a

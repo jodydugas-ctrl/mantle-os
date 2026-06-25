@@ -100,7 +100,7 @@ and where each organ's nerve attaches to the cube.
 - **Building from scratch (Path A — `../Mantle_Part1_Body.md`):** design the creature organ by
   organ. Give it a heart first, then senses, memory, immune system, limbs, lungs — a complete
   body that lives with no brain. Only then fuse a mind (Phase 2).
-- **Assimilating existing code (Path B — [`docs/grimoire/The Grimoire AppAI Chapter 4.3.md`](grimoire/The%20Grimoire%20AppAI%20Chapter%204.3.md), NECROMANCY operational detail):** *dissect first.* The Phase 0
+- **Assimilating existing code (Path B — [`docs/grimoire/The Grimoire AppAI Chapter 4.4.md`](grimoire/The%20Grimoire%20AppAI%20Chapter%204.4.md), NECROMANCY operational detail):** *dissect first.* The Phase 0
   App Inventory is exactly this lens applied as a read-only artifact — map every host surface to
   its organ before you touch a line. You are not rewriting the app; you are finding its organs
   and threading a nervous system through them.
