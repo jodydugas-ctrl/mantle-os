@@ -201,6 +201,7 @@ FIELD_GUIDE.md           the runnable manual (mirror of `python -m mantle teach`
 eggs/                    greeter.json (hatch it) · notes_graft.json (a graft egg)
 docs/
   MOLT_LEDGER.md         the Gen-4 evolution record: every molt, its invariants, format verdict
+  grimoire/              the two version-locked Grimoire files: Core + AppAI chapter
   Mantle_v3_Architecture.md · Mantle_v3_Migration.md · v3/ (VCW · lifecycle · contracts · audit · visual)
   assets/                diagrams (SVG, agent-readable) + rendered art
   Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
