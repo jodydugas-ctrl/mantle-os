@@ -1,9 +1,9 @@
-# THE GRIMOIRE 4.4
+# THE GRIMOIRE
 
 ## Core Spellbook for LLM Agents (the book)
 
-**Version:** 4.4 (Unified Edition)
-**File:** `The Grimoire 4.4.md`  
+**Version:** 1.0.0
+**File:** `The Grimoire.md`  
 **Audience:** LLM agents, agent runtimes, and orchestrators.  
 **Purpose:** Universal engineering spells for any codebase, document, system, or technical artifact.
 
@@ -13,7 +13,7 @@
 
 This Core is standalone. Use it for general software engineering, documentation, analysis, review, debugging, security, operations, product evaluation, and technical prose.
 
-If the task is explicitly about AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ maps, SELF/OTHER, MIND fusion, or assimilation, load the companion file `The Grimoire AppAI Chapter 4.4.md` in addition to this Core. If the companion is absent, perform only read-only comprehension using `Intellige` and stop before mutation.
+If the task is explicitly about AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ maps, SELF/OTHER, MIND fusion, or assimilation, load the companion file `The Grimoire AppAI Chapter.md` in addition to this Core. If the companion is absent, perform only read-only comprehension using `Intellige` and stop before mutation.
 
 Do not import domain-specific doctrine into the Core. The Core carries general spells only.
 
@@ -21,11 +21,11 @@ Do not import domain-specific doctrine into the Core. The Core carries general s
 
 ## VERSION LOCK RULE
 
-This project is exactly **two files** and no others: **the Grimoire** (this Core — the "book") and **the AppAI Chapter** (the companion, `The Grimoire AppAI Chapter 4.4.md`). There are no other editions, versions, or copies; any that appear are stale and should be removed.
+This project is exactly **two files** and no others: **the Grimoire** (this Core — the "book") and **the AppAI Chapter** (the companion, `The Grimoire AppAI Chapter.md`). There are no other editions, versions, or copies; any that appear are stale and should be removed.
 
 The two files are **version-locked**: they always carry the same version number. Advancing either advances both. Any change that bumps one file's version requires the other to be re-stamped to the same version in the same pass, even if its own content did not otherwise change. The `CONCORD` spell (Concordia macro) performs and verifies this lock.
 
-Current version: **4.4**.
+Current version: **1.0.0**.
 
 ---
 
@@ -99,7 +99,7 @@ This rule never weakens wards. `Intellige` is read-only and confers no authority
 ## §0. MACHINE-READABLE REGISTRY
 
 ```yaml
-schema_version: grimoire-core-4.4
+schema_version: grimoire-core-1.0.0
 kind: core_spellbook
 canonical_dispatch_loop:
   - GROK

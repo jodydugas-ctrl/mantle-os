@@ -11,12 +11,12 @@ NECROMANCY assimilation pipeline.
 
 The Grimoire is **exactly two version-locked files** -- there are no other editions; any that
 appear are stale and should be removed. The two files always carry the same version number
-(currently **4.4**): advancing either advances both.
+(currently **1.0.0**): advancing either advances both.
 
 | Read | Document | Scope |
 | --- | --- | --- |
-| **1st** | [The Grimoire 4.4.md](The%20Grimoire%204.4.md) | **The Core Spellbook** -- universal engineering spells for any codebase, document, or system. Standalone; **load this first.** It is the introduction; the rest does not make sense without it. |
-| **2nd** | [The Grimoire AppAI Chapter 4.4.md](The%20Grimoire%20AppAI%20Chapter%204.4.md) | **The AppAI Domain Extension** -- domain spells for AppAI work: birth (ANIMARE), assimilation (NECROMANCY), residency, memory, limbs, metabolism, reconstruction, and retirement. **Extends the Core; never use it alone.** |
+| **1st** | [The Grimoire.md](The%20Grimoire.md) | **The Core Spellbook** -- universal engineering spells for any codebase, document, or system. Standalone; **load this first.** It is the introduction; the rest does not make sense without it. |
+| **2nd** | [The Grimoire AppAI Chapter.md](The%20Grimoire%20AppAI%20Chapter.md) | **The AppAI Domain Extension** -- domain spells for AppAI work: birth (ANIMARE), assimilation (NECROMANCY), residency, memory, limbs, metabolism, reconstruction, and retirement. **Extends the Core; never use it alone.** |
 
 The Core is self-contained: it covers general software engineering, documentation, analysis,
 review, security, operations, product evaluation, and public web-presence research. The moment a
@@ -25,9 +25,9 @@ SELF/OTHER, MIND fusion, or assimilation, the AppAI Chapter is loaded **in addit
 If the Core is absent, the Chapter permits only read-only comprehension (cast `Intellige`) and
 forbids any mutation.
 
-## Current addition
+## The Vestigare macro
 
-Version 4.4 adds **Vestigare**, the Core macro for `WEB-PRESENCE-RECON`. Cast it when an artifact,
+The Grimoire includes **Vestigare**, the Core macro for `WEB-PRESENCE-RECON`. Cast it when an artifact,
 product, app, platform, or clone target has a public web presence and public web or image evidence
 would improve understanding, fidelity, or feature parity. It gathers cited official and
 corroborating sources, requires image evidence when visual fidelity matters, and leaves a sourced
