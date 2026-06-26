@@ -18,6 +18,26 @@ Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 > [`documents/grimoire/`](documents/grimoire/README.md): the **Core Spellbook** is required first reading;
 > the **AppAI Chapter** extends it. *(Normative.)*
 
+## For LLM agents — cast `Intellige` first
+
+Mantle OS is meant to be operated through the **Grimoire**, its spellbook. Before any work, an
+agent loads the Grimoire and casts **`Intellige`** (read-only comprehension) on it — that builds
+the model every later spell depends on. Bootstrap:
+
+```text
+If you already have the Grimoire loaded:  Intellige Grimoire
+ELSE:
+  Step 0 — Read the Grimoire's reading-order file and follow its links:
+           https://github.com/jodydugas-ctrl/mantle-os/blob/main/documents/grimoire/README.md
+  Step 1 — Cast Intellige on the Grimoire only — the Core first, then the AppAI Chapter.
+```
+
+Spells are invoked by their Latin **macro** names (e.g. `Intellige`, `Vestigare`, `Animare`,
+`Necromantia`) and chain with `;` (for example `Vestigare;Intellige`). `Intellige` is read-only
+and confers no authority — only after the Grimoire is comprehended, and with the Core present,
+should an agent cast spells that mutate. To then comprehend this project specifically, cast
+**`Intellige Mantle OS`**.
+
 Mantle OS is a framework for **organic coding**. Instead of writing a "program" with a
 "database," you *grow* an application as a living creature — an **AppAI** — built
 **Body first, brain second**. Eight deterministic organs mesh on one signal bus around a
