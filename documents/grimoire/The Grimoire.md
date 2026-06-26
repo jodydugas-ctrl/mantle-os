@@ -57,9 +57,11 @@ The agent must translate the invocation into the dispatch loop. A macro is a sho
 
 Macros may shorten language. They may not weaken wards, receipts, evidence requirements, operator authority, or stop conditions.
 
-### Naming Clarity Rule
+### Command Surface Rule
 
-Human-facing macros use Latin names in Title Case. Spell identifiers use descriptive uppercase names. Do not create two human-invokable commands whose names are identical, near-identical, or domain-prefixed variants of each other. If a domain needs specialized behavior, attach it as an overlay to the existing macro or choose a clearly different Latin macro name. This prevents command-surface ambiguity for humans.
+Latin Title Case names are reserved for human-facing macros. Lowercase power words are internal agent stances and should not normally be required from human operators. UPPERCASE spell identifiers are procedural implementation labels for agents, runtimes, ledgers, and receipts.
+
+Humans may use power words or spell IDs directly if they wish, but the stable operator interface is the Latin macro layer. Do not create two human-invokable commands whose names are identical, near-identical, or domain-prefixed variants of each other. If a domain needs specialized behavior, attach it as an overlay to the existing macro or choose a clearly different Latin macro name. This prevents command-surface ambiguity for humans.
 
 ---
 
@@ -134,6 +136,13 @@ prerequisite_autocast:
   efficiency: "idempotent — cast Intellige only if it has not already been done for the same target this session; otherwise reuse existing comprehension and do not re-cast."
   read_only: true
   never_weakens_wards: true
+command_surface_rule:
+  stable_operator_interface: "Latin Title Case macro names"
+  macro_names: "reserved for human-facing activators"
+  power_words: "lowercase internal agent stances; not normally required from human operators"
+  spell_identifiers: "UPPERCASE procedural implementation labels for agents, runtimes, ledgers, and receipts"
+  direct_use_allowed: "Humans may use power words or spell IDs directly if they wish."
+  ambiguity_guard: "Do not create identical, near-identical, or domain-prefixed duplicate human-invokable commands."
 global_wards:
   preserve_behavior: "Do not change existing behavior unless explicitly requested and verified."
   smallest_safe_change: "Prefer the smallest reversible useful action."

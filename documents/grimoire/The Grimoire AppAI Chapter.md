@@ -278,7 +278,7 @@ These extend Core power words. Some Core words gain domain overlays here.
 
 Extension macros refine Core macros only inside AppAI domain. They never weaken Core wards.
 
-Naming rule: AppAI must not create near-duplicate commands for Core macros. If a Core macro needs AppAI behavior, this chapter supplies an overlay under the same macro or uses a clearly distinct Latin macro such as Aegis.
+Command surface rule: AppAI inherits the Core rule that Latin Title Case names are the stable human-facing macro layer, lowercase power words are internal stances, and UPPERCASE spell identifiers are procedural labels. AppAI must not create near-duplicate commands for Core macros. If a Core macro needs AppAI behavior, this chapter supplies an overlay under the same macro or uses a clearly distinct Latin macro such as Aegis.
 
 ---
 
