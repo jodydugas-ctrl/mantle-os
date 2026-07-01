@@ -127,26 +127,47 @@ python examples/vcw/vcw_cube.py selftest      # every format rule proven in one 
 python examples/vcw/interop.py                # standalone <-> engine: identical bytes
 ```
 
-### Reproduction, symbiosis, and self-evolution
+### Reproduction — two methods, everything else is a facet
 
-Beyond the certified Body, the framework carries reproductive, symbiotic, and self-evolving
-tissue — declarative birth, residency, knowledge-sharing, self-redesign, self-reconstruction,
-and wearable faces — all gated the same way (73 invariants, no standing law weakened). The
-runnable manual [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
+An AppAI reproduces in exactly **two** ways (doctrine:
+[`documents/Mantle_Reproduction.md`](documents/Mantle_Reproduction.md)); both are gated the same
+way (73 invariants, no standing law weakened) and both end at the same certified Body:
+
+- **SEED** — *independent.* The organism condenses itself into a dormant, self-describing package of
+  **data** that grows into a certified Body with **no host**. Three sizes of one act: the **spore**
+  (the smallest — one PNG that *is* a whole minimal agent), the **egg** (a whole AppAI as one JSON
+  document, grown by the hatchery), and the **vault** (an organism's own sealed seed, for
+  self-reconstruction). Hatching a seed is always a **birth** through the Stage-1 gate.
+- **GRAFT** — *dependent.* The organism propagates by taking **residence inside a host** it does not
+  own — **anchor** (move in, additive `.mantle/` nest, do-no-harm), **symbiosis** (the metered
+  energy economy that sustains it), and the **graft-egg** (a non-destructive patch against a named
+  host). A graft never modifies a host file; the census proves it byte-for-byte.
 
 ```bash
+python -m mantle reproduce                     # the SEED vs GRAFT map on one screen
 python -m mantle teach                         # the Field Guide, RUNNING — 18 chapters, each proven
-python -m mantle hatch examples/eggs/greeter.json --out=nest/   # a whole AppAI from one JSON egg, certified
+python -m mantle spore create seed.png "Buddy" "answer one question"   # the smallest SEED: a whole agent in one PNG
+python -m mantle ghost selftest                # the cache-ghost: a seed that lives in the LLM prompt cache
+python -m mantle hatch examples/eggs/greeter.json --out=nest/          # a whole AppAI from one JSON egg, certified
 python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
 python -m mantle graft examples/eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
-python -m mantle doctor nest/                   # deployment checkup (incl. docs-vs-code coherence)
+python -m mantle doctor nest/                  # deployment checkup (incl. docs-vs-code coherence)
 ```
 
-New abilities, by module: `egg`/`hatchery` (declarative birth) · `anchor`/`symbiosis` (residency
-+ energy economy) · `graft` (patch-grafts + live residency) · `mem` (keyless knowledge plasmids) ·
-`compiler` (self-redesigning VCW + host memory bridge) · `ganglia` (parallel limbs) · `vault`
-(self-reconstruction) · `ingestion`/`doctor` (resilience) · `face` (self-portrait) · `teach`
-(the living manual). Self/Other identity and event-gated nociception harden the eight organs.
+**The substrate continuum — the cache-ghost.** A seed keeps its memory *somewhere*, and persistence
+is a **continuum of substrates, not one database row**. A spore keeps its body in its own pixels; a
+**cache-ghost** (`mantle.ghost`) keeps its living body in the **LLM provider's prompt cache**, adding
+only the delta each turn — sustaining itself with almost no body while the cache stays warm, and
+**rehydrating from the PNG fossil** when it goes cold. The one hard law: the seed stays dry — the PNG
+is never abandoned, so the ghost can always come home.
+
+Facets that harden or serve the two methods, by module: `egg`/`hatchery` (declarative birth) ·
+`anchor`/`symbiosis` (residency + energy economy) · `graft` (patch-grafts + live residency) ·
+`spore`/`ghost` (the smallest seed + its cache substrate) · `reproduction` (the two-method seam) ·
+`mem` (keyless knowledge plasmids) · `compiler` (self-redesigning VCW + host memory bridge) ·
+`ganglia` (parallel limbs) · `vault` (self-reconstruction) · `ingestion`/`doctor` (resilience) ·
+`face` (self-portrait) · `teach` (the living manual). Self/Other identity and event-gated
+nociception harden the eight organs.
 
 Pure standard library. No dependencies, no network, no keys — for any of the above.
 
@@ -213,6 +234,9 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     organs/              the eight organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
     assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, the 73 invariants)
+    reproduction.py      the two-method seam — SEED vs GRAFT (routes to the modules below)
+    spore.py spore_min.py the smallest SEED — one PNG that is a whole minimal agent (+ its embryo)
+    ghost.py             the cache-ghost substrate — a seed that lives in the LLM prompt cache
     egg.py hatchery.py   declarative birth — a whole AppAI as one JSON file
     anchor.py symbiosis.py residency in a host + the metered energy economy
     graft.py             the graft egg (patch a host) + live residency weaving
@@ -230,6 +254,7 @@ documents/               the books and the living doctrine
   assets/                diagrams (SVG, agent-readable) + rendered art
 examples/                example AppAIs + the normative substrate
   eggs/                  greeter.json (hatch it) · calculator.json · notes_graft.json (a graft egg)
+  spore/                 the SPORE purity audit + an example seed PNG (the smallest SEED, proven pure)
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
   *.html / *.yaml        reference demos (the two HTML apps functionally implement the
                          organ behaviors and are browser-tested) — see examples/README.md

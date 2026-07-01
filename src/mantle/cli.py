@@ -8,6 +8,13 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
                                                       chapter proves its claim live
     python -m mantle face <organism-dir> [out.png]  the organism paints its own state
 
+  reproduction (two methods; everything else is a facet):
+    python -m mantle reproduce                      the SEED vs GRAFT map, one screen
+    python -m mantle spore create <png> "<name>" "<task>"   the smallest SEED: a whole
+                                                      minimal agent in one PNG
+    python -m mantle ghost selftest                 the cache-ghost substrate: a seed that
+                                                      metabolises in the LLM prompt cache
+
   the gates and narrated tours:
     python -m mantle demo                           narrated Phase-1 life (no LLM)
     python -m mantle audit [--break-hash|--break-primer|--break-seal]
@@ -18,13 +25,15 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
 """
 from __future__ import annotations
 
+import json
 import sys
 
 _USAGE = ("usage: python -m mantle "
           "[anchor <host> | ask <host> [--mind] <question> | feed <host> --credits=N "
           "[--key=NAME] | vitals <host> | hatch <egg> [--out=DIR] | teach [N] | "
           "face <dir> [out.png] | face-list <dir> | face-save <dir> <name> <src> [--default] | "
-          "face-wear <dir> <name> | demo | audit | prove | mind | audit-mind | "
+          "face-wear <dir> <name> | reproduce | spore <op> ... | ghost <op> ... | "
+          "demo | audit | prove | mind | audit-mind | "
           "assimilate <path> [--dry-run] [--out=DIR]]")
 
 
@@ -177,6 +186,70 @@ def cmd_graft(argv):
     return 0
 
 
+def cmd_spore(argv):
+    """The SPORE seed: the smallest reproductive form (mantle.spore)."""
+    from . import spore
+    if not argv:
+        print("usage: python -m mantle spore <create|read|append|rename|verify|extract|demo> ...")
+        print("       (the smallest SEED: one PNG that is a whole minimal agent)")
+        return 2
+    # spore.main dispatches on argv[1], so prepend a placeholder program name.
+    return spore.main(["spore"] + list(argv))
+
+
+def cmd_ghost(argv):
+    """The cache-ghost substrate: a seed that metabolises in the LLM prompt cache (mantle.ghost)."""
+    from . import ghost
+    args, flags = _split(argv)
+    sub = args[0] if args else "selftest"
+    if sub == "selftest":
+        return 0 if ghost.selftest() else 1
+    if not args[1:]:
+        print("usage: python -m mantle ghost <selftest | warm <png> | append <png> <role> "
+              "\"<content>\" | hydrate <png> | status <png>>")
+        return 2
+    png = args[1]
+    ttl = int(flags.get("--ttl", ghost.DEFAULT_TTL_S)) if isinstance(flags.get("--ttl"), str) else ghost.DEFAULT_TTL_S
+    try:
+        if sub == "warm":
+            print(json.dumps(ghost.warm(png, ttl_s=ttl), indent=2))
+        elif sub == "append":
+            if len(args) < 4:
+                print("usage: python -m mantle ghost append <png> <role> \"<content>\"")
+                return 2
+            print(json.dumps(ghost.append(png, args[2], args[3], ttl_s=ttl), indent=2))
+        elif sub == "hydrate":
+            h = ghost.hydrate(png)
+            print("source=%s  rehydrated=%s  entries=%d"
+                  % (h["source"], h["rehydrated"], len(h["body"].get("conversation", []))))
+        elif sub == "status":
+            print(json.dumps(ghost.status(png), indent=2))
+        else:
+            print("unknown ghost subcommand %r" % sub)
+            return 2
+    except ghost.GhostError as e:
+        print("GHOST ERROR: %s" % e)
+        return 1
+    return 0
+
+
+def cmd_reproduce(argv):
+    """Print the two-method reproduction map (SEED vs GRAFT) -- the consolidation, one screen."""
+    from . import reproduction as repro
+    print("=" * 74)
+    print("MANTLE OS REPRODUCTION  ·  two methods, everything else is a facet")
+    print("=" * 74)
+    for method, spec in repro.describe().items():
+        print("\n%-6s (%s)  --  %s" % (method.upper(), spec["kind"], spec["biology"]))
+        for form, desc in spec["forms"].items():
+            print("    %-10s %s" % (form, desc))
+        print("    LAW: %s" % spec["law"])
+    print("\nCall it:  from mantle import reproduction")
+    print("          reproduction.seed('spore'|'egg'|'vault', ...)   # independent")
+    print("          reproduction.graft('anchor'|'graft', ...)       # inside a host")
+    return 0
+
+
 def cmd_doctor(argv):
     args, _flags = _split(argv)
     if not args:
@@ -290,6 +363,12 @@ def main(argv=None):
         return cmd_hatch(rest)
     if cmd == "graft":
         return cmd_graft(rest)
+    if cmd == "spore":
+        return cmd_spore(rest)
+    if cmd == "ghost":
+        return cmd_ghost(rest)
+    if cmd == "reproduce":
+        return cmd_reproduce(rest)
     if cmd == "doctor":
         return cmd_doctor(rest)
     if cmd == "teach":

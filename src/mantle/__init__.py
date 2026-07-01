@@ -39,6 +39,10 @@ _LAZY = {
     "incubate": ("mantle.hatchery", "incubate"),
     "hatch": ("mantle.hatchery", "hatch"),
     "HatchError": ("mantle.hatchery", "HatchError"),
+    # SEED reproduction -- the smallest form: the SPORE (one PNG that is a whole agent)
+    "create_spore": ("mantle.spore", "create_spore"),
+    "read_spore": ("mantle.spore", "read_spore"),
+    "verify_spore": ("mantle.spore", "verify_spore"),
 }
 
 __all__ = list(_LAZY) + ["__version__"]
