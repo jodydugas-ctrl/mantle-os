@@ -32,10 +32,13 @@ ELSE:
   Step 1 — Cast Intellige on the Grimoire only — the Core first, then the AppAI Chapter.
 ```
 
-Spells are invoked by their Latin **macro** names (e.g. `Intellige`, `Vestigare`, `Animare`,
-`Necromantia`) and chain with `;` (for example `Vestigare;Intellige`). `Intellige` is read-only
-and confers no authority — only after the Grimoire is comprehended, and with the Core present,
-should an agent cast spells that mutate. To then comprehend this project specifically, cast
+The stable operator interface is the Latin **macro** layer: `Intellige`, `Vestigare`, `Animare`,
+`Necromantia`, and the other Title Case names in the Grimoire. Lowercase power words are internal
+agent stances, and UPPERCASE spell IDs are procedural labels for agents, runtimes, ledgers, and
+receipts. Humans may use those lower-level names directly, but macros are the intended human-facing
+surface. Macros chain with `;` (for example `Vestigare;Intellige`). `Intellige` is read-only and
+confers no authority — only after the Grimoire is comprehended, and with the Core present, should
+an agent cast spells that mutate. To then comprehend this project specifically, cast
 **`Intellige Mantle OS`**.
 
 Mantle OS is a framework for **organic coding**. Instead of writing a "program" with a

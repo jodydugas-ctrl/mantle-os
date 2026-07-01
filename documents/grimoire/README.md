@@ -11,7 +11,7 @@ NECROMANCY assimilation pipeline.
 
 The Grimoire is **exactly two version-locked files** -- there are no other editions; any that
 appear are stale and should be removed. The two files always carry the same version number
-(currently **1.0.0**): advancing either advances both.
+(currently **2.0.0**): advancing either advances both.
 
 | Read | Document | Scope |
 | --- | --- | --- |
@@ -25,8 +25,15 @@ SELF/OTHER, MIND fusion, or assimilation, the AppAI Chapter is loaded **in addit
 If the Core is absent, the Chapter permits only read-only comprehension (cast `Intellige`) and
 forbids any mutation.
 
-## The Vestigare macro
+## Command surface
 
+The stable operator interface is the Latin Title Case macro layer: examples include `Intellige`,
+`Vestigare`, `Animare`, and `Necromantia`. Lowercase power words are internal agent stances, and
+UPPERCASE spell identifiers are procedural implementation labels for agents, runtimes, ledgers, and
+receipts. Humans may use power words or spell IDs directly if they wish, but they should not be
+required for ordinary operation.
+
+## The Vestigare macro
 The Grimoire includes **Vestigare**, the Core macro for `WEB-PRESENCE-RECON`. Cast it when an artifact,
 product, app, platform, or clone target has a public web presence and public web or image evidence
 would improve understanding, fidelity, or feature parity. It gathers cited official and
