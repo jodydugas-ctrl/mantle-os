@@ -11,7 +11,7 @@ NECROMANCY assimilation pipeline.
 
 The Grimoire is **exactly two version-locked files** -- there are no other editions; any that
 appear are stale and should be removed. The two files always carry the same version number
-(currently **1.0.0**): advancing either advances both.
+(currently **2.0.0**): advancing either advances both.
 
 | Read | Document | Scope |
 | --- | --- | --- |
