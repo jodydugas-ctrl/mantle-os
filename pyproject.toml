@@ -14,7 +14,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mantle-os"
-version = "1.0.0"
+version = "1.1.0"
 description = "Mantle OS: the Homeostatic AppAI Framework — grow software like a living organism, then give it a mind. Reproduction, symbiosis, and self-evolution on the certified Body."
 readme = "README.md"
 license = { file = "LICENSE" }
