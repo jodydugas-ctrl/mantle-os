@@ -135,7 +135,8 @@ way (73 invariants, no standing law weakened) and both end at the same certified
 
 - **SEED** — *independent.* The organism condenses itself into a dormant, self-describing package of
   **data** that grows into a certified Body with **no host**. Three sizes of one act: the **spore**
-  (the smallest — one PNG that *is* a whole minimal agent), the **egg** (a whole AppAI as one JSON
+  (the smallest — one PNG that *is* a whole minimal agent, and also a proof that **VCW is a substrate
+  pattern**: the PNG *is* a VCW layer, not a copy of one), the **egg** (a whole AppAI as one JSON
   document, grown by the hatchery), and the **vault** (an organism's own sealed seed, for
   self-reconstruction). Hatching a seed is always a **birth** through the Stage-1 gate.
 - **GRAFT** — *dependent.* The organism propagates by taking **residence inside a host** it does not
@@ -254,7 +255,7 @@ documents/               the books and the living doctrine
   assets/                diagrams (SVG, agent-readable) + rendered art
 examples/                example AppAIs + the normative substrate
   eggs/                  greeter.json (hatch it) · calculator.json · notes_graft.json (a graft egg)
-  spore/                 the SPORE purity audit + an example seed PNG (the smallest SEED, proven pure)
+  spore/                 a custom VCW substrate in PNG form — purity audit + VCW-conformance proof + a seed
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
   *.html / *.yaml        reference demos (the two HTML apps functionally implement the
                          organ behaviors and are browser-tested) — see examples/README.md

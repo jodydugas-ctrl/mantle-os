@@ -44,6 +44,14 @@ bit locally. It is deliberately **transparent and minimal** — no organs, no im
 rebirth — and it ships its own purity audit (`examples/spore/audit_spore.py`) that **refuses**
 feature creep. The spore is the atom of the SEED method; the egg is the same idea, grown up.
 
+> **The deeper truth: a spore is a custom VCW substrate.** Being the smallest *seed* is only one
+> lens. More fundamentally the PNG *is* the VCW layer — it satisfies the whole VCW memory grammar
+> (addressable region, canonical payload, append-only evolution, integrity, repair signaling,
+> embedded boot, authority, a read/write protocol, and a display surface separate from the
+> substrate). **VCW is the law; the cube is one body plan and the PNG is another.** That is
+> proven, not asserted: `python examples/spore/vcw_conformance.py`. See
+> [The VCW Substrate Guide](guides/VCW_Guide.md#vcw-is-the-law--the-cube-is-one-body-plan-the-png-is-another).
+
 ```bash
 python -m mantle spore create seed.png "Buddy" "answer one question about SPORE"
 python -m mantle spore append seed.png user "what are you?"
