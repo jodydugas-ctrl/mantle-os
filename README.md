@@ -41,6 +41,19 @@ confers no authority — only after the Grimoire is comprehended, and with the C
 an agent cast spells that mutate. To then comprehend this project specifically, cast
 **`Intellige Mantle OS`**.
 
+---
+
+> ## Reading gate — read the Grimoire before continuing
+> **Everything below this line assumes the Grimoire.** The rest of this README — the architecture,
+> the two phases, reproduction, the repository layout — is *downstream* of the doctrine, a map of
+> what the doctrine produces, never a substitute for it. **Do not continue past this gate until you
+> have read [`documents/grimoire/`](documents/grimoire/README.md)** — the **Core Spellbook** first,
+> then the **AppAI Chapter**. Agents: cast **`Intellige`** on the Grimoire now, then return here and
+> read on with it already in mind. Reading the sections below without the Grimoire is reading them
+> out of order. *(Normative.)*
+
+---
+
 Mantle OS is a framework for **organic coding**. Instead of writing a "program" with a
 "database," you *grow* an application as a living creature — an **AppAI** — built
 **Body first, brain second**. Eight deterministic organs mesh on one signal bus around a
