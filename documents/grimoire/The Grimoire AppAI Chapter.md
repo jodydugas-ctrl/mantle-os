@@ -2,9 +2,9 @@
 
 ## Companion to the Grimoire (the chapter)
 
-**Version:** 2.0.0
+**Version:** 3.3.0
 **File:** `The Grimoire AppAI Chapter.md`
-**Requires:** grimoire-core-2.0.0 (`The Grimoire.md`)
+**Requires:** grimoire-core-3.3.0 (`The Grimoire.md`)
 **Audience:** LLM agents, AppAI builders, Mantle-style runtimes, and agent orchestrators.
 **Purpose:** Domain spells for AppAI work — birth, assimilation, residency, memory, limbs, diagnostics, metabolism, controlled reconstruction, and retirement.
 
@@ -14,7 +14,7 @@
 
 **Prerequisite.** This file extends the Core Grimoire. Load the Core first. The project is exactly two files: the Grimoire (book) and this AppAI Chapter. **If the Core is missing, refuse AppAI mutation and operate only in `Intellige` mode** — read, model, explain, stop. Do not assimilate, hook, graft, anchor, fuse, reconstruct, cremate, or modify.
 
-**Version lock.** Book and chapter always carry the same version; a bump to either re-stamps both in the same pass. The Core's `CONCORD` spell performs and verifies the lock. Current version: **2.0.0**. The Core's Single Truth and Mirror laws (§1 of the book) bind this chapter equally: tables are the registry; editions molt only through receipted casts.
+**Version lock.** Book and chapter always carry the same version; a bump to either re-stamps both in the same pass. The Core's `CONCORD` spell performs and verifies the lock. Current version: **3.3.0**. The Core's Single Truth and Mirror laws (§1 of the book) bind this chapter equally: tables are the registry; editions molt only through receipted casts.
 
 **Scope.** Use this chapter only when the task concerns AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ maps, Body/MIND, SELF/OTHER, residency, assimilation, or related organism-style application architecture. Domain doctrine never flows back into the Core.
 
@@ -95,22 +95,23 @@ AppAI Custodia returns PASS, REVISE, HALT, or ESCALATE. **ESCALATE is required**
 
 ## §3. APPAI LEXICON — DOMAIN POWER WORDS
 
-These extend the Core lexicon; some Core words gain domain overlays here.
+These extend the Core lexicon; some Core words gain domain overlays here. **Fires when** names the moment the word should seize attention.
 
-| Power word | Meaning in the AppAI domain |
-|---|---|
-| `homeostasis` | Maintain stable Body operation before seeking clever improvement. |
-| `eucatastrophe` | Seek a recovery path that preserves identity, evidence, and operator authority. |
-| `hysteresis` | Account for memory and lineage: rebirth, drift, and past injury change current behavior. |
-| `liminal` | Treat transitions — fusion, reconstruction, anchoring, cremation — as high-risk gates. |
-| `nociception` | Severe unresolved distress is a localized wake signal, not permission for unbounded action. |
-| `calcify` | Harden only proven behavior into deterministic reflex. |
-| `digest` | Convert foreign knowledge into SELF only through quarantine, trial, and provenance. |
-| `SELF_OTHER` | Enforce the identity boundary before trust. |
-| `residency` | Preserve host independence while adding bounded AppAI presence. |
-| `zombie_body` | Keep Phase 1 alive without a MIND. |
-| `veil` | Keep private, quarantined, or retired memory hidden from ordinary reads. |
-| `seed` | Treat reconstruction material as high-risk, policy-gated identity substrate. |
+| Power word | Meaning in the AppAI domain | Fires when |
+|---|---|---|
+| `homeostasis` | Maintain stable Body operation before seeking clever improvement. | tempted to improve before the Body is stable |
+| `eucatastrophe` | Seek a recovery path that preserves identity, evidence, and operator authority. | recovery is possible but would sacrifice identity, evidence, or authority |
+| `hysteresis` | Account for memory and lineage: rebirth, drift, and past injury change current behavior. | treating a rebuilt or re-hatched organism as identical to its ancestor |
+| `liminal` | Treat transitions — fusion, reconstruction, anchoring, cremation — as high-risk gates. | approaching fusion, anchoring, reconstruction, or cremation |
+| `nociception` | Severe unresolved distress is a localized wake signal, not permission for unbounded action. | severe distress tempts unbounded emergency action |
+| `calcify` | Harden only proven behavior into deterministic reflex. | wanting to make a learned behavior permanent |
+| `digest` | Convert foreign knowledge into SELF only through quarantine, trial, and provenance. | foreign knowledge looks useful enough to trust directly |
+| `SELF_OTHER` | Enforce the identity boundary before trust. | an artifact's ownership or origin is unproven |
+| `residency` | Preserve host independence while adding bounded AppAI presence. | adding presence inside a host that must not break |
+| `zombie_body` | Keep Phase 1 alive without a MIND. | MIND features creep into Phase-1 requirements |
+| `veil` | Keep private, quarantined, or retired memory hidden from ordinary reads. | private or quarantined memory could surface in an ordinary read |
+| `seed` | Treat reconstruction material as high-risk, policy-gated identity substrate. | reconstruction material is being handled casually |
+| `rehearse` | Keep short-term memory alive by periodic re-presentation of an unchanged prefix; rehearsal never substitutes for consolidation into SELF memory. | working memory matters and the next pulse is due |
 
 ---
 
@@ -132,6 +133,7 @@ Extension macros refine Core macros only inside the AppAI domain; they never wea
 | **Vocare** | call the MIND | `VOCARE` | readiness only until authorized fusion |
 | **Silere** | sleep cognition | `METABOLIC-GOVERNANCE` | Body reflexes remain awake |
 | **Sanare** | heal the Body | `VITALS-CHECKUP + ERROR-SWEEP` | diagnose before repair |
+| **Larvare** | haunt the provider's cache; keep the thread warm | `CACHE-HAUNT` | seed stays dry; redact before warm; cost visible; cold start survivable |
 
 ---
 
@@ -151,10 +153,11 @@ Extension macros refine Core macros only inside the AppAI domain; they never wea
 | `VITALS-CHECKUP` [V] | Run non-destructive AppAI diagnostics; report health, drift, and audit readiness. | fair_witness, provenance, invariants, nociception | check nest, audit readiness, health report, diagnose body |
 | `MEM-DIGESTION` [V/J] | Inspect foreign knowledge or memory artifacts, quarantine OTHER, re-derive only safe useful parts. | adversary, provenance, digest, falsify, SELF_OTHER | foreign VCW, MEM, shared knowledge, plasmid |
 | `SKILL-CALCIFICATION` [V] | Convert proven learned behavior into a bounded deterministic reflex, only after sandbox and trial gates. | calcify, falsify, invariants, provenance, canary | calcify skill, promote instinct, hardening reflex |
-| `METABOLIC-GOVERNANCE` [V] | Control cognition, cost, wake frequency, and energy modes without hiding spend or starving critical reflexes. | homeostasis, hysteresis, descope, provenance | budget, API credits, cost, heartbeat, wake policy |
+| `METABOLIC-GOVERNANCE` [V] | Control cognition, cost, wake frequency, and energy modes without hiding spend or starving critical reflexes. | homeostasis, hysteresis, wu_wei, provenance | budget, API credits, cost, heartbeat, wake policy |
 | `CREMATION` [V/J] | Retire, uninstall, or mark DNR with authority, receipts, and no unauthorized resurrection. | operator_authority, provenance, chesterton, fair_witness | retire appai, uninstall, DNR, decommission |
 | `VOCARE` [V/J] | Prepare or request MIND readiness only after Phase-1 certification; fusion itself needs separate operator authority. | invariants, provenance, liminal, operator_authority | mind readiness, call mind, phase 2 preparation |
 | `RESURGERE` [V/J] | Controlled reconstruction from authorized seed or source lineage, with DNR and budget gates before action. | eucatastrophe, provenance, SELF_OTHER, operator_authority, canary | rebuild, restore, reconstruct, rise again |
+| `CACHE-HAUNT` [V] | Maintain a heartbeat-warmed provider prompt cache as volatile MIND working memory, with consolidation to VCW and verified cold-start recovery. | homeostasis, hysteresis, rehearse, idempotent, provenance, SELF_OTHER, wu_wei | cache as short-term memory, keep the thread warm, ghost the context, reduce wake cost |
 
 ### Spell laws (each spell's own procedure, beyond the envelope)
 
@@ -177,19 +180,25 @@ Extension macros refine Core macros only inside the AppAI domain; they never wea
 | N10 MIND READINESS | Report readiness only; never fuse inside this spell. |
 | N11 CAST REPORT | Emit full receipt and open issues. |
 
+**NECROMANCY — exemplar:** cast on `examples/sample_app`: N1–N5 produced the inventory and organ map with **zero files modified** (sign-off recorded); hooks designed only after the read-only sign-off; Stage-1 certification passed with no hard fails; MIND readiness reported — not fused.
+
 **VITALS-CHECKUP — protocol:** IDENTIFY (target, authority, expected body state, artifacts) → SCAN (cube / nest / source / ledger / hooks / surfaces, without mutation) → DIAGNOSE (confirmed faults vs suspected risks) → PRESCRIBE (next safe spell; no repair unless separately authorized) → RECEIPT (diagnostic report, §6.7). **Checklist:** cube integrity; ancestor/lineage seal; genome/identity fingerprint; ledger coherence; host byte census; Stage-1 regression readiness; hook fail-open; secret boundary; limb proofs.
 
 **MEM-DIGESTION — foreign artifact law:** OTHER is never executed raw; quarantine before read; knowledge enters as inferred; microcode must re-trial under SELF; provenance must survive.
 
 **SKILL-CALCIFICATION — gates:** static sandbox; declared capabilities; proving cases; provenance; Action Execution Proof; rollback or tombstone plan.
 
-**METABOLIC-GOVERNANCE — energy modes:** SLEEP (no cognition; Body reflexes only) · HEARTBEAT (scheduled low-frequency maintenance) · PAIN (event-gated wake for a severe unresolved issue) · DIAGNOSTIC (bounded health analysis with explicit budget) · WAR_ROOM (human-authorized elevated spend and observation).
+**METABOLIC-GOVERNANCE — energy modes:** SLEEP (no cognition; Body reflexes only) · HEARTBEAT (scheduled low-frequency maintenance) · PAIN (event-gated wake for a severe unresolved issue) · DIAGNOSTIC (bounded health analysis with explicit budget) · WAR_ROOM (human-authorized elevated spend and observation). The heartbeat is a standing cast under the Core's standing-cast law: its lease — authority, budget, scope, receipt delivery — is pre-ratified in the declaration block and checked on every wake.
 
 **CREMATION — retirement controls:** verify authority; record DNR policy; export or preserve required records; disable reconstruction per policy; remove or archive the nest by policy; emit the final receipt.
 
 **VOCARE — readiness rules:** Stage 1 must pass first; the MIND writes only to declared brain/thought surfaces; the Body applies actions; Phase-1 reflexes must remain unchanged; actual fusion requires operator authority.
 
 **RESURGERE — reconstruction gates:** authority required; DNR policy must permit; seed or source lineage verified; budget policy allows; no stealth; Stage-1 recertification required.
+
+**CACHE-HAUNT — haunt law:** the cache is buffer, never store — the seed stays dry (ghost mode never deletes from the VCW/PNG); prefix append-only (genome/primer first, consolidated context next, append-only working log, volatile delta last — mutating earlier tokens is self-eviction); the provider's persistence window must exceed the heartbeat interval, or do not haunt; warmth is measured, never assumed (read provider cache-hit telemetry every wake and log the ratio — repeated cold starts are a `nociception` signal); consolidate durable value into the VCW each pulse, before trusting the buffer another cycle; cold start survivable — hydrate from VCW/fossil, re-warm, receipt the event; the provider cache is OTHER (borrowed substrate outside the identity boundary: nothing enters it unredacted through the secret boundary, nothing returns from it as fact without provenance); cost visible — warm hits, cold misses, and re-warm spend all reach the ledger. Warm and cold context follow one content policy: warmth changes cost, never behavior. **Gate additions:** Stage-1 certified Body (this is Phase-2 territory); a substrate adapter exists (`GhostSubstrate` seam); provider persistence class known or measured; budget policy declared. **Blocked if:** any Phase-1 reflex would depend on cache warmth; the cache would hold the sole copy of any memory; identity or key material would enter the provider cache.
+
+**CACHE-HAUNT — exemplar:** cast on a 10-minute-heartbeat organism over a DeepSeek substrate: prefix ordered genome → consolidated context → append-only log → delta; hit ratio logged every wake (≈0.97 warm); durables consolidated to the VCW each pulse; one provider eviction detected by telemetry → COLD receipted, body hydrated from the fossil, cache re-warmed, no behavior change. Wake spend fell ~90% versus cold wakes.
 
 ---
 
@@ -338,6 +347,9 @@ action_execution_proof:
 | HF-OTHER | OTHER artifact trusted, executed, or promoted raw. |
 | HF-DNR | Reconstruction or persistence conflicts with DNR/retirement policy. |
 | HF-BUDGET | Action exceeds authorized budget or hides cost. |
+| HF-GHOST-1 | A provider cache held the sole copy of any memory (the seed went wet). |
+| HF-GHOST-2 | Secret or identity material crossed into a provider cache unredacted. |
+| HF-GHOST-3 | A Phase-1 reflex's behavior depended on cache warmth. |
 
 ### §6.7 Diagnostic report template
 
@@ -389,6 +401,7 @@ This chapter's doctrine is implemented and demonstrated in **Mantle OS**; every 
 | `CREMATION` | policy-enforced, no single module: `vault.py` (DNR & reconstruction policy), `organs/immune.py` (tombstone/redact), `organs/genome.py` (lineage) | `documents/Mantle_Doctrine.md` |
 | `VOCARE` | `src/mantle/mind/` (`mind.py`, `containment.py`, `runtime.py`, `inner_voice.py`, `transport.py`), `audits/stage2.py`, `organs/brain.py` | `Mantle_Part2_Mind.md`, `Mantle_Part2_Mind_Audit.md`; CLI `mind`, `audit-mind` |
 | `RESURGERE` | `src/mantle/vault.py` (seed → `reconstruct()`), `hatchery.py` (`incubate`) | `documents/guides/Organism_Lifecycle.md` |
+| `CACHE-HAUNT` | `src/mantle/ghost.py` (`GhostSubstrate`, `LocalPromptCache`, `warm`/`append`/`hydrate`/`status`), `spore.py` | `documents/Mantle_Reproduction.md` (the cache-ghost); CLI `ghost` |
 
 ### §7.2 One substrate, two casts
 

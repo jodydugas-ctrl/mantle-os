@@ -11,12 +11,12 @@ NECROMANCY assimilation pipeline.
 
 The Grimoire is **exactly two version-locked files** -- there are no other editions; any that
 appear are stale and should be removed. The two files always carry the same version number
-(currently **2.0.0**): advancing either advances both.
+(currently **3.3.0**): advancing either advances both.
 
 | Read | Document | Scope |
 | --- | --- | --- |
 | **1st** | [The Grimoire.md](The%20Grimoire.md) | **The Core Spellbook** -- universal engineering spells for any codebase, document, or system. Standalone; **load this first.** It is the introduction; the rest does not make sense without it. |
-| **2nd** | [The Grimoire AppAI Chapter.md](The%20Grimoire%20AppAI%20Chapter.md) | **The AppAI Domain Extension** -- domain spells for AppAI work: birth (ANIMARE), assimilation (NECROMANCY), residency, memory, limbs, metabolism, reconstruction, and retirement. **Extends the Core; never use it alone.** |
+| **2nd** | [The Grimoire AppAI Chapter.md](The%20Grimoire%20AppAI%20Chapter.md) | **The AppAI Domain Extension** -- domain spells for AppAI work: birth (ANIMARE), assimilation (NECROMANCY), residency, memory, limbs, diagnostics, metabolism, cache-as-working-memory (CACHE-HAUNT), controlled reconstruction, and retirement. **Extends the Core; never use it alone.** |
 
 The Core is self-contained: it covers general software engineering, documentation, analysis,
 review, security, operations, product evaluation, and public web-presence research. The moment a
@@ -47,6 +47,12 @@ pipeline that `src/mantle/assimilator/` implements:
 
 - `language_agnostic` doctrine -> [`src/mantle/assimilator/scanner_ts.py`](../../src/mantle/assimilator/scanner_ts.py) (tree-sitter parser) + [`scanner.py`](../../src/mantle/assimilator/scanner.py) (neutral classifier, reused across languages).
 - The organ/role model -> `scanner.classify_symbol` and [`organ_map.py`](../../src/mantle/assimilator/organ_map.py).
+
+The AppAI Chapter's **CACHE-HAUNT** spell (macro **Larvare**) -- keep the MIND's working memory warm
+in the provider's prompt cache while the seed stays dry -- is implemented by the cache-ghost:
+[`src/mantle/ghost.py`](../../src/mantle/ghost.py) (`GhostSubstrate`, `LocalPromptCache`,
+`warm`/`append`/`hydrate`/`status`) layered on [`spore.py`](../../src/mantle/spore.py); doctrine in
+[`../Mantle_Reproduction.md`](../Mantle_Reproduction.md).
 
 The Python package in [`src/mantle/`](../../src/mantle/) is the **reference implementation**, not the
 boundary of the doctrine: the Grimoire is language-, AI-, and container-agnostic by design (see
