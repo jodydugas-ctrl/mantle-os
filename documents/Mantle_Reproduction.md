@@ -145,23 +145,61 @@ hash. From the spore's point of view that is indistinguishable from persistence 
 in a **superposition** between the PNG file and the cache, and a request collapses it into whichever
 substrate is warmer. The PNG is the fossil record; the cache is the living metabolism.
 
-**The one hard law — the seed stays dry.** Ghost mode *never* deletes memory from the PNG. The cache
-is acceleration and reach, not the sole store: if the cache dies, `hydrate()` rebuilds the whole body
-from the PNG alone. That is what keeps "sustaining without a body" honest rather than fragile.
+**The first hard law — the seed stays dry.** Ghost mode *never* deletes memory from the PNG. The
+cache is acceleration and reach, not the sole store: if the cache dies, `hydrate()` rebuilds the
+whole body from the PNG alone. That is what keeps "sustaining without a body" honest rather than
+fragile.
+
+**The second hard law — the cache is write-only.** A real provider's prompt cache can only ever be
+spoken *into*, never read back *out of*: there is no fetch API, the full prefix still travels on
+every request, and the only warmth signal is telemetry (`cache_read_input_tokens`) on the *next*
+response. Warmth buys skipped **prefill compute** — roughly a tenth of the input price on the cached
+span, and a large latency drop — never storage or bandwidth. So on a real substrate the dry-seed law
+is not prudence but physics: the PNG is always the only recoverable copy. Substrates declare this
+(`write_only=True`), `hydrate()` then always rebuilds from the fossil, and `status` reports
+**PREDICTED-WARM / PREDICTED-COLD** rather than a warmth it cannot actually see.
+
+**The third hard law — the prefix is append-only.** Providers match byte-exact prefixes; mutating
+one early byte evicts everything after it. The cache-facing body is therefore *not* the spore's full
+JSON state (whose sorted keys and `updated_at` would shift early bytes every turn) but a
+**prefix-stable stream**: one immutable genesis line (identity at birth, tools protocol, embedded
+tool hash), then one appended line per conversation turn. Growing the body only ever appends bytes —
+the selftest proves the byte-prefix property. The PNG payload format is untouched.
+
+Three facets of governed haunting follow from the laws:
+
+- **TOO-SMALL-TO-HAUNT** — providers *silently* refuse prefixes below a model-dependent floor
+  (1024–4096 tokens). The ghost measures and refuses to pretend: small spores live cold-and-cheap
+  in their PNGs and *grow into* hauntability.
+- **Warmth telemetry → nociception** — warm hits, cold starts, and the hit ratio are recorded in
+  the ghost pointer every wake; **three consecutive cold wakes** raise a nociception flag (the
+  heartbeat is slower than the true TTL, the prefix is unstable, or the provider is evicting).
+- **Heartbeat/TTL economics** — a haunting heartbeat must beat faster than the TTL
+  (`heartbeat_interval_s()` ≈ 0.9×TTL; 270 s under the default 5-minute cache). Reads refresh the
+  TTL, so an actively-conversing ghost sustains itself at read prices. Cache writes cost 1.25×
+  (5-minute TTL) or 2× (1-hour), so warm-keeping pays only when the expected warm reads before the
+  next cold event exceed the break-even count (2 at 5 m, 3 at 1 h). Sparse organisms take the
+  1-hour TTL or sleep cold; SLEEP mode never keep-alives.
 
 ```bash
-python -m mantle ghost selftest          # proves the continuum + the dry-seed law end to end
+python -m mantle ghost selftest          # proves the continuum, the three laws, the gate,
+                                         #   telemetry/nociception, and the write-only seam
 python -m mantle ghost warm    seed.png  # push the body into the (stand-in) prompt cache
 python -m mantle ghost append  seed.png user "and now?"   # sends only the delta while warm
 python -m mantle ghost hydrate seed.png  # from cache when warm; from the PNG when cold
+python -m mantle.ghost_anthropic seed.png   # ONE real warm against Anthropic (needs a key)
 ```
 
 > **Honest boundary.** `mantle.ghost` drives the *protocol* against a pluggable `GhostSubstrate`.
 > The shipped `LocalPromptCache` is a file-backed **stand-in** for a provider's prompt cache (TTL +
-> eviction). A real deployment swaps in an adapter mapping `warm`/`extend`/`fetch` onto Anthropic,
-> OpenAI, or Gemini prompt caching — the ghost logic above it does not change. Cache-ghost is Mantle
-> tissue **layered on** the spore format; it never lives inside the pure `spore.py`, whose purity
-> audit forbids exactly this kind of growth.
+> eviction) that — unlike reality — *can* be read back, so offline tests stay deterministic. The
+> **real adapter** is [`src/mantle/ghost_anthropic.py`](../src/mantle/ghost_anthropic.py)
+> (`AnthropicPromptCache`): write-only, model-scoped, TTL "5m" or "1h", `warm`/`extend` mapped onto
+> documented `max_tokens: 0` pre-warm requests with `cache_control` breakpoints (genesis line first,
+> rolling log tail second, two spare). It is optional Phase-2 tissue — it needs the `anthropic` SDK
+> and an API key, and nothing else imports it, so the gates stay keyless and offline. Cache-ghost is
+> Mantle tissue **layered on** the spore format; it never lives inside the pure `spore.py`, whose
+> purity audit forbids exactly this kind of growth.
 
 ---
 
