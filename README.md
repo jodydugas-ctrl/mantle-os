@@ -183,7 +183,10 @@ Facets that harden or serve the two methods, by module: `egg`/`hatchery` (declar
 `face` (self-portrait) · `teach` (the living manual). Self/Other identity and event-gated
 nociception harden the eight organs.
 
-Pure standard library. No dependencies, no network, no keys — for any of the above.
+Pure standard library. No dependencies, no network, no keys — for any of the above. (One
+deliberate exception, imported by nothing else: `mantle.ghost_anthropic`, the *real* cache-ghost
+substrate over Anthropic prompt caching, needs the `anthropic` SDK and an API key — the offline
+stand-in in `mantle.ghost` covers every gate and demo without either.)
 
 ```python
 from mantle import Organism
