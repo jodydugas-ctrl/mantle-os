@@ -11,7 +11,7 @@ NECROMANCY assimilation pipeline.
 
 The Grimoire is **exactly two version-locked files** -- there are no other editions; any that
 appear are stale and should be removed. The two files always carry the same version number
-(currently **3.3.0**): advancing either advances both.
+(currently **3.4.0**): advancing either advances both.
 
 | Read | Document | Scope |
 | --- | --- | --- |
@@ -24,6 +24,27 @@ task touches AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ
 SELF/OTHER, MIND fusion, or assimilation, the AppAI Chapter is loaded **in addition to** the Core.
 If the Core is absent, the Chapter permits only read-only comprehension (cast `Intellige`) and
 forbids any mutation.
+
+## Bootstrapping the Grimoire (Intellige)
+
+`Intellige` is read-only comprehension: read, model, and explain before acting. It grants no
+authority to edit, mutate, or execute. To cast it on the Grimoire itself:
+
+1. **If the Grimoire is already attached** to the current context, use that document and proceed.
+2. **Otherwise**, read this README -- the canonical reading-order file -- and follow the order it
+   names: the Core Spellbook first, then the AppAI Chapter **only** if the task is Mantle OS /
+   AppAI-specific.
+3. **If the files cannot be loaded** (no web or repository access), stop. Do not guess the
+   doctrine -- return a brief blocked receipt naming the missing required files.
+
+This README is the **source of truth for canonicality**: only the two files above are canonical.
+Legacy files, old editions, summaries, and duplicate copies are not canonical unless this file
+directs you to them.
+
+An `Intellige` cast closes with an **Intellige receipt**: *Cast, Loaded Sources, Comprehension,
+AppAI Scope Decision* (whether the Chapter was loaded and why, or skipped because the target is not
+AppAI/Mantle work), *Aporias / Unknowns,* and a *Safe Next Cast.* See the Core Spellbook's §6.2
+`INTELLIGE` for the full form.
 
 ## Command surface
 

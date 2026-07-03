@@ -2,9 +2,9 @@
 
 ## Companion to the Grimoire (the chapter)
 
-**Version:** 3.3.0
+**Version:** 3.4.0
 **File:** `The Grimoire AppAI Chapter.md`
-**Requires:** grimoire-core-3.3.0 (`The Grimoire.md`)
+**Requires:** grimoire-core-3.4.0 (`The Grimoire.md`)
 **Audience:** LLM agents, AppAI builders, Mantle-style runtimes, and agent orchestrators.
 **Purpose:** Domain spells for AppAI work — birth, assimilation, residency, memory, limbs, diagnostics, metabolism, controlled reconstruction, and retirement.
 
@@ -14,9 +14,9 @@
 
 **Prerequisite.** This file extends the Core Grimoire. Load the Core first. The project is exactly two files: the Grimoire (book) and this AppAI Chapter. **If the Core is missing, refuse AppAI mutation and operate only in `Intellige` mode** — read, model, explain, stop. Do not assimilate, hook, graft, anchor, fuse, reconstruct, cremate, or modify.
 
-**Version lock.** Book and chapter always carry the same version; a bump to either re-stamps both in the same pass. The Core's `CONCORD` spell performs and verifies the lock. Current version: **3.3.0**. The Core's Single Truth and Mirror laws (§1 of the book) bind this chapter equally: tables are the registry; editions molt only through receipted casts.
+**Version lock.** Book and chapter always carry the same version; a bump to either re-stamps both in the same pass. The Core's `CONCORD` spell performs and verifies the lock. Current version: **3.4.0**. The Core's Single Truth and Mirror laws (§1 of the book) bind this chapter equally: tables are the registry; editions molt only through receipted casts.
 
-**Scope.** Use this chapter only when the task concerns AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ maps, Body/MIND, SELF/OTHER, residency, assimilation, or related organism-style application architecture. Domain doctrine never flows back into the Core.
+**Scope.** Use this chapter only when the task concerns AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ maps, Body/MIND, SELF/OTHER, residency, assimilation, or related organism-style application architecture. Domain doctrine never flows back into the Core. Loading this chapter for a task that is **not** AppAI/Mantle work — applying Body, MIND, zombie-body, VCW, SELF/OTHER, residency, organ, or assimilation concepts to an ordinary software project — is a **comprehension error**, not a harmless extra: it imports assumptions the target does not hold (the book's §11 doctrine-bleed finding, 2026-07-02). When `Intellige` is cast, its receipt states an **AppAI Scope Decision** — whether this chapter was loaded and why, or that the target does not use Mantle OS / AppAI doctrine and it was skipped.
 
 **Autocast inheritance.** AppAI macros inherit the Core's Prerequisite Autocast Rule: where a domain spell requires intimate comprehension of its target — `NECROMANCY` reading a host, `MEM-DIGESTION` inspecting a foreign artifact — the agent auto-casts `Intellige` on that target first if not already done this session. Read-only; never weakens Core or AppAI wards.
 
