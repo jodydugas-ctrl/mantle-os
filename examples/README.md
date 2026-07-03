@@ -15,6 +15,8 @@ These are proven by the framework's own gate — read and run them:
   **`../examples/eggs/notes_graft.json`** — a graft egg targeting `sample_app`.
   **`../examples/eggs/calculator.json`** — an egg that declares its own **origin face** (a real HTML
   calculator front-end), so the hatched AppAI is born wearing it.
+  **`../examples/eggs/shift_companion.json`** — a local-first shift/handoff AppAI with its own
+  browser applet face; open `web_appai_shift_companion/index.html` directly, or hatch the egg.
 - **`phenotype_demo.py`** — wearable app-faces, end to end (M9): `python examples/phenotype_demo.py`.
   Hatches the calculator (born wearing its origin face), seals the real
   `Mantle_Spreadsheet_Agent.html` surface as a second face, wears it (source recovers byte-for-byte),
