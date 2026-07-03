@@ -11,7 +11,7 @@ NECROMANCY assimilation pipeline.
 
 The Grimoire is **exactly two version-locked files** -- there are no other editions; any that
 appear are stale and should be removed. The two files always carry the same version number
-(currently **3.4.0**): advancing either advances both.
+(currently **3.5.0**): advancing either advances both.
 
 | Read | Document | Scope |
 | --- | --- | --- |
@@ -28,7 +28,9 @@ forbids any mutation.
 ## Bootstrapping the Grimoire (Intellige)
 
 `Intellige` is read-only comprehension: read, model, and explain before acting. It grants no
-authority to edit, mutate, or execute. To cast it on the Grimoire itself:
+authority to edit, mutate, or execute. It is **web-aware**: when the target has a material public
+web presence, Intellige runs a bounded `WEB-PRESENCE-RECON` pass (under Vestigare constraints,
+with citations) as part of comprehension before finalizing. To cast it on the Grimoire itself:
 
 1. **If the Grimoire is already attached** to the current context, use that document and proceed.
 2. **Otherwise**, read this README -- the canonical reading-order file -- and follow the order it
@@ -59,7 +61,9 @@ The Grimoire includes **Vestigare**, the Core macro for `WEB-PRESENCE-RECON`. Ca
 product, app, platform, or clone target has a public web presence and public web or image evidence
 would improve understanding, fidelity, or feature parity. It gathers cited official and
 corroborating sources, requires image evidence when visual fidelity matters, and leaves a sourced
-evidence packet for the next spell.
+evidence packet for the next spell. `Intellige` also invokes it automatically as a bounded
+comprehension subroutine when the target's public web presence is material to understanding;
+Vestigare remains the macro to cast when the public-presence research is itself the task.
 
 ## Relationship to the code
 
