@@ -166,40 +166,60 @@ JSON state (whose sorted keys and `updated_at` would shift early bytes every tur
 tool hash), then one appended line per conversation turn. Growing the body only ever appends bytes —
 the selftest proves the byte-prefix property. The PNG payload format is untouched.
 
-Three facets of governed haunting follow from the laws:
+**The fourth hard law — the window must fit the heartbeat, or DO-NOT-HAUNT.** Provider cache
+windows differ by a lot — most are 15–60 minutes, but some are as short as ~5 minutes — while a
+haunting organism has a *fixed* heartbeat (a METABOLIC-GOVERNANCE property, classically ~10 min).
+The heartbeat must fit inside the window or the prefix is cold on *every* wake, paying the write
+premium for a cache that never gets read. So haunting is a per-deployment feasibility check with a
+hard **DO-NOT-HAUNT** verdict, remedied by lengthening the window (or an extended-TTL tier), or by
+**supplementing the heartbeat** — keep the scheduled beat and push a one-shot *forced* beat partway
+through the window (a 10-min beat plus a forced beat at +4 min covers a 5-min window without
+disturbing the base timer). `hauntable(window_s, heartbeat_s)` decides; `warm()`/`status()` refuse
+when it fails.
 
-- **TOO-SMALL-TO-HAUNT** — providers *silently* refuse prefixes below a model-dependent floor
-  (1024–4096 tokens). The ghost measures and refuses to pretend: small spores live cold-and-cheap
-  in their PNGs and *grow into* hauntability.
+**The neutrality law — the provider is configuration, never code.** Mantle OS is a nervous-system
+transplant: it must join *any* MIND to *any* container, so no module may name or code for a
+specific LLM or company. A provider's window, minimum prefix, endpoint, auth headers, and any cache
+directive are **data the operator supplies** — exactly as the MIND transport is a pluggable
+`model(prompt) → text` with no vendor SDK. Tools may be *configured* to run optimally against a
+given provider; they may never be *coded* for one.
+
+Facets of governed haunting that follow from the laws:
+
+- **TOO-SMALL-TO-HAUNT** — providers *silently* refuse prefixes below a floor (often ~1k–4k
+  tokens; the exact number is provider config). The ghost measures and refuses to pretend: small
+  spores live cold-and-cheap in their PNGs and *grow into* hauntability.
 - **Warmth telemetry → nociception** — warm hits, cold starts, and the hit ratio are recorded in
   the ghost pointer every wake; **three consecutive cold wakes** raise a nociception flag (the
-  heartbeat is slower than the true TTL, the prefix is unstable, or the provider is evicting).
-- **Heartbeat/TTL economics** — a haunting heartbeat must beat faster than the TTL
-  (`heartbeat_interval_s()` ≈ 0.9×TTL; 270 s under the default 5-minute cache). Reads refresh the
-  TTL, so an actively-conversing ghost sustains itself at read prices. Cache writes cost 1.25×
-  (5-minute TTL) or 2× (1-hour), so warm-keeping pays only when the expected warm reads before the
-  next cold event exceed the break-even count (2 at 5 m, 3 at 1 h). Sparse organisms take the
-  1-hour TTL or sleep cold; SLEEP mode never keep-alives.
+  heartbeat is slower than the true window, the prefix is unstable, or the provider is evicting).
+- **Neutral economics** — reads refresh the window, so an actively-conversing ghost sustains
+  itself at read prices; a cache write carries a premium, so warm-keeping pays only when the
+  expected warm reads before the next cold event exceed a break-even count. That count is a
+  function of the *provider's own* write premium (`break_even_reads(write_premium)`), never a
+  hardcoded rate. SLEEP mode never keep-alives.
 
 ```bash
-python -m mantle ghost selftest          # proves the continuum, the three laws, the gate,
+python -m mantle ghost selftest          # proves the continuum, the hard laws, the gates,
                                          #   telemetry/nociception, and the write-only seam
 python -m mantle ghost warm    seed.png  # push the body into the (stand-in) prompt cache
 python -m mantle ghost append  seed.png user "and now?"   # sends only the delta while warm
 python -m mantle ghost hydrate seed.png  # from cache when warm; from the PNG when cold
-python -m mantle.ghost_anthropic seed.png   # ONE real warm against Anthropic (needs a key)
+# ONE real warm against a provider you configure (env-only; no vendor hardcoded, no SDK):
+GHOST_CACHE_URL=... GHOST_MODEL=... GHOST_KEY=... python -m mantle.ghost_http seed.png
 ```
 
 > **Honest boundary.** `mantle.ghost` drives the *protocol* against a pluggable `GhostSubstrate`.
 > The shipped `LocalPromptCache` is a file-backed **stand-in** for a provider's prompt cache (TTL +
 > eviction) that — unlike reality — *can* be read back, so offline tests stay deterministic. The
-> **real adapter** is [`src/mantle/ghost_anthropic.py`](../src/mantle/ghost_anthropic.py)
-> (`AnthropicPromptCache`): write-only, model-scoped, TTL "5m" or "1h", `warm`/`extend` mapped onto
-> documented `max_tokens: 0` pre-warm requests with `cache_control` breakpoints (genesis line first,
-> rolling log tail second, two spare). It is optional Phase-2 tissue — it needs the `anthropic` SDK
-> and an API key, and nothing else imports it, so the gates stay keyless and offline. Cache-ghost is
-> Mantle tissue **layered on** the spore format; it never lives inside the pure `spore.py`, whose
-> purity audit forbids exactly this kind of growth.
+> **real substrate** is [`src/mantle/ghost_http.py`](../src/mantle/ghost_http.py)
+> (`HttpPromptCache`): write-only, **vendor-neutral**, speaking the OpenAI-compatible
+> chat-completions shape over pure-stdlib `urllib` (lazy import, no SDK). The provider is entirely
+> configured — endpoint URL, model string, auth headers, cache window, minimum prefix, and an
+> optional `request_shaper` hook for providers that want an explicit cache directive — so swapping
+> providers is swapping config, never code. It is optional Phase-2 tissue: it needs a network and a
+> key, and nothing else imports it, so the gates stay keyless and offline. Cache-ghost is Mantle
+> tissue **layered on** the spore format; it never lives inside the pure `spore.py`, whose purity
+> audit forbids exactly this kind of growth.
 
 ---
 
