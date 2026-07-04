@@ -43,13 +43,31 @@ only caches a token PREFIX keyed by a hash. From the Spore's point of view that 
 indistinguishable from persistence -- so the body exists in a superposition between the PNG
 file and the cache, and a request collapses it into whichever substrate is warmer.
 
+NO VENDOR IS CODED INTO THE BODY (the neutrality law). Mantle OS is a nervous-system transplant:
+it must join *any* MIND to *any* container, so a provider is CONFIGURATION, never code -- exactly
+as the MIND transport is a pluggable `model(prompt) -> text` with no vendor SDK. A provider's
+cache window, minimum prefix, auth headers, and any cache directive are DATA the operator
+supplies; no module names a company in a code path.
+
+WINDOW FEASIBILITY (the fourth reality). Provider cache windows differ by a lot -- most are on the
+order of 15-60 minutes, but some are as short as ~5 minutes. A haunting organism has a FIXED
+heartbeat (a METABOLIC-GOVERNANCE property, classically ~10 minutes). The heartbeat must fit
+inside the window or the prefix is COLD on every wake -- paying the write premium each time for a
+cache that never gets read. So haunting is a per-deployment feasibility check, not a given: when
+the window is shorter than the heartbeat, the verdict is **DO-NOT-HAUNT** unless the operator
+(a) shortens or SUPPLEMENTS the heartbeat -- e.g. keep the scheduled beat and push a one-shot
+"forced beat" partway through the window, so a 10-min beat becomes 0, 4, 10, 14, ... covering a
+5-min window without disturbing the base timer -- or (b) selects a provider window (or an
+extended-TTL tier) longer than the heartbeat. `hauntable()` / `max_hauntable_heartbeat_s()`
+compute this; `warm()` and `status()` refuse with DO-NOT-HAUNT when it fails.
+
 ------------------------------------------------------------------------------------------------
-Honest boundary: the shipped `LocalPromptCache` is a file-backed stand-in for the provider's
-prompt cache (content-addressed key, TTL, eviction) that -- unlike reality -- CAN be read back,
-so deterministic tests work offline. The real adapter lives in `mantle.ghost_anthropic`
-(`AnthropicPromptCache`): write-only, optional, needs the `anthropic` SDK and an API key, and
-is imported by nothing else. The ghost logic above the `GhostSubstrate` seam is identical for
-both.
+Honest boundary: the shipped `LocalPromptCache` is a file-backed stand-in for a provider's prompt
+cache (content-addressed key, TTL, eviction) that -- unlike reality -- CAN be read back, so
+deterministic tests work offline. The real substrate is `mantle.ghost_http.HttpPromptCache`: a
+neutral, config-driven, OpenAI-compatible HTTP adapter (pure stdlib urllib, lazy import, no
+vendor SDK, nothing hardcoded) that is write-only and imported by nothing else. The ghost logic
+above the `GhostSubstrate` seam is identical for every substrate.
 
 Cache-ghost is Mantle tissue LAYERED ON the spore format; it lives here, never inside the pure
 spore.py (whose purity audit forbids exactly this kind of growth). It touches a Spore only
@@ -73,27 +91,52 @@ from typing import Any, Dict, List, Optional
 from . import spore as _spore
 
 GHOST_KEY = "ghost"                      # the transparent extra key inside a spore's state
-DEFAULT_TTL_S = 300                      # provider prompt caches are short-lived (minutes)
+DEFAULT_TTL_S = 300                      # the stand-in's default local expiry (arbitrary)
 SUBSTRATE_NAME = "local-prompt-cache"    # the shipped stand-in; real adapters override this
 
-# --- METABOLIC-GOVERNANCE constants (heartbeat / TTL policy) -------------------------------
-# A haunting organism's heartbeat must beat FASTER than the cache TTL or the prefix dies
-# between wakes; the safety factor leaves headroom for request latency and clock drift.
+# --- METABOLIC-GOVERNANCE constants (heartbeat / window policy) ----------------------------
+# A haunting organism's heartbeat must beat FASTER than the provider's cache WINDOW or the
+# prefix dies between wakes; the safety factor leaves headroom for request latency and drift.
 HEARTBEAT_SAFETY = 0.9
-# Cache economics (Anthropic, 2026): reads ~0.1x input price; writes 1.25x (5-min TTL) or
-# 2x (1-hour TTL). Warm-keeping pays for itself only after this many warm reads:
-BREAK_EVEN_READS = {300: 2, 3600: 3}
 # Nociception: this many CONSECUTIVE cold wakes while trying to stay warm is a pain signal
-# (heartbeat slower than the true TTL, prefix instability, or provider eviction pressure).
+# (heartbeat slower than the true window, prefix instability, or provider eviction pressure).
 NOCICEPTION_COLD_WAKES = 3
 # Crude size heuristic for the minimum-cacheable-prefix gate (~4 bytes/token of JSON text).
 # Real adapters may count precisely; the gate only needs the right order of magnitude.
 EST_BYTES_PER_TOKEN = 4
 
 
-def heartbeat_interval_s(ttl_s: int = DEFAULT_TTL_S) -> float:
-    """The longest safe wake interval that keeps a cache of the given TTL warm."""
-    return ttl_s * HEARTBEAT_SAFETY
+def max_hauntable_heartbeat_s(window_s: float) -> float:
+    """The longest heartbeat interval a cache of the given WINDOW can keep warm."""
+    return window_s * HEARTBEAT_SAFETY
+
+
+def hauntable(window_s: float, heartbeat_s: float) -> bool:
+    """True when a fixed heartbeat fits inside the provider's cache window (with margin).
+
+    The physics the operator must respect: between two beats, `heartbeat_s` elapses; the
+    prefix survives only if the window outlasts that gap. Windows vary widely by provider
+    (commonly 15-60 min, sometimes as short as ~5 min), so this is a per-deployment check --
+    NOT vendor-specific, just arithmetic on two numbers the operator supplies.
+    """
+    if not window_s:                     # 0 / unknown window: the stand-in; no gate to apply
+        return True
+    return heartbeat_s <= max_hauntable_heartbeat_s(window_s)
+
+
+def break_even_reads(write_premium: float, read_fraction: float = 0.1) -> int:
+    """How many warm reads it takes for keep-alive to beat paying full price each time.
+
+    Neutral economics, no vendor rates baked in: a cache write costs `write_premium`x a normal
+    input token and a warm read costs `read_fraction`x. Warm-keeping pays once
+    write_premium + n*read_fraction <= n + 1, i.e. n >= (write_premium - 1)/(1 - read_fraction).
+    The operator passes the premium their provider actually charges.
+    """
+    import math
+    denom = 1.0 - read_fraction
+    if denom <= 0:
+        return 1
+    return max(1, math.ceil((write_premium - 1.0) / denom))
 
 
 class GhostError(Exception):
@@ -116,16 +159,22 @@ class GhostSubstrate:
                                warmth is only ever inferred from telemetry, and `hydrate()`
                                must come from the PNG fossil. The stand-in keeps False so
                                offline tests can exercise the warm-read path deterministically.
-    * ``min_prefix_tokens`` -- the provider's minimum cacheable prefix (model-dependent;
-                               1024-4096 tokens on Anthropic models). Prefixes below it are
-                               SILENTLY never cached, so the ghost refuses to pretend:
-                               warm/append report ``TOO-SMALL-TO-HAUNT`` instead of WARM.
-                               0 disables the gate (the stand-in's default).
+    * ``min_prefix_tokens`` -- the provider's minimum cacheable prefix (model-dependent; often
+                               ~1024-4096 tokens). Prefixes below it are SILENTLY never cached,
+                               so the ghost refuses to pretend: warm/append report
+                               ``TOO-SMALL-TO-HAUNT`` instead of WARM. 0 disables the gate
+                               (the stand-in's default).
+    * ``window_s``          -- the provider's cache TTL in seconds (how long a warmed prefix
+                               survives without a refresh). Used only for the DO-NOT-HAUNT
+                               feasibility gate when a heartbeat is supplied. 0 = unknown /
+                               not applicable (the stand-in's default). Every value here is
+                               operator-supplied CONFIG -- no provider is named in code.
     """
 
     name = "abstract"
     write_only = False
     min_prefix_tokens = 0
+    window_s = 0
 
     def warm(self, key: str, blob: bytes, ttl_s: int) -> None:
         raise NotImplementedError
@@ -379,10 +428,45 @@ def _pointer(state: Dict[str, Any], substrate: GhostSubstrate, key: str, prefix:
     }
 
 
+def _do_not_haunt(substrate: GhostSubstrate, heartbeat_s: Optional[float]) -> Optional[Dict[str, Any]]:
+    """Return a DO-NOT-HAUNT verdict when a fixed heartbeat can't keep this window warm.
+
+    Vendor-neutral: it compares two operator-supplied numbers (the provider's cache window and
+    the organism's heartbeat). None means haunting is feasible (or no check applies).
+    """
+    if heartbeat_s is None or not substrate.window_s:
+        return None
+    if hauntable(substrate.window_s, heartbeat_s):
+        return None
+    return {
+        "status": "DO-NOT-HAUNT", "warmed": False,
+        "window_s": substrate.window_s, "heartbeat_s": heartbeat_s,
+        "max_hauntable_heartbeat_s": round(max_hauntable_heartbeat_s(substrate.window_s), 1),
+        "detail": (f"heartbeat {heartbeat_s:g}s exceeds what a {substrate.window_s:g}s cache "
+                   "window can keep warm -- the prefix would be cold on every wake, paying the "
+                   "write premium for a cache that never gets read"),
+        "remedies": [
+            "select a provider window (or extended-TTL tier) longer than the heartbeat",
+            ("supplement the heartbeat: keep the scheduled beat and push a one-shot forced "
+             "beat partway through the window (a 10-min beat + a forced beat at +4 min covers "
+             "a 5-min window without disturbing the base timer)"),
+            "shorten the base heartbeat below the window (raises wake cost)",
+            "do not haunt -- run cold-and-cheap, hydrating from the seed each wake",
+        ],
+    }
+
+
 def warm(path: str, substrate: Optional[GhostSubstrate] = None,
-         ttl_s: int = DEFAULT_TTL_S) -> Dict[str, Any]:
-    """Push the Spore's prefix-stable body into the cache and record the pointer in the PNG."""
+         ttl_s: int = DEFAULT_TTL_S, heartbeat_s: Optional[float] = None) -> Dict[str, Any]:
+    """Push the Spore's prefix-stable body into the cache and record the pointer in the PNG.
+
+    `heartbeat_s` (optional) enables the DO-NOT-HAUNT window-feasibility gate: if the organism's
+    fixed heartbeat can't fit inside the substrate's cache window, warming is refused.
+    """
     substrate = substrate or default_substrate(path)
+    verdict = _do_not_haunt(substrate, heartbeat_s)
+    if verdict:
+        return verdict
     state = _spore.read_spore(path)["state"]
     prefix = _prefix_blob(state)
     if _too_small(substrate, prefix):
@@ -445,8 +529,8 @@ def append(path: str, role: str, content: str,
            "cache_key": key, "telemetry": tel}
     if tel["nociception"]:
         out["nociception"] = (f"{tel['consecutive_cold']} consecutive cold wakes -- the "
-                              "heartbeat is slower than the true TTL, the prefix is unstable, "
-                              "or the provider is evicting under pressure")
+                              "heartbeat is slower than the true cache window, the prefix is "
+                              "unstable, or the provider is evicting under pressure")
     return out
 
 
@@ -482,9 +566,17 @@ def hydrate(path: str, substrate: Optional[GhostSubstrate] = None) -> Dict[str, 
             "write_only": substrate.write_only}
 
 
-def status(path: str, substrate: Optional[GhostSubstrate] = None) -> Dict[str, Any]:
-    """Report where the body currently lives and whether the fossil and cache agree."""
+def status(path: str, substrate: Optional[GhostSubstrate] = None,
+           heartbeat_s: Optional[float] = None) -> Dict[str, Any]:
+    """Report where the body currently lives and whether the fossil and cache agree.
+
+    `heartbeat_s` (optional) surfaces the DO-NOT-HAUNT window check: a fixed heartbeat that
+    can't fit the substrate's cache window is reported before anything else.
+    """
     substrate = substrate or default_substrate(path)
+    verdict = _do_not_haunt(substrate, heartbeat_s)
+    if verdict:
+        return {"ghost": False, **verdict}
     state = _spore.read_spore(path)["state"]
     prefix = _prefix_blob(state)
     pointer = state.get(GHOST_KEY)
@@ -698,7 +790,37 @@ def selftest(verbose: bool = True) -> bool:
         ck("write-only status only PREDICTS warmth",
            st_wo["state"].startswith("PREDICTED-"), str(st_wo["state"]))
 
-        # 12. through all of it, the PNG never stopped being a pure, verifiable Spore
+        # 12. the DO-NOT-HAUNT window gate: a fixed heartbeat vs the provider's cache window
+        #     (vendor-neutral -- pure arithmetic on two operator-supplied numbers)
+        ck("a 600s heartbeat does not fit a 300s window", not hauntable(300, 600))
+        ck("a 600s heartbeat fits a 1800s window", hauntable(1800, 600))
+        ck("max hauntable heartbeat for a 300s window is < 300s",
+           max_hauntable_heartbeat_s(300) < 300)
+
+        class _ShortWindow(LocalPromptCache):
+            name = "short-window-stand-in"
+            window_s = 300
+        sw = _ShortWindow(os.path.join(d, "sw.cache.json"), clock=clock)
+        p4 = os.path.join(d, "sw.png")
+        _spore.create_spore("SW", "short-window provider", path=p4)
+        _spore.append_turn(p4, "assistant", "my window is shorter than the heartbeat")
+        w_dnh = warm(p4, sw, heartbeat_s=600)               # 10-min beat, 5-min window
+        ck("warm refuses DO-NOT-HAUNT when the beat can't keep the window warm",
+           w_dnh["status"] == "DO-NOT-HAUNT", str(w_dnh))
+        ck("DO-NOT-HAUNT carries the supplemental-beat remedy",
+           any("forced beat" in r for r in w_dnh.get("remedies", [])))
+        ck("status also reports DO-NOT-HAUNT for the mismatch",
+           status(p4, sw, heartbeat_s=600)["status"] == "DO-NOT-HAUNT")
+        w_ok = warm(p4, sw, heartbeat_s=240)                # a 4-min beat DOES fit
+        ck("a heartbeat that fits the window warms normally", w_ok["status"] == "WARM", str(w_ok))
+        ck("no heartbeat supplied -> no window gate (feasibility is opt-in)",
+           warm(p4, sw)["status"] == "WARM")
+
+        # 13. break-even economics are neutral (no vendor rates baked in)
+        ck("break-even reads rise with the write premium",
+           break_even_reads(1.25) <= break_even_reads(2.0))
+
+        # 14. through all of it, the PNG never stopped being a pure, verifiable Spore
         ck("PNG verifies as a pure Spore at the end", _spore.verify_spore(p)["ok"])
         purity = _body_of(_spore.read_spore(p)["state"])
         ck("the ghost pointer is metadata, not body (stripped cleanly)",

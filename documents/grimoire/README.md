@@ -11,7 +11,7 @@ NECROMANCY assimilation pipeline.
 
 The Grimoire is **exactly two version-locked files** -- there are no other editions; any that
 appear are stale and should be removed. The two files always carry the same version number
-(currently **3.5.0**): advancing either advances both.
+(currently **3.6.0**): advancing either advances both.
 
 | Read | Document | Scope |
 | --- | --- | --- |
@@ -76,7 +76,12 @@ pipeline that `src/mantle/assimilator/` implements:
 The AppAI Chapter's **CACHE-HAUNT** spell (macro **Larvare**) -- keep the MIND's working memory warm
 in the provider's prompt cache while the seed stays dry -- is implemented by the cache-ghost:
 [`src/mantle/ghost.py`](../../src/mantle/ghost.py) (`GhostSubstrate`, `LocalPromptCache`,
-`warm`/`append`/`hydrate`/`status`) layered on [`spore.py`](../../src/mantle/spore.py); doctrine in
+`warm`/`append`/`hydrate`/`status`; prefix-stable cache body, warmth telemetry, the
+`TOO-SMALL-TO-HAUNT` and DO-NOT-HAUNT gates) layered on [`spore.py`](../../src/mantle/spore.py),
+with the real, **vendor-neutral** write-only provider substrate in
+[`src/mantle/ghost_http.py`](../../src/mantle/ghost_http.py) (`HttpPromptCache`; OpenAI-compatible,
+pure-stdlib urllib, the provider entirely configured -- no vendor SDK, nothing hardcoded;
+optional, imported by nothing else); doctrine in
 [`../Mantle_Reproduction.md`](../Mantle_Reproduction.md).
 
 The Python package in [`src/mantle/`](../../src/mantle/) is the **reference implementation**, not the

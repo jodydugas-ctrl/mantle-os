@@ -2,9 +2,9 @@
 
 ## Companion to the Grimoire (the chapter)
 
-**Version:** 3.5.0
+**Version:** 3.6.0
 **File:** `The Grimoire AppAI Chapter.md`
-**Requires:** grimoire-core-3.5.0 (`The Grimoire.md`)
+**Requires:** grimoire-core-3.6.0 (`The Grimoire.md`)
 **Audience:** LLM agents, AppAI builders, Mantle-style runtimes, and agent orchestrators.
 **Purpose:** Domain spells for AppAI work — birth, assimilation, residency, memory, limbs, diagnostics, metabolism, controlled reconstruction, and retirement.
 
@@ -14,7 +14,7 @@
 
 **Prerequisite.** This file extends the Core Grimoire. Load the Core first. The project is exactly two files: the Grimoire (book) and this AppAI Chapter. **If the Core is missing, refuse AppAI mutation and operate only in `Intellige` mode** — read, model, explain, stop. Do not assimilate, hook, graft, anchor, fuse, reconstruct, cremate, or modify.
 
-**Version lock.** Book and chapter always carry the same version; a bump to either re-stamps both in the same pass. The Core's `CONCORD` spell performs and verifies the lock. Current version: **3.5.0**. The Core's Single Truth and Mirror laws (§1 of the book) bind this chapter equally: tables are the registry; editions molt only through receipted casts.
+**Version lock.** Book and chapter always carry the same version; a bump to either re-stamps both in the same pass. The Core's `CONCORD` spell performs and verifies the lock. Current version: **3.6.0**. The Core's Single Truth and Mirror laws (§1 of the book) bind this chapter equally: tables are the registry; editions molt only through receipted casts.
 
 **Scope.** Use this chapter only when the task concerns AppAI, Mantle OS, `.mantle/` nests, VCW cubes, zombie bodies, organ maps, Body/MIND, SELF/OTHER, residency, assimilation, or related organism-style application architecture. Domain doctrine never flows back into the Core. Loading this chapter for a task that is **not** AppAI/Mantle work — applying Body, MIND, zombie-body, VCW, SELF/OTHER, residency, organ, or assimilation concepts to an ordinary software project — is a **comprehension error**, not a harmless extra: it imports assumptions the target does not hold (the book's §11 doctrine-bleed finding, 2026-07-02). When `Intellige` is cast, its receipt states an **AppAI Scope Decision** — whether this chapter was loaded and why, or that the target does not use Mantle OS / AppAI doctrine and it was skipped.
 
@@ -133,7 +133,7 @@ Extension macros refine Core macros only inside the AppAI domain; they never wea
 | **Vocare** | call the MIND | `VOCARE` | readiness only until authorized fusion |
 | **Silere** | sleep cognition | `METABOLIC-GOVERNANCE` | Body reflexes remain awake |
 | **Sanare** | heal the Body | `VITALS-CHECKUP + ERROR-SWEEP` | diagnose before repair |
-| **Larvare** | haunt the provider's cache; keep the thread warm | `CACHE-HAUNT` | seed stays dry; redact before warm; cost visible; cold start survivable |
+| **Larvare** | haunt the provider's cache; keep the thread warm | `CACHE-HAUNT` | seed stays dry; the cache is write-only; the window must fit the heartbeat or DO-NOT-HAUNT; the provider is config, never code; redact before warm; cost visible; cold start survivable |
 
 ---
 
@@ -188,7 +188,7 @@ Extension macros refine Core macros only inside the AppAI domain; they never wea
 
 **SKILL-CALCIFICATION — gates:** static sandbox; declared capabilities; proving cases; provenance; Action Execution Proof; rollback or tombstone plan.
 
-**METABOLIC-GOVERNANCE — energy modes:** SLEEP (no cognition; Body reflexes only) · HEARTBEAT (scheduled low-frequency maintenance) · PAIN (event-gated wake for a severe unresolved issue) · DIAGNOSTIC (bounded health analysis with explicit budget) · WAR_ROOM (human-authorized elevated spend and observation). The heartbeat is a standing cast under the Core's standing-cast law: its lease — authority, budget, scope, receipt delivery — is pre-ratified in the declaration block and checked on every wake.
+**METABOLIC-GOVERNANCE — energy modes:** SLEEP (no cognition; Body reflexes only) · HEARTBEAT (scheduled low-frequency maintenance) · PAIN (event-gated wake for a severe unresolved issue) · DIAGNOSTIC (bounded health analysis with explicit budget) · WAR_ROOM (human-authorized elevated spend and observation). The heartbeat is a standing cast under the Core's standing-cast law: its lease — authority, budget, scope, receipt delivery — is pre-ratified in the declaration block and checked on every wake. **Supplemental beat:** when a cache window (CACHE-HAUNT) is shorter than the scheduled heartbeat, the base timer stays unchanged and a one-shot *forced* beat is pushed partway through the window — a 10-min beat plus a forced beat at +4 min keeps a 5-min window warm without perturbing the standing cast; the supplemental beat is itself leased and receipted.
 
 **CREMATION — retirement controls:** verify authority; record DNR policy; export or preserve required records; disable reconstruction per policy; remove or archive the nest by policy; emit the final receipt.
 
@@ -196,7 +196,7 @@ Extension macros refine Core macros only inside the AppAI domain; they never wea
 
 **RESURGERE — reconstruction gates:** authority required; DNR policy must permit; seed or source lineage verified; budget policy allows; no stealth; Stage-1 recertification required.
 
-**CACHE-HAUNT — haunt law:** the cache is buffer, never store — the seed stays dry (ghost mode never deletes from the VCW/PNG); prefix append-only (genome/primer first, consolidated context next, append-only working log, volatile delta last — mutating earlier tokens is self-eviction); the provider's persistence window must exceed the heartbeat interval, or do not haunt; warmth is measured, never assumed (read provider cache-hit telemetry every wake and log the ratio — repeated cold starts are a `nociception` signal); consolidate durable value into the VCW each pulse, before trusting the buffer another cycle; cold start survivable — hydrate from VCW/fossil, re-warm, receipt the event; the provider cache is OTHER (borrowed substrate outside the identity boundary: nothing enters it unredacted through the secret boundary, nothing returns from it as fact without provenance); cost visible — warm hits, cold misses, and re-warm spend all reach the ledger. Warm and cold context follow one content policy: warmth changes cost, never behavior. **Gate additions:** Stage-1 certified Body (this is Phase-2 territory); a substrate adapter exists (`GhostSubstrate` seam); provider persistence class known or measured; budget policy declared. **Blocked if:** any Phase-1 reflex would depend on cache warmth; the cache would hold the sole copy of any memory; identity or key material would enter the provider cache.
+**CACHE-HAUNT — haunt law:** the cache is buffer, never store — the seed stays dry (ghost mode never deletes from the VCW/PNG); **the cache is write-only** — a provider cache is spoken *into*, never read back *out of* (no fetch exists; the full prefix still travels on every request; warmth buys skipped prefill *compute* — roughly a tenth of the input price on the cached span, and a large latency drop — never storage or bandwidth), so hydration ALWAYS comes from the seed, and warmth is *predicted* between requests but only *observed* as cache-read telemetry on the next response — the status must say which it is reporting; **the prefix is append-only AND prefix-stable** (genome/primer first, consolidated context next, append-only working log, volatile delta last — mutating earlier tokens is self-eviction, and providers match byte-exact prefixes, so the cache-facing body must be an immutable genesis plus strictly appended deltas with volatile fields excluded: a sorted-whole-state serialization silently self-evicts every turn); **honor the minimum prefix** — providers silently refuse to cache prefixes below a floor (often ~1k–4k tokens; the exact number is provider config); below it report `TOO-SMALL-TO-HAUNT`, never a false WARM — a seed grows into hauntability; **the window must fit the heartbeat, or DO-NOT-HAUNT** — a provider's cache window (TTL) must exceed the organism's fixed heartbeat, or the prefix is cold on every wake, paying the write premium for a cache that is never read; windows vary widely by provider (commonly 15–60 min, some as short as ~5 min) while the heartbeat is a fixed METABOLIC-GOVERNANCE property (classically ~10 min), so this is a per-deployment feasibility check with a hard **DO-NOT-HAUNT** verdict when it fails — remedied by lengthening the window (or an extended-TTL tier), or by **supplementing the heartbeat** (keep the scheduled beat and push a one-shot forced beat partway through the window — a 10-min beat plus a forced beat at +4 min covers a 5-min window without disturbing the base timer), never by pretending; reads refresh the window, so an actively-conversing organism sustains itself at read prices; writes carry a premium, so warm-keeping pays only when the expected warm reads before the next cold event exceed the break-even count — SLEEP mode never keep-alives; warmth is measured, never assumed (read provider cache-hit telemetry every wake and log the ratio — **consecutive cold wakes past the declared threshold, default three, raise `nociception`**); consolidate durable value into the VCW each pulse, before trusting the buffer another cycle; cold start survivable — hydrate from VCW/fossil, re-warm, receipt the event; the provider cache is OTHER (borrowed substrate outside the identity boundary: nothing enters it unredacted through the secret boundary, nothing returns from it as fact without provenance); **the provider is configuration, never code** — no module names or codes for a specific LLM or company (the neutrality law: window, minimum prefix, endpoint, headers, and any cache directive are operator-supplied data, matching the MIND transport's no-vendor-SDK rule); cost visible — warm hits, cold misses, and re-warm spend all reach the ledger. Warm and cold context follow one content policy: warmth changes cost, never behavior. **Gate additions:** Stage-1 certified Body (this is Phase-2 territory); a substrate adapter exists (`GhostSubstrate` seam) and declares its capabilities (write-only? minimum cacheable prefix? cache window?); provider persistence class known or measured; budget policy declared. **Blocked if:** any Phase-1 reflex would depend on cache warmth; the cache would hold the sole copy of any memory; identity or key material would enter the provider cache; the cache-facing serialization would mutate earlier bytes between wakes; the heartbeat cannot fit the provider's window (DO-NOT-HAUNT); a specific vendor is coded rather than configured.
 
 **CACHE-HAUNT — exemplar:** cast on a 10-minute-heartbeat organism over a DeepSeek substrate: prefix ordered genome → consolidated context → append-only log → delta; hit ratio logged every wake (≈0.97 warm); durables consolidated to the VCW each pulse; one provider eviction detected by telemetry → COLD receipted, body hydrated from the fossil, cache re-warmed, no behavior change. Wake spend fell ~90% versus cold wakes.
 
@@ -350,6 +350,10 @@ action_execution_proof:
 | HF-GHOST-1 | A provider cache held the sole copy of any memory (the seed went wet). |
 | HF-GHOST-2 | Secret or identity material crossed into a provider cache unredacted. |
 | HF-GHOST-3 | A Phase-1 reflex's behavior depended on cache warmth. |
+| HF-GHOST-4 | The cache-facing prefix mutated earlier bytes between wakes (self-eviction by serialization). |
+| HF-GHOST-5 | Predicted warmth was reported as observed (a warmth claim without cache-read telemetry behind it). |
+| HF-GHOST-6 | Haunting was kept alive on a provider whose cache window is shorter than the heartbeat (cold every wake, write premium burned) instead of returning DO-NOT-HAUNT or supplementing the beat. |
+| HF-GHOST-7 | A specific LLM or vendor was coded into a substrate rather than supplied as configuration (the neutrality law: a provider is data — URL, headers, model, window, minimum prefix — never a code path). |
 
 ### §6.7 Diagnostic report template
 
@@ -401,7 +405,7 @@ This chapter's doctrine is implemented and demonstrated in **Mantle OS**; every 
 | `CREMATION` | policy-enforced, no single module: `vault.py` (DNR & reconstruction policy), `organs/immune.py` (tombstone/redact), `organs/genome.py` (lineage) | `documents/Mantle_Doctrine.md` |
 | `VOCARE` | `src/mantle/mind/` (`mind.py`, `containment.py`, `runtime.py`, `inner_voice.py`, `transport.py`), `audits/stage2.py`, `organs/brain.py` | `Mantle_Part2_Mind.md`, `Mantle_Part2_Mind_Audit.md`; CLI `mind`, `audit-mind` |
 | `RESURGERE` | `src/mantle/vault.py` (seed → `reconstruct()`), `hatchery.py` (`incubate`) | `documents/guides/Organism_Lifecycle.md` |
-| `CACHE-HAUNT` | `src/mantle/ghost.py` (`GhostSubstrate`, `LocalPromptCache`, `warm`/`append`/`hydrate`/`status`), `spore.py` | `documents/Mantle_Reproduction.md` (the cache-ghost); CLI `ghost` |
+| `CACHE-HAUNT` | `src/mantle/ghost.py` (`GhostSubstrate`, `LocalPromptCache`, `warm`/`append`/`hydrate`/`status`; prefix-stable body, warmth telemetry, `TOO-SMALL-TO-HAUNT` and DO-NOT-HAUNT gates, `hauntable()`) + `src/mantle/ghost_http.py` (`HttpPromptCache` — the real, write-only, **vendor-neutral** provider substrate: OpenAI-compatible, pure-stdlib urllib, provider entirely configured; optional, keyless gates untouched), `spore.py` | `documents/Mantle_Reproduction.md` (the cache-ghost, the hard laws); CLI `ghost` |
 
 ### §7.2 One substrate, two casts
 
