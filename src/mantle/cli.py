@@ -22,6 +22,8 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
     python -m mantle mind                           narrated Phase-2 fusion (offline)
     python -m mantle audit-mind                     Stage-2 gate + Stage-1 regression
     python -m mantle assimilate <path> --dry-run    Path B read-only dissection
+    python -m mantle check [--fast]                 EVERYTHING above that certifies, in
+                                                      one command (the CI sequence, local)
 """
 from __future__ import annotations
 
@@ -39,7 +41,7 @@ _USAGE = ("usage: python -m mantle "
           "applet-audit <dir> <name> | applet-clone <dir> <https-github-url> <name> | "
           "hatch-spore <spore.png> [--out=DIR] | "
           "reproduce | spore <op> ... | ghost <op> ... | "
-          "demo | audit | prove | mind | audit-mind | "
+          "demo | audit | prove | mind | audit-mind | check [--fast] | "
           "assimilate <path> [--dry-run] [--out=DIR]]")
 
 
@@ -698,6 +700,9 @@ def main(argv=None):
     if cmd == "assimilate":
         from . import demos
         return demos.assimilate(rest)
+    if cmd == "check":
+        from . import check
+        return check.main(rest)
     print(_USAGE)
     return 2 if cmd in ("-h", "--help", "help") else 1
 

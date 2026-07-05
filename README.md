@@ -346,7 +346,16 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
   sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same
   MIND fusion.
 
+## Verify everything with one command
+
+```bash
+python -m mantle check          # every gate, proof, demo, and test — the CI sequence, local
+python -m mantle check --fast   # gates + proofs only (skips the narrated demos)
+```
+
 ## Status & license
 
 An open demonstration of an alternative coding structure — study it, critique it, build
 on it ([`CONTRIBUTING.md`](CONTRIBUTING.md)). Released under the [MIT License](LICENSE).
+The pre-1.0 edition (previously archived in-tree under `legacy/`) lives in git history at
+commit [`2c857a8`](https://github.com/jodydugas-ctrl/mantle-os/tree/2c857a8/legacy).

@@ -35,12 +35,12 @@ Mantle has a small number of load-bearing principles. Changes should respect the
 
   ```bash
   pip install -e .            # or: export PYTHONPATH=src
-  python -m mantle audit      # the Stage-1 Zombie Body gate
-  python -m mantle prove      # the 83 security invariants
+  python -m mantle check      # every gate, proof, demo, and test in one command
   ```
 
-  The standalone cube codec proves itself too: `python examples/vcw/vcw_cube.py selftest`
-  and `python examples/vcw/interop.py`.
+  (`check` runs the Stage-1 gate, the three tamper proofs, the 83 invariants, the Stage-2
+  gate, both demos, the assimilation dry-run, the standalone cube codec conformance, the
+  SPORE purity gates, and the parity test — the same sequence CI runs.)
 
 - Make sure `python -m mantle audit` still reports the **Stage 1 gate passed** (no open hard-fails).
 - Keep Phase 1 brain-free: Phase-1 organs must not depend on an LLM to function.

@@ -11,7 +11,8 @@ import sys
 import unittest
 from collections import Counter
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(  # the mantle package (src-layout)
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))
 
 from mantle.assimilator import scanner
 from mantle.assimilator import scanner_ts

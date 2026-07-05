@@ -16,7 +16,8 @@ Proves the phenotype feature with real surfaces and no model call anywhere:
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(  # the mantle package (src-layout)
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
 from mantle.hatchery import incubate                       # noqa: E402
 from mantle import egg as _egg, phenotype as ph            # noqa: E402

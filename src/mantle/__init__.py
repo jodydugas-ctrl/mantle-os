@@ -12,7 +12,7 @@ and their tamper proofs.
     python -m mantle teach                       # the Field Guide, running
     python -m mantle hatch examples/eggs/greeter.json --out=nest/
 """
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 # The public API is exposed lazily (PEP 562): importing `mantle` is near-free; each name pulls
 # in its submodule only on first access. `from mantle import Organism` and `mantle.Organism`
