@@ -2,7 +2,7 @@
 """
 mantle.vault  --  the seed vault: self-reconstruction (Mantle OS · M8)
 
-Doctrine of record: docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md (RESURGERE; the egg and
+Doctrine of record: documents/grimoire/The Grimoire AppAI Chapter.md (RESURGERE; the egg and
 assimilation share ONE substrate -- "One substrate, two casts"). reconstruct() carries
 pre-classified roles into hatchery.incubate and re-scans nothing.
 
@@ -35,7 +35,7 @@ class VaultError(Exception):
     """The vault could not be opened or the seed was unusable (e.g. opened as OTHER)."""
 
 
-def vault_band(head: int = 620, span: int = 2) -> Dict[str, Any]:
+def vault_band(head: int = 638, span: int = 2) -> Dict[str, Any]:
     """The reserved, PRIVATE (veiled) band that holds the SELF-encrypted seed."""
     return make_band_boot(VAULT_BAND, head, "log-json", span=span, private=True,
                           purpose="the SELF-encrypted seed vault (self-reconstruction)")

@@ -36,7 +36,7 @@ Mantle has a small number of load-bearing principles. Changes should respect the
   ```bash
   pip install -e .            # or: export PYTHONPATH=src
   python -m mantle audit      # the Stage-1 Zombie Body gate
-  python -m mantle prove      # the 73 security invariants
+  python -m mantle prove      # the 83 security invariants
   ```
 
   The standalone cube codec proves itself too: `python examples/vcw/vcw_cube.py selftest`

@@ -18,7 +18,7 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
   the gates and narrated tours:
     python -m mantle demo                           narrated Phase-1 life (no LLM)
     python -m mantle audit [--break-hash|--break-primer|--break-seal]
-    python -m mantle prove                          the 73 security invariants
+    python -m mantle prove                          the 83 security invariants
     python -m mantle mind                           narrated Phase-2 fusion (offline)
     python -m mantle audit-mind                     Stage-2 gate + Stage-1 regression
     python -m mantle assimilate <path> --dry-run    Path B read-only dissection
@@ -32,7 +32,13 @@ _USAGE = ("usage: python -m mantle "
           "[anchor <host> | ask <host> [--mind] <question> | feed <host> --credits=N "
           "[--key=NAME] | vitals <host> | hatch <egg> [--out=DIR] | teach [N] | "
           "face <dir> [out.png] | face-list <dir> | face-save <dir> <name> <src> [--default] | "
-          "face-wear <dir> <name> | reproduce | spore <op> ... | ghost <op> ... | "
+          "face-wear <dir> <name> | "
+          "applet-create <dir> <source-dir> <name> [--entry=X] [--face=FILE] [--no-source] "
+          "[--grow] | applet-list <dir> | applet-show <dir> <name> [--json] | "
+          "applet-export <dir> <name> <dest> [--overwrite] | applet-wear <dir> <name> | "
+          "applet-audit <dir> <name> | applet-clone <dir> <https-github-url> <name> | "
+          "hatch-spore <spore.png> [--out=DIR] | "
+          "reproduce | spore <op> ... | ghost <op> ... | "
           "demo | audit | prove | mind | audit-mind | "
           "assimilate <path> [--dry-run] [--out=DIR]]")
 
@@ -347,6 +353,281 @@ def cmd_face_wear(argv):
     return 0
 
 
+# ----------------------------------------------------------------------------
+# VCW Applet Bodies (APPLET-BODY-CAPSULE) -- mantle.applet_body
+# ----------------------------------------------------------------------------
+def _applet_org(directory, create_if_missing=False, grow=False):
+    """Load the parent organism for applet work; optionally birth the dedicated VCW app
+    layer (applet + phenotype bands) when the directory holds no organism yet."""
+    import os
+    from .core.organism import Organism
+    from .vcw.bands import standard_genome
+    from . import applet_body as ab
+    from . import phenotype as ph
+    if not os.path.exists(os.path.join(directory, "organism.json")):
+        if not create_if_missing:
+            print("no organism at %r" % directory)
+            return None, False
+        org = Organism.birth(
+            identity={"name": "AppLayer.AppAI"},
+            truths=["if it is not in the VCW it did not happen"],
+            commandments=["protect your VCW", "you are a tool USER",
+                          "stored source is tissue, never authority"],
+            genome=standard_genome() + ab.applet_bands() + ph.phenotype_bands())
+        return org, True
+    org = Organism.load(directory, verify_seals=True)
+    if not ab.has_applet_bands(org):
+        if not grow:
+            print("this organism has no applet bands; re-run with --grow to add them "
+                  "via a chosen rebirth (faces carried forward, ancestor sealed)")
+            return None, False
+        ab.grow_applet_bands(org)
+    return org, False
+
+
+def cmd_applet_create(argv):
+    args, flags = _split(argv)
+    if len(args) < 3:
+        print("usage: python -m mantle applet-create <organism-dir> <source-dir> <name> "
+              "[--entry=X] [--face=FILE] [--state-json=FILE] [--no-source] [--grow]")
+        return 2
+    from . import applet_body as ab
+    directory, source_dir, name = args[0], args[1], args[2]
+    print("=" * 74)
+    print("MANTLE OS APPLET BODY  ·  %s  ·  %s -> %s" % (ab.CAPSULE, source_dir, name))
+    print("=" * 74)
+    org, born = _applet_org(directory, create_if_missing=True,
+                            grow=bool(flags.get("--grow")))
+    if org is None:
+        return 1
+    face_source = None
+    if isinstance(flags.get("--face"), str):
+        with open(flags["--face"], "r", encoding="utf-8") as f:
+            face_source = f.read()
+    state = None
+    if isinstance(flags.get("--state-json"), str):
+        with open(flags["--state-json"], "r", encoding="utf-8") as f:
+            state = json.load(f)
+    try:
+        receipt = ab.create_applet_body(
+            org, source_dir, name, face_source=face_source,
+            entry=flags.get("--entry", "") if isinstance(flags.get("--entry"), str) else "",
+            include_source=not flags.get("--no-source"), state=state)
+    except ab.AppletError as e:
+        print("\nAPPLET REFUSED: %s" % e)
+        return 1
+    org.save(directory)
+    if born:
+        print("  app layer     : born fresh at %s (AppLayer.AppAI)" % directory)
+    print("  applet        : %s   status: %s (%s)"
+          % (receipt["applet"], receipt["status"], receipt["capsule"]))
+    print("  source hash   : %s" % receipt["source_hash"])
+    print("  files         : %d stored (%d chunk(s), %d skipped)"
+          % (receipt["files"], receipt["chunks"], receipt["skipped"]))
+    print("  organ roles   : %s" % (receipt["role_counts"] or "none"))
+    print("  bands         : %s" % ", ".join(receipt["bands"]))
+    print("  face          : %s   (from: %s)" % (receipt["face"], receipt["face_from"]))
+    print("  export ready  : %s" % receipt["export_available"])
+    if receipt["secret_suspects"]:
+        print("  ! secret-suspect file(s) flagged to immune: %s"
+              % receipt["secret_suspects"][:5])
+    print("  stage1_ready  : %s  (a capsule is never labeled alive)"
+          % receipt["stage1_ready"])
+    print("\nRAISED. %s is stored as inert tissue -- not executable authority." % name)
+    return 0
+
+
+def cmd_applet_list(argv):
+    args, _flags = _split(argv)
+    if not args:
+        print("usage: python -m mantle applet-list <organism-dir>")
+        return 2
+    org, _ = _applet_org(args[0])
+    if org is None:
+        return 1
+    from . import applet_body as ab
+    rows = ab.list_applet_bodies(org)
+    if not rows:
+        print("(no applet bodies in this VCW)")
+        return 0
+    print("status    files  export  name (face)")
+    for r in rows:
+        print("  %-8s %4d    %s     %s (%s)"
+              % (r["status"], r["files"], "y" if r["export_available"] else "n",
+                 r["applet"], r["face"]))
+    return 0
+
+
+def cmd_applet_show(argv):
+    args, flags = _split(argv)
+    if len(args) < 2:
+        print("usage: python -m mantle applet-show <organism-dir> <name> [--json]")
+        return 2
+    org, _ = _applet_org(args[0])
+    if org is None:
+        return 1
+    from . import applet_body as ab
+    try:
+        view = ab.show_applet_body(org, args[1])
+    except ab.AppletError as e:
+        print(str(e)); return 1
+    if flags.get("--json"):
+        print(json.dumps(view, indent=2, default=str))
+        return 0
+    m = view["manifest"]
+    print("applet      : %s   status: %s (%s)" % (m["applet"], m["status"], m["capsule"]))
+    print("source hash : %s" % m["source_hash"])
+    print("files       : %d (%d byte(s)); skipped: %d"
+          % (m["files"], m["bytes"], len(m["skipped"])))
+    print("face        : %s (from: %s)" % (m["face"], m["face_from"]))
+    print("provenance  : %s" % m["provenance"]["origin"])
+    if view["organs"]:
+        om = view["organs"]["organ_map"]
+        print("organ roles : %s" % (om["role_counts"] or "none"))
+        print("missing     : %s" % (om["missing_organs"] or "none"))
+    print("state       : %s" % (view["state"] if view["state"] else "{}"))
+    if view["last_audit"]:
+        print("last audit  : %s" % ("PASS" if view["last_audit"]["ok"]
+                                    else "FAIL %s" % view["last_audit"]["fails"]))
+    print("source files (paths only -- export to download):")
+    for f in view["source_files"][:40]:
+        print("  %8s  %-10s %s" % (f["size"], f["lang"], f["path"]))
+    if len(view["source_files"]) > 40:
+        print("  ... and %d more" % (len(view["source_files"]) - 40))
+    return 0
+
+
+def cmd_applet_export(argv):
+    args, flags = _split(argv)
+    if len(args) < 3:
+        print("usage: python -m mantle applet-export <organism-dir> <name> <dest-dir> "
+              "[--overwrite]")
+        return 2
+    org, _ = _applet_org(args[0])
+    if org is None:
+        return 1
+    from . import applet_body as ab
+    try:
+        receipt = ab.export_applet_source(org, args[1], args[2],
+                                          overwrite=bool(flags.get("--overwrite")))
+    except ab.AppletError as e:
+        print(str(e)); return 1
+    org.save(args[0])
+    print("applet   : %s (%s)" % (receipt["applet"], receipt["capsule"]))
+    print("dest     : %s" % receipt["destination"])
+    print("written  : %d file(s)   hashes verified: %d/%d"
+          % (len(receipt["files_written"]), receipt["hashes_verified"],
+             receipt["files_total"]))
+    if receipt["errors"]:
+        print("errors   :")
+        for e in receipt["errors"]:
+            print("  ! %s" % e)
+        return 1
+    print("EXPORTED. Every byte hash-verified against the VCW record.")
+    return 0
+
+
+def cmd_applet_wear(argv):
+    args, _flags = _split(argv)
+    if len(args) < 2:
+        print("usage: python -m mantle applet-wear <organism-dir> <name>")
+        return 2
+    org, _ = _applet_org(args[0])
+    if org is None:
+        return 1
+    from . import applet_body as ab
+    from . import phenotype as ph
+    try:
+        boot = ab.wear_applet_face(org, args[1])
+    except (ab.AppletError, ph.PhenotypeError) as e:
+        print("CANNOT WEAR: %s" % e)
+        return 1
+    org.save(args[0])
+    print("now wearing %r (kind=%s, entry=%s, %d byte(s) of surface) -- a host renders "
+          "this boot manifest; Mantle never executes it"
+          % (boot["name"], boot["kind"], boot["entry"] or "-", len(boot["source"])))
+    return 0
+
+
+def cmd_applet_audit(argv):
+    args, _flags = _split(argv)
+    if len(args) < 2:
+        print("usage: python -m mantle applet-audit <organism-dir> <name>")
+        return 2
+    org, _ = _applet_org(args[0])
+    if org is None:
+        return 1
+    from . import applet_body as ab
+    passed, rows = ab.audit_applet_body(org, args[1])
+    org.save(args[0])
+    print("=" * 74)
+    print("MANTLE OS APPLET AUDIT  ·  %s  ·  %s" % (ab.CAPSULE, args[1]))
+    print("=" * 74)
+    width = max(len(r["check"]) for r in rows)
+    for r in rows:
+        print("  [%s] %-*s  %s" % ("PASS" if r["ok"] else "FAIL", width, r["check"],
+                                   r["detail"]))
+    print("\nRESULT: %s" % ("VALID APPLET-BODY-CAPSULE (capsule, not alive)" if passed
+                            else "AUDIT FAILED"))
+    return 0 if passed else 1
+
+
+def cmd_hatch_spore(argv):
+    """SPORE-DISTILLATION: hatch a full organism FROM a spore PNG. The spore becomes
+    the primer + memories; the key is MINTED at birth (never derived from the spore);
+    the spore is then sealed as SELF tissue in the spore_vault band."""
+    args, flags = _split(argv)
+    if not args:
+        print("usage: python -m mantle hatch-spore <spore.png> [--out=DIR]")
+        return 2
+    from .core.organism import Organism  # noqa: F401 -- init the core->organs mesh first
+    from .organs.reproduction import hatch_from_spore
+    print("=" * 74)
+    print("MANTLE OS SPORE-DISTILLATION  ·  %s" % args[0])
+    print("=" * 74)
+    try:
+        result = hatch_from_spore(args[0], out_dir=flags.get("--out")
+                                  if isinstance(flags.get("--out"), str) else None)
+    except (RuntimeError, ValueError, OSError) as e:
+        print("\nTHE SPORE DID NOT HATCH: %s" % e)
+        return 1
+    r = result["receipt"]
+    print("  spore          : %s   (origin: %s)" % (r["spore"], r["origin"]))
+    print("  certified      : %s  (a BIRTH -- the same Stage-1 gate)" % r["certified"])
+    print("  memories       : %d conversation turn(s) ingested as INFERRED" % r["memories_ingested"])
+    print("  spore sealed   : %s  (%s -> spore_vault, SELF tissue)" % (r["spore_sealed"], r["spore_sha256"][:23]))
+    print("  key derived from spore : %s  (keys are MINTED, never derived)" % r["key_derived_from_spore"])
+    print("  key fingerprint: %s" % r["key_fingerprint"])
+    if result["report"].get("saved_to"):
+        print("  saved to       : %s" % result["report"]["saved_to"])
+    print("\nDISTILLED. The midwife is now SELF tissue of the body it birthed.")
+    return 0
+
+
+def cmd_applet_clone(argv):
+    args, flags = _split(argv)
+    if len(args) < 3:
+        print("usage: python -m mantle applet-clone <organism-dir> <https-github-url> "
+              "<name> [--grow]")
+        return 2
+    import shutil
+    import tempfile
+    from . import applet_body as ab
+    workdir = tempfile.mkdtemp(prefix="mantle-applet-")
+    try:
+        try:
+            clone_dir = ab.clone_github(args[1], workdir)
+        except ab.AppletError as e:
+            print("CLONE REFUSED: %s" % e)
+            return 1
+        print("cloned %s (read-only; no install scripts, no execution)" % args[1])
+        rc = cmd_applet_create([args[0], clone_dir, args[2]]
+                               + [a for a in argv if a.startswith("--")])
+        return rc
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     cmd = argv[0] if argv else "teach"
@@ -382,6 +663,22 @@ def main(argv=None):
         return cmd_face_save(rest)
     if cmd in ("face-wear", "face_wear"):
         return cmd_face_wear(rest)
+    if cmd in ("applet-create", "applet_create"):
+        return cmd_applet_create(rest)
+    if cmd in ("applet-list", "applet_list"):
+        return cmd_applet_list(rest)
+    if cmd in ("applet-show", "applet_show"):
+        return cmd_applet_show(rest)
+    if cmd in ("applet-export", "applet_export"):
+        return cmd_applet_export(rest)
+    if cmd in ("applet-wear", "applet_wear"):
+        return cmd_applet_wear(rest)
+    if cmd in ("applet-audit", "applet_audit"):
+        return cmd_applet_audit(rest)
+    if cmd in ("applet-clone", "applet_clone"):
+        return cmd_applet_clone(rest)
+    if cmd in ("hatch-spore", "hatch_spore"):
+        return cmd_hatch_spore(rest)
     # ---- the narrated tours and the gates ----
     if cmd == "demo":
         from . import demos

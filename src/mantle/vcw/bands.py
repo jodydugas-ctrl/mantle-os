@@ -73,6 +73,41 @@ def standard_genome() -> List[Dict[str, Any]]:
 APP_BAND_RANGE = (550, 749)   # caller-defined application bands
 TAIL_RANGE     = (750, 799)   # reserved scratch / future use
 
+#: The app-band ATLAS: every framework-reserved range in 550-749, stated once (the
+#: Reproduction organ is its keeper). Caller/egg/test bands live in the gaps
+#: (600-637 and 676-699). A genome whose reserved ranges overlap is REFUSED at
+#: genesis and at the compiler gate -- overlapping spans eventually stomp layers.
+APP_BAND_ATLAS = {
+    "host_state":       (550, 40),   # assimilator: mirrored host state
+    "host_actions":     (590, 10),   # assimilator: wrapped host effectors
+    #                   600-637      caller space (eggs, grafts, ganglia, tests)
+    "vault":            (638, 2),    # the seed vault (Reproduction organ tissue)
+    "phenotypes":       (640, 16),   # SELF-encrypted faces
+    "symbiosis":        (656, 4),    # the energy ledger
+    "phenotype_log":    (660, 2),    # append-only wear log
+    "spore_vault":      (664, 12),   # the sealed origin spore (SPORE-DISTILLATION)
+    #                   676-699      caller space
+    "applets_manifest": (700, 4),    # VCW Applet Bodies (APPLET-BODY-CAPSULE)
+    "applets_source":   (704, 24),
+    "applets_state":    (728, 8),
+    "applets_organs":   (736, 8),
+    "applets_log":      (744, 4),
+}
+
+
+def genome_overlaps(genome) -> List[str]:
+    """Overlapping reserved ranges in a proposed genome ([] == coherent). Two bands
+    whose [head, head+span) ranges intersect will eventually allocate the same physical
+    layer and stomp each other -- so an overlapping genome is refused, never booted."""
+    spans = sorted((int(b["head"]), int(b["head"]) + max(1, int(b.get("span", 1))),
+                    b["band"]) for b in genome)
+    problems: List[str] = []
+    for (h1, e1, n1), (h2, e2, n2) in zip(spans, spans[1:]):
+        if h2 < e1:
+            problems.append("band %r [%d-%d] overlaps band %r [%d-%d]"
+                            % (n2, h2, e2 - 1, n1, h1, e1 - 1))
+    return problems
+
 
 def code_hash(code: str) -> str:
     """The canonical hash binding an exec layer's boot sector to its code payload."""

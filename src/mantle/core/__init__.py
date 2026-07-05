@@ -1,7 +1,7 @@
 """mantle.core -- the organism's spine (Mantle OS).
 
 The Body store, the SignalBus, the unified reference resolver, the secret boundary, and
-the Organism that meshes the eight organs. No LLM, no network, no vendor code -- ever.
+the Organism that meshes the nine organs. No LLM, no network, no vendor code -- ever.
 """
 from .body import Body
 from .events import SignalBus

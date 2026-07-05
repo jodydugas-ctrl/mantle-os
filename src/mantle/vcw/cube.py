@@ -73,6 +73,11 @@ class Cube:
     # ---- genesis ----------------------------------------------------------
     @classmethod
     def genesis(cls, genome: List[Dict[str, Any]], generation: int = 0) -> "Cube":
+        from .bands import genome_overlaps
+        problems = genome_overlaps(genome)
+        if problems:
+            raise ValueError("genome refused at genesis (overlapping band ranges "
+                             "eventually stomp layers): %s" % "; ".join(problems))
         c = cls(generation=generation)
         for boot in genome:
             name = boot["band"]

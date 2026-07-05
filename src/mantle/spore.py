@@ -39,8 +39,17 @@ import textwrap
 import zlib
 from datetime import datetime, timezone
 
-from PIL import Image, ImageDraw, ImageFont
-from PIL.PngImagePlugin import PngInfo
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    from PIL.PngImagePlugin import PngInfo
+except ImportError:                    # the framework stays pure-stdlib importable;
+    Image = ImageDraw = ImageFont = PngInfo = None   # PNG operations need the extra
+
+
+def _require_pil() -> None:
+    if Image is None:
+        raise RuntimeError("spore PNG operations need Pillow: pip install pillow "
+                           "(or: pip install mantle-os[spore])")
 
 try:
     import numpy as _np
@@ -660,6 +669,7 @@ def create_spore(name: str, task: str, author: str | None = None,
 
 
 def read_spore(path: str) -> dict:
+    _require_pil()
     """
     Decode a Spore PNG into structured state, applying the authority table.
 

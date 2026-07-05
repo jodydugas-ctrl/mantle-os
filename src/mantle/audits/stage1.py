@@ -23,7 +23,8 @@ from ..vcw.bands import standard_genome
 from ..vcw.entry import make_entry, entry_hash
 from . import invariants as _inv
 
-ORGANS = ("heart", "genome", "nervous", "senses", "immune", "limbs", "memory", "brain")
+ORGANS = ("heart", "genome", "nervous", "senses", "immune", "limbs", "memory",
+          "brain", "reproduction")
 
 
 # ============================================================================
@@ -104,7 +105,7 @@ def audit_substrate(org):
 
 
 # ============================================================================
-# Mesh rows (the eight organs, contracts, bus -- the RUNNING Body)
+# Mesh rows (the nine organs, contracts, bus -- the RUNNING Body)
 # ============================================================================
 def audit_mesh(org):
     rows = []
@@ -206,9 +207,10 @@ def audit_mesh(org):
         brain_ok = (manifests["brain"]["phase1"] == "dormant"
                     and (not org.brain.fused or org.stage1_certified))
         return (complete and contracted and brain_ok,
-                "8/8 organs carry contracts; brain %s; all fail-open"
-                % ("fused post-certification" if org.brain.fused else "dormant"))
-    safe("B-60", "All eight organs present with contracts; Brain dormant", "HF-B60", b60)
+                "%d/%d organs carry contracts; brain %s; all fail-open"
+                % (len(manifests), len(ORGANS),
+                   "fused post-certification" if org.brain.fused else "dormant"))
+    safe("B-60", "All nine organs present with contracts; Brain dormant", "HF-B60", b60)
 
     def b61():
         surface = org.bus.reflex_surface()
@@ -250,6 +252,7 @@ def organs_present(org):
         "Immune": "x" if "immune" in bands else " ",
         "Memory": "x" if {"facts", "events", "discoveries"} <= set(bands) else " ",
         "Brain-socket": "x" if "thoughts" in bands else " ",
+        "Repro": "x",   # the organ is always meshed; its vault tissue is optional per-genome
     }
 
 
@@ -324,7 +327,7 @@ def main(argv):
     print("  Substrate rows (the cube / Body store):")
     for r in substrate_rows:
         print_row(r, width)
-    print("\n  Mesh rows (the eight organs, contracts, bus):")
+    print("\n  Mesh rows (the nine organs, contracts, bus):")
     for r in mesh_rows:
         print_row(r, width)
     if inv:

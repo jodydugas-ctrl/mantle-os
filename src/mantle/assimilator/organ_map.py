@@ -81,9 +81,9 @@ def propose_genome(role_counts: Dict[str, int]) -> List[Dict[str, Any]]:
         make_band_boot("brain",       450, "log-json", span=50,  purpose="dispatch log"),
         make_band_boot("thoughts",    500, "log-json", span=50,  purpose="private reflection",
                        private=True),
-        make_band_boot("host_state",  550, "log-json", span=100,
+        make_band_boot("host_state",  550, "log-json", span=40,
                        purpose="mirrored host state transitions (app band)"),
-        make_band_boot("host_actions", 650, "log-json", span=50,
+        make_band_boot("host_actions", 590, "log-json", span=10,
                        purpose="wrapped host effector calls (app band)"),
     ]
     return genome

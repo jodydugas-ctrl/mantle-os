@@ -146,7 +146,7 @@ inferred.
 ## Chapter 9 · ANCHORING & SYMBIOSIS — the AppAI earns its keep
 
 The deepest usefulness is residency. `anchor <host>` dissects an existing app
-read-only, grows a full anchored Body (VCW + nervous system + all eight organs) in a
+read-only, grows a full anchored Body (VCW + nervous system + all nine organs) in a
 `.mantle/` nest inside the host, remembers the host's organ map as **observed
 facts**, passes the Stage-1 gate, and proves do-no-harm with a byte-level census of
 every host file. The app now has a **resident**:
@@ -406,7 +406,7 @@ wakes exactly once on the due beat to continue its thought.
 
 ## Chapter 19 · WEARING A FACE — one organism, many front-ends
 
-The Body, the eight organs, and the append-only VCW are the *invariant substrate* — the nervous
+The Body, the nine organs, and the append-only VCW are the *invariant substrate* — the nervous
 system. A **phenotype** (a *face*) is the *swappable layer*: a whole front-end — a spreadsheet, a
 CLI, a calculator, a phone shell — whose source is sealed into a private VCW band. The organism
 does not *run* apps; it **wears** them. Same self underneath, different expressed morphology.
@@ -476,7 +476,7 @@ Then:
 ```bash
 python -m mantle hatch my_egg.json --out=my_nest/
 python -m mantle audit            # the full gate, anytime
-python -m mantle prove            # the 73 security invariants
+python -m mantle prove            # the 83 security invariants
 python -m mantle mind             # fuse the offline MIND and watch containment
 python -m mantle assimilate <existing-app> --dry-run    # Path B: dissect, don't rewrite
 ```

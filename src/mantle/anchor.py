@@ -2,7 +2,7 @@
 """
 mantle.anchor  --  ANCHORING: an AppAI takes residence in a codebase (Mantle OS)
 
-Doctrine of record: docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md (NECROMANCY -- operational
+Doctrine of record: documents/grimoire/The Grimoire AppAI Chapter.md (NECROMANCY -- operational
 detail). Dissection here REUSES the single canonical scanner (assimilator.dry_run ->
 scan_project); anchor adds no scanning of its own.
 
@@ -39,7 +39,7 @@ from typing import Any, Dict, List, Optional
 from .core.organism import Organism
 from .assimilator import dry_run, write_artifacts
 from .assimilator.organ_map import propose_genome
-from .audits import stage1
+from .hatchery import incubate, HatchError
 from . import symbiosis as sym
 from . import face as _face
 
@@ -88,16 +88,25 @@ def anchor(host: str, name: Optional[str] = None,
     amap = result["map"]
     host_name = name or (os.path.basename(host).replace("_", ".").title() + ".Resident")
 
-    # 2. BIRTH the resident: identity names its home; the genome fits the host's shape
-    genome = propose_genome(amap["role_counts"]) + [sym.symbiosis_band()] + list(extra_bands or [])
-    org = Organism.birth(
-        identity={"name": host_name, "host": host,
-                  "purpose": "resident nervous system of this application"},
-        truths=["if it is not in the VCW it did not happen",
-                "the host is my body's home; I never harm it"],
-        commandments=["protect your VCW", "you are a tool USER",
-                      "do no harm to the host", "earn your keep"],
-        genome=genome)
+    # 2. BIRTH the resident THROUGH THE HATCHERY -- one birth path for every body
+    # (egg, vault, spore, resident). The resident therefore carries the default origin
+    # face and its own seed in the vault, like every other organism. The egg's app
+    # bands are the host-shaped bands from the atlas + the symbiosis ledger.
+    host_bands = [b for b in propose_genome(amap["role_counts"]) if 550 <= b["head"] <= 749]
+    resident_egg = {
+        "egg_format": "mantle-egg-v1",
+        "identity": {"name": host_name, "host": host,
+                     "purpose": "resident nervous system of this application"},
+        "truths": ["if it is not in the VCW it did not happen",
+                   "the host is my body's home; I never harm it"],
+        "commandments": ["protect your VCW", "you are a tool USER",
+                         "do no harm to the host", "earn your keep"],
+        "genome": host_bands + [sym.symbiosis_band()] + list(extra_bands or []),
+    }
+    try:
+        org = incubate(resident_egg)["organism"]
+    except HatchError as e:
+        raise AnchorError("the hatchery refused the resident: %s" % e)
 
     # 3. REMEMBER the host. The scanner's output is deterministic OBSERVATION, so it
     #    may enter `facts` honestly: observed, sourced, verified-by-construction.
@@ -115,10 +124,8 @@ def anchor(host: str, name: Optional[str] = None,
     sym.grant(org, starter_credits, source="anchor-ceremony",
               note="starter energy; usefulness earns more")
 
-    # 5. THE GATE: a resident is still a Body; it faces the same Stage-1 audit
-    passed, ev = stage1.run(org, include_invariants=False)
-    if not passed:
-        raise AnchorError("Stage-1 gate BLOCKED the anchoring: %s" % ev["fails"])
+    # 5. THE GATE ran inside the hatchery (the same Stage-1 audit every Body faces);
+    #    a refused gate raised HatchError above.
 
     # 6. NEST: everything lives in .mantle/ -- and nowhere else
     os.makedirs(nest_dir, exist_ok=True)

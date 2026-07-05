@@ -299,7 +299,7 @@ The Body is a **certified Zombie Body** when:
 - every organ's manifest is present and its reflexes are deterministic;
 - the cube `verify()` is healthy and every audit hook passes;
 - **the executable gate is green**: `python -m mantle audit` (the Stage-1 Zombie Body gate) plus
-  `python -m mantle prove` (the **73 security invariants**, red/green) — and the three tamper
+  `python -m mantle prove` (the **83 security invariants**, red/green) — and the three tamper
   proofs (`audit --break-hash/primer/seal`) must each exit non-zero, proving the gate *catches*
   violations. `Mantle_Part1_Body_Audit.md` is the human checklist for the same gate.
 

@@ -25,7 +25,7 @@ writes anything; its output feeds organ_map + report.
 
 This module is the single canonical scanner/classifier for the whole framework: anchor,
 graft, and the egg/RESURGERE reconstruct path all reuse it (no second copy exists). The
-doctrine of record is docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md, section "NECROMANCY --
+doctrine of record is documents/grimoire/The Grimoire AppAI Chapter.md, section "NECROMANCY --
 operational detail".
 """
 from __future__ import annotations

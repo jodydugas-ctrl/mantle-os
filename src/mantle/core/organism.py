@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-mantle.core.organism  --  the Organism: Body + Prime cube + ancestors + eight organs (Mantle OS)
+mantle.core.organism  --  the Organism: Body + Prime cube + ancestors + nine organs (Mantle OS)
 
     Organism = BODY        (the Primer + lineage index -- identity, outside every cube)
              + PRIME cube  (one, hot, takes all experiential writes)
              + ANCESTRAL   (sealed, fingerprinted, lazy-loaded, read-only)
-             + the eight organs, meshed on one deterministic SignalBus
+             + the nine organs, meshed on one deterministic SignalBus
 
 How an AppAI lives, in this one class's vocabulary:
   born      Organism.birth() -- the Primer seals into the Body; the Prime cube is genesis'd
@@ -39,8 +39,10 @@ from ..organs.immune import Immune
 from ..organs.limbs import Limbs
 from ..organs.memory import Memory
 from ..organs.brain import Brain
+from ..organs.reproduction import Reproduction
 
-ORGAN_ORDER = ("heart", "genome", "nervous", "senses", "immune", "limbs", "memory", "brain")
+ORGAN_ORDER = ("heart", "genome", "nervous", "senses", "immune", "limbs", "memory",
+               "brain", "reproduction")
 
 
 class Organism:
@@ -50,7 +52,7 @@ class Organism:
         self.ancestral: List[Cube] = []
         self.stage1_certified = False           # set by the Stage-1 gate; required for fusion
 
-        # --- the mesh: one bus, eight organs, no hidden coupling -----------------
+        # --- the mesh: one bus, nine organs, no hidden coupling ------------------
         self.bus = SignalBus()
         self.immune = Immune(self)
         self.bus.set_immune_sink(self.immune.event)      # reflex faults -> immune events
@@ -61,7 +63,12 @@ class Organism:
         self.limbs = Limbs(self)
         self.memory = Memory(self)
         self.brain = Brain(self)
+        self.reproduction = Reproduction(self)
         self.prime.pressure_hook = self.memory.on_pressure   # capacity -> metabolism record
+        # lineage continuity (the Reproduction organ's runtime duty): the sealed seed
+        # and sealed origin spore are carried across every rebirth, fail-open via the bus
+        self.bus.subscribe("rebirth", lambda p: self.reproduction.on_rebirth(p),
+                           organ="reproduction")
         # nociception wiring (M1): the Heart wakes the MIND only on a reason -- a
         # SIGNIFICANT signal (Senses) or distress (Immune). No reason -> the MIND sleeps.
         self.bus.subscribe("significant", lambda p: self.heart.on_significant(p),

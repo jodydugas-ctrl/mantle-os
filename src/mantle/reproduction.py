@@ -38,13 +38,11 @@ two-word answer -- SEED or GRAFT -- instead of a glossary.
 
 The old distinction "grow from scratch vs. assimilate an existing app" is the SAME axis as
 "seed vs. graft": a seed answers to no host, a graft lives in one. Two methods, both gated by
-the 73 invariants, no standing law weakened.
+the 83 invariants, no standing law weakened.
 """
 from __future__ import annotations
 
 from typing import Any, Dict, Union
-
-from . import spore as _spore
 
 SEED_FORMS = ("spore", "egg", "vault")
 GRAFT_FORMS = ("anchor", "graft")
@@ -99,6 +97,7 @@ def seed(form: str = "spore", **kwargs) -> Dict[str, Any]:
     routes to the canonical module; it never re-implements the birth.
     """
     if form == "spore":
+        from . import spore as _spore
         path = _spore.create_spore(**kwargs)
         return {"method": "seed", "form": "spore", "path": path,
                 "verify": _spore.verify_spore(path)["ok"]}

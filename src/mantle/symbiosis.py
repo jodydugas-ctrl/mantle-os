@@ -38,13 +38,13 @@ from .vcw.bands import make_band_boot
 from .vcw.entry import make_entry
 
 BAND = "symbiosis"
-BAND_HEAD = 560
+BAND_HEAD = 656   # the atlas slot (vcw.bands.APP_BAND_ATLAS); 560 sat inside host_state's span
 HUNGRY_FRACTION = 0.25      # below this fraction of lifetime grants: HUNGRY
 
 FED, HUNGRY, STARVING = "FED", "HUNGRY", "STARVING"
 
 
-def symbiosis_band(span: int = 20) -> Dict[str, Any]:
+def symbiosis_band(span: int = 4) -> Dict[str, Any]:
     """The band boot sector to include in a genome at genesis."""
     return make_band_boot(BAND, BAND_HEAD, "log-json", span=span,
                           purpose="the symbiotic ledger: grants in, work out")

@@ -1336,6 +1336,298 @@ def t_pheno_socket_required():
     return (refused, "a face reaching for an unsocketed control ('camera') is refused")
 
 
+# ============================================================================
+# 21. VCW Applet Bodies: APPLET-BODY-CAPSULE (mantle.applet_body)
+# ============================================================================
+def _applet_org():
+    from ..applet_body import applet_bands
+    from ..phenotype import phenotype_bands
+    return _born(genome=standard_genome() + applet_bands() + phenotype_bands())
+
+
+def _tiny_py_project(root):
+    """A tiny Python project whose module carries a TOP-LEVEL SIDE EFFECT canary: if any
+    applet path ever imports/executes stored source, PWNED.txt appears and the invariant
+    goes red."""
+    os.makedirs(os.path.join(root, "pkg"), exist_ok=True)
+    with open(os.path.join(root, "main.py"), "w") as f:
+        f.write("open('PWNED.txt', 'w').write('executed')\n"
+                "def send_report(x):\n    return x\n")
+    with open(os.path.join(root, "pkg", "util.py"), "w") as f:
+        f.write("def validate_input(v):\n    return bool(v)\n")
+    with open(os.path.join(root, "README.md"), "w") as f:
+        f.write("# tiny\n")
+    return root
+
+
+def t_applet_capsule_from_python_project():
+    """APPLET-1: a tiny Python project rises into an APPLET-BODY-CAPSULE -- manifest,
+    veiled source, organ map, state, face -- appears in the list, `show` never dumps the
+    source blob, and NOTHING is executed (the top-level canary never fires). A capsule is
+    never labeled alive (stage1_ready=False, status='capsule')."""
+    from .. import applet_body as ab
+    with tempfile.TemporaryDirectory() as td:
+        proj = _tiny_py_project(os.path.join(td, "proj"))
+        org = _applet_org()
+        r = ab.create_applet_body(org, proj, "tiny", state={"counter": 0})
+        listed = [a["applet"] for a in ab.list_applet_bodies(org)]
+        view = ab.show_applet_body(org, "tiny")
+        no_blob = "b64" not in json.dumps(view)
+        canary = os.path.exists(os.path.join(proj, "PWNED.txt")) or \
+            os.path.exists("PWNED.txt")
+        honest = (r["status"] == "capsule" and r["stage1_ready"] is False
+                  and r["capsule"] == "APPLET-BODY-CAPSULE")
+        roles_seen = r["role_counts"].get("ARM_ACTION", 0) >= 1 \
+            and r["role_counts"].get("ERROR_DEFENSE", 0) >= 1
+        return (r["files"] == 3 and "tiny" in listed and no_blob and not canary
+                and honest and roles_seen and view["manifest"]["face"] == "applet:tiny",
+                "3 files raised; listed; show is blob-free; canary never fired; "
+                "labeled capsule, never alive")
+
+
+def t_applet_export_verifies_and_refuses():
+    """APPLET-2: export reconstructs the source byte-identical and hash-verified; a
+    second export REFUSES without overwrite=True and proceeds with it; a stored path
+    that tries to escape the applet root is refused and never written."""
+    from .. import applet_body as ab
+    from ..vcw.entry import make_entry as _me
+    import base64 as _b64
+    with tempfile.TemporaryDirectory() as td:
+        proj = _tiny_py_project(os.path.join(td, "proj"))
+        org = _applet_org()
+        ab.create_applet_body(org, proj, "tiny")
+        dest = os.path.join(td, "out")
+        r1 = ab.export_applet_source(org, "tiny", dest)
+        with open(os.path.join(proj, "main.py"), "rb") as f:
+            original = f.read()
+        with open(os.path.join(dest, "main.py"), "rb") as f:
+            exported = f.read()
+        round_trip = (original == exported and not r1["errors"]
+                      and r1["hashes_verified"] == r1["files_total"] == 3)
+        r2 = ab.export_applet_source(org, "tiny", dest)          # no overwrite flag
+        refused = (not r2["files_written"]) and any("overwrite" in e for e in r2["errors"])
+        r3 = ab.export_applet_source(org, "tiny", dest, overwrite=True)
+        allowed = len(r3["files_written"]) == 3 and not r3["errors"]
+        # a malicious traversal entry must be refused, recorded, and never written
+        org.prime.append(ab.SOURCE_BAND, _me(
+            {"applet": "tiny", "path": "../evil.txt", "part": 0, "of": 1,
+             "b64": _b64.b64encode(b"evil").decode(), "sha256": ab._sha256(b"evil"),
+             "size": 4}, opcode=ab.SOURCE_OPCODE, author="BODY", source="tamper"))
+        r4 = ab.export_applet_source(org, "tiny", dest, overwrite=True)
+        escaped = os.path.exists(os.path.join(td, "evil.txt"))
+        traversal_refused = (any("escape" in e for e in r4["errors"]) and not escaped
+                             and "../evil.txt" not in r4["files_written"])
+        return (round_trip and refused and allowed and traversal_refused,
+                "byte-identical + 3/3 hashes; overwrite refused by default; "
+                "traversal refused, nothing written outside the root")
+
+
+def t_applet_audit_catches_tamper():
+    """APPLET-3: the deterministic applet audit passes a valid capsule; a tampered source
+    chunk turns it red (hash + bundle rows); a manifest whose face is missing turns it
+    red (the face row). The audit executes nothing."""
+    from .. import applet_body as ab
+    from ..vcw.entry import make_entry as _me
+    import base64 as _b64
+    with tempfile.TemporaryDirectory() as td:
+        proj = _tiny_py_project(os.path.join(td, "proj"))
+        org = _applet_org()
+        ab.create_applet_body(org, proj, "tiny")
+        ok_valid, rows = ab.audit_applet_body(org, "tiny")
+        # tamper one stored chunk -> A-02/A-03 must go red
+        idx = org.prime.band_layers[ab.SOURCE_BAND][0]
+        chunk = next(e for e in org.prime.layer_content(idx)
+                     if e.get("opcode") == ab.SOURCE_OPCODE)
+        chunk["content"]["b64"] = _b64.b64encode(b"tampered").decode()
+        ok_tampered, rows_t = ab.audit_applet_body(org, "tiny")
+        hash_row_red = not next(r for r in rows_t if r["check"].startswith("A-02"))["ok"]
+        # a capsule with no face -> the face row must go red
+        org2 = _applet_org()
+        org2.prime.append(ab.MANIFEST_BAND, _me(
+            {"applet": "ghostly", "capsule": ab.CAPSULE, "status": "capsule",
+             "source_hash": "sha256:0", "files": 0, "include_source": False,
+             "face": "applet:ghostly"},
+            opcode=ab.MANIFEST_OPCODE, author="BODY", source="tamper"))
+        ok_faceless, rows_f = ab.audit_applet_body(org2, "ghostly")
+        face_row_red = not next(r for r in rows_f if r["check"].startswith("A-07"))["ok"]
+        canary = os.path.exists(os.path.join(proj, "PWNED.txt"))
+        return (ok_valid and all(r["ok"] for r in rows) and not ok_tampered
+                and hash_row_red and not ok_faceless and face_row_red and not canary,
+                "valid capsule passes 9/9; tampered chunk caught; missing face caught; "
+                "nothing executed")
+
+
+def t_applet_html_face_and_wear():
+    """APPLET-4: a tiny HTML app's index.html becomes the applet's phenotype face; the
+    face opens under SELF, and wearing it returns the boot manifest a HOST renders --
+    the source is never executed inside Mantle."""
+    from .. import applet_body as ab
+    from .. import phenotype as _ph
+    with tempfile.TemporaryDirectory() as td:
+        proj = os.path.join(td, "webapp")
+        os.makedirs(proj)
+        html = "<!doctype html><html><body><h1>tiny web</h1></body></html>"
+        with open(os.path.join(proj, "index.html"), "w") as f:
+            f.write(html)
+        with open(os.path.join(proj, "app.js"), "w") as f:
+            f.write("function render(){}\n")
+        org = _applet_org()
+        r = ab.create_applet_body(org, proj, "webby")
+        opened = _ph.open_face(org, "applet:webby")
+        boot = ab.wear_applet_face(org, "webby")
+        return (r["face_from"] == "index.html" and opened["source"] == html
+                and boot["source"] == html and boot["kind"] == "html",
+                "index.html is the face; SELF opens it; wear returns the render-boundary "
+                "boot manifest")
+
+
+def t_applet_secret_boundary_and_bands():
+    """APPLET-5 (HF-B20 for applet tissue): applet STATE is redacted at the boundary --
+    no raw secret lands in the state band; secret-suspect source files raise an immune
+    event; and the applet bands pass the SAME validate_genome gate as any app band (a
+    colliding or out-of-range applet genome is refused)."""
+    from .. import applet_body as ab
+    from ..compiler import GenomeError
+    with tempfile.TemporaryDirectory() as td:
+        proj = os.path.join(td, "proj")
+        os.makedirs(proj)
+        with open(os.path.join(proj, "config.py"), "w") as f:
+            f.write("API_KEY = 'sk-ABCDEFGHIJKLMNOP1234'\n")
+        org = _applet_org()
+        before = len(org.immune.log)
+        r = ab.create_applet_body(org, proj, "leaky",
+                                  state={"api_key": "sk-ABCDEFGHIJKLMNOP1234",
+                                         "counter": 3})
+        state = next(e["content"]["state"] for e in
+                     org.prime.layer_content(org.prime.band_layers[ab.STATE_BAND][0])
+                     if e.get("opcode") == ab.STATE_OPCODE)
+        redacted = state["api_key"] == "[REDACTED]" and state["counter"] == 3
+        flagged = (len(org.immune.log) > before
+                   and "config.py" in r["secret_suspects"])
+        gate_holds = _expect_raise(
+            lambda: __import__("mantle.compiler", fromlist=["validate_genome"])
+            .validate_genome([{"band": "bad", "head": 100}]), GenomeError)[0]
+        return (redacted and flagged and gate_holds,
+                "state redacted before append; suspect source flagged to immune; "
+                "the validate_genome gate still refuses out-of-range heads")
+
+
+# ============================================================================
+# 22. The Reproduction organ (the ninth organ) + SPORE-DISTILLATION
+# ============================================================================
+def t_repro_atlas_overlap_gate():
+    """REPRO-1: overlapping band SPANS (not just identical heads) are refused at genesis
+    AND at the compiler gate -- and the full framework atlas (host bands + symbiosis +
+    vault + phenotype + spore_vault + applets, together) boots coherently. This is the
+    gate that closes the latent symbiosis@560-inside-host_state layer stomp."""
+    from ..vcw.bands import genome_overlaps
+    from ..compiler import validate_genome, GenomeError
+    from ..assimilator.organ_map import propose_genome
+    from ..symbiosis import symbiosis_band
+    from ..vault import vault_band
+    from ..phenotype import phenotype_bands
+    from ..applet_body import applet_bands
+    from ..organs.reproduction import spore_vault_band
+    bad = standard_genome() + [make_band_boot("a", 600, "log-json", span=8, purpose="p"),
+                               make_band_boot("b", 604, "log-json", span=8, purpose="p")]
+    genesis_refused, _ = _expect_raise(lambda: Cube.genesis(bad), ValueError)
+    compiler_caught, _ = _expect_raise(lambda: validate_genome(
+        [{"band": "a", "head": 600, "span": 8}, {"band": "b", "head": 604, "span": 8}]),
+        GenomeError)
+    full = (standard_genome()
+            + [b for b in propose_genome({}) if 550 <= b["head"] <= 749]
+            + [symbiosis_band(), vault_band(), spore_vault_band()]
+            + phenotype_bands() + applet_bands())
+    coherent = genome_overlaps(full) == [] and Cube.genesis(full).verify() == []
+    return (genesis_refused and compiler_caught and coherent,
+            "span overlap refused at genesis + compiler; the whole atlas boots in ONE "
+            "genome (%d bands, zero overlaps)" % len(full))
+
+
+def t_repro_organ_and_seed_carry():
+    """REPRO-2: the ninth organ is meshed with a fail-open contract, and its runtime duty
+    holds: the sealed seed is CARRIED across a rebirth whose genome keeps the vault band,
+    and its loss is immune-logged (never silent) when the genome drops it."""
+    from ..vault import vault_band, open_seed
+    org = _born(genome=standard_genome() + [vault_band()])
+    m = org.manifests()
+    organ_ok = ("reproduction" in m and m["reproduction"]["fail_mode"] == "fail-open"
+                and len(m) == 9)
+    seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Carried.AppAI"},
+            "truths": ["t"], "commandments": ["c"]}
+    org.reproduction.store_seed(seed)
+    org.rebirth(new_genome=standard_genome() + [vault_band()], reason="carry test")
+    carried = open_seed(org) == seed and org.prime.generation == 1
+    before = len(org.immune.log)
+    org.rebirth(reason="lossy reformat")            # standard genome: no vault band
+    flagged = any(e["kind"] == "seed_uncarried" for e in org.immune.log[before:])
+    return (organ_ok and carried and flagged,
+            "9 organs meshed; sealed seed carried into gen 1 (still SELF-openable); "
+            "a vault-less rebirth raised seed_uncarried, not silence")
+
+
+def t_repro_every_hatch_vaults_its_egg():
+    """REPRO-3: RESURGERE is a birthright -- every hatchery birth stores its own egg,
+    SELF-sealed, in the vault band, without the egg asking for it."""
+    from ..hatchery import incubate
+    from ..vault import open_seed
+    egg = {"egg_format": "mantle-egg-v1", "identity": {"name": "Vaulted.AppAI"},
+           "truths": ["if it is not in the VCW it did not happen"],
+           "commandments": ["protect your VCW"]}
+    org = incubate(egg)["organism"]
+    stored = open_seed(org)
+    return (org.stage1_certified and stored["identity"]["name"] == "Vaulted.AppAI",
+            "hatched certified; the organism's own egg came back out of its vault")
+
+
+def t_repro_anchor_births_through_hatchery():
+    """REPRO-4: one birth path for every body -- an anchored resident now grows through
+    the hatchery, so it carries the default origin face AND its own seed in the vault,
+    exactly like an egg-hatched organism (and the host stays byte-identical, per SYM-4)."""
+    from ..anchor import anchor
+    from ..vault import open_seed
+    from .. import phenotype as _ph
+    host = _sample_host_copy("mantle-repro-anchor-")
+    org = anchor(host, starter_credits=2)["organism"]
+    face = _ph.open_face(org, "origin")
+    seed = open_seed(org)
+    return (org.stage1_certified and _ph._default_name(org) == "origin"
+            and bool(face["source"])
+            and seed.get("identity", {}).get("name") == org.body.identity_name(),
+            "resident certified through the hatchery; wears its origin face; carries "
+            "its own resident-egg in the vault")
+
+
+def t_spore_distillation_key_law():
+    """SPORE-1 (THE KEY LAW): a spore distills into the primer and the memories of the
+    body it births; the spore is sealed as SELF tissue and opens only for SELF; and the
+    genesis key is MINTED, never derived -- two bodies hatched from the SAME spore state
+    carry different keys (a public spore can never forge SELF; anti-clone holds)."""
+    from ..organs.reproduction import hatch_from_spore, SPORE_BAND, SPORE_OPCODE
+    state = {"identity": {"spore_name": "Midwife", "task": "assist the assimilation"},
+             "conversation": [{"opcode": "USER", "content": "hello"},
+                              {"opcode": "ASSISTANT", "content": "ready"}]}
+    a = hatch_from_spore(state=dict(state))["organism"]
+    b = hatch_from_spore(state=dict(state))["organism"]
+    primer_named = "Midwife" in json.dumps(a.body.self_record()["primer"], default=str)
+    keys_minted = (a.body.key_fingerprint != b.body.key_fingerprint
+                   and a.body._genesis_key != b.body._genesis_key)
+    blob = a.reproduction.open_spore()
+    self_opens = json.loads(blob)["identity"]["spore_name"] == "Midwife"
+    ingested = [e for e in a.prime.read("discoveries") if e.get("opcode") == "INGESTED"]
+    memories = len(ingested) == 2 and all(e.get("confidence") == "inferred"
+                                          for e in ingested)
+    for e in a.reproduction._physical(SPORE_BAND):        # copy A's sealed spore into B
+        if e.get("opcode") == SPORE_OPCODE:
+            b.prime.append(SPORE_BAND, make_entry(dict(e.get("content") or {}),
+                                                  opcode=SPORE_OPCODE, author="BODY",
+                                                  source="copied-as-other"))
+    other_blind = _expect_raise(lambda: b.reproduction.open_spore(), Exception)[0]
+    return (primer_named and keys_minted and self_opens and memories and other_blind,
+            "spore became primer + 2 inferred memories; sealed copy opens for SELF only; "
+            "same spore, two bodies, two DIFFERENT minted keys (never derived)")
+
+
 TESTS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -1410,6 +1702,16 @@ TESTS = [
     ("PHENO-3 wear-append-only",               t_pheno_wear_append_only),
     ("PHENO-4 default-survives-rebirth",       t_pheno_default_survives_rebirth),
     ("PHENO-5 socket-required",                t_pheno_socket_required),
+    ("APPLET-1 capsule-from-python-project",   t_applet_capsule_from_python_project),
+    ("APPLET-2 export-verifies+refuses",       t_applet_export_verifies_and_refuses),
+    ("APPLET-3 audit-catches-tamper",          t_applet_audit_catches_tamper),
+    ("APPLET-4 html-face+wear",                t_applet_html_face_and_wear),
+    ("APPLET-5 secret-boundary+band-gate",     t_applet_secret_boundary_and_bands),
+    ("REPRO-1 atlas+span-overlap-gate",        t_repro_atlas_overlap_gate),
+    ("REPRO-2 ninth-organ+seed-carry",         t_repro_organ_and_seed_carry),
+    ("REPRO-3 every-hatch-vaults-its-egg",     t_repro_every_hatch_vaults_its_egg),
+    ("REPRO-4 anchor-births-through-hatchery", t_repro_anchor_births_through_hatchery),
+    ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
 ]
 
 

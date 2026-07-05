@@ -2,7 +2,7 @@
 """
 mantle.graft  --  the GRAFT EGG and LIVE RESIDENCY (Mantle OS · R1 + R2)
 
-Doctrine of record: docs/grimoire/GRIMOIRE_APPAI_DOMAIN_v1_0.md (NECROMANCY -- operational
+Doctrine of record: documents/grimoire/The Grimoire AppAI Chapter.md (NECROMANCY -- operational
 detail; "One substrate, two casts"). Graft reuses the single canonical organ-role table
 (ROLES from assimilator.scanner) and delegates scanning to anchor(); it never re-classifies.
 

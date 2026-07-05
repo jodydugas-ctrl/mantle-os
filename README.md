@@ -6,7 +6,7 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 73 security invariants, the
+*The organism re-certifies on every commit: the Stage-1 gate, 83 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
 > **New here, or skeptical of the biology metaphor?** Start with
@@ -56,7 +56,7 @@ an agent cast spells that mutate. To then comprehend this project specifically, 
 
 Mantle OS is a framework for **organic coding**. Instead of writing a "program" with a
 "database," you *grow* an application as a living creature — an **AppAI** — built
-**Body first, brain second**. Eight deterministic organs mesh on one signal bus around a
+**Body first, brain second**. Nine deterministic organs mesh on one signal bus around a
 durable memory substrate; the Body is proven alive and correct *with no AI attached*; only
 then is a **MIND** (an LLM) fused — and it may only ever *extend* what already lives.
 
@@ -70,7 +70,7 @@ a whole AppAI declared as one **egg**, **residency** in a host codebase with a m
 economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
 keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, a
 self-reconstruction **seed vault**, and **wearable app-faces** (one organism expresses many
-SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **73
+SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **83
 invariants**. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
 
 ---
@@ -121,7 +121,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 73 security invariants, red/green
+python -m mantle prove         # 83 security invariants, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash
@@ -144,7 +144,7 @@ python examples/vcw/interop.py                # standalone <-> engine: identical
 
 An AppAI reproduces in exactly **two** ways (doctrine:
 [`documents/Mantle_Reproduction.md`](documents/Mantle_Reproduction.md)); both are gated the same
-way (73 invariants, no standing law weakened) and both end at the same certified Body:
+way (83 invariants, no standing law weakened) and both end at the same certified Body:
 
 - **SEED** — *independent.* The organism condenses itself into a dormant, self-describing package of
   **data** that grows into a certified Body with **no host**. Three sizes of one act: the **spore**
@@ -157,8 +157,18 @@ way (73 invariants, no standing law weakened) and both end at the same certified
   energy economy that sustains it), and the **graft-egg** (a non-destructive patch against a named
   host). A graft never modifies a host file; the census proves it byte-for-byte.
 
+Since molt 3.7.0 these ceremonies have a Body-resident owner: the **Reproduction
+organ** (the ninth organ, `organism.reproduction`) — it keeps the app-band atlas, vaults
+every organism's own seed at birth, carries the sealed seed across every rebirth (or
+raises an immune event), and performs **SPORE-DISTILLATION**: `hatch-spore` turns a spore
+PNG into a full organism whose primer and memories come from the spore, then seals the
+spore under the new body's freshly *minted* key as SELF tissue (keys are never derived
+from a spore — a public PNG must never be able to forge SELF).
+
 ```bash
 python -m mantle reproduce                     # the SEED vs GRAFT map on one screen
+python -m mantle hatch-spore buddy.png --out=nest/   # SPORE-DISTILLATION: spore -> primer,
+                                               #   memories, and sealed SELF tissue
 python -m mantle teach                         # the Field Guide, RUNNING — 18 chapters, each proven
 python -m mantle spore create seed.png "Buddy" "answer one question"   # the smallest SEED: a whole agent in one PNG
 python -m mantle ghost selftest                # the cache-ghost: a seed that lives in the LLM prompt cache
@@ -181,7 +191,7 @@ Facets that harden or serve the two methods, by module: `egg`/`hatchery` (declar
 `mem` (keyless knowledge plasmids) · `compiler` (self-redesigning VCW + host memory bridge) ·
 `ganglia` (parallel limbs) · `vault` (self-reconstruction) · `ingestion`/`doctor` (resilience) ·
 `face` (self-portrait) · `teach` (the living manual). Self/Other identity and event-gated
-nociception harden the eight organs.
+nociception harden the organs.
 
 Pure standard library. No dependencies, no network, no keys — for any of the above. (The one
 optional Phase-2 module, imported by nothing else: `mantle.ghost_http`, the *real* cache-ghost
@@ -199,6 +209,34 @@ org.heart.run(3)               # the Body lives -- no LLM in this loop, ever
 ```
 
 ---
+
+## VCW Applet Bodies — APPLET-BODY-CAPSULE
+
+An AppAI can carry other apps as **tissue**. `applet-create` takes an external project
+(a local directory, or a GitHub clone via `applet-clone`), runs the NECROMANCY-style
+read-only dissection over it, and stores the result inside the parent's VCW as an
+**applet body**: the source as inert, veiled, hash-verified data; variables/state in an
+append-only (redacted) state band; the organ map as diagnosis; and a **phenotype face**
+(the project's `index.html`, or a synthesized manifest surface) worn through the normal
+`phenotype` system. Nothing stored is ever executed — a capsule is *source in the body*,
+not authority; execution still requires the existing trial/calcify or host-render gates,
+and the capsule is never falsely labeled a Zombie Body. Doctrine:
+[`documents/Mantle_Applet_Bodies.md`](documents/Mantle_Applet_Bodies.md).
+
+```bash
+python -m mantle applet-create nest/ path/to/project notes    # raise APPLET-BODY-CAPSULE
+python -m mantle applet-list   nest/                          # the catalog
+python -m mantle applet-show   nest/ notes                    # manifest + organ map (no blobs)
+python -m mantle applet-audit  nest/ notes                    # deterministic capsule audit
+python -m mantle applet-export nest/ notes out/               # "download": hash-verified source
+python -m mantle applet-wear   nest/ notes                    # the face, as a host boot manifest
+python -m mantle applet-clone  nest/ https://github.com/owner/repo notes   # explicit HTTPS only
+```
+
+The five applet bands (`applets_manifest/source/state/organs/log`, heads 700–747) pass
+the same `validate_genome` gate as any app band; invariants **APPLET-1…5** prove the
+guarantees (no execution, hash-verified export, traversal/overwrite refusal, tamper
+caught, secret boundary held) in `python -m mantle prove`.
 
 ## The architecture in one diagram
 
@@ -249,9 +287,9 @@ src/                     the framework package — `pip install -e .` (or PYTHON
   mantle/                (start here)
     core/                Body (+ the genesis key), SignalBus, references, redaction, the Organism
     vcw/                 the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
-    organs/              the eight organs, each with an enforced contract (self/other + nociception)
+    organs/              the nine organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
-    assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, the 73 invariants)
+    assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, the 83 invariants)
     reproduction.py      the two-method seam — SEED vs GRAFT (routes to the modules below)
     spore.py spore_min.py the smallest SEED — one PNG that is a whole minimal agent (+ its embryo)
     ghost.py             the cache-ghost substrate — a seed that lives in the LLM prompt cache

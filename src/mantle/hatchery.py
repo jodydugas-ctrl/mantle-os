@@ -93,9 +93,15 @@ def incubate(egg: Dict[str, Any], *, warmup_beats: int = 3,
         if pb["head"] in used_heads:
             raise HatchError("egg app band collides with the reserved phenotype band head %d "
                              "(reserved: %d-655 and 660-661)" % (pb["head"], pb["head"]))
-    genome = standard_genome() + app_bands + pheno_bands
-    org = Organism.birth(identity=egg["identity"], truths=list(egg["truths"]),
-                         commandments=list(egg["commandments"]), genome=genome)
+    from . import vault as _vault
+    vault_boot = ([] if any(b["band"] == _vault.VAULT_BAND for b in app_bands)
+                  else [_vault.vault_band()])
+    genome = standard_genome() + app_bands + pheno_bands + vault_boot
+    try:
+        org = Organism.birth(identity=egg["identity"], truths=list(egg["truths"]),
+                             commandments=list(egg["commandments"]), genome=genome)
+    except ValueError as e:                      # the genesis overlap gate speaks
+        raise HatchError("egg genome refused: %s" % e)
     report["stages"].append({"birth": {"bands": len(org.prime.bands),
                                        "name": org.body.identity_name()}})
 
@@ -157,6 +163,11 @@ def incubate(egg: Dict[str, Any], *, warmup_beats: int = 3,
             "fails": ev["fails"]}})
         if not passed:
             raise HatchError("Stage-1 gate BLOCKED the hatch: %s" % ev["fails"])
+    # 5b. THE VAULT BIRTHRIGHT: every hatched organism carries its own seed --
+    # the egg it grew from, sealed under its freshly minted genesis key (RESURGERE
+    # is a birthright, not an option). The Reproduction organ owns this tissue.
+    org.reproduction.store_seed(egg)
+    report["stages"].append({"vault": {"seed": "stored (SELF-sealed egg)"}})
     report["certified"] = org.stage1_certified
     return {"organism": org, "report": report}
 

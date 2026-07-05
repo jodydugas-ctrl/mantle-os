@@ -2,7 +2,7 @@
 """
 mantle.phenotype  --  wearable app-faces stored inside the VCW (Mantle OS · M9)
 
-One stable organism (Body + append-only cube + eight organs) can express MANY front-facing
+One stable organism (Body + append-only cube + nine organs) can express MANY front-facing
 surfaces -- a spreadsheet, a CLI, a phone shell, a chat face -- while the nervous system and
 the VCW underneath never change. A PHENOTYPE (a "face") is a whole front-end, sealed under the
 genesis key into a private VCW band. The Compiler does not run apps; it WEARS them.

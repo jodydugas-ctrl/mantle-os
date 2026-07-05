@@ -27,6 +27,10 @@ dependencies = []
 # Multi-language assimilator dissection (NECROMANCY language_agnostic path): without this,
 # `mantle.assimilator.scan_project` dissects Python only -- no behavior change for existing users.
 multilang = ["tree_sitter==0.21.3", "tree_sitter_languages==1.10.2"]
+# The SPORE-PNG seed (mantle.spore / spore_min): the one facet that needs a PNG rasterizer.
+# Without it the module imports fine and every other gate runs; spore PNG operations raise
+# an honest error naming this extra.
+spore = ["pillow"]
 
 [project.urls]
 Homepage = "https://github.com/jodydugas-ctrl/mantle-os"
