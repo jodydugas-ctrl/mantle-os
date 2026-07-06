@@ -312,8 +312,8 @@ examples/                example AppAIs + the normative substrate
   eggs/                  greeter.json (hatch it) · calculator.json · notes_graft.json (a graft egg)
   spore/                 a custom VCW substrate in PNG form — purity audit + VCW-conformance proof + a seed
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
-  *.html / *.yaml        reference demos (the two HTML apps functionally implement the
-                         organ behaviors and are browser-tested) — see examples/README.md
+  *.html / *.yaml        reference demos (the HTML apps functionally implement the
+                         organ behaviors or live body and are browser-tested) — see examples/README.md
   tests/                 headless smoke tests for the HTML demos (Playwright; CI: Demo Smoke)
 ```
 

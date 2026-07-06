@@ -2343,7 +2343,8 @@ const callAPI = async (
           const d = await res.json();
           const ch = d.choices?.[0] || {};
           const msg = ch.message || {};
-          const text = Array.isArray(msg.content)
+          let finishReason = ch.finish_reason;
+          let text = Array.isArray(msg.content)
             ? msg.content.filter((b) => b?.type === "text").map((b) => b.text || "").join("")
             : (msg.content || msg.reasoning_content || ""); // reasoning_content fallback for thinking models (deepseek-r1)
           const parseArgs = (a) => {
@@ -2355,17 +2356,62 @@ const callAPI = async (
             return { _raw: s };
           };
           const grokUsage = d.usage || {};
-          const toolUses = (msg.tool_calls || []).map((tc) => ({
+          let toolUses = (msg.tool_calls || []).map((tc) => ({
             id: tc.id,
             name: tc?.function?.name,
             input: parseArgs(tc?.function?.arguments),
           }));
+          let providerDiagnostic: any = null;
+          if (!String(text || "").trim() && !toolUses.length) {
+            providerDiagnostic = {
+              emptyResponse: true,
+              retried: true,
+              finishReason,
+              messageShape: Object.keys(msg || {}),
+            };
+            const retryBody = {
+              ...scrubbed,
+              messages: [
+                ...(scrubbed.messages || []),
+                {
+                  role: "user",
+                  content:
+                    "Your previous response had no readable final content. Return a concise visible answer or a valid tool call now. Do not expose private reasoning.",
+                },
+              ],
+            };
+            const retryRes = await fetch(url, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(retryBody),
+            });
+            if (retryRes.ok) {
+              const retryJson = await retryRes.json();
+              const retryChoice = retryJson.choices?.[0] || {};
+              const retryMsg = retryChoice.message || {};
+              finishReason = retryChoice.finish_reason || finishReason;
+              text = Array.isArray(retryMsg.content)
+                ? retryMsg.content.filter((b) => b?.type === "text").map((b) => b.text || "").join("")
+                : (retryMsg.content || retryMsg.reasoning_content || "");
+              toolUses = (retryMsg.tool_calls || []).map((tc) => ({
+                id: tc.id,
+                name: tc?.function?.name,
+                input: parseArgs(tc?.function?.arguments),
+              }));
+              providerDiagnostic.retryFinishReason = finishReason;
+              providerDiagnostic.retryMessageShape = Object.keys(retryMsg || {});
+            }
+            if (!String(text || "").trim() && !toolUses.length) {
+              text = "[Provider returned no readable final content after one retry. Diagnostic logged in MODEL.REQUEST; no private reasoning was exposed.]";
+            }
+          }
           return {
             provider: p.id,
             model: mk,
             text,
             toolUses,
-            stop: ch.finish_reason,
+            stop: finishReason,
+            providerDiagnostic,
             totalTokens: grokUsage.total_tokens || (grokUsage.prompt_tokens || 0) + (grokUsage.completion_tokens || 0),
             inputTokens: grokUsage.prompt_tokens || 0,
             outputTokens: grokUsage.completion_tokens || 0,
@@ -5685,13 +5731,16 @@ function App() {
               continue;
             }
           }
-          if (it === 0 && zombieRetry < 1) {
+          // An Arm may produce a valid text deliverable without tool calls. Only retry
+          // when it returned no usable result at all.
+          const armProducedText = !!(r.text && cleanText(r.text).trim());
+          if (it === 0 && zombieRetry < 1 && !armProducedText) {
             zombieRetry++;
             tap(
               sid,
               "SYSTEM",
               "SYS.CORRECT",
-              "Zombie (attempt " + zombieRetry + "): no tools. Retrying."
+              "Zombie (attempt " + zombieRetry + "): no tools and no usable result. Retrying."
             );
             if (r.text)
               tap(sid, "BRAIN", "BRAIN.THOUGHT", r.text, {
@@ -8819,8 +8868,11 @@ function App() {
             keyFingerprint: keyFingerprint(API_KEYS.openrouter || ""),
             bodyRefs: ["<bodyentry.000>", "<bodyentry.001>", "<bodyentry.002>", "<bodyentry.003>"],
             resultCoordinate: "pending",
+            providerDiagnostic: r.providerDiagnostic || null,
             apiMs
           }), { type: "model_trace", provider: r.provider, model: r.model, role: "Prime", apiMs });
+          if (r.providerDiagnostic)
+            app("SYSTEM", "MODEL.EMPTY_RESPONSE_DIAGNOSTIC", JSON.stringify(r.providerDiagnostic), { type: "provider_reliability", attempted: true, ok: true, method: "empty-response-retry" });
           // Update token-based capacity from API response
           if (r.totalTokens) lr.current.lastTokenCount = r.totalTokens;
           // Resource economy — track spend, warn at thresholds
@@ -8921,12 +8973,15 @@ function App() {
               continue; // Tools were executed, continue loop for more
             }
           }
-          // No tools found in text either — zombie or final response
-          if (it === 0 && zombieRetry < 2) {
-            const wantsBodyChange =
-              /\b(morph|morphed|body\s+shifted|added\s+(?:a\s+)?(?:module|canvas)|removed\s+(?:a\s+)?(?:module|armspinner)|updated\s+layout)\b/i.test(
-                r.text || ""
-              );
+          // No tools found in text either — zombie or final response.
+          // Only force a retry when tools are actually required: heartbeat logging or a
+          // claimed body/UI mutation. Ordinary chat replies are valid final responses.
+          const wantsBodyChange =
+            /\b(morphed|reshaped\s+(?:my|the)|body\s+shifted|added\s+(?:a\s+)?(?:module|canvas)|removed\s+(?:a\s+)?(?:module|armspinner)|updated\s+(?:the\s+)?layout)\b/i.test(
+              r.text || ""
+            );
+          const requiresTool = hb || wantsBodyChange;
+          if (it === 0 && zombieRetry < 2 && requiresTool) {
             zombieRetry++;
             app(
               "SYSTEM",

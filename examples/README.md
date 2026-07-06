@@ -41,10 +41,12 @@ The single best "example" is the framework proving itself: **`python -m mantle t
 
 Their version labels, framework prose, ontology/system prompts, and doc references are current;
 the YAML's `mantle_alignment` contract carries a `capabilities` block. They are honest about
-scope — the in-browser HTML demos run the **Body / organ / VCW core** (same cube format
-`vcw-cube-png-v2`, the eight pre-Reproduction organs — the in-browser engines predate the
-ninth organ — + the `<facts.N>` grammar). Beyond describing it, both demos
-now **functionally implement and browser-test four organ behaviors**: graded memory
+scope — the in-browser HTML demos run the **Body / organ / VCW core**. The Reference and
+Spreadsheet demos use the Gen-4 cube format (`vcw-cube-png-v2`, the eight pre-Reproduction
+organs — the in-browser engines predate the ninth organ — + the `<facts.N>` grammar). The Live
+Agent preserves the working v1.5 live-body `vcw-png-v1` demo path and carries the current
+nine-organ doctrine. Beyond describing it, the Gen-4 demos now **functionally implement and
+browser-test four organ behaviors**: graded memory
 (deweight → recoverable ghosts), self/other (a Body-resident genesis key; anti-clone), nociception
 (`heart.pain`, the now-interrupt), and `schedule_pulse` (planned future wakes that chain thoughts).
 Both demos also expose a **browser-feasible subset of the reproductive/symbiotic tissue** as Body
@@ -65,15 +67,18 @@ single-page demo and remain **framework-only** in the `src/mantle/` Python packa
 
 ## Headless smoke tests (`tests/`)
 
-`tests/demo_smoke.mjs` (Playwright) gives the single-file demos their own runtime regression
-cover, complementing the Python gate. Each demo must mount, expose its engine, and pass its
-in-browser checks — the Spreadsheet's Stage-1 self-audit, and the Reference Agent's
-Genome/resolver/self-audit assertions (primer present, `activeBodyRefs` populated-only, dangling
-vs. unsupported ref labeling, the `B-GEN` audit row). Runs in CI as **Demo Smoke**; locally:
+`tests/demo_smoke.mjs` (Playwright) gives the Reference and Spreadsheet demos their browser
+runtime regression cover, complementing the Python gate. `tests/live_agent_smoke.mjs` gives the
+Live Agent its own jsdom/Babel/React mount check and runnable Stage-1 gate. Together they prove
+the demos mount, expose their engines, and pass their in-browser checks — the Spreadsheet's
+Stage-1 self-audit, the Reference Agent's Genome/resolver/self-audit assertions (primer present,
+`activeBodyRefs` populated-only, dangling vs. unsupported ref labeling, the `B-GEN` audit row),
+and the Live Agent's boot/self-audit plus replay-loop guard checks. Runs in CI as **Demo Smoke**;
+locally:
 
 ```bash
 python -m http.server 8765 --directory examples &        # serve the demos
 cd examples/tests && npm install && npx playwright install chromium
-BASE_URL=http://localhost:8765 node demo_smoke.mjs
+BASE_URL=http://localhost:8765 npm test
 ```
 (Node lives only here; the rest of the project stays dependency-free. `node_modules/` is gitignored.)
