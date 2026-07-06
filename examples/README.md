@@ -27,15 +27,19 @@ The single best "example" is the framework proving itself: **`python -m mantle t
 
 - `Mantle_Reference_Agent.html` — a single-file, in-browser **Reference AppAI** (React, runs an
   organism with its own JS VCW-cube codec, organ atlas, reflexes, and rebirth/ancestor lineage).
+- `Mantle_Live_Agent.html` — the working single-file **Live Agent** demo. It runs the older
+  `vcw-png-v1` live body with the nine-organ doctrine, live chat/replay loop, arm/ganglia controls,
+  autonomous heartbeat, and provider empty-response recovery for replay/continue turns.
 - `Mantle_Spreadsheet_Agent.html` — a single-file in-browser **spreadsheet AppAI** demo.
 - `Mantle_MacroDroid_Schema.yaml` — the **Path-B alignment contract** + MacroDroid JSON schema for
   anchoring/grafting a Mantle resident onto a MacroDroid host.
 
 Their version labels, framework prose, ontology/system prompts, and doc references are current;
 the YAML's `mantle_alignment` contract carries a `capabilities` block. They are honest about
-scope — the in-browser HTML demos run the **Body / organ / VCW core** (same cube format
-`vcw-cube-png-v2`, same eight organs + the `<facts.N>` grammar). Beyond describing it, both demos
-now **functionally implement and browser-test four organ behaviors**: graded memory
+scope — the in-browser HTML demos run the **Body / organ / VCW core**. The Reference and
+Spreadsheet demos use the Gen-4 cube format (`vcw-cube-png-v2`, same eight organs + the
+`<facts.N>` grammar); the Live Agent preserves the working live-body `vcw-png-v1` demo path.
+Beyond describing it, the Gen-4 demos now **functionally implement and browser-test four organ behaviors**: graded memory
 (deweight → recoverable ghosts), self/other (a Body-resident genesis key; anti-clone), nociception
 (`heart.pain`, the now-interrupt), and `schedule_pulse` (planned future wakes that chain thoughts).
 Both demos also expose a **browser-feasible subset of the reproductive/symbiotic tissue** as Body
@@ -58,9 +62,10 @@ single-page demo and remain **framework-only** in the `src/mantle/` Python packa
 
 `tests/demo_smoke.mjs` (Playwright) gives the single-file demos their own runtime regression
 cover, complementing the Python gate. Each demo must mount, expose its engine, and pass its
-in-browser checks — the Spreadsheet's Stage-1 self-audit, and the Reference Agent's
+in-browser checks — the Spreadsheet's Stage-1 self-audit, the Reference Agent's
 Genome/resolver/self-audit assertions (primer present, `activeBodyRefs` populated-only, dangling
-vs. unsupported ref labeling, the `B-GEN` audit row). Runs in CI as **Demo Smoke**; locally:
+vs. unsupported ref labeling, the `B-GEN` audit row), and the Live Agent's boot/self-audit plus
+replay-loop guard checks. Runs in CI as **Demo Smoke**; locally:
 
 ```bash
 python -m http.server 8765 --directory examples &        # serve the demos

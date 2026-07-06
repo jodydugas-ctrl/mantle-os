@@ -1,9 +1,10 @@
-// Headless smoke tests for the two Mantle OS reference HTML demos.
+// Headless smoke tests for the Mantle OS HTML demos.
 //
 // The Python substrate is certified by `python -m mantle prove` (83 invariants); these tests
 // give the single-file *browser* demos their own runtime regression cover: each demo must mount
-// with no unexpected console errors, expose its engine, and PASS its in-browser self-audit
-// (Spreadsheet) / Genome+resolver checks (Reference Agent). Assertions mirror the manual
+// with no unexpected console errors, expose its engine, and PASS its in-browser checks
+// (Spreadsheet audit, Reference Genome+resolver checks, Live Agent replay guards).
+// Assertions mirror the manual
 // preview-harness checks used while developing the fixes.
 //
 // Usage: a static server must serve examples/ at $BASE_URL (default http://localhost:8765).
@@ -26,6 +27,21 @@ async function loadDemo(page, file, { mountSelector, waitForGlobal }) {
     if (msg.type() === "error" && !isBenign(msg.text())) errors.push("console: " + msg.text());
   });
   page.on("pageerror", (err) => errors.push("pageerror: " + (err && err.message)));
+
+  await page.goto(`${BASE}/?clear=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.evaluate(async () => {
+    try { localStorage.clear(); } catch (_) {}
+    try { sessionStorage.clear(); } catch (_) {}
+    try {
+      if (indexedDB.databases) {
+        const dbs = await indexedDB.databases();
+        await Promise.all((dbs || []).map((db) => db.name && new Promise((resolve) => {
+          const req = indexedDB.deleteDatabase(db.name);
+          req.onsuccess = req.onerror = req.onblocked = () => resolve();
+        })));
+      }
+    } catch (_) {}
+  });
 
   await page.goto(`${BASE}/${file}?cb=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60000 });
   // The engine globals are script/Babel-scope consts (reachable by bare name in the page realm,
@@ -95,6 +111,34 @@ async function checkReferenceAgent(page) {
   return errors.concat(result);
 }
 
+async function checkLiveAgent(page) {
+  const errors = await loadDemo(page, "Mantle_Live_Agent.html", {
+    mountSelector: "#root > *",
+    waitForGlobal: "window.__mantleTest",
+  });
+  const result = await page.evaluate(() => {
+    const fails = [];
+    try {
+      if (!window.__mantleTest) fails.push("__mantleTest missing");
+      const state = window.__mantleTest.state();
+      if (!state.isBooted) fails.push("Live Agent did not boot");
+      if (!state.reservedShards || Object.keys(state.reservedShards).length !== 9) fails.push("nine reserved shards missing");
+      if (!state.bodyEntries || !state.bodyEntries["bodyentry.000"]?.immutable) fails.push("immutable primer missing");
+      const audit = window.__mantleTest.runSelfAudit();
+      if (!audit || audit.verdict !== "PASS") fails.push("self-audit verdict = " + (audit && audit.verdict));
+      if (typeof callAPI !== "function") fails.push("callAPI missing");
+      const src = callAPI.toString();
+      if (!src.includes("providerDiagnostic")) fails.push("empty-provider diagnostic retry missing");
+      if (!src.includes("Your previous response had no readable final content")) fails.push("empty-provider retry prompt missing");
+      if (typeof cleanText !== "function" || cleanText("[Continue — tool results in VCW] visible") !== "visible") fails.push("continue marker cleaner regression");
+    } catch (e) {
+      fails.push("threw: " + e.message);
+    }
+    return fails;
+  });
+  return errors.concat(result);
+}
+
 async function checkSpreadsheet(page) {
   const errors = await loadDemo(page, "Mantle_Spreadsheet_Agent.html", {
     mountSelector: null,
@@ -135,9 +179,11 @@ async function checkSpreadsheet(page) {
   try {
     const ref = await checkReferenceAgent(page);
     console.log(ref.length ? "✗ Reference Agent:\n  " + ref.join("\n  ") : "✓ Reference Agent: mounts, Genome+resolver+self-audit OK");
+    const live = await checkLiveAgent(page);
+    console.log(live.length ? "✗ Live Agent:\n  " + live.join("\n  ") : "✓ Live Agent: mounts, self-audit PASS, replay-loop guards present");
     const sheet = await checkSpreadsheet(page);
     console.log(sheet.length ? "✗ Spreadsheet Agent:\n  " + sheet.join("\n  ") : "✓ Spreadsheet Agent: boots, self-audit PASS");
-    failures = ref.concat(sheet);
+    failures = ref.concat(live, sheet);
   } finally {
     await browser.close();
   }
