@@ -304,7 +304,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
   grimoire/              the two version-locked Grimoire files: Core + AppAI chapter
-  FIELD_GUIDE.md         the runnable manual (mirror of `python -m mantle teach`, 18 chapters)
+  FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   Mantle_Architecture.md · guides/ (VCW · lifecycle · contracts · audit · visual)
   Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
   assets/                diagrams (SVG, agent-readable) + rendered art
@@ -346,7 +346,16 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
   sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same
   MIND fusion.
 
+## Verify everything with one command
+
+```bash
+python -m mantle check          # every gate, proof, demo, and test — the CI sequence, local
+python -m mantle check --fast   # gates + proofs only (skips the narrated demos)
+```
+
 ## Status & license
 
 An open demonstration of an alternative coding structure — study it, critique it, build
 on it ([`CONTRIBUTING.md`](CONTRIBUTING.md)). Released under the [MIT License](LICENSE).
+The pre-1.0 edition (previously archived in-tree under `legacy/`) lives in git history at
+commit [`2c857a8`](https://github.com/jodydugas-ctrl/mantle-os/tree/2c857a8/legacy).

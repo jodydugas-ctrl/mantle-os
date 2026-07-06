@@ -1,7 +1,7 @@
 """Mantle OS -- the Homeostatic AppAI Framework.
 
 Grow software like a living organism, then give it a mind. An AppAI is built Body first:
-eight contracted organs mesh on one deterministic SignalBus around a durable picture-memory
+nine contracted organs mesh on one deterministic SignalBus around a durable picture-memory
 (the VCW cube), with an immune system and a heartbeat -- all certified with no LLM attached.
 Only then may a bounded MIND be fused, and it may only ever extend what already lives.
 
@@ -12,7 +12,7 @@ and their tamper proofs.
     python -m mantle teach                       # the Field Guide, running
     python -m mantle hatch examples/eggs/greeter.json --out=nest/
 """
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 # The public API is exposed lazily (PEP 562): importing `mantle` is near-free; each name pulls
 # in its submodule only on first access. `from mantle import Organism` and `mantle.Organism`

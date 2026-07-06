@@ -194,7 +194,7 @@ ZOMBIE BODY CERTIFICATION
   Tamper proofs     : [ ] --break-hash  [ ] --break-primer  [ ] --break-seal  (each MUST fail)
   Open hard-fails   : ____  (MUST be 0 to proceed)
   Organs present    : Heart [ ] Genome [ ] Nervous [ ] Senses [ ] Immune [ ]
-                      Limbs [ ] Memory [ ] Brain-stub [ ]   (8 organs)
+                      Limbs [ ] Memory [ ] Brain-stub [ ] Reproduction [ ]   (9 organs)
   Certified by      : ____________________________
   Date              : ____________________________
 

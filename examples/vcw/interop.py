@@ -19,8 +19,8 @@ import tempfile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(os.path.dirname(_HERE))
-sys.path.insert(0, _ROOT)        # the mantle package (repo root)
-sys.path.insert(0, _HERE)        # the standalone codec (this directory)
+sys.path.insert(0, os.path.join(_ROOT, "src"))  # the mantle package (src-layout)
+sys.path.insert(0, _HERE)                       # the standalone codec (this directory)
 
 import vcw_cube as standalone                      # noqa: E402
 from mantle.vcw.cube import Cube as EngineCube     # noqa: E402

@@ -7,7 +7,7 @@ for the MIND (the Brain organ) to mutate the host UI or execute code directly. T
 MacroDroid; the Mantle organism grows organs around it non-destructively (additive, fail-open,
 reversible). Identity lives in the BODY; experiential memory lives in the VCW Cube. Mantle turns
 this Path-B alignment into `python -m mantle anchor <host>` (a resident) and the `graft` egg; the
-substrate (the eight organs + the VCW cube) is the certified Body.
+substrate (the nine organs + the VCW cube) is the certified Body.
 
 mantle_alignment:
   framework: "Mantle OS"
@@ -40,7 +40,7 @@ mantle_alignment:
     scheduling: "planning ahead — heart.schedule_pulse(reason, after=N | at=K) wakes cognition on a FUTURE beat so the AppAI chains thoughts and runs a task only as often as it really needs, staying asleep until due. `pain` is the now version; `cancel_pulse` changes the plan (SCHED-1)."
     graded_memory: "a contradicted value is deweighted (append-only), not deleted — a recoverable behavioral ghost (MEMW-1..3)."
     others: "mem (keyless knowledge plasmids), compiler (self-redesigning VCW + host memory bridge), ganglia (parallel limbs), vault (self-reconstruction), doctor (deployment checkup)."
-  organs:                               # eight canonical organs (docs/Mantle_Organ_Atlas.md §2)
+  organs:                               # nine canonical organs (documents/Mantle_Organ_Atlas.md §2)
     - "Heart"
     - "Genome"
     - "Nervous"
@@ -49,8 +49,9 @@ mantle_alignment:
     - "Limbs"
     - "Memory"
     - "Brain"
-  groove_detection: "disabled — Path B assimilator; host-owned Body; armory band not reserved. See docs/Mantle_Extensions.md §6 if enabling grooves on a future standalone organism."
-  urge_system: "enabled (Mantle immune band tracks URGE.REBIRTH / URGE.MAINTENANCE pressure via heartbeat loop; MacroDroid host respects MIND awakening on SIGNIFICANT / SYS.REBIRTH_URGED events). MIND observes but cannot force urge execution. (docs/Mantle_Urge_System.md)"
+    - "Reproduction"
+  groove_detection: "disabled — Path B assimilator; host-owned Body; armory band not reserved. See documents/Mantle_Extensions.md §6 if enabling grooves on a future standalone organism."
+  urge_system: "enabled (Mantle immune band tracks URGE.REBIRTH / URGE.MAINTENANCE pressure via heartbeat loop; MacroDroid host respects MIND awakening on SIGNIFICANT / SYS.REBIRTH_URGED events). MIND observes but cannot force urge execution. (documents/Mantle_Urge_System.md)"
   organ_map:                            # MacroDroid host surfaces → Mantle organs (Organ_Atlas §2)
     macro_scheduler: "Heart — the trigger-polling loop and macro-execution cadence; the Body's clock and circulation (HF-B08)"
     macro_request_composer: "Senses — perceived via the Human Surface Map (afferent intake)"

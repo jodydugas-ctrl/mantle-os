@@ -30,11 +30,11 @@ Every organ has:
 
 ## 2. The canonical organ set
 
-Eight organs make up a complete organism. Not every AppAI grows all eight with equal
+Nine organs make up a complete organism. Not every AppAI grows all nine with equal
 mass, but every organ has a defined home and band binding. Application-specific
 logic lives in **app organs** bound to the app band range (550–749).
 
-> **Why eight, not ten.** A digital organ must *truly* represent what it does. Two former
+> **Why nine, not eleven.** A digital organ must *truly* represent what it does. Two former
 > organs were redundant analogs and have been folded by direction of flow:
 > **Lungs** (I/O) split into its **afferent** half → **Senses** (perceiving the surface) and its
 > **efferent** half → **Limbs** (operating the surface), and **Liver / Metabolism** (memory
@@ -51,6 +51,7 @@ logic lives in **app organs** bound to the app band range (550–749).
 | 6 | **Limbs / Arms** | action (efferent I/O) | tools, effectors, async delegation; **operates the host surface** (ControlBridge), **renders** the App-Face Bridge, records dispatch lifecycle + Action Execution Proof; runs calcified reflex (`exec`) skills | brain (450–499), app bands | dormant→active |
 | 7 | **Memory organs** | recall + metabolism | identity / facts / events / discoveries persistence; **flush hot→durable, on-demand layer allocation, compaction, reclaim/reuse** | 100–299 | active |
 | 8 | **Brain** | cognition | the fused MIND; writes only `thoughts` + `brain` | brain, thoughts (500–549) | **dormant** |
+| 9 | **Reproduction** | procreation / lineage | SEED/GRAFT ceremony routing; the sealed seed vault (every hatch vaults its egg); lineage continuity across rebirth; keeper of the app-band atlas; SPORE-DISTILLATION | `spore_vault` (664, app-band atlas) | active |
 
 The **Brain** is the only organ that is *fully dormant* in Phase 1 — it is the LLM,
 fused in Phase 2. Everything else must function with no brain attached. The **Limbs**

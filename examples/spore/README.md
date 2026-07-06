@@ -35,6 +35,6 @@ A spore's whole value is that it is transparent and small — *one PNG, one agen
 conversation, one append-only memory*. `audit_spore.py` inspects `spore.py`'s own source and
 **refuses feature creep**: no organs, immune events, encryption, rebirth, lineage, child spores,
 compaction, or summarization may appear in the seed. Strangeness — the cache-ghost substrate,
-symbiosis, the eight organs — is Mantle tissue **layered on** the format
+symbiosis, the nine organs — is Mantle tissue **layered on** the format
 ([`src/mantle/ghost.py`](../../src/mantle/ghost.py), the reproduction facade), never baked into the
 seed itself. This gate is what keeps that promise honest.

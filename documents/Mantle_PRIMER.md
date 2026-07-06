@@ -27,7 +27,7 @@ that is a **reflex**. The biology is the architecture.
 
 ### What the AppAI carries beyond the Body
 
-Mantle answers *"how does one organism live?"* — the eight organs, the heartbeat, the
+Mantle answers *"how does one organism live?"* — the nine organs, the heartbeat, the
 gates. **Mantle adds the next questions an organism faces**, every one of them gated the same
 way (build it, then *prove* it; nothing is "probably right"):
 
@@ -92,8 +92,8 @@ Path B (assimilate EXISTING code, non-destructive; the basis of `anchor` and the
   documents/guides/Assimilation_Guide.md                <- runnable command cheatsheet
 
 src/mantle/  <- THE FRAMEWORK (ground truth where prose disagrees):
-  core/ vcw/ organs/ mind/    <- the inherited anatomy (Body, substrate, eight organs, the MIND)
-  assimilator/ audits/        <- Path B dissection + the gates (66 invariants, Stage-1/2)
+  core/ vcw/ organs/ mind/    <- the inherited anatomy (Body, substrate, nine organs, the MIND)
+  assimilator/ audits/        <- Path B dissection + the gates (83 invariants, Stage-1/2)
   egg.py hatchery.py          <- declarative birth: a whole AppAI as one JSON file
   anchor.py symbiosis.py      <- residency in a host + the metered energy economy
   graft.py                    <- the graft egg (patch a host) + live residency weaving

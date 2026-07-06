@@ -14,7 +14,7 @@ own gates stop an uncertified Body. Read here, run there; they are the same book
 
 ## Before chapter one: the two sentences that explain everything
 
-An **AppAI** is software grown as a living creature: a deterministic **Body** of eight
+An **AppAI** is software grown as a living creature: a deterministic **Body** of nine
 organs around a durable picture-memory (the **VCW cube**), proven alive and correct
 with **no AI attached**, and only then given a bounded **MIND**. Beyond that comes the
 reproductive step: a whole AppAI declared as one **egg** file, incubated by the
@@ -481,7 +481,7 @@ python -m mantle mind             # fuse the offline MIND and watch containment
 python -m mantle assimilate <existing-app> --dry-run    # Path B: dissect, don't rewrite
 ```
 
-And the substrate itself, as one readable file: `examples/vcw_cube.py`
-(`python examples/vcw_cube.py selftest` proves every format rule;
-`python examples/interop.py` proves the standalone and the engine speak identical
+And the substrate itself, as one readable file: `examples/vcw/vcw_cube.py`
+(`python examples/vcw/vcw_cube.py selftest` proves every format rule;
+`python examples/vcw/interop.py` proves the standalone and the engine speak identical
 bytes).
