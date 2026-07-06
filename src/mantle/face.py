@@ -10,7 +10,8 @@ LLM and no graphics library (the same hand-rolled PNG codec the cube uses).
 The portrait shows, as colored tissue:
   * one row per band: allocation pressure as a bar (green -> amber at 0.75 ->
     red at 0.90), entry count as brightness ticks
-  * the organ strip: eight blocks, Brain dim while dormant, lit when fused
+  * the organ strip: one block per canonical organ (ORGAN_ORDER), Brain dim while
+    dormant, lit when fused
   * the lineage strip: one sealed-ancestor block per generation
   * the immune margin: recent immune events as red ticks
 
@@ -83,15 +84,16 @@ def render(org: Any, out_path: str) -> str:
             c.px(27 + i * 4, y + 22, BLUE)
         y += row_h
 
-    # ---- organ strip: eight blocks, Brain lit only when fused --------------
+    # ---- organ strip: one block per canonical organ, Brain lit only when fused
+    from .core.organism import ORGAN_ORDER
     y += 16
     ox = 24
-    for organ_name in ("heart", "genome", "nervous", "senses",
-                       "immune", "limbs", "memory", "brain"):
+    step = (W - 48) // len(ORGAN_ORDER)          # fit however many organs the mesh has
+    for organ_name in ORGAN_ORDER:
         lit = not (organ_name == "brain" and not org.brain.fused)
-        c.rect(ox, y, 86, 34, LIT if (organ_name == "brain" and org.brain.fused)
+        c.rect(ox, y, step - 8, 34, LIT if (organ_name == "brain" and org.brain.fused)
                else (GREEN if lit else DIM))
-        ox += 94
+        ox += step
 
     # ---- lineage strip: one sealed block per ancestor + the hot prime ------
     y += 50

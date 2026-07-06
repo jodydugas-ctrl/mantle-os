@@ -104,14 +104,14 @@ deliverable must include.
 ### Trap 3: The Faked Audit
 
 **What it looks like:** You produce a system that passes your internal audit checks
-— but you checked against your own simulated VCW, not the real one. When `python
-examples/vcw/audit.py` runs, it fails immediately.
+— but you checked against your own simulated VCW, not the real one. When `python -m mantle audit`
+runs, it fails immediately.
 
 **Why it happens:** You simulate the VCW in memory (a Python dict, a JS object, a
 mock class) to avoid dealing with the real file-based cube. Your audit logic checks
 this simulation. Everything appears green.
 
-**Why it's wrong:** The Stage 1 audit (`examples/vcw/audit.py`) runs `vcw_cube.py verify()`
+**Why it's wrong:** The Stage 1 audit (`python -m mantle audit`, `src/mantle/audits/stage1.py`) runs `vcw_cube.py verify()`
 on a real cube file on disk. It checks:
 - That the cube was created with `Cube.genesis()`
 - That the Primer is present, immutable, and Body-resident
@@ -151,7 +151,7 @@ Answer these five questions before writing any code:
    Python locally?**
    If not: do that now, before writing implementation code.
 
-4. **Will my implementation pass `python examples/vcw/audit.py` on a real filesystem?**
+4. **Will my implementation pass `python -m mantle audit` on a real filesystem?**
    If you're not sure: run it now on a minimal skeleton before building further.
 
 5. **Are my organs importing from `examples/vcw/` or copying its code?**
@@ -174,7 +174,7 @@ Already exists (do not rewrite):
   src/mantle/core/body.py         — the Body base class
   src/mantle/mind/mind.py         — the Mind base class
   src/mantle/organs/              — the core organ implementations
-  examples/vcw/audit.py        — the Stage 1 audit (this is the judge, not you)
+  src/mantle/audits/stage1.py  — the Stage 1 audit (this is the judge, not you)
 
 Your job:
   Subclass Body → add your application's reflexes

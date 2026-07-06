@@ -1,7 +1,7 @@
 """Mantle OS -- the Homeostatic AppAI Framework.
 
 Grow software like a living organism, then give it a mind. An AppAI is built Body first:
-eight contracted organs mesh on one deterministic SignalBus around a durable picture-memory
+nine contracted organs mesh on one deterministic SignalBus around a durable picture-memory
 (the VCW cube), with an immune system and a heartbeat -- all certified with no LLM attached.
 Only then may a bounded MIND be fused, and it may only ever extend what already lives.
 

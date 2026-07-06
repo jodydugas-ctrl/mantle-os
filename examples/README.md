@@ -34,7 +34,8 @@ The single best "example" is the framework proving itself: **`python -m mantle t
 Their version labels, framework prose, ontology/system prompts, and doc references are current;
 the YAML's `mantle_alignment` contract carries a `capabilities` block. They are honest about
 scope — the in-browser HTML demos run the **Body / organ / VCW core** (same cube format
-`vcw-cube-png-v2`, same eight organs + the `<facts.N>` grammar). Beyond describing it, both demos
+`vcw-cube-png-v2`, the eight pre-Reproduction organs — the in-browser engines predate the
+ninth organ — + the `<facts.N>` grammar). Beyond describing it, both demos
 now **functionally implement and browser-test four organ behaviors**: graded memory
 (deweight → recoverable ghosts), self/other (a Body-resident genesis key; anti-clone), nociception
 (`heart.pain`, the now-interrupt), and `schedule_pulse` (planned future wakes that chain thoughts).

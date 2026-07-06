@@ -20,11 +20,11 @@ intact (B-13) · the veil (B-14) · dangling ref → immune (B-12/HF-B24) · sea
 refuse writes (B-46) AND their fingerprints verify (B-46b) · metabolism present + every
 band purposed (B-W).
 
-Mesh rows (the RUNNING eight-organ Body): heartbeat with no LLM — proven by beating with
+Mesh rows (the RUNNING nine-organ Body): heartbeat with no LLM — proven by beating with
 the cognition slot empty (B-04/HF-B08) · dual-flush (B-05/HF-B33) · the fixed pulse order
 (B-06) · the deterministic Senses classifier, one entry per signal, REFLEX never touches
 the brain band (B-16/HF-B09) · Human Surface Map coverage (B-25) + ControlBridge proofs
-(B-26/HF-B44) · dispatch authorship immutable (B-29/HF-B29) · all eight organs present
+(B-26/HF-B44) · dispatch authorship immutable (B-29/HF-B29) · all nine organs present
 with enforced contracts, Brain dormant (B-60) · the SignalBus fail-open (B-61/HF-B32) ·
 organ overreach refused (B-62) · capacity pressure measurable and wired (B-63).
 

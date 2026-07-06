@@ -7,7 +7,7 @@
 ## 1. What it is
 
 Mantle OS makes the organism **real as a mesh**: a `src/mantle/` package in which every one of
-the eight organs is a module with a machine-readable contract, all inter-organ signalling goes
+the nine organs is a module with a machine-readable contract, all inter-organ signalling goes
 through one deterministic reflex bus, all inbound data enters through Senses, all outbound action
 leaves through Limbs, and every integrity problem becomes an Immune event. *Homeostatic* means
 the organism regulates its own memory pressure: capacity triggers **metabolism** (compaction,
@@ -22,7 +22,7 @@ src/mantle/
     events.py        SignalBus — the deterministic reflex/event bus (fail-open; faults -> Immune)
     body.py          the Body store: Primer (sealed), Special Instructions, Immunization, lineage
     refs.py          the unified reference resolver (<target.selector.address>)
-    organism.py      Organism — Body + Prime cube + sealed ancestors + the eight organs on the bus
+    organism.py      Organism — Body + Prime cube + sealed ancestors + the nine organs on the bus
     audit.py         shared audit scaffolding (rows, fail-open checks, expect_raise)
   vcw/
     png.py           pure-stdlib PNG codec (every layer is a real image)
@@ -62,7 +62,7 @@ src/mantle/
 `examples/vcw/` holds the standalone, normative cube codec and its parity proof. All work
 builds on `src/mantle/`.
 
-## 3. The organism mesh (how the eight organs hold together)
+## 3. The organism mesh (how the nine organs hold together)
 
 **The bus.** `core/events.py` is a deterministic, synchronous signal bus. Organs publish typed
 signals and subscribe reflexes; ordering is registration order; a faulting reflex is caught,

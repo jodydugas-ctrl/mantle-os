@@ -304,7 +304,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
   grimoire/              the two version-locked Grimoire files: Core + AppAI chapter
-  FIELD_GUIDE.md         the runnable manual (mirror of `python -m mantle teach`, 18 chapters)
+  FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   Mantle_Architecture.md · guides/ (VCW · lifecycle · contracts · audit · visual)
   Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
   assets/                diagrams (SVG, agent-readable) + rendered art

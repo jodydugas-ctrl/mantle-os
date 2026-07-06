@@ -17,7 +17,7 @@ Two kinds of visuals live here, deliberately:
 ### Anatomy of the organism mesh
 ![Mantle OS anatomy](../assets/mantle_anatomy.svg)
 
-Eight contracted organs on one deterministic, fail-open SignalBus. The three absolute
+Nine contracted organs on one deterministic, fail-open SignalBus. The three absolute
 boundaries: inbound only through **Senses**, outbound only through **Limbs**, every fault
 through **Immune**. The Heart's fixed pulse order. The **Genome lives in the Body**, never
 in a cube. The **Brain is a dormant socket** until a bounded MIND fuses — which requires a
@@ -54,7 +54,7 @@ MIND → calcify → rebirth); the octopus anatomy framing; the lifecycle-and-li
 the "how Mantle differs" comparison; the one-sentence summary.
 
 **Read with the current code in mind:**
-- The canonical organ set is **eight**, and the **Genome is Body-resident** — identity is
+- The canonical organ set is **nine**, and the **Genome is Body-resident** — identity is
   never inside the cube (HF-B45).
 - The current code added things the poster predates: the **SignalBus** with enforced **organ
   contracts**, executable **capacity thresholds** (0.75 overflow / 0.90 emergency →
