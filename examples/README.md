@@ -28,6 +28,13 @@ The single best "example" is the framework proving itself: **`python -m mantle t
 - `Mantle_Reference_Agent.html` — a single-file, in-browser **Reference AppAI** (React, runs an
   organism with its own JS VCW-cube codec, organ atlas, reflexes, and rebirth/ancestor lineage).
 - `Mantle_Spreadsheet_Agent.html` — a single-file in-browser **spreadsheet AppAI** demo.
+- `Mantle_Live_Agent.html` — the **live agent**: a single-file AppAI workbench that fuses a real
+  MIND over OpenRouter (bring your own key). Grown from the historical v1.5 body and molted to
+  current doctrine: the nine organs named in an `ORGAN_ATLAS` (its crystal-shard array is a
+  legitimate **custom VCW substrate**, like SPORE), a **runnable** Stage-1 gate
+  (`reflexRunSelfAudit`, 15 deterministic rows — verdicts are computed at boot, never declared),
+  nociception (`reflexPain`, the now-interrupt), and planned wakes (`reflexSchedulePulse`).
+  Without a key it boots, certifies, and runs its zombie heartbeat — the Body needs no MIND.
 - `Mantle_MacroDroid_Schema.yaml` — the **Path-B alignment contract** + MacroDroid JSON schema for
   anchoring/grafting a Mantle resident onto a MacroDroid host.
 

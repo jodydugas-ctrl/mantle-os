@@ -42,3 +42,7 @@ jobs:
         env:
           BASE_URL: http://localhost:8765
         run: node demo_smoke.mjs
+
+      - name: Smoke-test the live agent (jsdom mount + runnable Stage-1 gate)
+        working-directory: examples/tests
+        run: node live_agent_smoke.mjs
