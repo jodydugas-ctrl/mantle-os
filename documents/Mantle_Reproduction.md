@@ -18,7 +18,7 @@ size or a facet of one of those two acts.
 
 The old split of *"grow from scratch (Path A)"* vs *"assimilate an existing app (Path B)"* is the
 **same axis**: a seed answers to no host; a graft lives in one. Both methods are gated identically —
-the **83 invariants**, no standing law weakened — and both end at the same certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ** (`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
+the **84 invariants**, no standing law weakened — and both end at the same certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ** (`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
 
 ```bash
 python -m mantle reproduce      # the whole map on one screen
@@ -84,6 +84,10 @@ cannot open it.
 
 > **One substrate, two casts.** The egg (from-scratch) and assimilation (a host) share one seed
 > substrate. The vault proves it: it stores whichever cast defined the organism and regrows from it.
+
+> **Follow-up hardening:** the current vault is SELF-encrypted and gate-verified on
+> reconstruction. A future compatible vault envelope should add an authentication tag while
+> continuing to open existing vaulted seeds.
 
 ---
 

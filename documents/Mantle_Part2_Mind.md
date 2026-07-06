@@ -43,7 +43,7 @@ wakes it. Its powers are deliberately narrow:
 ## §2.1 Pre-fusion gate
 
 1. Confirm `Mantle_Part1_Body_Audit.md` is signed off with **0 open hard-fails**
-   (`python -m mantle audit` + `python -m mantle prove` → 83/83 green).
+   (`python -m mantle audit` + `python -m mantle prove` → 84/84 green).
 2. Confirm the live cube `verify()` is healthy.
 3. Confirm the §0 Declaration Block now carries `KEYFILE_PATH` and `DEFAULT_MODEL`.
 

@@ -80,6 +80,13 @@ class Limbs(Organ):
         self.bus.emit("dispatch", {"phase": phase, "authorship": authorship})
         return e
 
+    def _mind_dispatch(self, phase: str, payload: Any) -> Dict[str, Any]:
+        if not self.org.brain.fused:
+            self.org.immune_event("mind_dispatch_refused", {
+                "phase": phase, "reason": "no MIND fused"})
+            raise PermissionError("%s requires a fused MIND" % phase)
+        return self._dispatch(phase, payload)
+
     # Phase-1 (Body-owned)
     def notify(self, payload: Any) -> Dict[str, Any]:
         return self._dispatch("NOTIFIED", payload)
@@ -89,10 +96,10 @@ class Limbs(Organ):
 
     # Phase-2 (MIND-owned) -- present so the lifecycle is whole; the Body never calls these.
     def intend(self, payload: Any) -> Dict[str, Any]:
-        return self._dispatch("INTENTION", payload)
+        return self._mind_dispatch("INTENTION", payload)
 
     def delegate(self, payload: Any) -> Dict[str, Any]:
-        return self._dispatch("DELEGATED", payload)
+        return self._mind_dispatch("DELEGATED", payload)
 
     # ---- actuation + proof -------------------------------------------------------
     def operate(self, control_id: str, value: Any) -> Dict[str, Any]:

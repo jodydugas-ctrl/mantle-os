@@ -6,10 +6,10 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 83 security invariants, the
+*The organism re-certifies on every commit: the Stage-1 gate, 84 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
-**Current certification count:** 83 security invariants (`python -m mantle prove`).
+**Current certification count:** 84 security invariants (`python -m mantle prove`).
 
 > **New here, or skeptical of the biology metaphor?** Start with
 > [`documents/Mantle_Positioning.md`](documents/Mantle_Positioning.md) — a plain-language summary and an honest
@@ -72,7 +72,7 @@ a whole AppAI declared as one **egg**, **residency** in a host codebase with a m
 economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
 keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, a
 self-reconstruction **seed vault**, and **wearable app-faces** (one organism expresses many
-SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **83
+SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **84
 invariants**. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
 
 ---
@@ -123,7 +123,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 83 security invariants, red/green
+python -m mantle prove         # 84 security invariants, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash
@@ -146,7 +146,7 @@ python examples/vcw/interop.py                # standalone <-> engine: identical
 
 An AppAI reproduces in exactly **two** ways (doctrine:
 [`documents/Mantle_Reproduction.md`](documents/Mantle_Reproduction.md)); both are gated the same
-way (83 invariants, no standing law weakened) and both end at the same certified Body:
+way (84 invariants, no standing law weakened) and both end at the same certified Body:
 
 - **SEED** — *independent.* The organism condenses itself into a dormant, self-describing package of
   **data** that grows into a certified Body with **no host**. Three sizes of one act: the **spore**
@@ -291,7 +291,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     vcw/                 the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
     organs/              the nine organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
-    assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, the 83 invariants)
+    assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, the 84 invariants)
     reproduction.py      the two-method seam — SEED vs GRAFT (routes to the modules below)
     spore.py spore_min.py the smallest SEED — one PNG that is a whole minimal agent (+ its embryo)
     ghost.py             the cache-ghost substrate — a seed that lives in the LLM prompt cache

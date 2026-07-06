@@ -422,6 +422,129 @@ def t_fusion_requires_stage1():
             "uncertified fusion refused; certified fusion fused")
 
 
+def t_bugfix_runtime_boundaries():
+    """BUGFIX-1: confirmed runtime edges remain fail-open/refused."""
+    import html as _html
+    import time as _time
+    from ..anchor import anchor, ask, NEST
+    from ..core.events import SignalBus
+    from ..symbiosis import symbiosis_band, grant, metered_by_usage, StarvationError
+    from ..vcw.drivers import ExecDriver
+    from .. import spore as _spore
+    from ..hatchery import _default_face_stub
+    from ..mind import fuse, stub_mind
+
+    checks = []
+
+    with tempfile.TemporaryDirectory() as td:
+        with open(os.path.join(td, "app.py"), "w", encoding="utf-8") as f:
+            f.write("def main():\n    return 42\n")
+        anchor(td, starter_credits=5)
+        meta_path = os.path.join(td, NEST, "organism.json")
+        with open(meta_path, encoding="utf-8") as f:
+            meta = json.load(f)
+        meta["stage1_certified"] = False
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(meta, f)
+        body_path = os.path.join(td, NEST, "body.json")
+        with open(body_path, encoding="utf-8") as f:
+            body = json.load(f)
+        body["primer"] = []
+        with open(body_path, "w", encoding="utf-8") as f:
+            json.dump(body, f)
+        calls = {"n": 0}
+
+        def model(_prompt):
+            calls["n"] += 1
+            return "should not run"
+
+        result = ask(td, "what is this?", use_mind=True, model=model)
+        checks.append(("ask-stage1", calls["n"] == 0
+                       and "Stage-1 gate refused" in result["thought"]))
+
+    code = "def f():\n    while True:\n        pass\n"
+    content = {"code": code, "code_hash": code_hash(code), "entry": "f",
+               "capabilities": {}, "signature": {"by": "test"},
+               "limits": {"ms": 50}, "provenance": {"author": "MIND"}}
+    started = _time.time()
+    timed_out = _expect_raise(lambda: ExecDriver().execute(content, {}), TimeoutError)[0]
+    checks.append(("exec-timeout", timed_out and (_time.time() - started) < 2.0))
+
+    class Handler:
+        def on_signal(self, _payload):
+            return None
+    bus = SignalBus()
+    h = Handler()
+    bus.subscribe("x", h.on_signal, organ="bound")
+    checks.append(("bound-method-bus", bus.reflex_surface().get("x") == ["bound"]))
+
+    org = _born(genome=standard_genome() + [symbiosis_band()])
+    org.memory.remember("facts", {"k": "v"})
+    before = len(org.immune.log)
+    checks.append(("malformed-ref", org.resolve("<facts.1x2>") is None
+                   and len(org.immune.log) == before + 1
+                   and org.immune.log[-1]["kind"] == "malformed_ref"))
+
+    grant(org, 0.001)
+    usage_calls = {"n": 0}
+
+    def paid_model(_prompt):
+        usage_calls["n"] += 1
+        return "x" * 4000
+
+    refused_usage = _expect_raise(
+        lambda: metered_by_usage(paid_model, org, price_per_1k=10.0)("prompt"),
+        StarvationError)[0]
+    checks.append(("usage-preauth", refused_usage and usage_calls["n"] == 0))
+
+    phase = _born()
+    refused_intent = _expect_raise(lambda: phase.limbs.intend({"x": 1}), PermissionError)[0]
+    phase.stage1_certified = True
+    fuse(phase, stub_mind)
+    e = phase.limbs.delegate({"x": 2})
+    checks.append(("mind-dispatch", refused_intent and e.get("authorship") == "MIND"
+                   and e.get("content", {}).get("phase") == "DELEGATED"))
+
+    prefix = _spore.MAGIC + bytes([_spore.FORMAT_VERSION]) \
+        + (_spore.VCW_CAPACITY_BYTES).to_bytes(4, "big")
+
+    class FakePixels:
+        def __getitem__(self, xy):
+            x, y = xy
+            i = y * _spore.VCW_W + x
+            chunk = prefix[i * 3:i * 3 + 3].ljust(3, b"\0")
+            r, g, b = chunk
+            return r, g, b, _spore.compute_T(r, g, b)
+
+    class FakeImage:
+        def load(self):
+            return FakePixels()
+
+    checks.append(("spore-header",
+                   _expect_raise(lambda: _spore.decode_pixels(FakeImage()), ValueError)[0]))
+
+    old_image = _spore.Image
+    try:
+        _spore.Image = None
+        state = {"identity": {"spore_name": "x", "task": "t"}, "conversation": []}
+        pillow_refused = _expect_raise(
+            lambda: _spore.render_spore(state, os.path.join(tempfile.gettempdir(), "x.png")),
+            RuntimeError)[0]
+    finally:
+        _spore.Image = old_image
+    checks.append(("spore-pillow", pillow_refused))
+
+    egg = {"identity": {"name": "<script>x</script>", "purpose": "<b>p</b>"},
+           "controls": [{"id": "\" onclick=\"x", "label": "<b>Click</b>"}]}
+    src = _default_face_stub(egg)["source"]
+    checks.append(("face-escape", "<script>" not in src and "<b>" not in src
+                   and _html.escape(egg["identity"]["name"]) in src))
+
+    failed = [name for name, ok in checks if not ok]
+    return (not failed, "runtime boundary checks green"
+            if not failed else "failed: %s" % ", ".join(failed))
+
+
 def t_self_inquiry_never_facts():
     """self-inquiry answers are INFERRED and land in discoveries/thoughts -- the
     facts band stays untouched, and promotion without evidence is refused."""
@@ -1655,6 +1778,7 @@ TESTS = [
     ("HF-M10 mind/write-surface",              t_mind_write_surface),
     ("HF-M12 mind/no-self-promote",            t_mind_no_self_promote),
     ("HF-M15 fusion-requires-stage1",          t_fusion_requires_stage1),
+    ("BUGFIX-1 runtime-boundaries",            t_bugfix_runtime_boundaries),
     ("HF-M16 self-inquiry-never-facts",        t_self_inquiry_never_facts),
     ("B-OC  organ-overreach-refused",          t_organ_overreach_refused),
     ("HF-B32 reflex-fault-fail-open",          t_reflex_fault_failopen),

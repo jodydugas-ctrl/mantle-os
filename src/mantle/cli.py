@@ -18,7 +18,7 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
   the gates and narrated tours:
     python -m mantle demo                           narrated Phase-1 life (no LLM)
     python -m mantle audit [--break-hash|--break-primer|--break-seal]
-    python -m mantle prove                          the 83 security invariants
+    python -m mantle prove                          the 84 security invariants
     python -m mantle mind                           narrated Phase-2 fusion (offline)
     python -m mantle audit-mind                     Stage-2 gate + Stage-1 regression
     python -m mantle assimilate <path> --dry-run    Path B read-only dissection

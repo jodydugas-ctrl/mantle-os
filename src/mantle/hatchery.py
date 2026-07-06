@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import html
 from typing import Any, Dict, Optional
 
 from .core.organism import Organism
@@ -64,10 +65,13 @@ def _default_face_stub(egg: Dict[str, Any]) -> Dict[str, Any]:
     name = egg["identity"]["name"]
     controls = list(egg.get("controls", []))
     buttons = "".join("<button data-control=\"%s\">%s</button>"
-                      % (c["id"], c.get("label", c["id"])) for c in controls)
+                      % (html.escape(c["id"], quote=True),
+                         html.escape(c.get("label", c["id"]))) for c in controls)
+    title = html.escape(name)
+    purpose = html.escape(egg["identity"].get("purpose", "a Mantle AppAI"))
     source = ("<!doctype html><html><head><meta charset=\"utf-8\"><title>%s</title></head>"
               "<body><h1>%s</h1><p>%s</p><div id=\"controls\">%s</div></body></html>"
-              % (name, name, egg["identity"].get("purpose", "a Mantle AppAI"), buttons))
+              % (title, title, purpose, buttons))
     return {"name": "origin", "kind": "html", "source": source, "entry": "index.html",
             "controls": controls}
 

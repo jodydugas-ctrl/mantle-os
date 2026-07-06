@@ -245,7 +245,11 @@ class Cube:
         drv = self._driver(band)
         if boot["encoding"] == "log-json":                # O(1) via the band index
             self._ensure_index(band)
-            slot = self.indexes.locate(band, int(address))
+            try:
+                entry_id = int(address)
+            except (TypeError, ValueError):
+                return None
+            slot = self.indexes.locate(band, entry_id)
             if slot is None:
                 return None
             layer, pos = slot

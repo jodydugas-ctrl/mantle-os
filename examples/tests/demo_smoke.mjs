@@ -1,6 +1,6 @@
 // Headless smoke tests for the two Mantle OS reference HTML demos.
 //
-// The Python substrate is certified by `python -m mantle prove` (83 invariants); these tests
+// The Python substrate is certified by `python -m mantle prove` (84 invariants); these tests
 // give the single-file *browser* demos their own runtime regression cover: each demo must mount
 // with no unexpected console errors, expose its engine, and PASS its in-browser self-audit
 // (Spreadsheet) / Genome+resolver checks (Reference Agent). Assertions mirror the manual

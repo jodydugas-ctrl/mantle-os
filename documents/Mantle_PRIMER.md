@@ -93,7 +93,7 @@ Path B (assimilate EXISTING code, non-destructive; the basis of `anchor` and the
 
 src/mantle/  <- THE FRAMEWORK (ground truth where prose disagrees):
   core/ vcw/ organs/ mind/    <- the inherited anatomy (Body, substrate, nine organs, the MIND)
-  assimilator/ audits/        <- Path B dissection + the gates (83 invariants, Stage-1/2)
+  assimilator/ audits/        <- Path B dissection + the gates (84 invariants, Stage-1/2)
   egg.py hatchery.py          <- declarative birth: a whole AppAI as one JSON file
   anchor.py symbiosis.py      <- residency in a host + the metered energy economy
   graft.py                    <- the graft egg (patch a host) + live residency weaving

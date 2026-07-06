@@ -68,12 +68,11 @@ def propose_genome(role_counts: Dict[str, int]) -> List[Dict[str, Any]]:
     """Propose a cube genome sized to the host's observed shape: high-churn surfaces get
     more span; every band declares a purpose. Always includes the eight reserved bands."""
     sensor_heavy = role_counts.get("SENSOR_EVENT", 0) + role_counts.get("REFLEX", 0) > 20
-    persist_heavy = role_counts.get("PERSISTENCE_WRITE", 0) > 20
     genome = [
         make_band_boot("identity",    100, "log-json", span=50,  purpose="experiential self-state"),
         make_band_boot("facts",       150, "log-json", span=50,  purpose="durable truths"),
-        make_band_boot("events",      200, "log-json", span=50 if not persist_heavy else 50,
-                       purpose="event history (sized to host event rate)"),
+        make_band_boot("events",      200, "log-json", span=50,
+                       purpose="event history (fixed reserved span)"),
         make_band_boot("discoveries", 250, "log-json", span=50,  purpose="learned knowledge"),
         make_band_boot("senses",      300, "log-json", span=100,
                        purpose="sensor intake%s" % (" (high-churn host)" if sensor_heavy else "")),

@@ -98,7 +98,19 @@ def resolve(organism, ref: str) -> Any:
 
     if address is None:
         return cube.read(selector)
-    result = cube.retrieve(selector, address)
+    if cube.encoding(selector) == "log-json":
+        try:
+            int(address)
+        except (TypeError, ValueError):
+            organism.immune_event("malformed_ref", {
+                "ref": ref, "band": selector, "address": address,
+                "error": "log-json addresses must be integer entry ids"})
+            return None
+    try:
+        result = cube.retrieve(selector, address)
+    except (TypeError, ValueError) as e:
+        organism.immune_event("malformed_ref", {"ref": ref, "error": str(e)})
+        return None
     if result is None:
         organism.immune_event("dangling_ref", {"ref": ref, "address": address})
     return result

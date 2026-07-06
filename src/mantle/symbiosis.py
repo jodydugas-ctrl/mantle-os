@@ -146,21 +146,31 @@ def _rough_tokens(result: Any) -> int:
 
 def metered_by_usage(model: Callable[[str], str], org, price_per_1k: float = 1.0,
                      usage_of: Optional[Callable[[Any], int]] = None,
-                     purpose: str = "MODEL.REQUEST") -> Callable[[str], str]:
+                     purpose: str = "MODEL.REQUEST",
+                     max_tokens: int = 4000) -> Callable[[str], str]:
     """REAL metering: energy is charged from ACTUAL token usage, not a flat fee. The
-    starvation law still holds -- a call is refused when the balance is already empty (the
-    MIND sleeps) -- and the spend is reconciled to the response's real size, so credits in
-    the cube mirror usage in the world. `usage_of(result)` returns the token count (defaults
-    to the rough proxy)."""
+    starvation law still holds -- a call is refused before it starts unless the ledger can
+    cover the declared maximum, and the spend is reconciled to the response's real size,
+    so credits in the cube mirror usage in the world. `usage_of(result)` returns the token
+    count (defaults to the rough proxy)."""
     usage_of = usage_of or _rough_tokens
     def call(prompt: str) -> str:
-        if balance(org) <= 0:
-            org.immune_event("starvation", {"purpose": purpose, "balance": balance(org)})
+        max_charge = price_per_1k * max(1, int(max_tokens)) / 1000.0
+        if balance(org) < max_charge:
+            org.immune_event("starvation", {
+                "purpose": purpose, "balance": balance(org),
+                "authorized_max_tokens": max_tokens, "wanted": max_charge})
             raise StarvationError(
                 "no energy for cognition; the MIND sleeps, the Body keeps beating.")
         result = model(prompt)
         tokens = usage_of(result)
-        spend(org, price_per_1k * tokens / 1000.0, "%s (%d tok)" % (purpose, tokens))
+        cost = price_per_1k * tokens / 1000.0
+        if not spend(org, cost, "%s (%d tok)" % (purpose, tokens)):
+            org.immune_event("metering_overrun", {
+                "purpose": purpose, "tokens": tokens,
+                "authorized_max_tokens": max_tokens, "cost": cost})
+            raise StarvationError(
+                "usage exceeded the authorized energy ceiling; the MIND sleeps.")
         return result
     call.__name__ = "usage_metered_%s" % getattr(model, "__name__", "model")
     return call

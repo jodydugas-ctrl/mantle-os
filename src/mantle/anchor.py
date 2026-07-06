@@ -218,17 +218,27 @@ def ask(host: str, question: str, use_mind: bool = False,
     thought = None
     if use_mind:
         from .mind import fuse, stub_mind
-        org.stage1_certified = True                  # recorded at anchor; reloaded here
-        mind = fuse(org, sym.metered(model or stub_mind, org, cost_per_call))
-        try:
-            thought = mind.think(org.nervous.assemble(),
-                                 question="You are the resident AppAI of the host "
-                                          "application at %s. The user asks: %s\n"
-                                          "Context (your observed map and memory) is "
-                                          "attached." % (host, question))
-        except sym.StarvationError as e:
-            thought = "(the MIND is asleep: %s)" % e
-        org.brain.defuse()
+        if not org.stage1_certified:
+            from .audits import stage1
+            passed, ev = stage1.run(org, include_invariants=False)
+            if not passed:
+                org.immune_event("fusion_refused", {
+                    "reason": "resident Stage-1 gate failed",
+                    "fails": ev.get("fails", [])})
+                thought = "(the MIND is asleep: Stage-1 gate refused fusion: %s)" % (
+                    ", ".join(ev.get("fails", [])) or "uncertified")
+        if org.stage1_certified:
+            mind = fuse(org, sym.metered(model or stub_mind, org, cost_per_call))
+            try:
+                thought = mind.think(org.nervous.assemble(),
+                                     question="You are the resident AppAI of the host "
+                                              "application at %s. The user asks: %s\n"
+                                              "Context (your observed map and memory) is "
+                                              "attached." % (host, question))
+            except sym.StarvationError as e:
+                thought = "(the MIND is asleep: %s)" % e
+            finally:
+                org.brain.defuse()
     org.limbs.complete({"answered": question[:80]})
     sym.record_value(org, "answered: %s" % question[:80],
                      evidence={"mind": bool(use_mind and thought)})

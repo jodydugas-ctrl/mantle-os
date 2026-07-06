@@ -7,7 +7,7 @@ mantle.check  --  the whole certification, one command (Mantle OS)
 
 This is the same sequence the CI workflow runs, made local and singular: the
 Stage-1 Zombie Body gate, the three tamper proofs (which must FAIL to pass),
-the 83 security invariants, the Stage-2 MIND gate, both narrated demos, the
+the 84 security invariants, the Stage-2 MIND gate, both narrated demos, the
 assimilation dry-run, the standalone cube codec conformance (selftest +
 interop), the SPORE purity gates, and the multi-language parity test.
 
@@ -50,7 +50,7 @@ def _steps(fast: bool):
     for flag in ("--break-hash", "--break-primer", "--break-seal"):
         yield ("tamper proof %s (must be CAUGHT)" % flag,
                mantle + ["audit", flag, "--fast"], None, True, None)
-    yield ("83 security invariants", mantle + ["prove"], None, False, None)
+    yield ("84 security invariants", mantle + ["prove"], None, False, None)
     yield ("Stage-2 MIND gate", mantle + ["audit-mind"], None, False, None)
     if not fast:
         yield ("narrated Phase-1 demo", mantle + ["demo"], None, False, None)

@@ -15,7 +15,11 @@ These prove the boot sector -- not hard-coded logic -- decides how a layer behav
 from __future__ import annotations
 
 import ast
-import threading
+import base64
+import builtins
+import pickle
+import subprocess
+import sys
 from datetime import date
 from typing import Any, Dict, List, Tuple
 
@@ -257,29 +261,56 @@ class PythonExecRunner(ExecRunner):
     name = "python"
 
     def run(self, content, args, granted):
-        g = {"__builtins__": SAFE_BUILTINS}
-        loc: Dict[str, Any] = {}
-        exec(content["code"], g, loc)              # defines the entry function
-        fn = loc.get(content["entry"]) or g.get(content["entry"])
-        if fn is None:
-            raise IntegrityError("entry %r not defined by exec layer" % content["entry"])
-        result: List[Any] = []
-        err: List[BaseException] = []
+        declared = max(1, int(content.get("limits", {}).get("ms", 200))) / 1000.0
+        # The hard kill is applied to the child process as a whole. On Windows, process
+        # startup itself can exceed the old in-thread 200 ms default, so keep a small
+        # floor while preserving caller-requested larger budgets.
+        limit = max(declared, 1.0)
+        payload = {
+            "code": content["code"],
+            "entry": content["entry"],
+            "args": args,
+            "safe_builtins": sorted(SAFE_BUILTINS),
+        }
+        runner = r"""
+import base64
+import builtins
+import pickle
+import sys
 
-        def _run():
-            try:
-                result.append(fn(**args))
-            except BaseException as e:             # noqa: BLE001 -- sandboxed
-                err.append(e)
-
-        t = threading.Thread(target=_run, daemon=True)
-        t.start()
-        t.join(timeout=content.get("limits", {}).get("ms", 200) / 1000.0)
-        if t.is_alive():
+payload = pickle.loads(base64.b64decode(sys.stdin.buffer.read()))
+safe = {name: getattr(builtins, name) for name in payload["safe_builtins"]}
+g = {"__builtins__": safe}
+loc = {}
+try:
+    exec(payload["code"], g, loc)
+    fn = loc.get(payload["entry"]) or g.get(payload["entry"])
+    if fn is None:
+        raise NameError("entry %r not defined by exec layer" % payload["entry"])
+    out = {"ok": True, "result": fn(**payload["args"])}
+except BaseException as e:
+    out = {"ok": False, "error_type": type(e).__name__, "error": str(e)}
+sys.stdout.buffer.write(base64.b64encode(pickle.dumps(out, protocol=4)))
+"""
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-I", "-c", runner],
+                input=base64.b64encode(pickle.dumps(payload, protocol=4)),
+                capture_output=True,
+                timeout=limit,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
             raise TimeoutError("exec layer exceeded its time budget")
-        if err:
-            raise err[0]
-        return result[0] if result else None
+        if proc.returncode != 0:
+            raise RuntimeError("exec runner failed: %s" % proc.stderr.decode("utf-8", "replace"))
+        out = pickle.loads(base64.b64decode(proc.stdout))
+        if out.get("ok"):
+            return out.get("result")
+        exc = getattr(builtins, out.get("error_type", ""), RuntimeError)
+        if not isinstance(exc, type) or not issubclass(exc, BaseException):
+            exc = RuntimeError
+        raise exc(out.get("error", "exec layer failed"))
 
 
 @register_runner

@@ -406,6 +406,8 @@ def decode_pixels(img: Image.Image) -> tuple[dict, bytes, dict]:
     header_len = int.from_bytes(prefix[9:13], "big")
 
     fixed = 13
+    if (fixed + header_len + 2) // 3 > VCW_BLOCKS:
+        raise ValueError("header length exceeds VCW capacity (tampered header?)")
     header_and_more, _ = _read_blocks(px, fixed + header_len, 0)
     header_bytes = header_and_more[fixed: fixed + header_len]
     try:
@@ -646,6 +648,7 @@ def _fits(state: dict) -> bool:
 
 def render_spore(state: dict, path: str, status: str = "ACTIVE") -> str:
     """Regenerate the WHOLE PNG from canonical state and save it to `path`."""
+    _require_pil()
     state["identity"]["updated_at"] = _now()
     disp = state.setdefault("display", {})
     disp["status"] = status
@@ -761,6 +764,7 @@ def _check_embedded_tool(state: dict) -> tuple[bool, str]:
 
 def verify_spore(path: str) -> dict:
     """Verify a Spore PNG.  Returns {ok, checks, problems, ...}."""
+    _require_pil()
     checks, problems = [], []
 
     def ck(name, cond, detail=""):

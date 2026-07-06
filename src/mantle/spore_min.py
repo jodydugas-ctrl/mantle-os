@@ -182,6 +182,8 @@ def decode_pixels(img):
     if pre[:8] != MAGIC:
         raise ValueError("bad magic")
     hlen = int.from_bytes(pre[9:13], "big")
+    if (13 + hlen + 2) // 3 > VCW_BLOCKS:
+        raise ValueError("header length exceeds VCW capacity (tampered header?)")
     hm, _ = _read(px, 13 + hlen)
     header = json.loads(hm[13:13 + hlen].decode("utf-8"))
     total = 13 + hlen + header["payload_length"]

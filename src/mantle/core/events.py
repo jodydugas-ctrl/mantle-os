@@ -37,6 +37,7 @@ class SignalBus:
         self._draining = False
         self.trace: deque = deque(maxlen=TRACE_LIMIT)
         self.pending_immune: List[Dict[str, Any]] = []   # collected before a sink is wired
+        self._handler_organs: Dict[int, str] = {}
 
     # ---- wiring -------------------------------------------------------------
     def set_immune_sink(self, sink: Callable[[str, Any], None]) -> None:
@@ -48,11 +49,18 @@ class SignalBus:
     def subscribe(self, kind: str, handler: Handler, *, organ: str = "?") -> None:
         """Register a reflex for a signal kind. Order of registration = order of firing."""
         self._subs.setdefault(kind, []).append(handler)
-        setattr(handler, "_mantle_organ", organ)
+        self._handler_organs[id(handler)] = organ
+        try:
+            setattr(handler, "_mantle_organ", organ)
+        except (AttributeError, TypeError):
+            pass
+
+    def _organ_for(self, handler: Handler) -> str:
+        return getattr(handler, "_mantle_organ", self._handler_organs.get(id(handler), "?"))
 
     def reflex_surface(self) -> Dict[str, List[str]]:
         """The inspectable reflex surface: signal kind -> the organs subscribed to it."""
-        return {kind: [getattr(h, "_mantle_organ", "?") for h in handlers]
+        return {kind: [self._organ_for(h) for h in handlers]
                 for kind, handlers in sorted(self._subs.items())}
 
     # ---- emission -------------------------------------------------------------
@@ -73,7 +81,7 @@ class SignalBus:
                     except Exception as e:               # noqa: BLE001 -- fail-open
                         self._escalate("reflex_fault", {
                             "signal": k,
-                            "organ": getattr(handler, "_mantle_organ", "?"),
+                            "organ": self._organ_for(handler),
                             "error": "%s: %s" % (type(e).__name__, e)})
         finally:
             self._draining = False

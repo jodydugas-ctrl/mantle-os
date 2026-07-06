@@ -1,6 +1,6 @@
 # "Everything is provable" — so prove it on every commit, with the same single command a
 # contributor runs locally: `python -m mantle check`. It executes the Stage-1 gate, the
-# three tamper proofs (which must FAIL to pass), the 83 security invariants, the Stage-2
+# three tamper proofs (which must FAIL to pass), the 84 security invariants, the Stage-2
 # gate, both narrated demos, the assimilation dry-run, the standalone cube codec
 # conformance (selftest + interop), the SPORE purity gates, and the multi-language parity
 # test. Pure standard library; Pillow is installed so the SPORE gates run rather than skip.
