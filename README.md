@@ -9,6 +9,8 @@
 *The organism re-certifies on every commit: the Stage-1 gate, 83 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
+**Current certification count:** 83 security invariants (`python -m mantle prove`).
+
 > **New here, or skeptical of the biology metaphor?** Start with
 > [`documents/Mantle_Positioning.md`](documents/Mantle_Positioning.md) — a plain-language summary and an honest
 > list of limitations. *(Non-normative.)*
