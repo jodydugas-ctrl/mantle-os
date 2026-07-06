@@ -121,16 +121,33 @@ function runSelfAudit(s, extra) {
   const brainEntries = (shards["brain.vcw"] && shards["brain.vcw"].entries) || [];
   const bySeq = {};
   brainEntries.forEach((e) => { (bySeq[e.seq] = bySeq[e.seq] || []).push(e); });
-  const ORDER = [DISPATCH_OP.INTENTION, DISPATCH_OP.DELEGATED, DISPATCH_OP.NOTIFIED, DISPATCH_OP.COMPLETED];
   const AUTHOR = { [DISPATCH_OP.INTENTION]: "MIND", [DISPATCH_OP.DELEGATED]: "MIND",
                    [DISPATCH_OP.NOTIFIED]: "BODY", [DISPATCH_OP.COMPLETED]: "BODY" };
-  const dispatchOk = Object.values(bySeq).every((g) => {
-    const idx = g.map((e) => ORDER.indexOf(e.op));
-    return idx.every((i, n) => i >= 0 && (n === 0 || i > idx[n - 1])) &&
-           g.every((e) => e.author === AUTHOR[e.op]);
+  // Contract: a MIND-authored opening (INTENTION → DELEGATED) precedes all
+  // proofs; each Body delivery then appends one NOTIFIED → COMPLETED pair —
+  // a long-lived pulsing arm legitimately accrues MANY proof pairs under one
+  // seq. A group with proofs but NO opening is an orphan (its opening was
+  // lost by a pre-molt save): tolerated ONLY if immune.vcw ledgers it.
+  const immEntries = (shards["immune.vcw"] && shards["immune.vcw"].entries) || [];
+  let orphans = 0;
+  const dispatchOk = Object.entries(bySeq).every(([seqK, g]) => {
+    if (!g.every((e) => e.author === AUTHOR[e.op])) return false;
+    const iInt = g.findIndex((e) => e.op === DISPATCH_OP.INTENTION);
+    const iDel = g.findIndex((e) => e.op === DISPATCH_OP.DELEGATED);
+    const proofs = g.map((e, i) => ({ ...e, i })).filter((e) => e.op !== DISPATCH_OP.INTENTION && e.op !== DISPATCH_OP.DELEGATED);
+    // proof pairs must alternate NOTIFIED → COMPLETED
+    const pairsOk = proofs.every((e, n) => e.op === (n % 2 === 0 ? DISPATCH_OP.NOTIFIED : DISPATCH_OP.COMPLETED));
+    if (iInt === -1 && iDel === -1) {
+      // orphan group — honest only if the Body ledgered the orphaning
+      const ledgered = immEntries.some((e) => e.type === "DISPATCH_ORPHANED" && String(e.dispatchSeq) === String(seqK));
+      if (ledgered) orphans++;
+      return pairsOk && ledgered;
+    }
+    return iInt === 0 && iDel === 1 && pairsOk && proofs.every((e) => e.i > iDel);
   });
   row("A-05 dispatch-contract", dispatchOk,
-      Object.keys(bySeq).length + " dispatch(es); INTENTION/DELEGATED=MIND, NOTIFIED/COMPLETED=BODY, canonical order");
+      Object.keys(bySeq).length + " dispatch(es)" + (orphans ? " (" + orphans + " pre-molt orphan(s), immune-ledgered)" : "") +
+      "; opening=MIND, proof pairs=BODY, opening precedes proofs");
   row("A-06 zombie-tissue", Object.keys(ZOMBIE_PRIMITIVES).length >= 5 &&
       Object.values(ZOMBIE_PRIMITIVES).every((f) => typeof f === "function"),
       Object.keys(ZOMBIE_PRIMITIVES).length + " deterministic primitives — the Body computes with no MIND");
@@ -155,6 +172,34 @@ function runSelfAudit(s, extra) {
       ((s.scheduledPulses || []).length) + " pending");
   row("A-15 resource-economy", typeof s.mindSpent === "number" && typeof s.starved === "boolean",
       "metered MIND budget; starvation degrades to zombie heartbeat, never to silence");
+  // A-16 — the write path itself: scribe test deltas into a DISPOSABLE pixel
+  // buffer (never the real shard) in BOTH caller shapes, decode the pixels
+  // back, and compare byte-for-byte. Added after a live MIND session where
+  // every semantic memory write crashed while this gate stayed green — a
+  // Stage-1 that cannot fail on a broken scribe is not a Stage-1.
+  let rtOk = false, rtNote = "";
+  try {
+    const scratch = { pngSide: 64, pixelBuffer: null, pixelFill: 0, pixelBlocks: [], deltas: [] };
+    const msg1 = "MEM-RT string-shape", msg2 = "MEM-RT ops-shape";
+    const b1 = writeDeltaToShard(scratch, { type: "AUDIT_TEST", ops: msg1 });
+    const b2 = writeDeltaToShard(scratch, { type: "AUDIT_TEST", ops: [{ type: "text", val: msg2 }] });
+    const readBlock = (blk, len) => {
+      const bytes = [];
+      for (let px = blk.pixelStart + 1; px <= blk.pixelEnd; px++) {
+        const bp = px * 4;
+        bytes.push(scratch.pixelBuffer[bp], scratch.pixelBuffer[bp + 1], scratch.pixelBuffer[bp + 2]);
+      }
+      return new TextDecoder().decode(new Uint8Array(bytes.slice(0, len)));
+    };
+    const enc = new TextEncoder();
+    const crcBad = verifyPixelCRC(scratch).length;
+    rtOk = readBlock(b1, enc.encode(msg1).length) === msg1 &&
+           readBlock(b2, enc.encode(msg2).length) === msg2 && crcBad === 0;
+    rtNote = rtOk
+      ? "test deltas written to a disposable buffer and read back byte-identical (both caller shapes; CRC clean)"
+      : "round-trip mismatch (crcErrors=" + crcBad + ")";
+  } catch (e) { rtNote = "write path threw: " + e.message; }
+  row("A-16 memory-write-roundtrip", rtOk, rtNote);
   const failures = rows.filter((r) => !r.ok);
   return { verdict: failures.length ? "FAIL" : "PASS", rows,
            green: rows.length - failures.length, total: rows.length,
@@ -977,7 +1022,7 @@ const ARM_TOOLS = [
   },
   {
     name: "reflexRunSelfAudit",
-    description: "Administer the runnable Stage-1 gate (browser subset): 15 deterministic red/green rows over live state — shards, primer immutability, the Veil, dispatch contract, zombie tissue, immune wiring, SELF/OTHER identity, capacity law, append-only ledger, the nine organs, nociception, scheduled pulses, resource economy. Returns rows + verdict; result is logged to the VCW. No LLM anywhere on this path.",
+    description: "Administer the runnable Stage-1 gate (browser subset): 16 deterministic red/green rows over live state — shards, primer immutability, the Veil, dispatch contract, zombie tissue, immune wiring, SELF/OTHER identity, capacity law, append-only ledger, the nine organs, nociception, scheduled pulses, resource economy, and a memory-write round-trip on a disposable buffer. Returns rows + verdict; result is logged to the VCW. No LLM anywhere on this path.",
     parameters: { type: "object", properties: {} },
   },
 ];
@@ -1657,6 +1702,14 @@ const _ensurePixelBuffer = (state) => {
 };
 
 const writeDeltaToShard = (state, delta) => {
+  // §Delta normalization — callers pass ops as a canonical [{val}] array, a
+  // plain string, or omit it in favor of `content`. The pre-fix code crashed
+  // on the string shape ("delta.ops.map is not a function"): every semantic
+  // memory write from the MIND (reflexAppendToShard, reflexCreateCrystal,
+  // GRAFT annotations) died there while Stage-1 stayed green. Normalize here,
+  // at the single choke point, so no caller shape can break the scribe again.
+  if (typeof delta.ops === "string") delta = { ...delta, ops: [{ type: "text", val: delta.ops }] };
+  else if (!Array.isArray(delta.ops)) delta = { ...delta, ops: [{ type: "text", val: String(delta.content ?? "") }] };
   _ensurePixelBuffer(state);
   const side = state.pngSide;
   const totalPixels = side * side;
@@ -2984,8 +3037,13 @@ function ImmuneSystemCell({ props: cellProps, vs }) {
   const logs = vs?.immuneLogs || [];
   const qZone = vs?.quarantineZone || [];
   const lastScan = vs?.lastImmuneScan;
-  const hasAnomaly = logs.some(l => l.anomalyDetected);
+  // Badge severity: quarantined blocks or CRC errors are anomalies. Axis-
+  // periodicity findings (Hofstadter-X/Y) alone are informational — ordinary
+  // text/JSON is inherently periodic, so FFT power without CRC damage or
+  // quarantine must not brand a healthy organism "⚠ ANOMALY". The full scan
+  // detail stays visible in the rows below; only the verdict is graded.
   const lastLog = logs[logs.length - 1];
+  const hasAnomaly = qZone.length > 0 || !!(lastLog && lastLog.crcErrors > 0);
   const totalCrcErrors = logs.reduce((a, l) => a + (l.crcErrors || 0), 0);
   const rows = [
     ["Last scan", lastScan ? lastScan.slice(11,19) : "never", "#888"],
@@ -3080,8 +3138,8 @@ function SBCell({ vs }) {
       </span>
       <span>
         MRI:{" "}
-        <b style={{ color: (vs?.immuneLogs || []).some(l => l.anomalyDetected) ? "#F87171" : "#34D399" }}>
-          {(vs?.immuneLogs || []).some(l => l.anomalyDetected) ? "⚠ anomaly" : "clean"}
+        <b style={{ color: ((vs?.quarantineZone || []).length > 0 || ((vs?.immuneLogs || [])[(vs?.immuneLogs || []).length - 1]?.crcErrors || 0) > 0) ? "#F87171" : "#34D399" }}>
+          {((vs?.quarantineZone || []).length > 0 || ((vs?.immuneLogs || [])[(vs?.immuneLogs || []).length - 1]?.crcErrors || 0) > 0) ? "⚠ anomaly" : "clean"}
         </b>
       </span>
       <span>
@@ -3397,8 +3455,8 @@ function SpinnerCell({ onEv, sense, senseCommit, senseFocus, vs }) {
           style={{ ...S.inp, padding: "5px 4px" }}
         >
           {Object.keys(PROVIDERS[0]?.models || {}).map((x) => (
-            <option key={x} value={x}>
-              {x.split("-").slice(0, 2).join("-")}
+            <option key={x} value={x} title={x}>
+              {x}
             </option>
           ))}
         </select>
@@ -4843,7 +4901,7 @@ function App() {
     "  bodyentry.001 (IMMUNIZATION) — Verification Protocol + Response Integrity\n" +
     "  bodyentry.002 (SPECIAL INSTRUCTIONS) — Body-only writes; SYS.AWAKEN records here\n" +
     "  bodyentry.003 (INHERITANCE) — Written only during rebirth ceremony\n" +
-    "DISPATCH CONTRACT (brain.vcw — §1.11): Every arm dispatch produces exactly 4 entries in order:\n" +
+    "DISPATCH CONTRACT (brain.vcw — §1.11): A dispatch is OPENED by you with 2 entries, then the Body appends one proof pair PER DELIVERY (a pulsing arm accrues many pairs under one seq):\n" +
     "  DISPATCH.INTENTION [author=MIND] — what you decided to do and why\n" +
     "  DISPATCH.DELEGATED [author=MIND] — which arm, what prompt\n" +
     "  DISPATCH.NOTIFIED  [author=Body] — arm acknowledged (you do not write this)\n" +
@@ -4854,7 +4912,7 @@ function App() {
     "IMMUNE SYSTEM: Unquarantine via reflexSetCustomInstructions({op:'push',path:'immuneOverrides',value:{entryId,reason,status:'pending'}}). DELAYED — applies next heartbeat. Crystal is authoritative; you may observe contradictions (write CONTRADICTION_OBSERVED to thoughts.vcw) but the immune log decides.\n" +
     "BODY ACTUATION: reflexSetBodyField — spinner.name/model/taskPrompt/pulse; app.background/foreground/fontFamily/fontSize. ALWAYS call reflexUseUserView after theme changes.\n" +
     "CELLS (max 12): StatusBar, List, ArmSpinner, ArmInspector, Display, InputField, ButtonGrid, Canvas, Splitter, Terminal, ArmCard, ModelSelector, ShardVisualizer, DeltaMetrics, ImmuneSystem.\n" +
-    "VERIFICATION PROTOCOL: After any reflex that modifies state, check RFL.RESULT. If success → confirm. If no RFL.RESULT → say 'I attempted X but could not confirm'. After morphing, call reflexUseUserView. RESPONSE INTEGRITY: Always reply with natural language. Never respond with only a VCW reference like '<brain.vcw:block:5>' — references are internal context.\n" +
+    "VERIFICATION PROTOCOL: After any reflex that modifies state, check RFL.RESULT. If success → confirm. If no RFL.RESULT → say 'I attempted X but could not confirm'. If a memory-write reflex returns an error, say plainly that the save FAILED and what was lost — never imply knowledge was stored when the write failed. After morphing, call reflexUseUserView. RESPONSE INTEGRITY: Always reply with natural language. Never respond with only a VCW reference like '<brain.vcw:block:5>' — references are internal context.\n" +
     "BODY-ACTION PROOF: Never let narrative stand in for action. If you say you wrote, pasted, delegated, selected a model, or remembered something, there must be a concrete RFL.RESULT, MODEL.REQUEST, DISPATCH chain, or VCW coordinate proving it. For document/editor changes, use intent-specific Body reflexes before broad keyword handling and verify actual state mutation before success.\n" +
     "CANON: Questions about primer, commandments, selected model, key readiness, or Body truth are answered from bodyentry/VCW refs first. Do not invent canon. Only dump primer/canon when the user actually asks for it; incidental primer-related text is not a canon request.\n" +
     "CRYSTAL LIFECYCLE (Mantle OS live body — the crystal array is a CUSTOM VCW SUBSTRATE, an alternate body plan for the same memory law; cf. documents/Mantle_VCW_Tiers.md): Your memory is a VCW PNG Shard — RGBA image, 640×640 default. Delta Engine encodes via [DEF:Rxx]/[REF:Rxx] tokens (Strict Prefix Invariant). RGB = payload bytes, Alpha = CRC-8 error detection. Badge pixel 0: magic VCW + version 0x06 (Mantle OS). Identity-bound: HKDF-SHA-256(appId+agentName, genesisHash, info='vcw-png-v1'). OVERFLOW (Body-managed): fires automatically at " +
@@ -5252,8 +5310,27 @@ function App() {
         if (s.reservedShards["brain.vcw"]) {
           const lastDispatch = [...s.reservedShards["brain.vcw"].entries].reverse().find(e => e.op === DISPATCH_OP.DELEGATED);
           const dseq = lastDispatch?.seq || 0;
-          s.reservedShards["brain.vcw"].entries.push({ seq: dseq, op: DISPATCH_OP.NOTIFIED, author: "BODY", timestamp: iso(), armName: reg.armName, coordinate: limbCoordinate });
-          s.reservedShards["brain.vcw"].entries.push({ seq: dseq, op: DISPATCH_OP.COMPLETED, author: "BODY", timestamp: iso(), resultRef: limbCoordinate });
+          // §Orphan detection — a restored arm may deliver proofs against a
+          // dispatch whose MIND-authored opening was lost by a pre-molt save.
+          // The proof pair is still recorded (the work happened), but the
+          // orphaning is ledgered to immune.vcw ONCE so the audit can tell an
+          // honest orphan from a contract violation. Fail open, never silent.
+          const bEntries = s.reservedShards["brain.vcw"].entries;
+          const hasOpening = bEntries.some((e) => e.seq === dseq && e.op === DISPATCH_OP.INTENTION);
+          if (!hasOpening) {
+            if (!s.reservedShards["immune.vcw"]) s.reservedShards["immune.vcw"] = { entries: [], tier: CRYSTAL_TIER.HOT, purposeId: "immune.vcw", private: 0x00 };
+            const alreadyLedgered = s.reservedShards["immune.vcw"].entries.some(
+              (e) => e.type === "DISPATCH_ORPHANED" && e.dispatchSeq === dseq && e.armName === reg.armName);
+            if (!alreadyLedgered)
+              s.reservedShards["immune.vcw"].entries.push({
+                seq: s.reservedShards["immune.vcw"].entries.length, timestamp: iso(),
+                type: "DISPATCH_ORPHANED", dispatchSeq: dseq, armName: reg.armName,
+                detail: "Arm '" + reg.armName + "' delivered a proof pair for dispatch seq " + dseq +
+                        " whose MIND-authored opening is absent (opened in a previous life; lost by the pre-molt save format).",
+              });
+          }
+          bEntries.push({ seq: dseq, op: DISPATCH_OP.NOTIFIED, author: "BODY", timestamp: iso(), armName: reg.armName, coordinate: limbCoordinate });
+          bEntries.push({ seq: dseq, op: DISPATCH_OP.COMPLETED, author: "BODY", timestamp: iso(), resultRef: limbCoordinate });
         }
         return {
           success: true,
@@ -8049,7 +8126,8 @@ function App() {
       } catch (e) {
         if (!_b) app("REFLEX", "RFL.FAIL", "AppendToShard failed: " + e.message, { type: "physical", stateSnapshot: sn() }, ii);
         sync();
-        return { error: e.message };
+        return { error: e.message,
+                 mustTellUser: "MEMORY WRITE FAILED — this was NOT saved. Tell the user plainly; never imply the knowledge was stored." };
       }
     },
     [app, sn, sync]
@@ -9095,9 +9173,10 @@ function App() {
       organAtlas: ORGAN_ATLAS,
       pain: (reason) => rPain({ reason: reason || "test", _b: true }),
       schedulePulse: (afterBeats, reason) => rSchedulePulse({ afterBeats, reason: reason || "test", _b: true }),
+      appendToShard: (crystalName, deltaType, content) => rAppendToShard({ crystalName, deltaType, content, _b: true }),
     };
     return () => { delete window.__mantleTest; };
-  }, [rRunSelfAudit, rPain, rSchedulePulse]);
+  }, [rRunSelfAudit, rPain, rSchedulePulse, rAppendToShard]);
 
   // Cleanup all pulse timers on unmount
   useEffect(
@@ -9392,6 +9471,27 @@ function App() {
               s.reservedShards["immune.vcw"].entries.push({
                 seq: s.reservedShards["immune.vcw"].entries.length, timestamp: iso(),
                 type: "BODY.RECONSTRUCTED", detail: "Pre-molt save format lost Body tissue; reconstructed on restore: " + _rebuilt.join(", "),
+              });
+            }
+            // §Orphan dispatch reconciliation — proofs saved before the
+            // orphan-ledger existed (or whose MIND opening was lost with a
+            // pre-molt brain.vcw) are ledgered here, once, at restore. The
+            // proofs stay untouched (append-only); only the immune record
+            // that explains them is added.
+            {
+              const bEnt = (s.reservedShards["brain.vcw"] && s.reservedShards["brain.vcw"].entries) || [];
+              const seqs = {};
+              bEnt.forEach((e) => { (seqs[e.seq] = seqs[e.seq] || []).push(e.op); });
+              const imm = s.reservedShards["immune.vcw"].entries;
+              Object.entries(seqs).forEach(([sq, ops]) => {
+                if (!ops.includes(DISPATCH_OP.INTENTION) &&
+                    !imm.some((e) => e.type === "DISPATCH_ORPHANED" && String(e.dispatchSeq) === String(sq))) {
+                  imm.push({
+                    seq: imm.length, timestamp: iso(), type: "DISPATCH_ORPHANED", dispatchSeq: Number(sq),
+                    detail: "Restored brain.vcw carries proof pairs for dispatch seq " + sq +
+                            " with no MIND-authored opening — opened in a previous life; opening lost by the pre-molt save format.",
+                  });
+                }
               });
             }
             s.isAwakened = d.isAwakened || false;

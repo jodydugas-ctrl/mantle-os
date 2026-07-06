@@ -32,7 +32,8 @@ The single best "example" is the framework proving itself: **`python -m mantle t
   MIND over OpenRouter (bring your own key). Grown from the historical v1.5 body and molted to
   current doctrine: the nine organs named in an `ORGAN_ATLAS` (its crystal-shard array is a
   legitimate **custom VCW substrate**, like SPORE), a **runnable** Stage-1 gate
-  (`reflexRunSelfAudit`, 15 deterministic rows — verdicts are computed at boot, never declared),
+  (`reflexRunSelfAudit`, 16 deterministic rows including a memory-write
+  round-trip on a disposable buffer — verdicts are computed at boot, never declared),
   nociception (`reflexPain`, the now-interrupt), and planned wakes (`reflexSchedulePulse`).
   Without a key it boots, certifies, and runs its zombie heartbeat — the Body needs no MIND.
 - `Mantle_MacroDroid_Schema.yaml` — the **Path-B alignment contract** + MacroDroid JSON schema for

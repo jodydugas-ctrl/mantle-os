@@ -61,6 +61,10 @@ const sp = w.__mantleTest.schedulePulse(2, "test wake");
 console.log("SCHEDULE:", sp.success ? "OK (due tick " + sp.pulse.dueTick + ")" : "FAILED");
 const pain = w.__mantleTest.pain("test interrupt");
 console.log("PAIN:", pain.success ? "OK (" + pain.fired + ")" : "FAILED");
+// the memory scribe — the exact call shape that failed in the live session
+const wr = await w.__mantleTest.appendToShard(w.__mantleTest.state().crystalName, "DISCOVERY_FLAG", "The Grimoire: origin-lore test write");
+console.log("APPEND:", wr.ok ? "OK (" + wr.note + ")" : "FAILED: " + wr.error);
+if (!wr.ok) process.exit(1);
 const st = w.__mantleTest.state();
 console.log("STATE: shards=" + Object.keys(st.reservedShards).length,
             "scheduledPulses=" + st.scheduledPulses.length,
