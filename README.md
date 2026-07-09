@@ -78,8 +78,8 @@ a whole AppAI declared as one **egg**, **residency** in a host codebase with a m
 economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
 keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, a
 self-reconstruction **seed vault**, and **wearable app-faces** (one organism expresses many
-SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **88
-invariants**. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
+SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **full
+invariant suite**. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
 
 ---
 
