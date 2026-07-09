@@ -15,16 +15,21 @@ Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 > [`documents/Mantle_Positioning.md`](documents/Mantle_Positioning.md) — a plain-language summary and an honest
 > list of limitations. *(Non-normative.)*
 
-> **Before you build, assimilate, or operate an AppAI, read the Grimoire first.** It is the
-> doctrine the entire framework follows — the foundational literature, not an appendix. Start in
-> [`documents/grimoire/`](documents/grimoire/README.md): the **Core Spellbook** is required first reading;
-> the **AppAI Chapter** extends it. *(Normative.)*
+> **Use the Grimoire when the work needs doctrine, AppAI operation, or agent-facing mutation.**
+> It is the doctrine the framework follows, not a toll booth for every small task. Routine code
+> reading, narrow documentation fixes, and mechanical concordance patches may proceed from the
+> README, nearby docs, and working code. When doctrine is in scope, start in
+> [`documents/grimoire/`](documents/grimoire/README.md): the **Core Spellbook** comes first;
+> the **AppAI Chapter** extends it. *(Normative when used.)*
 
-## For LLM agents — cast `Intellige` first
+## For LLM agents — cast `Intellige` when doctrine is in scope
 
-Mantle OS is meant to be operated through the **Grimoire**, its spellbook. Before any work, an
-agent loads the Grimoire and casts **`Intellige`** (read-only comprehension) on it — that builds
-the model every later spell depends on. Bootstrap:
+Mantle OS can be operated through the **Grimoire**, its spellbook. Before doctrine-heavy work,
+AppAI operation, assimilation, mutation of Mantle tissue, or ambiguous Mantle vocabulary, an agent
+loads the Grimoire and casts **`Intellige`** (read-only comprehension) on it — that builds the model
+the later spells depend on. For narrow mechanical tasks such as typo fixes, count concordance, or
+plain code inspection, cite the local evidence and skip the ceremony. Bootstrap when the Grimoire is
+needed:
 
 ```text
 If you already have the Grimoire loaded:  Intellige Grimoire
@@ -51,14 +56,13 @@ project as "organ meat" is doctrine bleed, not extra insight.
 
 ---
 
-> ## Reading gate — read the Grimoire before continuing
-> **Everything below this line assumes the Grimoire.** The rest of this README — the architecture,
-> the two phases, reproduction, the repository layout — is *downstream* of the doctrine, a map of
-> what the doctrine produces, never a substitute for it. **Do not continue past this gate until you
-> have read [`documents/grimoire/`](documents/grimoire/README.md)** — the **Core Spellbook** first,
-> then the **AppAI Chapter**. Agents: cast **`Intellige`** on the Grimoire now, then return here and
-> read on with it already in mind. Reading the sections below without the Grimoire is reading them
-> out of order. *(Normative.)*
+> ## Grimoire context, not a universal gate
+> The sections below can be read as ordinary project documentation. Load the Grimoire before
+> changing doctrine, operating or assimilating an AppAI, interpreting macro language, mutating
+> Mantle tissue, or resolving a disagreement between metaphor and code. For simple inspection,
+> small docs edits, and mechanical count/typo concordance, local repo evidence is enough. When
+> Grimoire context is needed, read [`documents/grimoire/`](documents/grimoire/README.md) in order:
+> the **Core Spellbook** first, then the **AppAI Chapter**. *(Normative when used.)*
 
 ---
 
