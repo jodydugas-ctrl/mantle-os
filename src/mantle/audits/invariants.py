@@ -1924,6 +1924,80 @@ def t_spore_distillation_key_law():
             "same spore, two bodies, two DIFFERENT minted keys (never derived)")
 
 
+def t_sporeagent_lifecycle_receipt():
+    """SPORE-2: SPOREAGENT source provenance is lifecycle tissue layered on
+    hatch_from_spore, not feature creep in spore.py. The receipt records source
+    declaration/fetch/assimilation/certification/boundary facts, redacts unsafe
+    metadata, treats host code as OTHER, and never exposes Body key material."""
+    from .. import spore as _spore
+    from .. import spore_min as _spore_min
+    from ..organs.reproduction import hatch_from_spore
+
+    secret_token = "sk-SECRETSECRETSECRETSECRET"
+    private_key = "-----BEGIN PRIVATE KEY-----\nabc123\n-----END PRIVATE KEY-----"
+    state = {
+        "identity": {"spore_name": "SPOREAGENT", "task": "assimilate declared source"},
+        "source": {
+            "kind": "git",
+            "url": "https://github.com/jodydugas-ctrl/mantle-os",
+            "ref": "main",
+            "api_key": secret_token,       # forbidden by the allow-list
+        },
+        "conversation": [],
+    }
+    source_receipt = {
+        "fetched": True,
+        "assimilated": True,
+        "certified": True,
+        "sealed": True,
+        "sha256": "sha256:" + ("a" * 64),
+        "private_key": private_key,        # forbidden by the allow-list
+        "notes": "operator used declared source; token=%s" % secret_token,
+    }
+    out = hatch_from_spore(state=dict(state), source_receipt=source_receipt)
+    source = out["receipt"]["source"]
+    report_text = json.dumps(out["report"], sort_keys=True, default=str)
+    declared_and_receipted = (
+        source["declared"] and source["fetched"] and source["assimilated"]
+        and source["certified"] and source["sealed"]
+        and source["descriptor"]["url"] == state["source"]["url"]
+        and source["receipt"]["sha256"] == source_receipt["sha256"]
+    )
+    boundary = (
+        source["host_code_is_self"] is False
+        and source["source_self_status"] == "OTHER_until_PRIMER_seal_provenance_and_certification"
+        and source["key_owner"] == "BODY"
+        and source["mind_key_access"] is False
+        and out["receipt"]["primer_boundary"]["body_key_owner"] == "BODY"
+    )
+    no_leak = (
+        secret_token not in report_text
+        and private_key not in report_text
+        and out["organism"].body._genesis_key not in report_text
+        and "api_key" not in source["descriptor"]
+        and "private_key" not in source["receipt"]
+    )
+    missing = hatch_from_spore(
+        state={"identity": {"spore_name": "NoSource", "task": "plain hatch"}}
+    )["receipt"]["source"]
+    missing_explicit = (
+        missing["declared"] is False
+        and missing["fetched"] is False
+        and missing["assimilated"] is False
+        and missing["certified"] is False
+        and missing["sealed"] is False
+    )
+    purity = (
+        "SPOREAGENT" not in open(_spore.__file__, encoding="utf-8").read()
+        and "source_receipt" not in open(_spore.__file__, encoding="utf-8").read()
+        and "SPOREAGENT" not in open(_spore_min.__file__, encoding="utf-8").read()
+        and "source_receipt" not in open(_spore_min.__file__, encoding="utf-8").read()
+    )
+    return (declared_and_receipted and boundary and no_leak and missing_explicit and purity,
+            "source lifecycle receipt is explicit, redacted, OTHER-until-proven, "
+            "and absent from pure spore.py/spore_min.py")
+
+
 TESTS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -2013,6 +2087,7 @@ TESTS = [
     ("REPRO-3 every-hatch-vaults-its-egg",     t_repro_every_hatch_vaults_its_egg),
     ("REPRO-4 anchor-births-through-hatchery", t_repro_anchor_births_through_hatchery),
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
+    ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
 ]
 
 

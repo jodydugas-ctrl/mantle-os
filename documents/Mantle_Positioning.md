@@ -26,7 +26,7 @@ hopeful:
 | The database / memory | **VCW cube** | An append-only log where each record is hashed; you add or retire records, never rewrite them. It's a normal ZIP of PNG files, so you can literally open the memory in an image viewer |
 | The "who am I" config | **Genome / Primer** | Read-only identity, set once, held outside the cube |
 | The LLM | **MIND** | A plain `prompt → text` function, added last, allowed to write to only two scratch areas |
-| The "is it correct?" test suite | **the audit / Stage-1 & Stage-2 gates** | Real scripts that exit non-zero on failure (`python -m vcw audit`) |
+| The "is it correct?" test suite | **the audit / Stage-1 & Stage-2 gates** | Real scripts that exit non-zero on failure (`python -m mantle check`) |
 
 If you've ever said "the AI is doing too much; I wish the important parts were just deterministic
 code I could test" — that instinct *is* Mantle.

@@ -40,6 +40,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from .contract import Organ, OrganContract
+from ..core.redact import redact
 from ..vcw.bands import make_band_boot, APP_BAND_ATLAS
 from ..vcw.entry import make_entry
 
@@ -47,6 +48,15 @@ VAULT_BAND = "vault"                 # sealed seed (shared format with mantle.va
 SPORE_BAND = "spore_vault"           # sealed origin spore (SPORE-DISTILLATION)
 SPORE_OPCODE = "SPORE-SELF"
 SPORE_CHUNK_B64 = 900_000            # one chunk per layer, well under LAYER_BYTES
+SOURCE_DESCRIPTOR_KEYS = {
+    "kind", "url", "path", "ref", "branch", "tag", "commit", "sha256",
+    "source_sha256", "instructions", "retrieval", "notes",
+}
+SOURCE_RECEIPT_KEYS = SOURCE_DESCRIPTOR_KEYS | {
+    "fetched", "retrieved", "assimilated", "certified", "sealed",
+    "body", "body_sha256", "assimilated_path", "certification", "stage",
+}
+HASH_KEYS = {"sha256", "source_sha256", "body_sha256"}
 
 CONTRACT = OrganContract(
     "reproduction", "seed & graft ceremonies, seed-vault tissue, lineage continuity",
@@ -105,10 +115,76 @@ def spore_to_egg(state: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _safe_source_value(key: str, value: Any) -> Any:
+    """Keep source receipts useful without letting secrets or raw payloads become memory."""
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, str):
+        text = value[:512]
+        if key in HASH_KEYS and text.startswith("sha256:"):
+            return text
+        return redact(text)
+    if isinstance(value, (list, tuple)):
+        return [_safe_source_value(key, v) for v in list(value)[:20]]
+    if isinstance(value, dict):
+        return {str(k)[:64]: _safe_source_value(str(k), v)
+                for k, v in value.items()
+                if str(k) in SOURCE_RECEIPT_KEYS}
+    return redact(str(value)[:512])
+
+
+def _safe_source_payload(payload: Any, allowed: set) -> Dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+    return {str(k): _safe_source_value(str(k), v)
+            for k, v in payload.items()
+            if str(k) in allowed}
+
+
+def _flag(payload: Dict[str, Any], *names: str) -> bool:
+    return any(bool(payload.get(n)) for n in names)
+
+
+def sporeagent_source_receipt(state: Dict[str, Any],
+                              source_receipt: Optional[Dict[str, Any]] = None
+                              ) -> Dict[str, Any]:
+    """Normalize the optional SPOREAGENT source receipt.
+
+    The pure SPORE substrate does not fetch, assimilate, certify, or own host code.
+    Those acts are operator/agent lifecycle tissue. This receipt only records safe
+    provenance and boundary facts so the Body can audit the SPORE-to-PRIMER transition.
+    """
+    descriptor = _safe_source_payload(
+        state.get("source") or state.get("source_retrieval") or {},
+        SOURCE_DESCRIPTOR_KEYS,
+    )
+    receipt = _safe_source_payload(source_receipt or {}, SOURCE_RECEIPT_KEYS)
+    fetched = _flag(receipt, "fetched", "retrieved")
+    assimilated = _flag(receipt, "assimilated")
+    certified = _flag(receipt, "certified")
+    sealed = _flag(receipt, "sealed")
+    return {
+        "declared": bool(descriptor),
+        "descriptor": descriptor,
+        "receipt": receipt,
+        "fetched": fetched,
+        "assimilated": assimilated,
+        "certified": certified,
+        "sealed": sealed,
+        "body_status": "certified_zombie_body" if certified else "not_certified_here",
+        "source_self_status": "OTHER_until_PRIMER_seal_provenance_and_certification",
+        "host_code_is_self": False,
+        "key_owner": "BODY",
+        "mind_key_access": False,
+        "key_material_in_receipt": False,
+    }
+
+
 def hatch_from_spore(png_path: Optional[str] = None, *,
                      state: Optional[Dict[str, Any]] = None,
                      out_dir: Optional[str] = None,
-                     warmup_beats: int = 3) -> Dict[str, Any]:
+                     warmup_beats: int = 3,
+                     source_receipt: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """SPORE-DISTILLATION: hatch a full organism FROM a spore. The spore contributes the
     primer (identity, task -> truths) and the memories (conversation, ingested as
     inferred); entropy contributes the key (minted at birth, exactly as every birth).
@@ -156,12 +232,25 @@ def hatch_from_spore(png_path: Optional[str] = None, *,
         org.save(out_dir)
         result["report"]["saved_to"] = out_dir
 
+    source = sporeagent_source_receipt(state, source_receipt)
+    org.memory.remember("facts", {"sporeagent_source": source},
+                        opcode="OBSERVED", source="sporeagent-lifecycle",
+                        verified=source["certified"] and source["sealed"])
+
     receipt = {"spore": egg["identity"]["name"], "origin": origin,
                "certified": org.stage1_certified,
                "memories_ingested": len(conv),
                "spore_sealed": True, "spore_sha256": rec["sha256"],
                "key_derived_from_spore": False,          # THE KEY LAW, stated in the receipt
-               "key_fingerprint": org.body.key_fingerprint}
+               "key_fingerprint": org.body.key_fingerprint,
+               "primer_boundary": {
+                   "spore_becomes": "PRIMER",
+                   "body_key_owner": "BODY",
+                   "mind_key_access": False,
+                   "key_material_in_receipt": False,
+                   "sealed": True,
+               },
+               "source": source}
     result["report"]["spore_distillation"] = receipt
     return {"organism": org, "report": result["report"], "receipt": receipt}
 

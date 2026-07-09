@@ -4,7 +4,7 @@ Everything is provable, so prove it. Three harnesses, all pure stdlib, all offli
 
 ```bash
 python -m mantle audit         # Stage 1: the Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # the 88 security invariants (red/green)
+python -m mantle prove         # the 89 security invariants (red/green)
 python -m mantle audit-mind    # Stage 2: MIND containment + FULL Stage-1 regression
 ```
 

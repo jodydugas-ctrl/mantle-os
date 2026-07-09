@@ -18,7 +18,7 @@ size or a facet of one of those two acts.
 
 The old split of *"grow from scratch (Path A)"* vs *"assimilate an existing app (Path B)"* is the
 **same axis**: a seed answers to no host; a graft lives in one. Both methods are gated identically —
-the **88 invariants**, no standing law weakened — and both end at the same certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ** (`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
+the full invariant suite, no standing law weakened — and both end at the same certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ** (`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
 
 ```bash
 python -m mantle reproduce      # the whole map on one screen
@@ -61,6 +61,21 @@ python -m mantle spore verify seed.png
 > **Keep the seed dry.** Transfer the *original* `.png` only — never a screenshot, resize, or
 > recompress. Lossy image tools destroy the alpha repair layer and injure memory. The **latest**
 > PNG is always the living copy.
+
+#### SPOREAGENT lifecycle receipt
+
+A **SPOREAGENT** is not a larger `spore.py`. It is the agent-readable launch artifact around a
+spore: the operator gives it source retrieval instructions, the agent retrieves or declares the
+source, assimilates it through the Grimoire, and aims first at a certified **Zombie Body**. The
+pure SPORE remains a public, minimal seed; lifecycle evidence lives in
+`hatch_from_spore(..., source_receipt=...)` and the Reproduction organ's receipt.
+
+The transition is auditable: the receipt records declared source, fetched/assimilated/certified
+status, the SPORE-to-PRIMER boundary, and whether that boundary was sealed. Host or application
+code remains **OTHER** until the Body proves it through PRIMER, seal, provenance, and the
+certification path. The PRIMER may root the Body's identity and personal encryption identity, but
+the key itself is minted by the Body. The MIND never receives, reads, infers, logs, transmits, or
+handles that key material; it may only request Body-owned cryptographic acts.
 
 ### egg — a whole AppAI as one document (`mantle.egg` + `mantle.hatchery`)
 
@@ -156,7 +171,8 @@ fragile.
 
 **The second hard law — the cache is write-only.** A real provider's prompt cache can only ever be
 spoken *into*, never read back *out of*: there is no fetch API, the full prefix still travels on
-every request, and the only warmth signal is telemetry (`cache_read_input_tokens`) on the *next*
+every request, and the only warmth signal is provider usage telemetry (`cached_tokens` or an
+equivalent cache-read field) on the *next*
 response. Warmth buys skipped **prefill compute** — roughly a tenth of the input price on the cached
 span, and a large latency drop — never storage or bandwidth. So on a real substrate the dry-seed law
 is not prudence but physics: the PNG is always the only recoverable copy. Substrates declare this

@@ -43,7 +43,7 @@ wakes it. Its powers are deliberately narrow:
 ## §2.1 Pre-fusion gate
 
 1. Confirm `Mantle_Part1_Body_Audit.md` is signed off with **0 open hard-fails**
-   (`python -m mantle audit` + `python -m mantle prove` -> 88/88 green).
+   (`python -m mantle audit` + `python -m mantle prove` -> all green).
 2. Confirm the live cube `verify()` is healthy.
 3. Confirm the §0 Declaration Block now carries `KEYFILE_PATH` and `DEFAULT_MODEL`.
 
@@ -157,7 +157,7 @@ resolved (no danglers — Stage 1 B-11), and (b) no secret appeared in the promp
 ## §2.8 Action dispatch & async limb delegation
 
 - The MIND authors `INTENTION` (and `DELEGATED` for async work) in `brain`.
-- A Body reflex picks up the INTENTION, drives the appropriate **Limb/Lung** effector,
+- A Body reflex picks up the INTENTION, drives the appropriate **Limb** effector,
   records an **Action Execution Proof** (`attempted/ok/method/ref/reason`), and then
   authors `NOTIFIED` → `COMPLETED`.
 - **Authorship is permanent:** MIND owns INTENTION/DELEGATED; Body owns
