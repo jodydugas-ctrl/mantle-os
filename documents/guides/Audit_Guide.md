@@ -4,7 +4,7 @@ Everything is provable, so prove it. Three harnesses, all pure stdlib, all offli
 
 ```bash
 python -m mantle audit         # Stage 1: the Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # the 84 security invariants (red/green)
+python -m mantle prove         # the 88 security invariants (red/green)
 python -m mantle audit-mind    # Stage 2: MIND containment + FULL Stage-1 regression
 ```
 
@@ -51,7 +51,7 @@ Stage-1 row set re-runs against the fused organism: Stage 2 may never break Stag
 
 ## The invariants (`src/mantle/audits/invariants.py`)
 
-84 red/green guards, each proving a hard-fail fires (and, where relevant, that the
+88 red/green guards, each proving a hard-fail fires (and, where relevant, that the
 permitted path still works). Highlights beyond the v2 set: **no-Phase-1-LLM-path** proven
 in a clean subprocess that lives a full Phase-1 life and then inspects `sys.modules`,
 plus an AST import scan of every Phase-1 source · **capacity → metabolism, never

@@ -89,6 +89,16 @@ def spend(org, credits: float, purpose: str) -> bool:
     return True
 
 
+def _record_spend_receipt(org, credits: float, purpose: str,
+                          receipt: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Append a SPEND receipt, including legitimate zero-cost cache hits."""
+    content = {"credits": float(credits), "purpose": purpose,
+               "usage": redact(receipt or {})}
+    e = make_entry(content, opcode="SPEND", author="BODY", source=purpose)
+    org.prime.append(BAND, e)
+    return e
+
+
 def record_value(org, what: str, evidence: Any = None) -> Dict[str, Any]:
     """The organism's side of the bargain: an auditable record of work delivered."""
     e = make_entry({"value": redact(what), "evidence": redact(evidence)},
@@ -173,6 +183,54 @@ def metered_by_usage(model: Callable[[str], str], org, price_per_1k: float = 1.0
                 "usage exceeded the authorized energy ceiling; the MIND sleeps.")
         return result
     call.__name__ = "usage_metered_%s" % getattr(model, "__name__", "model")
+    return call
+
+
+def metered_by_receipt(model: Callable[[str], str], org, max_cost: float,
+                       purpose: str = "MODEL.REQUEST") -> Callable[[str], str]:
+    """Meter from the provider's actual usage receipt.
+
+    This is the cache-aware path: prompt-cache discounts, cache writes, and
+    response-cache zero-cost hits are charged from `model.last_usage` after the
+    call. A preflight ceiling preserves the starvation law before cognition.
+    """
+    if max_cost <= 0:
+        raise ValueError("max_cost must be positive")
+
+    def call(prompt: str) -> str:
+        from .mind.usage import receipt_cost
+
+        if balance(org) < max_cost:
+            org.immune_event("starvation", {
+                "purpose": purpose, "balance": balance(org),
+                "authorized_max_cost": max_cost, "wanted": max_cost})
+            raise StarvationError(
+                "no energy for cognition; the MIND sleeps, the Body keeps beating.")
+        result = model(prompt)
+        receipt = getattr(model, "last_usage", None)
+        if not receipt:
+            org.immune_event("missing_usage_receipt", {"purpose": purpose})
+            cost = max_cost
+            receipt = {"missing": True, "charged": "authorized_max_cost"}
+        else:
+            cost = receipt_cost(receipt)
+        if cost > max_cost:
+            org.immune_event("metering_overrun", {
+                "purpose": purpose, "cost": cost, "authorized_max_cost": max_cost})
+            raise StarvationError(
+                "usage exceeded the authorized energy ceiling; the MIND sleeps.")
+        if cost <= 0:
+            _record_spend_receipt(org, 0.0, "%s (cache hit)" % purpose, receipt)
+            return result
+        if balance(org) < cost:
+            org.immune_event("metering_overrun", {
+                "purpose": purpose, "cost": cost, "balance": balance(org),
+                "authorized_max_cost": max_cost})
+            raise StarvationError(
+                "usage exceeded available energy; the MIND sleeps.")
+        _record_spend_receipt(org, cost, purpose, receipt)
+        return result
+    call.__name__ = "receipt_metered_%s" % getattr(model, "__name__", "model")
     return call
 
 

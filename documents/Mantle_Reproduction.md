@@ -18,7 +18,7 @@ size or a facet of one of those two acts.
 
 The old split of *"grow from scratch (Path A)"* vs *"assimilate an existing app (Path B)"* is the
 **same axis**: a seed answers to no host; a graft lives in one. Both methods are gated identically —
-the **84 invariants**, no standing law weakened — and both end at the same certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ** (`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
+the **88 invariants**, no standing law weakened — and both end at the same certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ** (`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
 
 ```bash
 python -m mantle reproduce      # the whole map on one screen
@@ -201,6 +201,17 @@ Facets of governed haunting that follow from the laws:
   expected warm reads before the next cold event exceed a break-even count. That count is a
   function of the *provider's own* write premium (`break_even_reads(write_premium)`), never a
   hardcoded rate. SLEEP mode never keep-alives.
+- **Usage proof, not hope** — real provider calls record cache and cost receipts: cached tokens,
+  cache-write tokens, response-cache HIT/MISS, generation id, session id, provider/router metadata,
+  cost, total cost, and redacted request hashes. The receipt never stores raw prompts, completions,
+  or keys.
+
+Prompt caching and response caching are different substrates. Prompt caching is provider-side
+prefix reuse: Mantle keeps stable instructions and consolidated context at the front, then appends
+dynamic scratch late so cache reads can be observed through token telemetry. Response caching is
+router-side replay of an identical full request: it is useful for deterministic retries, evaluator
+calls, unit tests, and failed workflow resumes, and a HIT is recorded as a zero-cost call rather
+than disappearing from the ledger.
 
 ```bash
 python -m mantle ghost selftest          # proves the continuum, the hard laws, the gates,

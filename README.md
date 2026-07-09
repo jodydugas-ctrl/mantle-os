@@ -6,10 +6,10 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 84 security invariants, the
+*The organism re-certifies on every commit: the Stage-1 gate, 88 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
-**Current certification count:** 84 security invariants (`python -m mantle prove`).
+**Current certification count:** 88 security invariants (`python -m mantle prove`).
 
 > **New here, or skeptical of the biology metaphor?** Start with
 > [`documents/Mantle_Positioning.md`](documents/Mantle_Positioning.md) — a plain-language summary and an honest
@@ -43,6 +43,12 @@ confers no authority — only after the Grimoire is comprehended, and with the C
 an agent cast spells that mutate. To then comprehend this project specifically, cast
 **`Intellige Mantle OS`**.
 
+The organic language is scoped. **Body, MIND, Senses, Limbs, Immune, VCW, SELF/OTHER, and the spell
+macros name MantleOS tissue and operator behavior, not ordinary host/application code.** Host apps
+remain normal software at their own layer; Mantle terms apply only at the defined seams where an
+organism senses, acts, remembers, audits, resides, or reproduces. Treating every function in a host
+project as "organ meat" is doctrine bleed, not extra insight.
+
 ---
 
 > ## Reading gate — read the Grimoire before continuing
@@ -72,7 +78,7 @@ a whole AppAI declared as one **egg**, **residency** in a host codebase with a m
 economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
 keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, a
 self-reconstruction **seed vault**, and **wearable app-faces** (one organism expresses many
-SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **84
+SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **88
 invariants**. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
 
 ---
@@ -123,7 +129,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 84 security invariants, red/green
+python -m mantle prove         # 88 security invariants, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash
@@ -146,7 +152,7 @@ python examples/vcw/interop.py                # standalone <-> engine: identical
 
 An AppAI reproduces in exactly **two** ways (doctrine:
 [`documents/Mantle_Reproduction.md`](documents/Mantle_Reproduction.md)); both are gated the same
-way (84 invariants, no standing law weakened) and both end at the same certified Body:
+way (88 invariants, no standing law weakened) and both end at the same certified Body:
 
 - **SEED** — *independent.* The organism condenses itself into a dormant, self-describing package of
   **data** that grows into a certified Body with **no host**. Three sizes of one act: the **spore**
@@ -200,6 +206,12 @@ optional Phase-2 module, imported by nothing else: `mantle.ghost_http`, the *rea
 substrate — a **vendor-neutral**, OpenAI-compatible HTTP adapter on pure-stdlib `urllib` (no SDK)
 whose provider is entirely configured; it needs a network and a key at runtime, while the offline
 stand-in in `mantle.ghost` covers every gate and demo without either.)
+
+Prompt caching and response caching are separate facts. Prompt caching keeps a stable prefix warm
+inside the provider path; response caching returns an identical full request from the router edge.
+Mantle records proof fields for both through optional Phase-2 transport receipts: cached tokens,
+cache-write tokens, response-cache HIT/MISS, generation id, session id, cost, total cost, provider,
+router, and redacted request hashes. No raw prompt, completion, or key belongs in those receipts.
 
 ```python
 from mantle import Organism
@@ -291,7 +303,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     vcw/                 the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
     organs/              the nine organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
-    assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, the 84 invariants)
+    assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, the 88 invariants)
     reproduction.py      the two-method seam — SEED vs GRAFT (routes to the modules below)
     spore.py spore_min.py the smallest SEED — one PNG that is a whole minimal agent (+ its embryo)
     ghost.py             the cache-ghost substrate — a seed that lives in the LLM prompt cache

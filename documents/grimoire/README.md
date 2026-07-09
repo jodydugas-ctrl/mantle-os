@@ -56,6 +56,12 @@ UPPERCASE spell identifiers are procedural implementation labels for agents, run
 receipts. Humans may use power words or spell IDs directly if they wish, but they should not be
 required for ordinary operation.
 
+The AppAI vocabulary is scoped operator language. Terms such as Body, MIND, Senses, Limbs, Immune,
+VCW, SELF/OTHER, organs, and spell macros name MantleOS/AppAI tissue and lawful seams; they do not
+rename ordinary host/application code. Use the organism language where Mantle observes, wraps,
+stores, audits, acts, or reproduces. Outside those seams, keep the host described in its native
+software terms.
+
 ## The Vestigare macro
 The Grimoire includes **Vestigare**, the Core macro for `WEB-PRESENCE-RECON`. Cast it when an artifact,
 product, app, platform, or clone target has a public web presence and public web or image evidence
@@ -83,6 +89,9 @@ with the real, **vendor-neutral** write-only provider substrate in
 pure-stdlib urllib, the provider entirely configured -- no vendor SDK, nothing hardcoded;
 optional, imported by nothing else); doctrine in
 [`../Mantle_Reproduction.md`](../Mantle_Reproduction.md).
+Provider-specific cache mechanics, including response caching and OpenRouter-style usage/cost
+fields, remain implementation documentation rather than canonical Grimoire doctrine; the code
+records them as redacted Phase-2 transport receipts.
 
 The Python package in [`src/mantle/`](../../src/mantle/) is the **reference implementation**, not the
 boundary of the doctrine: the Grimoire is language-, AI-, and container-agnostic by design (see

@@ -1338,6 +1338,179 @@ def t_meter_usage_priced():
             % (long_cost, short_cost, summ["burn_rate"], summ["starvation_horizon"]))
 
 
+def t_or_cache_usage_receipt():
+    """OR-CACHE-1: cache usage receipts normalize cache reads/writes, cost, session,
+    generation id, and response-cache headers without raw prompt text."""
+    from ..mind.usage import normalize_usage, stable_session_id
+    sid = stable_session_id("bodyfingerprint", "planner", "task-" + ("x" * 300))
+    body = {
+        "id": "gen-body",
+        "model": "openrouter/test",
+        "usage": {
+            "prompt_tokens": 100,
+            "completion_tokens": 7,
+            "total_tokens": 107,
+            "cost": 0.012,
+            "prompt_tokens_details": {
+                "cached_tokens": 80,
+                "cache_write_tokens": 20,
+            },
+            "cost_details": {"upstream_inference_cost": 0.01},
+        },
+    }
+    generation = {"data": {"cache_discount": 0.004, "provider_name": "FakeProvider",
+                           "router": "openrouter/auto", "total_cost": 0.012,
+                           "session_id": sid}}
+    rec = normalize_usage(body, headers={"X-OpenRouter-Cache-Status": "MISS",
+                                         "X-OpenRouter-Cache-TTL": "300",
+                                         "X-Generation-Id": "gen-header"},
+                          generation=generation, session_id=sid,
+                          request_hash="reqhash", stable_prefix_hash="stable",
+                          dynamic_suffix_hash="dynamic", lane="planner")
+    ok = (len(sid) <= 256 and rec["cached_tokens"] == 80
+          and rec["cache_write_tokens"] == 20 and rec["cost"] == 0.012
+          and rec["total_cost"] == 0.012 and rec["cache_discount"] == 0.004
+          and rec["response_cache_status"] == "MISS"
+          and rec["generation_id"] == "gen-header"
+          and "HUGE PROMPT" not in json.dumps(rec))
+    return ok, "receipt normalized cache/cost/session fields; session_id len=%d" % len(sid)
+
+
+def t_or_transport_sidecars_and_canonical_body():
+    """OR-CACHE-2: the transport preserves `model(prompt)->text` while adding session_id,
+    response-cache headers, canonical JSON, and sidecar usage."""
+    import urllib.request as _urlreq
+    from ..mind.transport import openai_compatible_model
+    from ..mind.usage import canonical_json_bytes
+
+    calls = []
+    old = _urlreq.urlopen
+
+    class _Resp:
+        headers = {"X-OpenRouter-Cache-Status": "HIT",
+                   "X-OpenRouter-Cache-TTL": "299",
+                   "X-Generation-Id": "gen-hit"}
+        def __enter__(self): return self
+        def __exit__(self, *args): return False
+        def read(self):
+            return json.dumps({
+                "id": "gen-hit", "model": "fake/model",
+                "choices": [{"message": {"content": "ok"}}],
+                "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0,
+                          "prompt_tokens_details": {"cached_tokens": 0,
+                                                    "cache_write_tokens": 0},
+                          "cost": 0.0},
+            }).encode("utf-8")
+
+    def fake_urlopen(req, timeout=0):
+        calls.append(req)
+        return _Resp()
+
+    try:
+        _urlreq.urlopen = fake_urlopen
+        model = openai_compatible_model(
+            "sk-test", "fake/model", url="https://example.invalid/chat",
+            system="stable laws", session_id="mantle:body:planner:task",
+            response_cache=True, response_cache_ttl=300, lane="planner")
+        answer = model("dynamic question")
+    finally:
+        _urlreq.urlopen = old
+
+    payload = json.loads(calls[0].data.decode("utf-8"))
+    headers = {k.lower(): v for k, v in calls[0].headers.items()}
+    canonical = calls[0].data == canonical_json_bytes(payload)
+    rec = model.last_usage
+    ok = (answer == "ok" and canonical
+          and payload["session_id"] == "mantle:body:planner:task"
+          and headers.get("x-openrouter-cache") == "true"
+          and headers.get("x-openrouter-cache-ttl") == "300"
+          and rec["response_cache_status"] == "HIT"
+          and rec["generation_id"] == "gen-hit"
+          and rec["request_hash"] == model.last_request_hash)
+    return ok, "transport sidecars captured cache HIT + canonical request body"
+
+
+def t_or_ghost_http_receipt():
+    """OR-CACHE-3: HttpPromptCache captures richer cache/cost telemetry and uses the same
+    canonical request body without a real provider."""
+    import urllib.request as _urlreq
+    from ..ghost_http import HttpPromptCache
+    from ..mind.usage import canonical_json_bytes
+
+    calls = []
+    old = _urlreq.urlopen
+
+    class _Resp:
+        headers = {"X-OpenRouter-Cache-Status": "MISS",
+                   "X-OpenRouter-Cache-TTL": "300",
+                   "X-Generation-Id": "gen-miss"}
+        def __enter__(self): return self
+        def __exit__(self, *args): return False
+        def read(self):
+            return json.dumps({
+                "id": "gen-miss", "model": "fake/model",
+                "choices": [{"message": {"content": ""}}],
+                "usage": {"prompt_tokens": 1200, "completion_tokens": 1,
+                          "total_tokens": 1201, "cost": 0.03,
+                          "prompt_tokens_details": {"cached_tokens": 0,
+                                                    "cache_write_tokens": 1200}},
+            }).encode("utf-8")
+
+    def fake_urlopen(req, timeout=0):
+        calls.append(req)
+        return _Resp()
+
+    try:
+        _urlreq.urlopen = fake_urlopen
+        sub = HttpPromptCache("https://example.invalid/chat", "fake/model",
+                              headers={"Authorization": "Bearer sk-test"},
+                              session_id="mantle:body:ghost:task",
+                              response_cache=True, response_cache_ttl=300)
+        sub.warm("k", b"stable-prefix")
+    finally:
+        _urlreq.urlopen = old
+
+    payload = json.loads(calls[0].data.decode("utf-8"))
+    headers = {k.lower(): v for k, v in calls[0].headers.items()}
+    rec = sub.last_usage or {}
+    ok = (calls[0].data == canonical_json_bytes(payload)
+          and payload["session_id"] == "mantle:body:ghost:task"
+          and headers.get("x-openrouter-cache") == "true"
+          and rec.get("cache_write_tokens") == 1200
+          and rec.get("cost") == 0.03
+          and rec.get("response_cache_status") == "MISS"
+          and sub.last_generation_id == "gen-miss")
+    return ok, "ghost_http receipt captured cache write/cost/MISS telemetry"
+
+
+def t_meter_receipt_zero_cost_cache_hit():
+    """OR-CACHE-4: receipt metering records a zero-cost response-cache HIT as an audited
+    call without reducing energy."""
+    from ..symbiosis import symbiosis_band, grant, metered_by_receipt, balance
+    org = _born(genome=standard_genome() + [symbiosis_band()])
+    grant(org, 5)
+
+    def cached_model(prompt):
+        cached_model.last_usage = {
+            "response_cache_status": "HIT", "prompt_tokens": 0,
+            "completion_tokens": 0, "total_tokens": 0, "cost": 0.0,
+            "total_cost": 0.0, "request_hash": "abc123",
+        }
+        return "ok"
+    cached_model.last_usage = None
+
+    before = balance(org)
+    out = metered_by_receipt(cached_model, org, max_cost=1.0)("hello")
+    after = balance(org)
+    spends = [e for e in org.prime.read("symbiosis") if e["opcode"] == "SPEND"]
+    stored = json.dumps(spends[-1]["content"], default=str) if spends else ""
+    ok = (out == "ok" and before == after and spends
+          and spends[-1]["content"]["credits"] == 0.0
+          and "cache hit" in spends[-1]["content"]["purpose"]
+          and "hello" not in stored)
+    return ok, "zero-cost HIT produced a zero-credit SPEND receipt; balance unchanged"
+
+
 def t_ingest_distills():
     """INGEST-1: ingesting a conversation enters through Senses and distills deterministically
     -- a DECISION becomes a sourced fact; an IDEA becomes an inferred discovery; nothing
@@ -1819,6 +1992,10 @@ TESTS = [
     ("VAULT-1 self-encrypted-other-cannot",    t_vault_self_encrypted_other_cannot_read),
     ("VAULT-2 reconstruct-gates",              t_vault_reconstruct_gates),
     ("METER-1 usage-priced",                   t_meter_usage_priced),
+    ("OR-CACHE-1 usage-receipt",               t_or_cache_usage_receipt),
+    ("OR-CACHE-2 transport-sidecars",          t_or_transport_sidecars_and_canonical_body),
+    ("OR-CACHE-3 ghost-http-receipt",          t_or_ghost_http_receipt),
+    ("OR-CACHE-4 zero-cost-cache-hit",         t_meter_receipt_zero_cost_cache_hit),
     ("INGEST-1 conversation-distilled",        t_ingest_distills),
     ("DOCTOR-1 deployment-checkup",            t_doctor_checkup),
     ("PHENO-1 self-open+integrity",            t_pheno_self_open_and_integrity),

@@ -64,6 +64,7 @@ import os
 from typing import Any, Callable, Dict, Optional
 
 from .ghost import DEFAULT_TTL_S, GhostSubstrate
+from .mind.usage import canonical_json_bytes, normalize_usage, sha16
 
 
 class HttpPromptCache(GhostSubstrate):
@@ -84,6 +85,8 @@ class HttpPromptCache(GhostSubstrate):
         request_shaper    optional (payload, prefix_bytes) -> payload hook so a provider that
                           needs an explicit cache directive can be configured without naming
                           it in Mantle code. Default: plain body, automatic prefix caching.
+        session_id        optional sticky-routing id for providers that support it.
+        response_cache    optional response-cache header for deterministic/retry probes.
     """
 
     name = "http-prompt-cache"
@@ -92,22 +95,37 @@ class HttpPromptCache(GhostSubstrate):
     def __init__(self, url: str, model: str, *, headers: Optional[Dict[str, str]] = None,
                  window_s: int = 0, min_prefix_tokens: int = 0, probe_tokens: int = 1,
                  timeout: int = 60,
-                 request_shaper: Optional[Callable[[Dict[str, Any], bytes], Dict[str, Any]]] = None):
+                 request_shaper: Optional[Callable[[Dict[str, Any], bytes], Dict[str, Any]]] = None,
+                 session_id: Optional[str] = None,
+                 response_cache: bool = False,
+                 response_cache_ttl: Optional[int] = None,
+                 response_cache_clear: bool = False):
+        if session_id is not None and len(session_id) > 256:
+            raise ValueError("session_id must be at most 256 characters")
         self.url = url
         self.model = model
         self.headers = dict(headers or {})
         self.headers.setdefault("Content-Type", "application/json")
+        if session_id:
+            self.headers.setdefault("x-session-id", session_id)
         self.window_s = window_s
         self.min_prefix_tokens = min_prefix_tokens
         self.probe_tokens = probe_tokens
         self.timeout = timeout
         self.request_shaper = request_shaper
+        self.session_id = session_id
+        self.response_cache = response_cache
+        self.response_cache_ttl = response_cache_ttl
+        self.response_cache_clear = response_cache_clear
         self._warmed_at: Dict[str, float] = {}     # key -> monotonic time of last warm/extend
-        self.last_usage: Optional[Dict[str, int]] = None   # observed telemetry, last request
+        self.last_usage: Optional[Dict[str, Any]] = None   # observed telemetry, last request
+        self.last_headers: Optional[Dict[str, str]] = None
+        self.last_generation_id: Optional[str] = None
+        self.last_request_hash: Optional[str] = None
 
     # -- the one real request shape (OpenAI-compatible chat completions) ------------------
 
-    def _probe(self, prefix: bytes) -> Dict[str, int]:
+    def _probe(self, prefix: bytes) -> Dict[str, Any]:
         """Send the prefix-stable body so the provider caches it; read cache-hit telemetry.
 
         The stable prefix goes in a `system` turn (a byte-exact prefix the provider can cache);
@@ -124,21 +142,31 @@ class HttpPromptCache(GhostSubstrate):
                 {"role": "user", "content": "warmup"},
             ],
         }
+        if self.session_id:
+            payload["session_id"] = self.session_id
         if self.request_shaper:
             payload = self.request_shaper(payload, prefix)
 
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(self.url, data=data, headers=self.headers, method="POST")
+        data = canonical_json_bytes(payload)
+        headers = dict(self.headers)
+        if self.response_cache:
+            headers["X-OpenRouter-Cache"] = "true"
+            if self.response_cache_ttl is not None:
+                headers["X-OpenRouter-Cache-TTL"] = str(int(self.response_cache_ttl))
+            if self.response_cache_clear:
+                headers["X-OpenRouter-Cache-Clear"] = "true"
+        req = urllib.request.Request(self.url, data=data, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            resp_headers = dict(resp.headers.items())
             body = json.loads(resp.read().decode("utf-8"))
 
-        usage = body.get("usage", {}) or {}
-        details = usage.get("prompt_tokens_details", {}) or {}
-        self.last_usage = {
-            "prompt_tokens": int(usage.get("prompt_tokens", 0) or 0),
-            "cached_tokens": int(details.get("cached_tokens", 0) or 0),
-            "completion_tokens": int(usage.get("completion_tokens", 0) or 0),
-        }
+        self.last_headers = resp_headers
+        self.last_request_hash = sha16(data)
+        self.last_usage = normalize_usage(
+            body, headers=resp_headers, session_id=self.session_id,
+            request_hash=self.last_request_hash, stable_prefix_hash=sha16(prefix),
+            dynamic_suffix_hash=sha16("warmup"), model=self.model)
+        self.last_generation_id = self.last_usage.get("generation_id")
         return self.last_usage
 
     # -- GhostSubstrate ------------------------------------------------------------------

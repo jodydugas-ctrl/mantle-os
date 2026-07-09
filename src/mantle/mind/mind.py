@@ -64,6 +64,9 @@ class Mind:
         prompt = question or self._frame(snapshot)
         self._trace("REQUEST", {"prompt_hash": _h(prompt)})
         answer = self.model(prompt)                         # the side-channel MODEL call
+        usage = getattr(self.model, "last_usage", None)
+        if usage:
+            self._trace("USAGE", usage)
         self._trace("RESPONSE", {"answer_hash": _h(answer)})
         self.thoughts_written += 1
         # the MIND's reflection is private and INFERRED -- never a verified fact

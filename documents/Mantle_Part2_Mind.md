@@ -43,7 +43,7 @@ wakes it. Its powers are deliberately narrow:
 ## §2.1 Pre-fusion gate
 
 1. Confirm `Mantle_Part1_Body_Audit.md` is signed off with **0 open hard-fails**
-   (`python -m mantle audit` + `python -m mantle prove` → 84/84 green).
+   (`python -m mantle audit` + `python -m mantle prove` -> 88/88 green).
 2. Confirm the live cube `verify()` is healthy.
 3. Confirm the §0 Declaration Block now carries `KEYFILE_PATH` and `DEFAULT_MODEL`.
 
@@ -176,6 +176,10 @@ is **metered** — wrap any transport in the metabolic gate:
   `symbiosis.metered_by_usage(model, org, price_per_1k)` — pay from **actual token usage**, so
   credits in the cube mirror credits in the world. `metering_summary(org)` reports the burn rate
   and the **starvation horizon**.
+- `symbiosis.metered_by_receipt(model, org, max_cost)` pays from the transport's actual usage
+  receipt after the call, while pre-authorizing a maximum spend before cognition. This is the
+  cache-aware path: provider prompt-cache discounts, cache writes, and response-cache zero-cost
+  hits remain visible in the append-only ledger.
 - **The starvation law.** An unaffordable call is refused: the Immune System records a
   **starvation** event, the MIND **sleeps gracefully**, and the Body keeps beating every pulse. A
   starved organism is a Zombie Body again, never a corpse — energy can never go negative. (This is
@@ -183,6 +187,12 @@ is **metered** — wrap any transport in the metabolic gate:
 - Every piece of delivered work is recorded as a `VALUE` entry in the same append-only ledger;
   `python -m mantle vitals <host>` shows the whole relationship. The user feeds what earns its keep.
 - On recovery (or a new grant via `feed`), the Awakening reflex re-binds the model and resumes.
+
+Cache-aware transports keep the callable surface unchanged (`model(prompt) -> text`) and expose
+sidecar receipts (`last_usage`, `last_headers`, `last_generation_id`, `last_request_hash`). A MIND
+trace may store those receipts as `MODEL.USAGE`, but only after redaction and only as metadata:
+cached tokens, cache-write tokens, response-cache HIT/MISS, session id, cost, provider/router, and
+hashes. Raw prompts, completions, and keys stay outside the VCW.
 
 ---
 

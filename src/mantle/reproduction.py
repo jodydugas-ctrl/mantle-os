@@ -38,7 +38,7 @@ two-word answer -- SEED or GRAFT -- instead of a glossary.
 
 The old distinction "grow from scratch vs. assimilate an existing app" is the SAME axis as
 "seed vs. graft": a seed answers to no host, a graft lives in one. Two methods, both gated by
-the 84 invariants, no standing law weakened.
+the 88 invariants, no standing law weakened.
 """
 from __future__ import annotations
 
