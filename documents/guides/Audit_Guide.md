@@ -51,7 +51,7 @@ Stage-1 row set re-runs against the fused organism: Stage 2 may never break Stag
 
 ## The invariants (`src/mantle/audits/invariants.py`)
 
-88 red/green guards, each proving a hard-fail fires (and, where relevant, that the
+89 red/green guards, each proving a hard-fail fires (and, where relevant, that the
 permitted path still works). Highlights beyond the v2 set: **no-Phase-1-LLM-path** proven
 in a clean subprocess that lives a full Phase-1 life and then inspects `sys.modules`,
 plus an AST import scan of every Phase-1 source · **capacity → metabolism, never
@@ -64,4 +64,4 @@ works) · **organ overreach refused** · **staged save rejects a corrupt cube**.
 
 **Never weaken an invariant to make a test pass.** If a test fails, either the code
 broke a guarantee (fix the code) or the test asserts the wrong guarantee (fix the test —
-and say so in the commit). Both happen; record which in the commit message.
+and say so in the commit message). Both happen; record which in the commit.
