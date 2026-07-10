@@ -114,6 +114,20 @@ REQUIRED_PROJECT_MODEL_MAPS = (
     "version_compatibility_graph",
     "duplicate_concept_map",
 )
+REQUIRED_ALIAS_COLLISION_CHECKS = (
+    "exact_duplicate_aliases",
+    "casefold_collisions",
+    "punctuation_collisions",
+    "prefix_collisions",
+    "class_marker_collisions",
+    "mode_marker_collisions",
+    "error_code_collisions",
+    "public_cli_collisions",
+    "environment_variable_collisions",
+    "schema_field_collisions",
+    "python_symbol_collisions",
+    "filesystem_case_collisions",
+)
 INVARIANT_RE = re.compile(
     r"\b(?:HF-[A-Z0-9]+|B-[A-Z0-9]+|SELF-\d+|SYM-\d+|NOC-\d+|SCHED-\d+|"
     r"MEMW-\d+|GRAFT-\d+|RESID-\d+|MEM-\d+|BOOT-\d+|BRIDGE-\d+|GANG-\d+|"
@@ -839,7 +853,47 @@ def _enrich_file_relationships(report: Dict[str, Any]) -> None:
             target["_inventory_shape"] = "PASS" if not missing else "MISSING:%s" % ",".join(missing)
 
 
-def _alias_registry() -> Dict[str, Any]:
+def _collisions(values: Iterable[str], normalizer=lambda x: x) -> List[Dict[str, Any]]:
+    buckets: Dict[str, List[str]] = {}
+    for value in values:
+        key = normalizer(value)
+        buckets.setdefault(key, []).append(value)
+    return [
+        {"key": key, "values": sorted(set(vals))}
+        for key, vals in sorted(buckets.items())
+        if len(set(vals)) > 1
+    ]
+
+
+def _prefix_collisions(values: Iterable[str]) -> List[Dict[str, str]]:
+    vals = sorted(set(values), key=lambda x: (len(x), x))
+    rows = []
+    for i, short in enumerate(vals):
+        if len(short) < 2:
+            continue
+        for long in vals[i + 1:]:
+            if len(long) > len(short) and long.startswith(short):
+                rows.append({"prefix": short, "longer": long})
+    return rows[:200]
+
+
+def _punctuation_key(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]+", "", value).casefold()
+
+
+def _schema_field_namespace(field: str) -> str:
+    if field.isupper():
+        return "constant-or-marker"
+    if field[:1].isupper():
+        return "metadata"
+    return "data"
+
+
+def _collision_status(rows: List[Any]) -> str:
+    return "PASS" if not rows else "REVISE"
+
+
+def _alias_registry(report: Dict[str, Any]) -> Dict[str, Any]:
     aliases = [
         {"token": "Body", "namespace": "AppAI ontology",
          "definition": "deterministic organism runtime that owns effects and memory"},
@@ -854,15 +908,75 @@ def _alias_registry() -> Dict[str, Any]:
         {"token": "SPOREAGENT", "namespace": "reproduction lifecycle",
          "definition": "agent-readable launch artifact around a spore source receipt"},
     ]
-    folded = [a["token"].casefold() for a in aliases]
-    collisions = [token for token, count in Counter(folded).items() if count > 1]
+    files = report["files"]
+    maps = report["maps"]
+    alias_tokens = [a["token"] for a in aliases]
+    public_cli = maps["known_cli_commands"]
+    env_vars = maps["environment_variables"]
+    schema_fields = sorted({
+        s.split("field:", 1)[1]
+        for f in files for s in f["schemas"]
+        if s.startswith("field:")
+    })
+    schema_field_symbols = sorted({
+        "%s::%s::%s" % (
+            f["path"],
+            _schema_field_namespace(s.split("field:", 1)[1]),
+            s.split("field:", 1)[1],
+        )
+        for f in files for s in f["schemas"]
+        if s.startswith("field:")
+    })
+    python_symbols = sorted({
+        "%s::%s" % (f["path"], symbol)
+        for f in files for symbol in f["public_symbols"]
+    })
+    filesystem_paths = [f["path"] for f in files]
+    class_markers = [
+        token for token in alias_tokens
+        if token[:1].isupper() and not token.isupper()
+    ]
+    mode_markers = sorted(set(public_cli + [
+        "audit", "prove", "check", "fast", "strict", "json", "dry-run",
+    ]))
+    error_codes = sorted({
+        invariant for f in files for invariant in f["invariants"]
+    })
+    checks = {
+        "exact_duplicate_aliases": _collisions(alias_tokens),
+        "casefold_collisions": _collisions(alias_tokens, lambda x: x.casefold()),
+        "punctuation_collisions": _collisions(alias_tokens, _punctuation_key),
+        "prefix_collisions": _prefix_collisions(alias_tokens),
+        "class_marker_collisions": _collisions(class_markers, lambda x: x.casefold()),
+        "mode_marker_collisions": _collisions(mode_markers, lambda x: x.replace("-", "_")),
+        "error_code_collisions": _collisions(error_codes, lambda x: x.casefold()),
+        "public_cli_collisions": _collisions(public_cli, lambda x: x.replace("_", "-")),
+        "environment_variable_collisions": _collisions(env_vars, lambda x: x.casefold()),
+        "schema_field_collisions": _collisions(schema_field_symbols, lambda x: x.casefold()),
+        "python_symbol_collisions": _collisions(python_symbols, lambda x: x.casefold()),
+        "filesystem_case_collisions": _collisions(filesystem_paths, lambda x: x.casefold()),
+    }
+    check_rows = {
+        name: {"status": _collision_status(rows), "collisions": rows}
+        for name, rows in checks.items()
+    }
+    status = "PASS" if all(row["status"] == "PASS" for row in check_rows.values()) else "REVISE"
     return {
         "canonical_source": "documents/grimoire plus MantleOS doctrine",
+        "registry_rule": "one token has one meaning; undefined shorthand remains UNKNOWN",
         "aliases": aliases,
-        "collision_audit": {
-            "casefold_collisions": collisions,
-            "status": "PASS" if not collisions else "REVISE",
+        "surfaces": {
+            "alias_tokens": alias_tokens,
+            "class_markers": class_markers,
+            "mode_markers": mode_markers,
+            "error_codes": error_codes,
+            "public_cli": public_cli,
+            "environment_variables": env_vars,
+            "schema_fields": schema_fields,
+            "python_symbols": python_symbols,
+            "filesystem_paths": filesystem_paths,
         },
+        "collision_audit": {"status": status, "checks": check_rows},
         "tokenizer_status": "UNVERIFIABLE when tiktoken unavailable",
     }
 
@@ -1127,6 +1241,11 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d unresolved Mantle CLI references" % len(stale_commands))
     if report["alias_registry"]["collision_audit"]["status"] != "PASS":
         failures.append("alias registry collision audit failed")
+    alias_checks = report["alias_registry"]["collision_audit"].get("checks", {})
+    missing_alias_checks = [name for name in REQUIRED_ALIAS_COLLISION_CHECKS
+                            if name not in alias_checks]
+    if missing_alias_checks:
+        failures.append("missing alias collision checks: %s" % ", ".join(missing_alias_checks))
     missing_fields = {
         f["path"]: [field for field in REQUIRED_FILE_FIELDS if field not in f]
         for f in report.get("files", [])
@@ -1193,7 +1312,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["baseline"] = _baseline_stats(report)
     report["maps"] = _derived_maps(report)
     _enrich_file_relationships(report)
-    report["alias_registry"] = _alias_registry()
+    report["alias_registry"] = _alias_registry(report)
     report["coverage_matrix"] = _coverage_matrix(report)
     report["change_ledger"] = _change_ledger(report)
     report["merge_map"] = _merge_map(report)
@@ -1273,6 +1392,12 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + "\n".join("- %s: %s" % (name, report["project_model"][name]["status"])
                        for name in REQUIRED_PROJECT_MODEL_MAPS)
            + "\n\n"
+           "Vocabulary collision audit: %s\n"
+           % report["alias_registry"]["collision_audit"]["status"]
+           + "\n".join("- %s: %s" % (
+               name, report["alias_registry"]["collision_audit"]["checks"][name]["status"])
+                       for name in REQUIRED_ALIAS_COLLISION_CHECKS)
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -1293,6 +1418,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nCHANGE_LEDGER: %d per-file disposition receipt(s); dispositions=%s.\n"
            "\nVERSION_ALIGNMENT: %s; package=%s module=%s grimoire=%s/%s invariants=%s.\n"
            "\nPROJECT_MODEL: %s; maps=%d.\n"
+           "\nVOCABULARY_COLLISION_AUDIT: %s; checks=%d.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -1311,7 +1437,9 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["version_alignment"]["grimoire_stamp"],
               report["version_alignment"]["grimoire_version"],
               report["version_alignment"]["security_invariant_count"],
-              report["project_model"]["status"], len(REQUIRED_PROJECT_MODEL_MAPS)))
+              report["project_model"]["status"], len(REQUIRED_PROJECT_MODEL_MAPS),
+              report["alias_registry"]["collision_audit"]["status"],
+              len(REQUIRED_ALIAS_COLLISION_CHECKS)))
     return artifacts
 
 

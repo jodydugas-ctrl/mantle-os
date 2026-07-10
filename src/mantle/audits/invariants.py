@@ -2183,6 +2183,45 @@ def t_optimization_project_model_maps():
                    sum(1 for paths_ in organs.values() if paths_)))
 
 
+def t_optimization_vocabulary_collision_audit():
+    """OPT-4: the canonical vocabulary registry audits every required collision
+    class before machine-only text can be safely compressed or aliased."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    registry = report["alias_registry"]
+    audit = registry["collision_audit"]
+    checks = audit["checks"]
+    required = set(_opt.REQUIRED_ALIAS_COLLISION_CHECKS)
+    missing = sorted(required - set(checks))
+    checks_ok = (
+        audit["status"] == "PASS"
+        and not missing
+        and all(checks[name]["status"] == "PASS" for name in required)
+        and all(isinstance(checks[name]["collisions"], list) for name in required)
+    )
+    surfaces = registry["surfaces"]
+    surfaces_ok = (
+        registry["registry_rule"].startswith("one token has one meaning")
+        and registry["canonical_source"]
+        and len(registry["aliases"]) >= 6
+        and surfaces["alias_tokens"]
+        and surfaces["class_markers"]
+        and surfaces["mode_markers"]
+        and surfaces["error_codes"]
+        and surfaces["public_cli"]
+        and surfaces["schema_fields"]
+        and surfaces["python_symbols"]
+        and surfaces["filesystem_paths"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = checks_ok and surfaces_ok and strict_ok
+    return ok, ("checks=%d missing=%s aliases=%d tokenizer=%s"
+                % (len(required), missing or "none", len(registry["aliases"]),
+                   registry["tokenizer_status"]))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2350,6 +2389,7 @@ TESTS = [
     ("OPT-1 repository-inventory-audit",        t_optimization_inventory_audit),
     ("OPT-2 inventory-protocol-fields",         t_optimization_inventory_protocol_fields),
     ("OPT-3 project-model-maps",                t_optimization_project_model_maps),
+    ("OPT-4 vocabulary-collision-audit",        t_optimization_vocabulary_collision_audit),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

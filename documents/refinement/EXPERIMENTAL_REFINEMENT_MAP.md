@@ -56,6 +56,29 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 17 Receipt
+
+Function served: protocol section 6 requires one canonical vocabulary registry and a collision
+audit before machine-only prompt or doctrine text can be safely compressed. The previous registry
+only checked casefold collisions across a small alias list.
+
+Changes:
+
+- Added `REQUIRED_ALIAS_COLLISION_CHECKS` as the vocabulary collision-audit contract.
+- Expanded `ALIAS_REGISTRY` to audit exact aliases, casefold, punctuation, prefix, class markers,
+  mode markers, error codes, public CLI commands, environment variables, schema fields, Python
+  symbols, and filesystem case collisions.
+- Namespaced schema field and Python symbol checks so metadata/data fields and per-module symbols
+  are audited without flattening unrelated schemas into false collisions.
+- Extended strict optimization audit and generated receipts with vocabulary collision status.
+- Added invariant `OPT-4 vocabulary-collision-audit`.
+- Updated public invariant-count anchors from 94 to 95.
+
+Deletion decision: no files were deleted. This pass makes later aliasing/compression safer; it
+does not introduce a new dialect or rewrite doctrine.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 16 Receipt
 
 Function served: protocol section 5 requires a project-wide model before local rewriting. The
