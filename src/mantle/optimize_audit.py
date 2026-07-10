@@ -544,10 +544,23 @@ def _is_python_build_output(rel: str) -> bool:
     return any(part.endswith(".egg-info") for part in parts)
 
 
+def _is_lockfile(rel: str) -> bool:
+    return os.path.basename(rel.lower()) in {
+        "package-lock.json",
+        "npm-shrinkwrap.json",
+        "poetry.lock",
+        "pdm.lock",
+        "uv.lock",
+        "yarn.lock",
+    }
+
+
 def _category(rel: str, text: bool) -> str:
     p = rel.lower()
     if _is_python_build_output(p):
         return "O cache/build output"
+    if _is_lockfile(p):
+        return "M lockfile"
     if not text:
         return "N binary/media"
     if p.startswith(".github/") or p in {".gitignore", "pyproject.toml"}:
@@ -583,6 +596,8 @@ def _purpose(rel: str, category: str) -> str:
         return "repository overview and checked certification-count anchor"
     if category.startswith("O "):
         return "generated cache/build output; inventory-only residue"
+    if category.startswith("M "):
+        return "package-manager lockfile; modify only through owning package manager"
     if rel.endswith("pyproject.toml"):
         return "package metadata and dependency declaration"
     if rel.startswith("documents/grimoire/"):
@@ -811,6 +826,11 @@ def _file_disposition(file_row: Dict[str, Any], status: Optional[str]) -> Dict[s
         return {
             "disposition": "inventory-only",
             "reason": "cache/build output; inventory and ignore-rule review only",
+        }
+    if category.startswith("M "):
+        return {
+            "disposition": "inventory-only",
+            "reason": "lockfile; modify only through the owning package manager",
         }
     if not file_row["text"] or category.startswith("N "):
         return {
@@ -1070,8 +1090,12 @@ def inventory_file(path: str, root: str, tracked: set, untracked: set) -> Dict[s
         "text": is_text,
         "encoding": enc,
         "language": _language(rel),
-        "generated": category.startswith("O "),
-        "generator": "python packaging/editable install" if _is_python_build_output(rel) else None,
+        "generated": category.startswith(("J ", "O ")) or _is_lockfile(rel),
+        "generator": (
+            "python packaging/editable install" if _is_python_build_output(rel)
+            else "owning package manager" if _is_lockfile(rel)
+            else None
+        ),
         "purpose": _purpose(rel, category),
         "subsystem": _subsystem(rel),
         "imports": imports,
@@ -1099,7 +1123,7 @@ def inventory_file(path: str, root: str, tracked: set, untracked: set) -> Dict[s
         "complexity_indicators": _complexity_indicators(text, imports, public),
         "duplication_indicators": {"exact_duplicate_paths": [], "near_duplicate_note": "not-analyzed"},
         "optimization_eligibility": (
-            "inventory-only" if (not is_text or category.startswith("O "))
+            "inventory-only" if (not is_text or category.startswith(("M ", "O ")))
             else "eligible-for-pass-review"
         ),
         "risk": "high" if rel.startswith("src/mantle/core/") else "normal",

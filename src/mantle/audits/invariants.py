@@ -2060,6 +2060,19 @@ def t_optimization_inventory_audit():
         and egg_info_disposition["disposition"] == "inventory-only"
         and "cache/build output" in egg_info_disposition["reason"]
     )
+    lockfile_rows = [
+        f for f in report["files"]
+        if f["path"] == "examples/tests/package-lock.json"
+    ]
+    lockfile_ok = (
+        len(lockfile_rows) == 1
+        and lockfile_rows[0]["category"] == "M lockfile"
+        and lockfile_rows[0]["generated"] is True
+        and lockfile_rows[0]["generator"] == "owning package manager"
+        and lockfile_rows[0]["optimization_eligibility"] == "inventory-only"
+        and lockfile_rows[0]["disposition"] == "inventory-only"
+        and "owning package manager" in lockfile_rows[0]["skip_block_reason"]
+    )
     test_index = report["test_report"]
     test_index_ok = (
         test_index["status"] == "verification-index"
@@ -2087,6 +2100,7 @@ def t_optimization_inventory_audit():
             and outside_source and aliases_ok and coverage_ok and cli_refs_ok and path_refs_ok
             and cli_registry_ok and strict_ok and baseline_ok and disposition_ok
             and build_output_ok
+            and lockfile_ok
             and test_index_ok and observed_ok,
             "%d files inventoried; %d ledger rows; %d required artifacts outside source tree; %d CLI refs and %d path refs checked; token status=%s"
             % (report["file_count"], len(report["change_ledger"]), len(required),

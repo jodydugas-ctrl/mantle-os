@@ -563,6 +563,72 @@
       ],
       "receipt": "Pass 34 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
       "verified": true
+    },
+    {
+      "path": "src/mantle/optimize_audit.py",
+      "chunk_id": "pass-35.optimize-audit.lockfile-classification",
+      "chunk_kind": "python inventory classification and disposition helper",
+      "status": "changed-verified",
+      "selected_candidate": "Classify package-manager lockfiles as lockfiles and keep them inventory-only.",
+      "rejected_candidates": [
+        "Keep examples/tests/package-lock.json as a test file eligible for semantic review",
+        "Treat lockfiles as ordinary generated cache output"
+      ],
+      "preserved_invariants": [
+        "lockfiles remain inventoried",
+        "lockfiles are modified only by their owning package manager",
+        "runtime behavior is unchanged",
+        "unknown categories still fail strict audit"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-1 repository-inventory-audit",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: inventory semantics pass",
+      "complexity_delta": "adds one small lockfile classifier and reuses existing inventory-only disposition",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "future lockfile names may need explicit classifier extension"
+      ],
+      "receipt": "Pass 35 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-35.invariants.lockfile-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Strengthen OPT-1 to prove the demo-smoke package-lock is a lockfile and inventory-only.",
+      "rejected_candidates": [
+        "Trust lockfile classification without invariant coverage",
+        "Add a new invariant count for a narrow classifier proof"
+      ],
+      "preserved_invariants": [
+        "security invariant suite remains stdlib-only",
+        "no production runtime dependency changes",
+        "manual lockfile optimization remains blocked"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-1 repository-inventory-audit",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: proof semantics pass",
+      "complexity_delta": "adds focused lockfile assertions",
+      "performance_delta": "invariant suite cost unchanged in practice",
+      "risks": [
+        "whole-project completion still requires remaining chunk and subsystem convergence"
+      ],
+      "receipt": "Pass 35 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
     }
   ]
 }
