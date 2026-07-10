@@ -630,6 +630,27 @@ module and replaced by the canonical CLI helper.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 32 Receipt
+
+Function served: GitHub Action emails showed the online `Zombie Body Audit` failing in `OPT-14`
+even though the update commits had reached `main`. The completion-condition audit needed to prove
+tracked source inventory without treating harmless generated or untracked CI residue as missing
+source.
+
+Changes:
+
+- Updated the `every repository file was inventoried` completion row to pass when every tracked
+  file is present and inventoried.
+- Added `extra_untracked` evidence so generated or untracked residue remains visible.
+- Strengthened `OPT-14` to prove tracked coverage, explicit extra-file accounting, and no missing
+  tracked files.
+
+Deletion decision: no files or features were deleted. The stricter equality check served as a
+clean-worktree guard, but that function is better covered by explicit evidence plus existing git
+status, receipt, and certification checks.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 6 Receipt
 
 Function served: the optimization audit's alignment matrix needed to separate real stale

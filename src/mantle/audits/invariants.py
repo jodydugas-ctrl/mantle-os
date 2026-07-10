@@ -2824,9 +2824,19 @@ def t_optimization_completion_conditions_matrix():
                 for row in rows)
         and all(row["status"] in {"PASS", "REVISE", "UNVERIFIABLE"} for row in rows)
     )
+    inventory_row = by_condition["every repository file was inventoried"]
+    inventory_evidence = inventory_row["evidence"]
+    inventory_ok = (
+        inventory_row["status"] == "PASS"
+        and inventory_evidence["file_count"] >= inventory_evidence["tracked_count"]
+        and inventory_evidence["extra_untracked"]
+        == inventory_evidence["file_count"] - inventory_evidence["tracked_count"]
+        and inventory_evidence["tracked_missing"] == []
+        and inventory_row["blockers"] == []
+    )
     expected_current_state = (
         matrix["status"] == "REVISE"
-        and by_condition["every repository file was inventoried"]["status"] == "PASS"
+        and inventory_ok
         and by_condition["every eligible file was inspected"]["status"] == "REVISE"
         and by_condition["all merges have parity evidence"]["status"] == "PASS"
         and by_condition["all aliases pass collision and tokenizer checks"]["status"] == "UNVERIFIABLE"

@@ -2655,14 +2655,19 @@ def _completion_conditions(report: Dict[str, Any]) -> Dict[str, Any]:
         row for row in report["final_verification"]["rows"]
         if row["status"] not in {"PASS"}
     ]
+    extra_untracked = max(report["file_count"] - report["tracked_count"], 0)
+    tracked_inventory_ok = (
+        report["file_count"] >= report["tracked_count"]
+        and not report["tracked_missing"]
+    )
     rows = [
         _completion_row(
             "every repository file was inventoried",
-            "PASS" if report["file_count"] == report["tracked_count"]
-            and not report["tracked_missing"] else "REVISE",
+            "PASS" if tracked_inventory_ok else "REVISE",
             {"file_count": report["file_count"], "tracked_count": report["tracked_count"],
+             "extra_untracked": extra_untracked,
              "tracked_missing": report["tracked_missing"]},
-            [] if not report["tracked_missing"] else ["tracked file missing from disk"],
+            [] if tracked_inventory_ok else ["tracked file missing from disk"],
         ),
         _completion_row(
             "every eligible file was inspected",

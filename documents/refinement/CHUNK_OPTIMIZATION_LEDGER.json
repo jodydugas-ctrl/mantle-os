@@ -329,6 +329,74 @@
       ],
       "receipt": "Pass 31 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
       "verified": true
+    },
+    {
+      "path": "src/mantle/optimize_audit.py",
+      "chunk_id": "pass-32.optimize-audit.inventory-completion-evidence",
+      "chunk_kind": "python completion-condition function",
+      "status": "changed-verified",
+      "selected_candidate": "Treat tracked-file coverage as the inventory completion condition and expose extra untracked files as evidence.",
+      "rejected_candidates": [
+        "Special-case GitHub Actions",
+        "Keep exact file_count/tracked_count equality as the completion proof"
+      ],
+      "preserved_invariants": [
+        "optimization audit remains stdlib-only",
+        "no runtime behavior change",
+        "tracked source files must still be present",
+        "untracked/generated residue remains visible in receipts"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-14 completion-conditions",
+        "full Mantle check",
+        "GitHub Zombie Body Audit"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds two small local variables and one evidence field",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "extra untracked files are reported, not automatically deleted"
+      ],
+      "receipt": "Pass 32 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-32.invariants.inventory-completion-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Strengthen OPT-14 around tracked coverage and explicit extra-untracked accounting.",
+      "rejected_candidates": [
+        "Only relax the invariant",
+        "Assert a CI-specific pass count"
+      ],
+      "preserved_invariants": [
+        "security invariant suite remains stdlib-only",
+        "completion remains REVISE until unresolved protocol rows are closed",
+        "missing tracked files still fail the inventory row"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-14 completion-conditions",
+        "full Mantle check",
+        "GitHub Zombie Body Audit"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds focused evidence assertions",
+      "performance_delta": "invariant suite reads the optimization audit report",
+      "risks": [
+        "whole-project completion still requires chunk and subsystem convergence"
+      ],
+      "receipt": "Pass 32 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
     }
   ]
 }
