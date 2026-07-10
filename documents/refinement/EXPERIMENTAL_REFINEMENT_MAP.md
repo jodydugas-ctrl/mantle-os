@@ -78,6 +78,33 @@ protocol from skipping unresolved middle steps while still allowing smaller rece
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 29 Receipt
+
+Function served: protocol section 7 requires characterization tests for poorly specified behavior
+before merge, deletion, or semantic chunk rewrite. The execution-order matrix named this step, but
+the queued test obligations were not yet first-class audit evidence.
+
+Changes:
+
+- Added `CHARACTERIZATION_TEST_FIELDS`.
+- Added `characterization_tests` to `python -m mantle optimize-audit`.
+- Each merge candidate now has a non-mutating characterization receipt with behavior surface,
+  specification status, existing evidence, required focused tests, blockers, and
+  `mutation_allowed: False`.
+- Strict audit now requires characterization rows for every merge candidate.
+- The section-20 execution-order row for characterization tests now reports ledger evidence instead
+  of a hard-coded placeholder.
+- `ALIGNMENT_MATRIX`, `FINAL_RECEIPT`, CLI output, and JSON output now summarize characterization
+  totals.
+- Added invariant `OPT-16 characterization-tests`.
+- Updated public invariant-count anchors from 106 to 107.
+
+Deletion decision: no files, functions, documents, or aliases were deleted. This pass preserves all
+candidate surfaces until behavior can be specified by focused characterization tests and the full
+proof path.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 27 Receipt
 
 Function served: protocol section 19 lists the exact conditions required before PASS may be

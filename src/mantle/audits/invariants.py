@@ -2304,6 +2304,60 @@ def t_optimization_merge_parity_review():
                 % (len(rows), parity["totals"], len(malformed)))
 
 
+def t_optimization_characterization_tests():
+    """OPT-16: risky merge or rewrite candidates carry explicit characterization
+    test receipts before mutation is allowed."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    candidates = report["merge_map"]["merge_candidates"]
+    ledger = report["characterization_tests"]
+    rows = ledger["rows"]
+    by_candidate = {row["candidate_id"]: row for row in rows}
+    required = set(_opt.CHARACTERIZATION_TEST_FIELDS)
+    candidate_ids = {candidate["candidate_id"] for candidate in candidates}
+    malformed = [row["candidate_id"] for row in rows if required - set(row)]
+    row_shape_ok = (
+        candidate_ids == set(by_candidate)
+        and not malformed
+        and ledger["missing_candidates"] == []
+        and ledger["required_fields"] == list(_opt.CHARACTERIZATION_TEST_FIELDS)
+        and all(row["source"] == "merge-candidate-analysis" for row in rows)
+        and all(row["target_items"] for row in rows)
+        and all(row["required_tests"] for row in rows)
+        and all(row["mutation_allowed"] is False for row in rows)
+        and all(row["blockers"] for row in rows)
+        and all(row["receipt"] for row in rows)
+    )
+    required_test_names = {
+        "input/output parity matrix",
+        "edge-case and exception comparison",
+        "caller compatibility assertions",
+        "security/privacy boundary assertions",
+        "focused characterization tests plus python -m mantle check",
+    }
+    status_ok = (
+        ledger["status"] == "REVISE"
+        and ledger["totals"].get("QUEUED", 0) > 0
+        and ledger["totals"].get("BLOCKED", 0) > 0
+        and "Section 7 characterization tests" in ledger["rule"]
+        and all(set(row["required_tests"]) == required_test_names for row in rows)
+    )
+    execution_row = {
+        row["name"]: row for row in report["execution_order"]["rows"]
+    }["Characterization tests for poorly specified behavior"]
+    execution_ok = (
+        execution_row["status"] == ledger["status"]
+        and execution_row["evidence"]["characterization_tests"] == ledger["totals"]
+        and execution_row["blockers"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and status_ok and execution_ok and strict_ok
+    return ok, ("rows=%d totals=%s malformed=%d"
+                % (len(rows), ledger["totals"], len(malformed)))
+
+
 def t_optimization_file_completion_gate():
     """OPT-6: the optimization audit records section 9/12 file and chunk
     completion state without claiming pending files are complete."""
@@ -2866,6 +2920,7 @@ TESTS = [
     ("OPT-4 vocabulary-collision-audit",        t_optimization_vocabulary_collision_audit),
     ("OPT-5 merge-candidate-analysis",          t_optimization_merge_candidate_analysis),
     ("OPT-11 merge-parity-review",              t_optimization_merge_parity_review),
+    ("OPT-16 characterization-tests",           t_optimization_characterization_tests),
     ("OPT-6 file-completion-gate",              t_optimization_file_completion_gate),
     ("OPT-7 subsystem-convergence",             t_optimization_subsystem_convergence),
     ("OPT-8 ripple-queue",                      t_optimization_ripple_queue),

@@ -158,6 +158,19 @@ MERGE_PARITY_FIELDS = (
     "decision",
     "receipt",
 )
+CHARACTERIZATION_TEST_FIELDS = (
+    "candidate_id",
+    "source",
+    "target_items",
+    "behavior_surface",
+    "specification_status",
+    "characterization_status",
+    "existing_evidence",
+    "required_tests",
+    "mutation_allowed",
+    "blockers",
+    "receipt",
+)
 FILE_COMPLETION_FIELDS = (
     "path",
     "status",
@@ -1522,6 +1535,74 @@ def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _characterization_tests(report: Dict[str, Any]) -> Dict[str, Any]:
+    rows = []
+    observed = report["test_report"]["observed_commands"]
+    observed_green = bool(observed) and all(
+        r.get("exit_code") == 0 and not r.get("timed_out") for r in observed
+    )
+    for candidate in report["merge_map"]["merge_candidates"]:
+        blocked = candidate["decision"] == "blocked"
+        status = "BLOCKED" if blocked else "QUEUED"
+        rows.append({
+            "candidate_id": candidate["candidate_id"],
+            "source": "merge-candidate-analysis",
+            "target_items": candidate["items"],
+            "behavior_surface": {
+                "kind": candidate["kind"],
+                "shared_key": candidate["shared_key"],
+                "authority_compatibility": candidate["authority_compatibility"],
+                "side_effect_compatibility": candidate["side_effect_compatibility"],
+                "security_compatibility": candidate["security_compatibility"],
+                "lifecycle_compatibility": candidate["lifecycle_compatibility"],
+                "proof_compatibility": candidate["proof_compatibility"],
+                "callers_known": candidate["callers_known"],
+            },
+            "specification_status": (
+                "underspecified-or-boundary-divergent"
+                if blocked else "candidate-needs-edge-case-specification"
+            ),
+            "characterization_status": status,
+            "existing_evidence": {
+                "parity_review": report["merge_map"]["parity_review"]["status"],
+                "observed_green_checks": observed_green,
+                "observed_command_count": len(observed),
+            },
+            "required_tests": [
+                "input/output parity matrix",
+                "edge-case and exception comparison",
+                "caller compatibility assertions",
+                "security/privacy boundary assertions",
+                "focused characterization tests plus python -m mantle check",
+            ],
+            "mutation_allowed": False,
+            "blockers": (
+                ["candidate is blocked because safety, authority, or boundary semantics differ"]
+                if blocked else
+                ["candidate-specific characterization tests are not yet attached"]
+            ),
+            "receipt": (
+                "Section 7 characterization receipt: candidate remains non-mutating "
+                "until behavior is specified by focused tests and full proof gates."
+            ),
+        })
+    totals = Counter(row["characterization_status"] for row in rows)
+    return {
+        "status": "REVISE" if rows else "PASS",
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_candidates": [
+            c["candidate_id"] for c in report["merge_map"]["merge_candidates"]
+            if c["candidate_id"] not in {row["candidate_id"] for row in rows}
+        ],
+        "required_fields": list(CHARACTERIZATION_TEST_FIELDS),
+        "rule": (
+            "Section 7 characterization tests must specify poorly described behavior "
+            "before merge, deletion, or semantic rewrite."
+        ),
+    }
+
+
 def _chunk_basis(file_row: Dict[str, Any]) -> Tuple[str, int]:
     path = file_row["path"]
     if not file_row["text"]:
@@ -2542,9 +2623,12 @@ def _execution_order(report: Dict[str, Any]) -> Dict[str, Any]:
         _execution_row(6, "Duplicate and merge-candidate analysis", "PASS",
                        {"candidates": len(report["merge_map"]["merge_candidates"]),
                         "parity": report["merge_map"]["parity_review"]["totals"]}),
-        _execution_row(7, "Characterization tests for poorly specified behavior", "REVISE",
-                       {"test_report": report["test_report"]["status"]},
-                       ["candidate-specific characterization tests remain queued"]),
+        _execution_row(7, "Characterization tests for poorly specified behavior",
+                       report["characterization_tests"]["status"],
+                       {"characterization_tests": report["characterization_tests"]["totals"],
+                        "test_report": report["test_report"]["status"]},
+                       ["candidate-specific characterization tests remain queued"]
+                       if report["characterization_tests"]["status"] != "PASS" else []),
         _execution_row(8, "File-by-file, chunk-by-chunk optimization", "REVISE",
                        {"file_completion": report["file_completion_gate"]["totals"]},
                        ["pending eligible chunks remain"]),
@@ -2900,6 +2984,25 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d malformed merge parity rows" % len(malformed_parity))
     if merge_map.get("merge_candidates") and not parity.get("rows"):
         failures.append("merge parity review missing")
+    characterization = report.get("characterization_tests", {})
+    candidate_ids = {c.get("candidate_id") for c in merge_map.get("merge_candidates", [])}
+    characterization_ids = {
+        row.get("candidate_id") for row in characterization.get("rows", [])
+    }
+    missing_characterization = sorted(candidate_ids - characterization_ids)
+    if missing_characterization:
+        failures.append("missing characterization rows: %s"
+                        % ", ".join(missing_characterization))
+    malformed_characterization = [
+        row.get("candidate_id", "<unknown>")
+        for row in characterization.get("rows", [])
+        if any(field not in row for field in CHARACTERIZATION_TEST_FIELDS)
+    ]
+    if malformed_characterization:
+        failures.append("%d malformed characterization rows"
+                        % len(malformed_characterization))
+    if merge_map.get("merge_candidates") and not characterization.get("rows"):
+        failures.append("characterization test ledger missing")
     completion = report.get("file_completion_gate", {})
     missing_completion = completion.get("missing_fields") or []
     if missing_completion:
@@ -3060,6 +3163,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["change_ledger"] = _change_ledger(report)
     report["merge_map"] = _merge_map(report)
     report["test_report"] = _test_report(report, observed_checks)
+    report["characterization_tests"] = _characterization_tests(report)
     report["performance_report"] = _performance_report(report)
     report["version_alignment"] = _version_alignment(root, _invariant_count(root))
     report["project_model"] = _project_model(report)
@@ -3161,6 +3265,13 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + "\n".join("- %s: %s" % (row["candidate_id"], row["status"])
                        for row in report["merge_map"]["parity_review"]["rows"])
            + "\n\n"
+           "Characterization tests: %s; totals=%s\n"
+           % (report["characterization_tests"]["status"],
+              report["characterization_tests"]["totals"])
+           + "\n".join("- %s: %s" % (
+               row["candidate_id"], row["characterization_status"])
+                       for row in report["characterization_tests"]["rows"])
+           + "\n\n"
            "File completion gate: %s; totals=%s\n"
            % (report["file_completion_gate"]["status"],
               report["file_completion_gate"]["totals"])
@@ -3237,6 +3348,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nVOCABULARY_COLLISION_AUDIT: %s; checks=%d.\n"
            "\nMERGE_CANDIDATES: %d candidate(s); decisions=%s; no merges performed.\n"
            "\nMERGE_PARITY_REVIEW: %s; totals=%s; safe_to_merge_now=0.\n"
+           "\nCHARACTERIZATION_TESTS: %s; totals=%s; mutation_allowed=0.\n"
            "\nFILE_COMPLETION_GATE: %s; totals=%s.\n"
            "\nSUBSYSTEM_CONVERGENCE: %s; totals=%s.\n"
            "\nRIPPLE_QUEUE: %s; totals=%s; surfaces=%d.\n"
@@ -3271,6 +3383,8 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               dict(sorted(report["merge_map"]["candidate_decisions"].items())),
               report["merge_map"]["parity_review"]["status"],
               report["merge_map"]["parity_review"]["totals"],
+              report["characterization_tests"]["status"],
+              report["characterization_tests"]["totals"],
               report["file_completion_gate"]["status"],
               report["file_completion_gate"]["totals"],
               report["subsystem_convergence"]["status"],
@@ -3330,6 +3444,10 @@ def main(argv=None) -> int:
                               "status": report["merge_map"]["parity_review"]["status"],
                               "totals": report["merge_map"]["parity_review"]["totals"],
                           },
+                          "characterization_tests": {
+                              "status": report["characterization_tests"]["status"],
+                              "totals": report["characterization_tests"]["totals"],
+                          },
                           "final_verification": {
                               "status": report["final_verification"]["status"],
                               "totals": report["final_verification"]["totals"],
@@ -3369,6 +3487,10 @@ def main(argv=None) -> int:
         print("  parity    : %s %s" % (
             report["merge_map"]["parity_review"]["status"],
             report["merge_map"]["parity_review"]["totals"],
+        ))
+        print("  char-test : %s %s" % (
+            report["characterization_tests"]["status"],
+            report["characterization_tests"]["totals"],
         ))
         if observed:
             print("  observed   : %d command(s)" % len(observed))
