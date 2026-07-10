@@ -56,6 +56,32 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 24 Receipt
+
+Function served: protocol section 7 requires steelman, caller analysis, parity dimensions, mode
+complexity review, compatibility-alias decisions, and proof requirements before any merge candidate
+can be consolidated or deleted. The audit found candidates, but the merge map did not yet carry the
+per-candidate parity evidence.
+
+Changes:
+
+- Added `MERGE_PARITY_FIELDS` as a checked row contract.
+- Added `merge_map.parity_review` to `python -m mantle optimize-audit`.
+- Every merge candidate now records steelman rationale, caller matrix, authority/side-effect/
+  security/lifecycle/proof dimensions, mode-complexity risk, required proof gates, and
+  `safe_to_merge_now: false`.
+- The duplicate-concept project model now points at the same parity review.
+- Strict audit now requires one parity row for every merge candidate.
+- `ALIGNMENT_MATRIX`, `FINAL_RECEIPT`, CLI output, and JSON output now summarize parity totals.
+- Added invariant `OPT-11 merge-parity-review`.
+- Updated public invariant-count anchors from 101 to 102.
+
+Deletion decision: no files, functions, documents, or aliases were deleted. This pass converts
+possible duplication into receipted review evidence and keeps all candidates unmerged until parity
+and proof gates are satisfied.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 23 Receipt
 
 Function served: protocol sections 15 and 16 require final verification coverage and blind

@@ -144,6 +144,20 @@ MERGE_CANDIDATE_FIELDS = (
     "decision",
     "reason",
 )
+MERGE_PARITY_FIELDS = (
+    "candidate_id",
+    "status",
+    "steelman",
+    "items",
+    "caller_matrix",
+    "parity_dimensions",
+    "mode_complexity",
+    "compatibility_alias",
+    "safe_to_merge_now",
+    "proof_required",
+    "decision",
+    "receipt",
+)
 FILE_COMPLETION_FIELDS = (
     "path",
     "status",
@@ -1302,9 +1316,70 @@ def _merge_candidates(report: Dict[str, Any]) -> List[Dict[str, Any]]:
     return candidates
 
 
+def _merge_parity_review(candidates: List[Dict[str, Any]]) -> Dict[str, Any]:
+    rows = []
+    for candidate in candidates:
+        dimensions = [
+            {"name": "authority", "compatible": candidate["authority_compatibility"] != "unknown"},
+            {"name": "side effects", "compatible": candidate["side_effect_compatibility"]},
+            {"name": "security/privacy", "compatible": candidate["security_compatibility"]},
+            {"name": "lifecycle", "compatible": candidate["lifecycle_compatibility"]},
+            {"name": "proof path", "compatible": candidate["proof_compatibility"]},
+        ]
+        incompatible = [d["name"] for d in dimensions if not d["compatible"]]
+        if candidate["decision"] == "blocked":
+            status = "BLOCKED"
+            decision = "keep separate; safety or authority envelope differs"
+        elif candidate["decision"] == "low-confidence":
+            status = "LOW_CONFIDENCE"
+            decision = "keep separate; name similarity is not behavior parity"
+        else:
+            status = "REVIEW_REQUIRED"
+            decision = "do not merge until manual edge-case parity and proof gates pass"
+        rows.append({
+            "candidate_id": candidate["candidate_id"],
+            "status": status,
+            "steelman": (
+                "These surfaces may be separate because authority, caller expectations, "
+                "proof paths, lifecycle placement, or safety boundaries may differ even "
+                "when names look similar."
+            ),
+            "items": candidate["items"],
+            "caller_matrix": candidate["callers_known"],
+            "parity_dimensions": dimensions,
+            "mode_complexity": (
+                "merge would add ambiguous mode branching" if incompatible
+                else "mode consolidation remains unproven without edge-case tests"
+            ),
+            "compatibility_alias": "not authorized; no public surface is migrated by this audit",
+            "safe_to_merge_now": False,
+            "proof_required": [
+                "caller review",
+                "input/output parity matrix",
+                "edge-case and exception comparison",
+                "security/privacy boundary review",
+                "focused tests plus python -m mantle check",
+            ],
+            "decision": decision,
+            "receipt": (
+                "Candidate reviewed for section-7 merge prerequisites; no code was merged "
+                "or deleted in this pass."
+            ),
+        })
+    totals = Counter(row["status"] for row in rows)
+    return {
+        "status": "REVISE" if rows else "PASS",
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_candidates": [],
+        "rule": "Section 7 merge parity evidence is required before any candidate can merge.",
+    }
+
+
 def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
     candidates = _merge_candidates(report)
     decisions = Counter(c["decision"] for c in candidates)
+    parity_review = _merge_parity_review(candidates)
     return {
         "status": "candidate-analysis",
         "merges_performed_by_this_audit": [],
@@ -1314,8 +1389,11 @@ def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
         ],
         "duplicate_hashes": report["maps"]["duplicate_hashes"],
         "candidate_fields": list(MERGE_CANDIDATE_FIELDS),
+        "parity_fields": list(MERGE_PARITY_FIELDS),
         "merge_candidates": candidates,
         "candidate_decisions": dict(sorted(decisions.items())),
+        "parity_review": parity_review,
+        "parity_status": parity_review["status"],
         "merge_policy": (
             "no candidate is merged by this audit; each requires steelman, parity matrix, "
             "caller analysis, and proof gates before mutation"
@@ -2086,6 +2164,7 @@ def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
             "exact_duplicate_hashes": maps["duplicate_hashes"],
             "merge_candidates": report["merge_map"]["merge_candidates"],
             "candidate_decisions": report["merge_map"]["candidate_decisions"],
+            "parity_review": report["merge_map"]["parity_review"],
             "near_duplicate_status": (
                 "CANDIDATES-QUEUED; semantic merge requires parity review before mutation"
             ),
@@ -2227,6 +2306,21 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d malformed merge candidate rows" % len(malformed_candidates))
     if merge_map.get("status") != "candidate-analysis":
         failures.append("merge candidate analysis missing")
+    parity = merge_map.get("parity_review", {})
+    candidate_ids = {c.get("candidate_id") for c in merge_map.get("merge_candidates", [])}
+    parity_ids = {row.get("candidate_id") for row in parity.get("rows", [])}
+    missing_parity = sorted(candidate_ids - parity_ids)
+    if missing_parity:
+        failures.append("missing merge parity rows: %s" % ", ".join(missing_parity))
+    malformed_parity = [
+        row.get("candidate_id", "<unknown>")
+        for row in parity.get("rows", [])
+        if any(field not in row for field in MERGE_PARITY_FIELDS)
+    ]
+    if malformed_parity:
+        failures.append("%d malformed merge parity rows" % len(malformed_parity))
+    if merge_map.get("merge_candidates") and not parity.get("rows"):
+        failures.append("merge parity review missing")
     completion = report.get("file_completion_gate", {})
     missing_completion = completion.get("missing_fields") or []
     if missing_completion:
@@ -2423,6 +2517,12 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            % (len(report["merge_map"]["merge_candidates"]),
               dict(sorted(report["merge_map"]["candidate_decisions"].items())))
            + "\n\n"
+           "Merge parity review: %s; totals=%s\n"
+           % (report["merge_map"]["parity_review"]["status"],
+              report["merge_map"]["parity_review"]["totals"])
+           + "\n".join("- %s: %s" % (row["candidate_id"], row["status"])
+                       for row in report["merge_map"]["parity_review"]["rows"])
+           + "\n\n"
            "File completion gate: %s; totals=%s\n"
            % (report["file_completion_gate"]["status"],
               report["file_completion_gate"]["totals"])
@@ -2475,6 +2575,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nPROJECT_MODEL: %s; maps=%d.\n"
            "\nVOCABULARY_COLLISION_AUDIT: %s; checks=%d.\n"
            "\nMERGE_CANDIDATES: %d candidate(s); decisions=%s; no merges performed.\n"
+           "\nMERGE_PARITY_REVIEW: %s; totals=%s; safe_to_merge_now=0.\n"
            "\nFILE_COMPLETION_GATE: %s; totals=%s.\n"
            "\nSUBSYSTEM_CONVERGENCE: %s; totals=%s.\n"
            "\nRIPPLE_QUEUE: %s; totals=%s; surfaces=%d.\n"
@@ -2504,6 +2605,8 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               len(REQUIRED_ALIAS_COLLISION_CHECKS),
               len(report["merge_map"]["merge_candidates"]),
               dict(sorted(report["merge_map"]["candidate_decisions"].items())),
+              report["merge_map"]["parity_review"]["status"],
+              report["merge_map"]["parity_review"]["totals"],
               report["file_completion_gate"]["status"],
               report["file_completion_gate"]["totals"],
               report["subsystem_convergence"]["status"],
@@ -2551,6 +2654,10 @@ def main(argv=None) -> int:
                           "file_count": report["file_count"],
                           "categories": report["categories"],
                           "token_status": report["token_status"],
+                          "merge_parity_review": {
+                              "status": report["merge_map"]["parity_review"]["status"],
+                              "totals": report["merge_map"]["parity_review"]["totals"],
+                          },
                           "final_verification": {
                               "status": report["final_verification"]["status"],
                               "totals": report["final_verification"]["totals"],
@@ -2571,6 +2678,10 @@ def main(argv=None) -> int:
             print("    %-16s %s" % (name, path))
         if report["token_status"].get("tiktoken unavailable"):
             print("  tokens     : UNVERIFIABLE (tiktoken unavailable)")
+        print("  parity    : %s %s" % (
+            report["merge_map"]["parity_review"]["status"],
+            report["merge_map"]["parity_review"]["totals"],
+        ))
         if observed:
             print("  observed   : %d command(s)" % len(observed))
             for row in observed:

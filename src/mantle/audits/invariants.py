@@ -2261,6 +2261,49 @@ def t_optimization_merge_candidate_analysis():
                 % (len(candidates), decisions, len(malformed)))
 
 
+def t_optimization_merge_parity_review():
+    """OPT-11: every merge candidate has section-7 parity evidence before any
+    implementation can be merged, aliased, or deleted."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    merge_map = report["merge_map"]
+    candidates = merge_map["merge_candidates"]
+    parity = merge_map["parity_review"]
+    rows = parity["rows"]
+    required = set(_opt.MERGE_PARITY_FIELDS)
+    by_candidate = {row["candidate_id"]: row for row in rows}
+    candidate_ids = {candidate["candidate_id"] for candidate in candidates}
+    malformed = [row["candidate_id"] for row in rows if required - set(row)]
+    row_shape_ok = (
+        candidate_ids == set(by_candidate)
+        and not malformed
+        and parity["missing_candidates"] == []
+        and all(row["status"] in {"BLOCKED", "LOW_CONFIDENCE", "REVIEW_REQUIRED"}
+                for row in rows)
+        and all(row["safe_to_merge_now"] is False for row in rows)
+        and all(row["steelman"] and row["caller_matrix"] is not None for row in rows)
+        and all(len(row["parity_dimensions"]) == 5 for row in rows)
+        and all(row["proof_required"] for row in rows)
+    )
+    decision_ok = (
+        parity["status"] == "REVISE"
+        and merge_map["parity_status"] == "REVISE"
+        and parity["totals"].get("BLOCKED", 0) > 0
+        and parity["totals"].get("REVIEW_REQUIRED", 0) > 0
+        and merge_map["merges_performed_by_this_audit"] == []
+        and "Section 7 merge parity evidence" in parity["rule"]
+    )
+    project_model_ok = (
+        report["project_model"]["duplicate_concept_map"]["parity_review"] == parity
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and decision_ok and project_model_ok and strict_ok
+    return ok, ("rows=%d totals=%s malformed=%d"
+                % (len(rows), parity["totals"], len(malformed)))
+
+
 def t_optimization_file_completion_gate():
     """OPT-6: the optimization audit records section 9/12 file and chunk
     completion state without claiming pending files are complete."""
@@ -2640,6 +2683,7 @@ TESTS = [
     ("OPT-3 project-model-maps",                t_optimization_project_model_maps),
     ("OPT-4 vocabulary-collision-audit",        t_optimization_vocabulary_collision_audit),
     ("OPT-5 merge-candidate-analysis",          t_optimization_merge_candidate_analysis),
+    ("OPT-11 merge-parity-review",              t_optimization_merge_parity_review),
     ("OPT-6 file-completion-gate",              t_optimization_file_completion_gate),
     ("OPT-7 subsystem-convergence",             t_optimization_subsystem_convergence),
     ("OPT-8 ripple-queue",                      t_optimization_ripple_queue),
