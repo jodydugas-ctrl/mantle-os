@@ -630,6 +630,27 @@ module and replaced by the canonical CLI helper.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 36 Receipt
+
+Function served: GitHub `Zombie Body Audit` for Pass 35 exposed that `OPT-17` still depended on a
+brittle skipped-chunk assumption. Once enough receipts exist for the currently counted chunks in
+`src/mantle/optimize_audit.py`, the file can have zero skipped chunks while still remaining under
+broader project review.
+
+Changes:
+
+- Updated `OPT-17` to prove verified receipt counting, inspected/eligible bounds, and changed-chunk
+  receipt parity.
+- Removed the old requirement that a partial-review source file must still have skipped chunks.
+- Preserved the rule that chunk receipts are progress evidence, not whole-project completion.
+
+Deletion decision: no files or features were deleted. The old skipped-chunk condition served as a
+guard against claiming complete file optimization too early, but that function is now covered by
+explicit receipt counts plus the still-REVISE file completion, subsystem, and completion-condition
+gates.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 35 Receipt
 
 Function served: the whole-repository optimization protocol requires lockfiles to be inventoried

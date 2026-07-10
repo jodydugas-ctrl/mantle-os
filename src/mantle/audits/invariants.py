@@ -2479,21 +2479,18 @@ def t_optimization_chunk_optimization_ledger():
         and all(row["evidence"] and row["tests"] for row in receipts)
         and all(row["token_delta"].startswith("UNVERIFIABLE") for row in receipts)
     )
+    optimize_row = by_path["src/mantle/optimize_audit.py"]
     progress_ok = (
         ledger["verified_receipts"] == len(receipts)
         and ledger["totals"].get("changed-verified", 0) == len(receipts)
         and "src/mantle/optimize_audit.py" in ledger["by_path"]
         and "src/mantle/audits/invariants.py" in ledger["by_path"]
         and "documents/refinement/CHUNK_OPTIMIZATION_LEDGER.json" in receipt_paths
-        and by_path["src/mantle/optimize_audit.py"]["status"] in {
-            "PARTIAL_CHUNK_REVIEW", "CHANGED_REVIEW_REQUIRED",
-        }
-        and by_path["src/mantle/optimize_audit.py"]["inspected_chunks"] > 0
-        and (
-            by_path["src/mantle/optimize_audit.py"]["status"] == "CHANGED_REVIEW_REQUIRED"
-            or by_path["src/mantle/optimize_audit.py"]["skipped_chunks"] > 0
-        )
-        and by_path["src/mantle/optimize_audit.py"]["chunk_receipts"]
+        and optimize_row["status"] in {"PARTIAL_CHUNK_REVIEW", "CHANGED_REVIEW_REQUIRED"}
+        and optimize_row["inspected_chunks"] > 0
+        and optimize_row["inspected_chunks"] <= optimize_row["eligible_chunks"]
+        and optimize_row["changed_chunks"] == len(optimize_row["chunk_receipts"])
+        and optimize_row["chunk_receipts"]
         and (report["file_completion_gate"]["totals"].get("PARTIAL_CHUNK_REVIEW", 0) > 0
              or report["file_completion_gate"]["totals"].get("CHANGED_REVIEW_REQUIRED", 0) > 0)
     )

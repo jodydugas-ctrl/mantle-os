@@ -629,6 +629,41 @@
       ],
       "receipt": "Pass 35 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
       "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-36.invariants.chunk-ledger-progress-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Make OPT-17 prove receipt-count relationships instead of requiring skipped chunks in optimize_audit.py.",
+      "rejected_candidates": [
+        "Force optimize_audit.py to remain artificially partially uninspected",
+        "Treat all receipted chunks as whole-project completion"
+      ],
+      "preserved_invariants": [
+        "chunk receipts remain progress evidence only",
+        "file and project completion gates remain REVISE until broader protocol rows close",
+        "security invariant suite remains stdlib-only"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove with editable-install egg-info residue",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check",
+        "GitHub Zombie Body Audit"
+      ],
+      "tests": [
+        "OPT-17 chunk-optimization-ledger",
+        "full Mantle check",
+        "GitHub Zombie Body Audit"
+      ],
+      "token_delta": "UNVERIFIABLE: proof semantics pass",
+      "complexity_delta": "replaces a brittle skipped-count assumption with direct receipt parity checks",
+      "performance_delta": "invariant suite cost unchanged in practice",
+      "risks": [
+        "whole-project completion still requires remaining chunk, subsystem, alignment, token, and guardian convergence"
+      ],
+      "receipt": "Pass 36 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
     }
   ]
 }
