@@ -56,6 +56,28 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 28 Receipt
+
+Function served: protocol section 20 requires the whole-repository optimization work to proceed in
+order and forbids skipping from local success to project completion. The audit had completion rows,
+but not an explicit ordered execution ledger.
+
+Changes:
+
+- Added `EXECUTION_ORDER_STEPS` and `EXECUTION_ORDER_FIELDS`.
+- Added `execution_order` to `python -m mantle optimize-audit`.
+- Each section-20 step now records ordered status, evidence, and blockers.
+- Strict audit now requires every execution-order step and row field.
+- `ALIGNMENT_MATRIX`, `FINAL_RECEIPT`, CLI output, and JSON output now summarize execution-order
+  totals.
+- Added invariant `OPT-15 execution-order`.
+- Updated public invariant-count anchors from 105 to 106.
+
+Deletion decision: no files, functions, documents, or aliases were deleted. This pass prevents the
+protocol from skipping unresolved middle steps while still allowing smaller receipted passes.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 27 Receipt
 
 Function served: protocol section 19 lists the exact conditions required before PASS may be

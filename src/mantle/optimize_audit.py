@@ -388,6 +388,36 @@ COMPLETION_CONDITION_FIELDS = (
     "evidence",
     "blockers",
 )
+EXECUTION_ORDER_STEPS = (
+    "Baseline and workspace safety",
+    "Complete file inventory",
+    "Project model and dependency maps",
+    "AppAI invariant map",
+    "Canonical vocabulary and alias collision audit",
+    "Duplicate and merge-candidate analysis",
+    "Characterization tests for poorly specified behavior",
+    "File-by-file, chunk-by-chunk optimization",
+    "Immediate ripple resolution",
+    "File completion gate",
+    "Subsystem convergence pass",
+    "Repeat until every subsystem is complete",
+    "Rebuild all maps from the final tree",
+    "Whole-project alignment audit",
+    "Correct discovered drift",
+    "Repeat alignment audit until converged",
+    "Run final verification from a clean state",
+    "Run blind semantic comparison for machine manuals",
+    "Produce final metrics and artifacts",
+    "Guardian review",
+    "PASS, REVISE, HALT, or ESCALATE",
+)
+EXECUTION_ORDER_FIELDS = (
+    "step",
+    "name",
+    "status",
+    "evidence",
+    "blockers",
+)
 RIPPLE_QUEUE_FIELDS = (
     "queue_id",
     "source",
@@ -2483,6 +2513,106 @@ def _completion_conditions(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _execution_row(step: int, name: str, status: str, evidence: Dict[str, Any],
+                   blockers: Optional[List[str]] = None) -> Dict[str, Any]:
+    return {
+        "step": step,
+        "name": name,
+        "status": status,
+        "evidence": evidence,
+        "blockers": blockers or [],
+    }
+
+
+def _execution_order(report: Dict[str, Any]) -> Dict[str, Any]:
+    rows = [
+        _execution_row(1, "Baseline and workspace safety", "PASS",
+                       {"git": report["baseline"]["git"], "runtime": report["baseline"]["runtime"]}),
+        _execution_row(2, "Complete file inventory", "PASS",
+                       {"file_count": report["file_count"], "tracked_missing": report["tracked_missing"]}),
+        _execution_row(3, "Project model and dependency maps",
+                       report["project_model"]["status"],
+                       {"maps": len(REQUIRED_PROJECT_MODEL_MAPS)}),
+        _execution_row(4, "AppAI invariant map", "PASS",
+                       {"appai_roles": report["project_model"]["appai_organ_map"]["roles"]}),
+        _execution_row(5, "Canonical vocabulary and alias collision audit",
+                       report["alias_registry"]["collision_audit"]["status"],
+                       {"checks": len(REQUIRED_ALIAS_COLLISION_CHECKS),
+                        "tokenizer_status": report["alias_registry"]["tokenizer_status"]}),
+        _execution_row(6, "Duplicate and merge-candidate analysis", "PASS",
+                       {"candidates": len(report["merge_map"]["merge_candidates"]),
+                        "parity": report["merge_map"]["parity_review"]["totals"]}),
+        _execution_row(7, "Characterization tests for poorly specified behavior", "REVISE",
+                       {"test_report": report["test_report"]["status"]},
+                       ["candidate-specific characterization tests remain queued"]),
+        _execution_row(8, "File-by-file, chunk-by-chunk optimization", "REVISE",
+                       {"file_completion": report["file_completion_gate"]["totals"]},
+                       ["pending eligible chunks remain"]),
+        _execution_row(9, "Immediate ripple resolution",
+                       "PASS" if report["ripple_queue"]["status"] == "PASS" else "REVISE",
+                       {"ripple_queue": report["ripple_queue"]["totals"]}),
+        _execution_row(10, "File completion gate", report["file_completion_gate"]["status"],
+                       {"totals": report["file_completion_gate"]["totals"]},
+                       ["file completion gate is not PASS"]
+                       if report["file_completion_gate"]["status"] != "PASS" else []),
+        _execution_row(11, "Subsystem convergence pass", report["subsystem_convergence"]["status"],
+                       {"totals": report["subsystem_convergence"]["totals"]},
+                       ["subsystem convergence is not PASS"]
+                       if report["subsystem_convergence"]["status"] != "PASS" else []),
+        _execution_row(12, "Repeat until every subsystem is complete", "REVISE",
+                       {"subsystem_convergence": report["subsystem_convergence"]["totals"]},
+                       ["subsystems remain REVISE"]),
+        _execution_row(13, "Rebuild all maps from the final tree", "PASS",
+                       {"head": report["head"], "maps": len(REQUIRED_PROJECT_MODEL_MAPS)}),
+        _execution_row(14, "Whole-project alignment audit",
+                       report["whole_project_alignment"]["status"],
+                       {"totals": report["whole_project_alignment"]["totals"]},
+                       ["whole-project alignment is not PASS"]
+                       if report["whole_project_alignment"]["status"] != "PASS" else []),
+        _execution_row(15, "Correct discovered drift", "REVISE",
+                       {"alignment": report["whole_project_alignment"]["totals"]},
+                       ["alignment drift remains queued or unverifiable"]),
+        _execution_row(16, "Repeat alignment audit until converged", "REVISE",
+                       {"alignment_status": report["whole_project_alignment"]["status"]},
+                       ["alignment has not converged to PASS"]),
+        _execution_row(17, "Run final verification from a clean state",
+                       report["final_verification"]["status"],
+                       {"totals": report["final_verification"]["totals"]},
+                       ["final verification is not PASS"]
+                       if report["final_verification"]["status"] != "PASS" else []),
+        _execution_row(18, "Run blind semantic comparison for machine manuals",
+                       report["blind_semantic_comparison"]["status"],
+                       {"totals": report["blind_semantic_comparison"]["totals"]},
+                       ["blind semantic comparison is not PASS"]
+                       if report["blind_semantic_comparison"]["status"] != "PASS" else []),
+        _execution_row(19, "Produce final metrics and artifacts",
+                       report["optimization_scorecard"]["status"],
+                       {"scorecard": report["optimization_scorecard"]["totals"]},
+                       ["scorecard is not PASS"]
+                       if report["optimization_scorecard"]["status"] != "PASS" else []),
+        _execution_row(20, "Guardian review", report["guardian_review"]["status"],
+                       {"guardian": report["guardian_review"]["totals"]},
+                       ["guardian review is not PASS"]
+                       if report["guardian_review"]["status"] != "PASS" else []),
+        _execution_row(21, "PASS, REVISE, HALT, or ESCALATE",
+                       report["completion_conditions"]["status"],
+                       {"completion_conditions": report["completion_conditions"]["totals"]},
+                       ["completion conditions do not allow PASS"]
+                       if report["completion_conditions"]["status"] != "PASS" else []),
+    ]
+    totals = Counter(row["status"] for row in rows)
+    missing = [name for name in EXECUTION_ORDER_STEPS if name not in {
+        row["name"] for row in rows
+    }]
+    return {
+        "status": "PASS" if all(row["status"] == "PASS" for row in rows) else "REVISE",
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_steps": missing,
+        "rule": "Section 20 execution order must remain explicit before PASS is declared.",
+    }
+
+
 def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     maps = report["maps"]
@@ -2867,6 +2997,20 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
                         % len(malformed_completion_rows))
     if not completion_conditions.get("rows"):
         failures.append("completion conditions matrix missing")
+    execution_order = report.get("execution_order", {})
+    missing_execution_steps = execution_order.get("missing_steps") or []
+    if missing_execution_steps:
+        failures.append("missing execution order steps: %s"
+                        % ", ".join(missing_execution_steps))
+    malformed_execution_rows = [
+        row.get("name", "<unknown>")
+        for row in execution_order.get("rows", [])
+        if any(field not in row for field in EXECUTION_ORDER_FIELDS)
+    ]
+    if malformed_execution_rows:
+        failures.append("%d malformed execution order rows" % len(malformed_execution_rows))
+    if not execution_order.get("rows"):
+        failures.append("execution order matrix missing")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -2928,6 +3072,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["optimization_scorecard"] = _optimization_scorecard(report)
     report["guardian_review"] = _guardian_review(report)
     report["completion_conditions"] = _completion_conditions(report)
+    report["execution_order"] = _execution_order(report)
     return report
 
 
@@ -3064,6 +3209,11 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + "\n".join("- %s: %s" % (row["condition"], row["status"])
                        for row in report["completion_conditions"]["rows"])
            + "\n\n"
+           "Execution order: %s; totals=%s\n"
+           % (report["execution_order"]["status"], report["execution_order"]["totals"])
+           + "\n".join("- %02d. %s: %s" % (row["step"], row["name"], row["status"])
+                       for row in report["execution_order"]["rows"])
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -3095,6 +3245,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nBLIND_SEMANTIC_COMPARISON: %s; totals=%s.\n"
            "\nOPTIMIZATION_SCORECARD: %s; totals=%s.\n"
            "\nCOMPLETION_CONDITIONS: %s; totals=%s.\n"
+           "\nEXECUTION_ORDER: %s; totals=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -3136,6 +3287,8 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["optimization_scorecard"]["totals"],
               report["completion_conditions"]["status"],
               report["completion_conditions"]["totals"],
+              report["execution_order"]["status"],
+              report["execution_order"]["totals"],
               report["guardian_review"]["status"],
               report["guardian_review"]["totals"]))
     return artifacts
@@ -3197,6 +3350,10 @@ def main(argv=None) -> int:
                               "status": report["completion_conditions"]["status"],
                               "totals": report["completion_conditions"]["totals"],
                           },
+                          "execution_order": {
+                              "status": report["execution_order"]["status"],
+                              "totals": report["execution_order"]["totals"],
+                          },
                           "observed_checks": observed,
                           "strict": {"ok": not failures, "failures": failures}},
                          indent=2, sort_keys=True))
@@ -3237,6 +3394,10 @@ def main(argv=None) -> int:
         print("  complete  : %s %s" % (
             report["completion_conditions"]["status"],
             report["completion_conditions"]["totals"],
+        ))
+        print("  order     : %s %s" % (
+            report["execution_order"]["status"],
+            report["execution_order"]["totals"],
         ))
         if strict:
             print("  strict     : %s" % ("PASS" if not failures else "FAIL"))

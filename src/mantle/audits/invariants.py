@@ -2657,6 +2657,45 @@ def t_optimization_completion_conditions_matrix():
                 % (len(rows), matrix["totals"], matrix["missing_conditions"] or "none"))
 
 
+def t_optimization_execution_order_matrix():
+    """OPT-15: section-20 execution order is explicit, ordered, and refuses to
+    skip from local success to project PASS while intermediate proof rows remain
+    REVISE."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    order = report["execution_order"]
+    rows = order["rows"]
+    by_name = {row["name"]: row for row in rows}
+    required = set(_opt.EXECUTION_ORDER_STEPS)
+    row_shape_ok = (
+        set(by_name) == required
+        and not order["missing_steps"]
+        and [row["step"] for row in rows] == list(range(1, len(_opt.EXECUTION_ORDER_STEPS) + 1))
+        and all({"step", "name", "status", "evidence", "blockers"}.issubset(row)
+                for row in rows)
+        and all(row["status"] in {"PASS", "REVISE", "UNVERIFIABLE"} for row in rows)
+    )
+    expected_current_state = (
+        order["status"] == "REVISE"
+        and by_name["Baseline and workspace safety"]["status"] == "PASS"
+        and by_name["Complete file inventory"]["status"] == "PASS"
+        and by_name["File-by-file, chunk-by-chunk optimization"]["status"] == "REVISE"
+        and by_name["Whole-project alignment audit"]["status"] == "REVISE"
+        and by_name["Run final verification from a clean state"]["status"] == "REVISE"
+        and by_name["Guardian review"]["status"] == "REVISE"
+        and by_name["PASS, REVISE, HALT, or ESCALATE"]["status"] == "REVISE"
+        and order["totals"].get("PASS", 0) > 0
+        and order["totals"].get("REVISE", 0) > 0
+        and "Section 20 execution order" in order["rule"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and expected_current_state and strict_ok
+    return ok, ("steps=%d totals=%s missing=%s"
+                % (len(rows), order["totals"], order["missing_steps"] or "none"))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2835,6 +2874,7 @@ TESTS = [
     ("OPT-12 scorecard-guardian-review",        t_optimization_scorecard_guardian_review),
     ("OPT-13 final-mode-performance",           t_optimization_final_mode_performance_receipts),
     ("OPT-14 completion-conditions",            t_optimization_completion_conditions_matrix),
+    ("OPT-15 execution-order",                  t_optimization_execution_order_matrix),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]
