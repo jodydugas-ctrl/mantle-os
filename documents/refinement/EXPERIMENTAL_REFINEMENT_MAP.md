@@ -56,6 +56,28 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 16 Receipt
+
+Function served: protocol section 5 requires a project-wide model before local rewriting. The
+inventory already had file rows and base references; this pass makes the named model maps explicit
+so future chunk/subsystem optimization can prove it is acting from cross-file context.
+
+Changes:
+
+- Added `REQUIRED_PROJECT_MODEL_MAPS` as the checked project-model contract.
+- Added `project_model` to `python -m mantle optimize-audit`, covering dependency, import/export,
+  public API, CLI, configuration, schema, test, documentation, example, lifecycle, organ,
+  SELF/OTHER, effect/proof, hard-fail, VCW, provider/cache, version, and duplicate-concept maps.
+- Extended strict optimization audit and generated alignment/final receipts with project-model
+  status.
+- Added invariant `OPT-3 project-model-maps`.
+- Updated public invariant-count anchors from 93 to 94.
+
+Deletion decision: no files were deleted. This pass builds the cross-file model required before
+safe deletions, merges, or semantic chunk rewrites.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 15 Receipt
 
 Function served: the whole-repository optimization protocol requires each file inventory row to

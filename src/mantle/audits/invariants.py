@@ -2134,6 +2134,55 @@ def t_optimization_inventory_protocol_fields():
                 % (report["file_count"], len(missing), relationship_ok, len(required)))
 
 
+def t_optimization_project_model_maps():
+    """OPT-3: the optimization audit builds the named project-wide model maps
+    required before safe subsystem and chunk-level rewrite passes."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    model = report["project_model"]
+    required = set(_opt.REQUIRED_PROJECT_MODEL_MAPS)
+    missing = sorted(required - set(model))
+    lifecycle = model["lifecycle_graph"]["roles"]
+    organs = model["appai_organ_map"]["roles"]
+    graph_ok = (
+        model["status"] == "PASS"
+        and not missing
+        and model["python_import_export_graph"]["modules"]
+        and model["public_api_graph"]["public_symbols"]
+        and "check" in model["cli_command_option_graph"]["known_commands"]
+        and model["test_to_production_coverage_graph"]["test_files"]
+        and model["documentation_to_implementation_graph"]["documentation_files"]
+        and model["example_to_api_graph"]["example_files"]
+    )
+    appai_ok = (
+        all(lifecycle[role] for role in (
+            "birth", "assimilation", "residency", "diagnostics", "memory",
+            "cognition", "reconstruction",
+        ))
+        and all(organs[role] for role in (
+            "Heart", "Genome", "Nervous System", "Senses", "Immune",
+            "Limbs", "Memory", "Brain", "Reproduction",
+        ))
+        and model["self_other_boundary_map"]["files"]
+        and model["effect_action_proof_map"]["files"]
+        and model["hard_fail_map"]["invariant_files"]
+        and model["vcw_band_owner_writer_map"]["files"]
+        and model["provider_cache_configuration_map"]["files"]
+    )
+    alignment_ok = (
+        model["version_compatibility_graph"]["version_alignment"]["status"] == "PASS"
+        and model["duplicate_concept_map"]["near_duplicate_status"].startswith("UNVERIFIABLE")
+        and _opt.strict_failures(report) == []
+    )
+    ok = graph_ok and appai_ok and alignment_ok
+    return ok, ("maps=%d missing=%s lifecycle=%d organs=%d"
+                % (len(required), missing or "none",
+                   sum(1 for paths_ in lifecycle.values() if paths_),
+                   sum(1 for paths_ in organs.values() if paths_)))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2300,6 +2349,7 @@ TESTS = [
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
     ("OPT-1 repository-inventory-audit",        t_optimization_inventory_audit),
     ("OPT-2 inventory-protocol-fields",         t_optimization_inventory_protocol_fields),
+    ("OPT-3 project-model-maps",                t_optimization_project_model_maps),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

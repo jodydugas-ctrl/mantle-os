@@ -94,6 +94,26 @@ REQUIRED_FILE_FIELDS = (
     "optimization_eligibility",
     "skip_block_reason",
 )
+REQUIRED_PROJECT_MODEL_MAPS = (
+    "file_dependency_graph",
+    "python_import_export_graph",
+    "public_api_graph",
+    "cli_command_option_graph",
+    "configuration_graph",
+    "schema_serialization_graph",
+    "test_to_production_coverage_graph",
+    "documentation_to_implementation_graph",
+    "example_to_api_graph",
+    "lifecycle_graph",
+    "appai_organ_map",
+    "self_other_boundary_map",
+    "effect_action_proof_map",
+    "hard_fail_map",
+    "vcw_band_owner_writer_map",
+    "provider_cache_configuration_map",
+    "version_compatibility_graph",
+    "duplicate_concept_map",
+)
 INVARIANT_RE = re.compile(
     r"\b(?:HF-[A-Z0-9]+|B-[A-Z0-9]+|SELF-\d+|SYM-\d+|NOC-\d+|SCHED-\d+|"
     r"MEMW-\d+|GRAFT-\d+|RESID-\d+|MEM-\d+|BOOT-\d+|BRIDGE-\d+|GANG-\d+|"
@@ -887,6 +907,130 @@ def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _model_paths(files: List[Dict[str, Any]], predicate) -> List[str]:
+    return sorted(f["path"] for f in files if predicate(f))
+
+
+def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
+    files = report["files"]
+    maps = report["maps"]
+    model = {
+        "file_dependency_graph": {
+            "status": "derived",
+            "path_reference_edges": [
+                {"from": r["from"], "to": r["ref"], "exists": r["exists"]}
+                for r in maps["path_references"]
+            ],
+        },
+        "python_import_export_graph": {
+            "status": "derived",
+            "modules": maps["module_paths"],
+            "imports": maps["import_graph"],
+            "importers": maps["importers"],
+        },
+        "public_api_graph": {
+            "status": "derived",
+            "public_symbols": maps["public_api"],
+            "module_count": len(maps["public_api"]),
+        },
+        "cli_command_option_graph": {
+            "status": "derived",
+            "known_commands": maps["known_cli_commands"],
+            "references": maps["cli_command_references"],
+        },
+        "configuration_graph": {
+            "status": "derived",
+            "environment_variables": maps["environment_variables"],
+            "files": {f["path"]: f["configuration_keys"] for f in files
+                      if f["configuration_keys"]},
+        },
+        "schema_serialization_graph": {
+            "status": "derived",
+            "files": {f["path"]: f["schemas"] for f in files if f["schemas"]},
+        },
+        "test_to_production_coverage_graph": {
+            "status": "derived",
+            "test_files": _model_paths(files, lambda f: f["category"].startswith("B ")),
+            "production_targets": {f["path"]: f["tests"] for f in files if f["tests"]},
+        },
+        "documentation_to_implementation_graph": {
+            "status": "derived",
+            "documentation_files": _model_paths(
+                files, lambda f: f["category"].startswith(("C ", "D "))),
+            "implementation_targets": {
+                f["path"]: f["documentation_references"]
+                for f in files if f["documentation_references"]
+            },
+        },
+        "example_to_api_graph": {
+            "status": "derived",
+            "example_files": _model_paths(files, lambda f: f["category"].startswith("H ")),
+            "api_touchpoints": {
+                f["path"]: sorted(set(f["imports"] + f["referenced_commands"]))
+                for f in files if f["category"].startswith("H ")
+            },
+        },
+        "lifecycle_graph": {
+            "status": "derived",
+            "roles": {
+                role: _model_paths(files, lambda f, role=role: role in f["lifecycle_roles"])
+                for role in (
+                    "birth", "assimilation", "residency", "diagnostics", "memory",
+                    "cognition", "reconstruction", "retirement",
+                )
+            },
+        },
+        "appai_organ_map": {
+            "status": "derived",
+            "roles": {
+                role: _model_paths(files, lambda f, role=role: role in f["appai_roles"])
+                for role in (
+                    "Heart", "Genome", "Nervous System", "Senses", "Immune",
+                    "Limbs", "Memory", "Brain", "Reproduction", "Doctrine",
+                )
+            },
+        },
+        "self_other_boundary_map": {
+            "status": "derived",
+            "files": _model_paths(files, lambda f: "identity-boundary"
+                                  in f["security_privacy_relevance"]),
+        },
+        "effect_action_proof_map": {
+            "status": "derived",
+            "files": _model_paths(files, lambda f: "external-effect"
+                                  in f["security_privacy_relevance"]
+                                  or bool(f["side_effects"])),
+        },
+        "hard_fail_map": {
+            "status": "derived",
+            "invariant_files": {f["path"]: f["invariants"] for f in files if f["invariants"]},
+        },
+        "vcw_band_owner_writer_map": {
+            "status": "derived",
+            "files": _model_paths(files, lambda f: "VCW" in f["appai_roles"]
+                                  or "Memory" in f["appai_roles"]
+                                  or "vcw" in f["path"].lower()),
+        },
+        "provider_cache_configuration_map": {
+            "status": "derived",
+            "files": _model_paths(files, lambda f: "provider-cache"
+                                  in f["security_privacy_relevance"]
+                                  or "provider-or-http" in f["external_interfaces"]),
+        },
+        "version_compatibility_graph": {
+            "status": "derived",
+            "version_alignment": report["version_alignment"],
+        },
+        "duplicate_concept_map": {
+            "status": "baseline",
+            "exact_duplicate_hashes": maps["duplicate_hashes"],
+            "near_duplicate_status": "UNVERIFIABLE; semantic duplicate review remains queued",
+        },
+    }
+    model["status"] = "PASS" if set(REQUIRED_PROJECT_MODEL_MAPS).issubset(model) else "REVISE"
+    return model
+
+
 def _test_report(report: Dict[str, Any], observed: Optional[List[Dict[str, Any]]] = None
                  ) -> Dict[str, Any]:
     observed = observed or []
@@ -999,6 +1143,12 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("change ledger does not cover every inventoried file")
     if report.get("version_alignment", {}).get("status") != "PASS":
         failures.append("version alignment map failed")
+    model = report.get("project_model", {})
+    missing_model_maps = [name for name in REQUIRED_PROJECT_MODEL_MAPS if name not in model]
+    if missing_model_maps:
+        failures.append("missing project model maps: %s" % ", ".join(missing_model_maps))
+    if model.get("status") != "PASS":
+        failures.append("project model map failed")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -1050,6 +1200,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["test_report"] = _test_report(report, observed_checks)
     report["performance_report"] = _performance_report(report)
     report["version_alignment"] = _version_alignment(root, _invariant_count(root))
+    report["project_model"] = _project_model(report)
     return report
 
 
@@ -1117,6 +1268,11 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
                        % (r["surface"], r["field"], r["value"], r["expected"], r["status"])
                        for r in report["version_alignment"]["rows"])
            + "\n\n"
+           "Project model maps: %s\n"
+           % report["project_model"]["status"]
+           + "\n".join("- %s: %s" % (name, report["project_model"][name]["status"])
+                       for name in REQUIRED_PROJECT_MODEL_MAPS)
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -1136,6 +1292,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nFILES: %d inventoried; %d artifact files written.\n"
            "\nCHANGE_LEDGER: %d per-file disposition receipt(s); dispositions=%s.\n"
            "\nVERSION_ALIGNMENT: %s; package=%s module=%s grimoire=%s/%s invariants=%s.\n"
+           "\nPROJECT_MODEL: %s; maps=%d.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -1153,7 +1310,8 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["version_alignment"]["module_version"],
               report["version_alignment"]["grimoire_stamp"],
               report["version_alignment"]["grimoire_version"],
-              report["version_alignment"]["security_invariant_count"]))
+              report["version_alignment"]["security_invariant_count"],
+              report["project_model"]["status"], len(REQUIRED_PROJECT_MODEL_MAPS)))
     return artifacts
 
 
