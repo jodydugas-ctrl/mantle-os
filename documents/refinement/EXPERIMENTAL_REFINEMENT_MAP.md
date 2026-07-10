@@ -56,6 +56,32 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 23 Receipt
+
+Function served: protocol sections 15 and 16 require final verification coverage and blind
+semantic comparison before any compressed or optimized machine doctrine can be accepted. The audit
+already indexed configured proof commands, but did not expose these protocol obligations as
+first-class matrices.
+
+Changes:
+
+- Added section-15 `final_verification` coverage to `python -m mantle optimize-audit`.
+- Added section-16 `blind_semantic_comparison` coverage for machine-only doctrine elements:
+  commands, modes, triggers, purposes, gates, invariants, blocks, procedures, receipt fields,
+  hard fails, and implementation references.
+- The audit records configured, observed, unobserved, and unverifiable proof surfaces without
+  claiming that unrun checks passed.
+- `ALIGNMENT_MATRIX`, `FINAL_RECEIPT`, and JSON output now summarize final verification and blind
+  semantic comparison status.
+- Strict audit now requires these matrices and row fields.
+- Added invariant `OPT-10 final-verification+semantic`.
+- Updated public invariant-count anchors from 100 to 101.
+
+Deletion decision: no files were deleted. This pass adds final-proof accounting and deliberately
+keeps the protocol result at `REVISE` until fresh final-suite and blind-evaluator evidence exists.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 22 Receipt
 
 Function served: protocol section 14 requires a fresh whole-project A-O alignment audit after

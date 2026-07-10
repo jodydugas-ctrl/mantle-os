@@ -239,6 +239,57 @@ ALIGNMENT_AUDIT_DOMAINS = (
     "N security/privacy alignment",
     "O performance alignment",
 )
+REQUIRED_FINAL_VERIFICATION_CHECKS = (
+    "source compilation or parsing",
+    "import smoke tests",
+    "configured formatter check",
+    "configured lint",
+    "configured type checker",
+    "unit and invariant tests",
+    "integration and full certification tests",
+    "example tests",
+    "CLI smoke tests",
+    "Stage 1 audit",
+    "Stage 2 readiness audit",
+    "security checks",
+    "schema and serialization round trips",
+    "documentation link and path checks",
+    "package build",
+    "clean installation smoke test",
+    "performance benchmarks",
+    "cl100k and o200k token report",
+    "final duplicate scan",
+    "final dead-reference scan",
+    "final secret scan",
+    "Git diff and status review",
+)
+FINAL_VERIFICATION_FIELDS = (
+    "requirement",
+    "status",
+    "evidence",
+    "command",
+    "blockers",
+)
+BLIND_SEMANTIC_ELEMENTS = (
+    "command",
+    "mode",
+    "trigger",
+    "purpose",
+    "gate",
+    "invariant",
+    "block",
+    "procedure",
+    "receipt field",
+    "hard fail",
+    "implementation reference",
+)
+BLIND_SEMANTIC_FIELDS = (
+    "element",
+    "status",
+    "source_count",
+    "final_representation",
+    "blockers",
+)
 RIPPLE_QUEUE_FIELDS = (
     "queue_id",
     "source",
@@ -1684,6 +1735,242 @@ def _whole_project_alignment(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _observed_command(report: Dict[str, Any], needle: str) -> Optional[Dict[str, Any]]:
+    for row in report["test_report"].get("observed_commands", []):
+        if needle in row.get("command", ""):
+            return row
+    return None
+
+
+def _configured_command(report: Dict[str, Any], needle: str) -> Optional[Dict[str, Any]]:
+    for row in report["test_report"].get("commands", []):
+        if needle in row.get("command", ""):
+            return row
+    return None
+
+
+def _verification_row(requirement: str, status: str, evidence: Dict[str, Any],
+                      command: Optional[str] = None,
+                      blockers: Optional[List[str]] = None) -> Dict[str, Any]:
+    return {
+        "requirement": requirement,
+        "status": status,
+        "evidence": evidence,
+        "command": command,
+        "blockers": blockers or [],
+    }
+
+
+def _command_verification_row(report: Dict[str, Any], requirement: str, needle: str,
+                              blockers: Optional[List[str]] = None) -> Dict[str, Any]:
+    configured = _configured_command(report, needle)
+    observed = _observed_command(report, needle)
+    if observed and observed.get("exit_code") == 0 and not observed.get("timed_out"):
+        status = "PASS"
+        row_blockers: List[str] = []
+    elif configured:
+        status = "REVISE"
+        row_blockers = blockers or ["configured proof exists but was not observed in this audit run"]
+    else:
+        status = "UNVERIFIABLE"
+        row_blockers = blockers or ["no configured command discovered"]
+    return _verification_row(
+        requirement,
+        status,
+        {"configured": bool(configured), "observed": observed or "not-observed"},
+        configured.get("command") if configured else needle,
+        row_blockers,
+    )
+
+
+def _final_verification(report: Dict[str, Any]) -> Dict[str, Any]:
+    py_rows = [row for row in report["file_completion_gate"]["rows"]
+               if row["path"].endswith(".py")]
+    parse_failures = [row["path"] for row in py_rows if row["parse_status"] != "PASS"]
+    stale_paths = [r for r in report["maps"]["path_references"] if not r["exists"]]
+    stale_commands = [r for r in report["maps"]["cli_command_references"] if not r["exists"]]
+    secret_hits = [
+        f["path"] for f in report["files"]
+        if f["text"] and SECRET_RE.search(_read_text_optional(report["repo_root"], f["path"]))
+    ]
+    dirty_paths = [row["path"] for row in report["baseline"]["git"]["status"]]
+    rows = [
+        _verification_row(
+            "source compilation or parsing",
+            "PASS" if not parse_failures else "REVISE",
+            {"python_files": len(py_rows), "parse_failures": parse_failures[:20]},
+            "ast.parse(all Python files)",
+            [] if not parse_failures else ["Python parse failure"],
+        ),
+        _command_verification_row(report, "import smoke tests", " -m mantle check"),
+        _verification_row(
+            "configured formatter check",
+            "UNVERIFIABLE",
+            {"configured": False},
+            None,
+            ["no formatter command is configured in project metadata"],
+        ),
+        _verification_row(
+            "configured lint",
+            "UNVERIFIABLE",
+            {"configured": False},
+            None,
+            ["no lint command is configured in project metadata"],
+        ),
+        _verification_row(
+            "configured type checker",
+            "UNVERIFIABLE",
+            {"configured": False},
+            None,
+            ["no type-check command is configured in project metadata"],
+        ),
+        _command_verification_row(report, "unit and invariant tests", " -m mantle prove"),
+        _command_verification_row(report, "integration and full certification tests",
+                                  " -m mantle check"),
+        _command_verification_row(report, "example tests", "examples/vcw/vcw_cube.py selftest"),
+        _command_verification_row(report, "CLI smoke tests", " -m mantle check"),
+        _command_verification_row(report, "Stage 1 audit", " -m mantle audit"),
+        _command_verification_row(report, "Stage 2 readiness audit", " -m mantle audit-mind"),
+        _command_verification_row(report, "security checks", " -m mantle prove"),
+        _command_verification_row(report, "schema and serialization round trips",
+                                  "examples/vcw/vcw_cube.py selftest"),
+        _verification_row(
+            "documentation link and path checks",
+            "PASS" if not stale_paths and not stale_commands else "REVISE",
+            {"stale_paths": len(stale_paths), "stale_commands": len(stale_commands)},
+            "python -m mantle optimize-audit --strict",
+            [] if not stale_paths and not stale_commands else ["stale reference remains"],
+        ),
+        _verification_row(
+            "package build",
+            "UNVERIFIABLE",
+            {"build_backend": report["baseline"]["project"]["build_backend"],
+             "configured_command": False},
+            None,
+            ["no package build command is configured in project metadata"],
+        ),
+        _verification_row(
+            "clean installation smoke test",
+            "UNVERIFIABLE",
+            {"configured_command": False},
+            None,
+            ["no clean-install smoke command is configured in project metadata"],
+        ),
+        _verification_row(
+            "performance benchmarks",
+            "UNVERIFIABLE",
+            {"benchmarks": report["performance_report"]["benchmarks"]},
+            None,
+            ["no benchmark command is run by optimize-audit"],
+        ),
+        _verification_row(
+            "cl100k and o200k token report",
+            "UNVERIFIABLE" if report["token_status"].get("tiktoken unavailable") else "PASS",
+            {"token_status": report["token_status"]},
+            "python -m mantle optimize-audit",
+            (["tiktoken unavailable; token counts not measured"]
+             if report["token_status"].get("tiktoken unavailable") else []),
+        ),
+        _verification_row(
+            "final duplicate scan",
+            "REVISE" if report["merge_map"]["merge_candidates"] else "PASS",
+            {"merge_candidates": len(report["merge_map"]["merge_candidates"]),
+             "exact_duplicate_hashes": len(report["maps"]["duplicate_hashes"])},
+            "python -m mantle optimize-audit",
+            ["merge candidates remain queued"] if report["merge_map"]["merge_candidates"] else [],
+        ),
+        _verification_row(
+            "final dead-reference scan",
+            "PASS" if not stale_paths and not stale_commands else "REVISE",
+            {"stale_paths": len(stale_paths), "stale_commands": len(stale_commands)},
+            "python -m mantle optimize-audit --strict",
+            [] if not stale_paths and not stale_commands else ["dead reference remains"],
+        ),
+        _verification_row(
+            "final secret scan",
+            "PASS" if not secret_hits else "REVISE",
+            {"secret_hits": secret_hits[:20]},
+            "SECRET_RE source scan",
+            [] if not secret_hits else ["secret-like material matched source scan"],
+        ),
+        _verification_row(
+            "Git diff and status review",
+            "PASS" if not dirty_paths else "REVISE",
+            {"dirty_paths": dirty_paths[:20], "dirty_count": len(dirty_paths)},
+            "git status --short",
+            [] if not dirty_paths else ["working tree has changes under review"],
+        ),
+    ]
+    by_name = {row["requirement"] for row in rows}
+    missing = [name for name in REQUIRED_FINAL_VERIFICATION_CHECKS if name not in by_name]
+    totals = Counter(row["status"] for row in rows)
+    return {
+        "status": "PASS" if all(row["status"] == "PASS" for row in rows) else "REVISE",
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_requirements": missing,
+        "rule": "Section 15 final verification coverage rebuilt from current configured proofs.",
+    }
+
+
+def _semantic_element_count(text: str, element: str) -> int:
+    if element == "command":
+        return len(COMMAND_RE.findall(text))
+    if element == "mode":
+        return len(re.findall(r"\bmode\b|\bMode=", text, re.IGNORECASE))
+    if element == "trigger":
+        return len(re.findall(r"\btrigger", text, re.IGNORECASE))
+    if element == "purpose":
+        return len(re.findall(r"\bpurpose\b|\bGoal:", text, re.IGNORECASE))
+    if element == "gate":
+        return len(re.findall(r"\bgate\b", text, re.IGNORECASE))
+    if element == "invariant":
+        return len(INVARIANT_RE.findall(text)) + len(re.findall(r"\binvariant\b", text,
+                                                                 re.IGNORECASE))
+    if element == "block":
+        return len(re.findall(r"\bblock\b|\bMUST NOT\b|\bHALT\b", text, re.IGNORECASE))
+    if element == "procedure":
+        return len(re.findall(r"\bSTEP\b|\bprocedure\b|\bspell\b", text, re.IGNORECASE))
+    if element == "receipt field":
+        return len(re.findall(r"\breceipt\b|WHAT:|WHY:|EVIDENCE:", text, re.IGNORECASE))
+    if element == "hard fail":
+        return len(re.findall(r"hard[- ]fail|HF-[A-Z0-9]+", text, re.IGNORECASE))
+    if element == "implementation reference":
+        return len(PATH_RE.findall(text))
+    return 0
+
+
+def _blind_semantic_comparison(report: Dict[str, Any]) -> Dict[str, Any]:
+    doctrine = [f for f in report["files"] if f["category"].startswith("C ") and f["text"]]
+    combined = "\n".join(_read_text_optional(report["repo_root"], f["path"]) for f in doctrine)
+    rows = []
+    for element in BLIND_SEMANTIC_ELEMENTS:
+        count = _semantic_element_count(combined, element)
+        rows.append({
+            "element": element,
+            "status": "PASS" if count else "UNVERIFIABLE",
+            "source_count": count,
+            "final_representation": "mapped in current machine-doctrine files",
+            "blockers": [] if count else ["element not found in machine-doctrine scan"],
+        })
+    missing = [name for name in BLIND_SEMANTIC_ELEMENTS if name not in {
+        row["element"] for row in rows
+    }]
+    totals = Counter(row["status"] for row in rows)
+    return {
+        "status": "REVISE",
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_elements": missing,
+        "machine_doctrine_files": [f["path"] for f in doctrine],
+        "rule": "Section 16 blind semantic comparison matrix for machine-only doctrine.",
+        "blockers": [
+            "fresh-session blind old/new evaluator was not run",
+            "no compressed replacement variant is being accepted in this pass",
+        ],
+    }
+
+
 def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     maps = report["maps"]
@@ -1968,6 +2255,34 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("missing alignment domains: %s" % ", ".join(missing_alignment_domains))
     if not alignment.get("rows"):
         failures.append("whole-project alignment audit missing")
+    final_verification = report.get("final_verification", {})
+    missing_final_requirements = final_verification.get("missing_requirements") or []
+    if missing_final_requirements:
+        failures.append("missing final verification requirements: %s"
+                        % ", ".join(missing_final_requirements))
+    malformed_final_rows = [
+        row.get("requirement", "<unknown>")
+        for row in final_verification.get("rows", [])
+        if any(field not in row for field in FINAL_VERIFICATION_FIELDS)
+    ]
+    if malformed_final_rows:
+        failures.append("%d malformed final verification rows" % len(malformed_final_rows))
+    if not final_verification.get("rows"):
+        failures.append("final verification coverage missing")
+    semantic = report.get("blind_semantic_comparison", {})
+    missing_semantic_elements = semantic.get("missing_elements") or []
+    if missing_semantic_elements:
+        failures.append("missing blind semantic elements: %s"
+                        % ", ".join(missing_semantic_elements))
+    malformed_semantic_rows = [
+        row.get("element", "<unknown>")
+        for row in semantic.get("rows", [])
+        if any(field not in row for field in BLIND_SEMANTIC_FIELDS)
+    ]
+    if malformed_semantic_rows:
+        failures.append("%d malformed blind semantic rows" % len(malformed_semantic_rows))
+    if not semantic.get("rows"):
+        failures.append("blind semantic comparison matrix missing")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -2024,6 +2339,8 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["subsystem_convergence"] = _subsystem_convergence(report)
     report["ripple_queue"] = _ripple_queue(report)
     report["whole_project_alignment"] = _whole_project_alignment(report)
+    report["final_verification"] = _final_verification(report)
+    report["blind_semantic_comparison"] = _blind_semantic_comparison(report)
     return report
 
 
@@ -2124,6 +2441,18 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + "\n".join("- %s: %s" % (row["domain"], row["status"])
                        for row in report["whole_project_alignment"]["rows"])
            + "\n\n"
+           "Final verification coverage: %s; totals=%s\n"
+           % (report["final_verification"]["status"],
+              report["final_verification"]["totals"])
+           + "\n".join("- %s: %s" % (row["requirement"], row["status"])
+                       for row in report["final_verification"]["rows"])
+           + "\n\n"
+           "Blind semantic comparison: %s; totals=%s\n"
+           % (report["blind_semantic_comparison"]["status"],
+              report["blind_semantic_comparison"]["totals"])
+           + "\n".join("- %s: %s" % (row["element"], row["status"])
+                       for row in report["blind_semantic_comparison"]["rows"])
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -2150,6 +2479,8 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nSUBSYSTEM_CONVERGENCE: %s; totals=%s.\n"
            "\nRIPPLE_QUEUE: %s; totals=%s; surfaces=%d.\n"
            "\nWHOLE_PROJECT_ALIGNMENT: %s; totals=%s.\n"
+           "\nFINAL_VERIFICATION: %s; totals=%s.\n"
+           "\nBLIND_SEMANTIC_COMPARISON: %s; totals=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -2180,7 +2511,11 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["ripple_queue"]["status"], report["ripple_queue"]["totals"],
               len(report["ripple_queue"]["required_surfaces"]),
               report["whole_project_alignment"]["status"],
-              report["whole_project_alignment"]["totals"]))
+              report["whole_project_alignment"]["totals"],
+              report["final_verification"]["status"],
+              report["final_verification"]["totals"],
+              report["blind_semantic_comparison"]["status"],
+              report["blind_semantic_comparison"]["totals"]))
     return artifacts
 
 
@@ -2216,6 +2551,14 @@ def main(argv=None) -> int:
                           "file_count": report["file_count"],
                           "categories": report["categories"],
                           "token_status": report["token_status"],
+                          "final_verification": {
+                              "status": report["final_verification"]["status"],
+                              "totals": report["final_verification"]["totals"],
+                          },
+                          "blind_semantic_comparison": {
+                              "status": report["blind_semantic_comparison"]["status"],
+                              "totals": report["blind_semantic_comparison"]["totals"],
+                          },
                           "observed_checks": observed,
                           "strict": {"ok": not failures, "failures": failures}},
                          indent=2, sort_keys=True))
@@ -2233,6 +2576,14 @@ def main(argv=None) -> int:
             for row in observed:
                 code = "timeout" if row.get("timed_out") else row.get("exit_code")
                 print("    %-8s %s" % (code, row.get("command")))
+        print("  final     : %s %s" % (
+            report["final_verification"]["status"],
+            report["final_verification"]["totals"],
+        ))
+        print("  semantic  : %s %s" % (
+            report["blind_semantic_comparison"]["status"],
+            report["blind_semantic_comparison"]["totals"],
+        ))
         if strict:
             print("  strict     : %s" % ("PASS" if not failures else "FAIL"))
             for failure in failures:

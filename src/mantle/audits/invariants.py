@@ -2420,6 +2420,57 @@ def t_optimization_whole_project_alignment():
                 % (len(rows), alignment["totals"], alignment["missing_domains"] or "none"))
 
 
+def t_optimization_final_verification_semantic_comparison():
+    """OPT-10: the optimization audit records section 15 final-verification
+    coverage and section 16 blind semantic comparison obligations without
+    pretending unobserved proof gates have passed."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    final = report["final_verification"]
+    semantic = report["blind_semantic_comparison"]
+    final_rows = final["rows"]
+    semantic_rows = semantic["rows"]
+    final_required = set(_opt.REQUIRED_FINAL_VERIFICATION_CHECKS)
+    semantic_required = set(_opt.BLIND_SEMANTIC_ELEMENTS)
+    final_by_name = {row["requirement"]: row for row in final_rows}
+    semantic_by_name = {row["element"]: row for row in semantic_rows}
+    final_shape_ok = (
+        final_required == set(final_by_name)
+        and not final["missing_requirements"]
+        and all({"requirement", "status", "evidence", "command", "blockers"}.issubset(row)
+                for row in final_rows)
+        and all(row["status"] in {"PASS", "REVISE", "UNVERIFIABLE"}
+                for row in final_rows)
+    )
+    semantic_shape_ok = (
+        semantic_required == set(semantic_by_name)
+        and not semantic["missing_elements"]
+        and all({"element", "status", "source_count", "final_representation", "blockers"}
+                .issubset(row) for row in semantic_rows)
+        and all(row["status"] in {"PASS", "REVISE", "UNVERIFIABLE"}
+                for row in semantic_rows)
+    )
+    expected_current_state = (
+        final["status"] == "REVISE"
+        and final_by_name["source compilation or parsing"]["status"] == "PASS"
+        and final_by_name["performance benchmarks"]["status"] == "UNVERIFIABLE"
+        and final_by_name["cl100k and o200k token report"]["status"] == "UNVERIFIABLE"
+        and final["totals"].get("UNVERIFIABLE", 0) > 0
+        and semantic["status"] == "REVISE"
+        and semantic_by_name["hard fail"]["source_count"] > 0
+        and semantic_by_name["receipt field"]["source_count"] > 0
+        and semantic["machine_doctrine_files"]
+        and "fresh-session blind old/new evaluator was not run" in semantic["blockers"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = final_shape_ok and semantic_shape_ok and expected_current_state and strict_ok
+    return ok, ("final=%s semantic=%s machine_docs=%d"
+                % (final["totals"], semantic["totals"],
+                   len(semantic["machine_doctrine_files"])))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2593,6 +2644,7 @@ TESTS = [
     ("OPT-7 subsystem-convergence",             t_optimization_subsystem_convergence),
     ("OPT-8 ripple-queue",                      t_optimization_ripple_queue),
     ("OPT-9 whole-project-alignment",           t_optimization_whole_project_alignment),
+    ("OPT-10 final-verification+semantic",      t_optimization_final_verification_semantic_comparison),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]
