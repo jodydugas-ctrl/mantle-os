@@ -2062,7 +2062,7 @@ def t_optimization_inventory_audit():
         _paths.REPO_ROOT,
         observed_checks=[{"command": "%s -m mantle prove" % sys.executable,
                           "exit_code": 0, "duration_s": 0.001,
-                          "stdout_tail": "90/90 invariants green",
+                          "stdout_tail": "synthetic invariants green",
                           "stderr_tail": "", "timed_out": False}]
     )["test_report"]
     observed_ok = (
@@ -2080,6 +2080,58 @@ def t_optimization_inventory_audit():
             % (report["file_count"], len(report["change_ledger"]), len(required),
                len(report["maps"]["cli_command_references"]),
                len(report["maps"]["path_references"]), report["token_status"]))
+
+
+def t_optimization_inventory_protocol_fields():
+    """OPT-2: every inventory row carries the protocol's per-file model fields,
+    including relationship, role, security, side-effect, invariant, and proof metadata."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    required = set(_opt.REQUIRED_FILE_FIELDS)
+    missing = {
+        f["path"]: sorted(required - set(f))
+        for f in report["files"]
+        if required - set(f)
+    }
+    type_ok = all(
+        isinstance(f["importers"], list)
+        and isinstance(f["tests"], list)
+        and isinstance(f["documentation_references"], list)
+        and isinstance(f["schemas"], list)
+        and isinstance(f["configuration_keys"], list)
+        and isinstance(f["external_interfaces"], list)
+        and isinstance(f["appai_roles"], list)
+        and isinstance(f["lifecycle_roles"], list)
+        and isinstance(f["security_privacy_relevance"], list)
+        and isinstance(f["side_effects"], list)
+        and isinstance(f["invariants"], list)
+        and isinstance(f["complexity_indicators"], dict)
+        and isinstance(f["duplication_indicators"], dict)
+        and f.get("_inventory_shape") == "PASS"
+        for f in report["files"]
+    )
+    by_path = {f["path"]: f for f in report["files"]}
+    relationship_ok = (
+        any(f["importers"] for f in report["files"])
+        and any(f["tests"] for f in report["files"])
+        and any(f["documentation_references"] for f in report["files"])
+    )
+    role_ok = (
+        "human-documentation" in by_path["README.md"]["external_interfaces"]
+        and "python-package-metadata" in by_path["pyproject.toml"]["external_interfaces"]
+        and "mantle-cli" in by_path["src/mantle/cli.py"]["external_interfaces"]
+        and any(f["appai_roles"] for f in report["files"])
+        and any(f["lifecycle_roles"] for f in report["files"])
+        and any(f["security_privacy_relevance"] for f in report["files"])
+        and any(f["side_effects"] for f in report["files"])
+        and any(f["invariants"] for f in report["files"])
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = not missing and type_ok and relationship_ok and role_ok and strict_ok
+    return ok, ("%d rows; missing=%d; relationships=%s; required_fields=%d"
+                % (report["file_count"], len(missing), relationship_ok, len(required)))
 
 
 def t_grimoire_single_tomb():
@@ -2247,6 +2299,7 @@ TESTS = [
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
     ("OPT-1 repository-inventory-audit",        t_optimization_inventory_audit),
+    ("OPT-2 inventory-protocol-fields",         t_optimization_inventory_protocol_fields),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

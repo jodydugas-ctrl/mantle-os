@@ -56,6 +56,29 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 15 Receipt
+
+Function served: the whole-repository optimization protocol requires each file inventory row to
+carry more than path and metric data. Before safe file-by-file optimization, every row needs a
+static model of relationships, interfaces, schemas/configuration, side effects, AppAI/lifecycle
+roles, security relevance, invariants, proof path, complexity, duplication, and skip/block state.
+
+Changes:
+
+- Added `REQUIRED_FILE_FIELDS` as the checked protocol row contract for `FILE_INVENTORY`.
+- Enriched inventory rows with conservative static metadata for schemas, configuration keys,
+  external interfaces, AppAI roles, lifecycle roles, side effects, security/privacy relevance,
+  invariant references, complexity indicators, and exact duplicate paths.
+- Added cross-file relationship enrichment for importers, test references, and documentation
+  references.
+- Strengthened strict optimization audit and added invariant `OPT-2 inventory-protocol-fields`.
+- Updated public invariant-count anchors from 92 to 93.
+
+Deletion decision: no files were deleted. This pass expands the evidence model needed for later
+deletions or rewrites; it does not alter runtime behavior.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 14 Receipt
 
 Function served: the repository now has several mechanically important version/count surfaces:

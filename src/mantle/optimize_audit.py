@@ -53,6 +53,53 @@ REQUIRED_ARTIFACTS = (
     "SKIP_BLOCK_REPORT",
     "FINAL_RECEIPT",
 )
+REQUIRED_FILE_FIELDS = (
+    "path",
+    "category",
+    "tracked",
+    "untracked",
+    "text",
+    "encoding",
+    "language",
+    "generated",
+    "generator",
+    "purpose",
+    "subsystem",
+    "imports",
+    "importers",
+    "public_symbols",
+    "referenced_commands",
+    "referenced_paths",
+    "schemas",
+    "configuration_keys",
+    "environment_variables",
+    "external_interfaces",
+    "tests",
+    "documentation_references",
+    "appai_roles",
+    "lifecycle_roles",
+    "security_privacy_relevance",
+    "side_effects",
+    "invariants",
+    "proof_path",
+    "bytes",
+    "sha256",
+    "lines",
+    "words",
+    "tokens",
+    "token_status",
+    "complexity_indicators",
+    "duplication_indicators",
+    "risk",
+    "optimization_eligibility",
+    "skip_block_reason",
+)
+INVARIANT_RE = re.compile(
+    r"\b(?:HF-[A-Z0-9]+|B-[A-Z0-9]+|SELF-\d+|SYM-\d+|NOC-\d+|SCHED-\d+|"
+    r"MEMW-\d+|GRAFT-\d+|RESID-\d+|MEM-\d+|BOOT-\d+|BRIDGE-\d+|GANG-\d+|"
+    r"VAULT-\d+|METER-\d+|OR-CACHE-\d+|INGEST-\d+|DOCTOR-\d+|PHENO-\d+|"
+    r"APPLET-\d+|REPRO-\d+|SPORE-\d+|OPT-\d+|GRIM-\d+|VERS-\d+)\b"
+)
 
 
 def _rel(path: str, root: str) -> str:
@@ -158,6 +205,136 @@ def _purpose(rel: str, category: str) -> str:
     if rel.startswith("examples/tests/"):
         return "example smoke or parity test"
     return category.split(" ", 1)[1] if " " in category else category
+
+
+def _schema_refs(rel: str, text: Optional[str]) -> List[str]:
+    if text is None:
+        return []
+    schemas = []
+    language = _language(rel)
+    if language in {"json", "toml", "yaml"}:
+        schemas.append("%s document" % language)
+    if "to_dict" in text or "from_dict" in text:
+        schemas.append("python dict serialization")
+    if "json.dumps" in text or "json.load" in text:
+        schemas.append("json serialization")
+    fields = sorted(set(re.findall(r'["\']([A-Za-z_][A-Za-z0-9_-]{2,})["\']\s*:', text)))
+    if fields:
+        schemas.extend("field:%s" % field for field in fields[:40])
+    return sorted(set(schemas))
+
+
+def _config_keys(rel: str, text: Optional[str], env_vars: List[str]) -> List[str]:
+    keys = set(env_vars)
+    if text is None:
+        return sorted(keys)
+    if rel == "pyproject.toml":
+        keys.update(re.findall(r"^([A-Za-z0-9_.-]+)\s*=", text, re.MULTILINE))
+    if rel.startswith(".github/workflows/"):
+        keys.update(re.findall(r"^\s*([A-Za-z0-9_.-]+):", text, re.MULTILINE))
+    keys.update(re.findall(r"os\.environ(?:\.get)?\([\"']([A-Za-z_][A-Za-z0-9_]*)", text))
+    return sorted(keys)
+
+
+def _external_interfaces(rel: str, text: Optional[str]) -> List[str]:
+    interfaces = set()
+    if rel == "pyproject.toml":
+        interfaces.add("python-package-metadata")
+    if rel.startswith(".github/workflows/"):
+        interfaces.add("github-actions")
+    if rel == "src/mantle/cli.py" or "python -m mantle" in (text or ""):
+        interfaces.add("mantle-cli")
+    if rel.endswith(".html") or rel.endswith(".mjs") or rel.endswith(".js"):
+        interfaces.add("browser-or-node-demo")
+    if any(x in (text or "") for x in ("http", "OpenRouter", "OPENROUTER", "urllib", "requests")):
+        interfaces.add("provider-or-http")
+    if rel.startswith("documents/") or rel == "README.md":
+        interfaces.add("human-documentation")
+    return sorted(interfaces)
+
+
+def _appai_roles(rel: str, text: Optional[str]) -> List[str]:
+    hay = (rel + "\n" + (text or "")[:20000]).lower()
+    roles = []
+    for role, keys in (
+        ("Heart", ("heart", "heartbeat", "pulse")),
+        ("Genome", ("genome", "primer")),
+        ("Nervous System", ("signalbus", "signal bus", "nervous")),
+        ("Senses", ("senses", "sense")),
+        ("Immune", ("immune", "quarantine", "tombstone")),
+        ("Limbs", ("limb", "action", "bridge")),
+        ("Memory", ("memory", "vcw", "cube", "band")),
+        ("Brain", ("brain", "mind", "cognition")),
+        ("Reproduction", ("spore", "egg", "hatch", "reproduction", "seed")),
+    ):
+        if any(k in hay for k in keys):
+            roles.append(role)
+    if rel.startswith("documents/grimoire/"):
+        roles.append("Doctrine")
+    return sorted(set(roles))
+
+
+def _lifecycle_roles(rel: str, text: Optional[str]) -> List[str]:
+    hay = (rel + "\n" + (text or "")[:20000]).lower()
+    roles = []
+    for role, keys in (
+        ("birth", ("birth", "genesis", "hatch")),
+        ("assimilation", ("assimilate", "necromancy")),
+        ("residency", ("resident", "residency", "host")),
+        ("diagnostics", ("audit", "prove", "doctor", "check")),
+        ("memory", ("memory", "vcw", "cube")),
+        ("cognition", ("mind", "brain", "think")),
+        ("reconstruction", ("vault", "reconstruct", "seed")),
+        ("retirement", ("dnr", "retire", "tombstone")),
+    ):
+        if any(k in hay for k in keys):
+            roles.append(role)
+    return sorted(set(roles))
+
+
+def _security_privacy(rel: str, text: Optional[str]) -> List[str]:
+    hay = (rel + "\n" + (text or "")[:20000]).lower()
+    hits = []
+    for label, keys in (
+        ("identity-boundary", ("self", "other", "identity", "provenance")),
+        ("secret-redaction", ("secret", "redact", "private key", "token")),
+        ("body-owned-key", ("key", "encrypt", "decrypt", "hmac", "vault")),
+        ("provider-cache", ("cache", "openrouter", "cached_tokens")),
+        ("host-preservation", ("host", "graft", "residency", "bridge")),
+        ("external-effect", ("subprocess", "http", "socket", "action")),
+    ):
+        if any(k in hay for k in keys):
+            hits.append(label)
+    return sorted(set(hits))
+
+
+def _side_effects(rel: str, text: Optional[str]) -> List[str]:
+    if text is None:
+        return []
+    effects = []
+    for label, keys in (
+        ("filesystem", ("open(", "os.", "Path(", "write_text", "read_text")),
+        ("process", ("subprocess", "Popen", "sys.exit")),
+        ("network", ("urllib", "requests", "http", "socket", "OpenRouter")),
+        ("time-or-random", ("time.", "random", "uuid")),
+        ("cryptographic", ("hashlib", "hmac", "secrets", "encrypt", "decrypt")),
+        ("stdout-stderr", ("print(", "stderr", "stdout")),
+    ):
+        if any(k in text for k in keys):
+            effects.append(label)
+    return sorted(set(effects))
+
+
+def _complexity_indicators(text: Optional[str], imports: List[str],
+                           public: List[str]) -> Dict[str, int]:
+    if text is None:
+        return {"branch_keywords": 0, "imports": 0, "public_symbols": 0}
+    branch_keywords = len(re.findall(r"\b(if|for|while|try|except|with|case)\b", text))
+    return {
+        "branch_keywords": branch_keywords,
+        "imports": len(imports),
+        "public_symbols": len(public),
+    }
 
 
 def _python_details(text: str) -> Tuple[List[str], List[str]]:
@@ -482,6 +659,8 @@ def inventory_file(path: str, root: str, tracked: set, untracked: set) -> Dict[s
     env_vars = sorted(set(x for x in ENV_RE.findall(text or "")
                           if "_" in x and not x.startswith("HF_")))
     tokens, token_note = _token_counts(text)
+    schemas = _schema_refs(rel, text)
+    config_keys = _config_keys(rel, text, env_vars)
     return {
         "path": rel,
         "category": category,
@@ -495,19 +674,33 @@ def inventory_file(path: str, root: str, tracked: set, untracked: set) -> Dict[s
         "purpose": _purpose(rel, category),
         "subsystem": _subsystem(rel),
         "imports": imports,
+        "importers": [],
         "public_symbols": public,
         "referenced_commands": commands,
         "referenced_paths": path_refs,
+        "schemas": schemas,
+        "configuration_keys": config_keys,
         "environment_variables": env_vars,
+        "external_interfaces": _external_interfaces(rel, text),
+        "tests": [],
+        "documentation_references": [],
+        "appai_roles": _appai_roles(rel, text),
+        "lifecycle_roles": _lifecycle_roles(rel, text),
+        "security_privacy_relevance": _security_privacy(rel, text),
+        "side_effects": _side_effects(rel, text),
+        "invariants": sorted(set(INVARIANT_RE.findall(text or ""))),
         "bytes": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
         "lines": 0 if text is None else text.count("\n") + (1 if text else 0),
         "words": 0 if text is None else len(re.findall(r"\S+", text)),
         "tokens": tokens,
         "token_status": token_note or ("measured" if text is not None else "not-text"),
+        "complexity_indicators": _complexity_indicators(text, imports, public),
+        "duplication_indicators": {"exact_duplicate_paths": [], "near_duplicate_note": "not-analyzed"},
         "optimization_eligibility": "inventory-only" if not is_text else "eligible-for-pass-review",
         "risk": "high" if rel.startswith("src/mantle/core/") else "normal",
         "proof_path": "PYTHONPATH=src python -m mantle check",
+        "skip_block_reason": "pending disposition; finalized after git status review",
 }
 
 
@@ -564,6 +757,66 @@ def _derived_maps(report: Dict[str, Any]) -> Dict[str, Any]:
         "path_references": path_refs,
         "duplicate_hashes": duplicates,
     }
+
+
+def _import_matches(import_name: str, module_name: str) -> bool:
+    return (
+        import_name == module_name
+        or import_name.startswith(module_name + ".")
+        or module_name.startswith(import_name.lstrip(".") + ".")
+    )
+
+
+def _enrich_file_relationships(report: Dict[str, Any]) -> None:
+    files = report["files"]
+    by_path = {f["path"]: f for f in files}
+    modules = {f["path"]: _module_name(f["path"]) for f in files}
+    doc_files = [f for f in files if f["category"].startswith(("C ", "D "))]
+    test_files = [f for f in files if f["category"].startswith("B ")]
+    duplicate_paths: Dict[str, List[str]] = {}
+    for group in report["maps"]["duplicate_hashes"]:
+        for path in group["paths"]:
+            duplicate_paths[path] = [p for p in group["paths"] if p != path]
+
+    for target in files:
+        path = target["path"]
+        module = modules.get(path)
+        if module:
+            target["importers"] = sorted(
+                f["path"] for f in files
+                if f["path"] != path
+                and any(_import_matches(imp, module) for imp in f["imports"])
+            )
+            target["tests"] = sorted(
+                f["path"] for f in test_files
+                if f["path"] != path
+                and (
+                    any(_import_matches(imp, module) for imp in f["imports"])
+                    or path in f["referenced_paths"]
+                )
+            )
+        else:
+            target["importers"] = []
+            target["tests"] = sorted(
+                f["path"] for f in test_files
+                if path in f["referenced_paths"]
+            )
+
+        refs = []
+        for doc in doc_files:
+            if doc["path"] == path:
+                continue
+            normalized_refs = {r.replace("\\", "/").strip("/") for r in doc["referenced_paths"]}
+            if path in normalized_refs:
+                refs.append(doc["path"])
+        target["documentation_references"] = sorted(refs)
+        target["duplication_indicators"] = {
+            "exact_duplicate_paths": sorted(duplicate_paths.get(path, [])),
+            "near_duplicate_note": "not-analyzed",
+        }
+        if path in by_path:
+            missing = [field for field in REQUIRED_FILE_FIELDS if field not in target]
+            target["_inventory_shape"] = "PASS" if not missing else "MISSING:%s" % ",".join(missing)
 
 
 def _alias_registry() -> Dict[str, Any]:
@@ -730,6 +983,13 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d unresolved Mantle CLI references" % len(stale_commands))
     if report["alias_registry"]["collision_audit"]["status"] != "PASS":
         failures.append("alias registry collision audit failed")
+    missing_fields = {
+        f["path"]: [field for field in REQUIRED_FILE_FIELDS if field not in f]
+        for f in report.get("files", [])
+    }
+    missing_fields = {path: fields for path, fields in missing_fields.items() if fields}
+    if missing_fields:
+        failures.append("%d files missing required inventory fields" % len(missing_fields))
     missing_coverage = [r for r in report["coverage_matrix"] if r["status"] != "present"]
     if missing_coverage:
         failures.append("%d missing proof surfaces" % len(missing_coverage))
@@ -782,6 +1042,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     }
     report["baseline"] = _baseline_stats(report)
     report["maps"] = _derived_maps(report)
+    _enrich_file_relationships(report)
     report["alias_registry"] = _alias_registry()
     report["coverage_matrix"] = _coverage_matrix(report)
     report["change_ledger"] = _change_ledger(report)
