@@ -56,6 +56,30 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 18 Receipt
+
+Function served: protocol section 7 requires searching the whole repository for duplicate and
+near-duplicate commands, functions, classes, procedures, and documents before any merge. The
+previous merge map only listed exact duplicate hashes and a known CLI compatibility alias.
+
+Changes:
+
+- Added `MERGE_CANDIDATE_FIELDS` as the checked row contract for merge candidates.
+- Added non-mutating merge-candidate analysis to `MERGE_MAP`, grouping similar public Python
+  symbols and documentation topics by normalized keys.
+- Each candidate records side-effect, security, lifecycle, proof, caller/test, decision, and
+  reason fields.
+- Candidates are marked `blocked`, `queued-review`, or `low-confidence`; this pass performs no
+  merges.
+- Fed candidate decisions into the project model's duplicate-concept map.
+- Added invariant `OPT-5 merge-candidate-analysis`.
+- Updated public invariant-count anchors from 95 to 96.
+
+Deletion decision: no files were deleted. This pass is prerequisite evidence for future safe
+merges; it explicitly blocks or queues candidates instead of collapsing them by name similarity.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 17 Receipt
 
 Function served: protocol section 6 requires one canonical vocabulary registry and a collision

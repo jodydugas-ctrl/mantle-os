@@ -2173,7 +2173,7 @@ def t_optimization_project_model_maps():
     )
     alignment_ok = (
         model["version_compatibility_graph"]["version_alignment"]["status"] == "PASS"
-        and model["duplicate_concept_map"]["near_duplicate_status"].startswith("UNVERIFIABLE")
+        and model["duplicate_concept_map"]["near_duplicate_status"].startswith("CANDIDATES-QUEUED")
         and _opt.strict_failures(report) == []
     )
     ok = graph_ok and appai_ok and alignment_ok
@@ -2220,6 +2220,45 @@ def t_optimization_vocabulary_collision_audit():
     return ok, ("checks=%d missing=%s aliases=%d tokenizer=%s"
                 % (len(required), missing or "none", len(registry["aliases"]),
                    registry["tokenizer_status"]))
+
+
+def t_optimization_merge_candidate_analysis():
+    """OPT-5: the optimization audit finds merge candidates but does not merge
+    them without steelman, caller, parity, and proof evidence."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    merge_map = report["merge_map"]
+    candidates = merge_map["merge_candidates"]
+    required = set(_opt.MERGE_CANDIDATE_FIELDS)
+    malformed = [
+        c["candidate_id"] for c in candidates
+        if required - set(c)
+    ]
+    decisions = merge_map["candidate_decisions"]
+    candidates_ok = (
+        merge_map["status"] == "candidate-analysis"
+        and candidates
+        and not malformed
+        and decisions
+        and all(c["decision"] in {"blocked", "queued-review", "low-confidence"}
+                for c in candidates)
+        and all(c["decision"] != "queued-review" or c["score"] >= 45 for c in candidates)
+        and all(c["decision"] != "blocked" or "differ" in c["reason"] for c in candidates)
+        and merge_map["merges_performed_by_this_audit"] == []
+        and "steelman" in merge_map["merge_policy"]
+    )
+    duplicate_map = report["project_model"]["duplicate_concept_map"]
+    project_model_ok = (
+        duplicate_map["merge_candidates"] == candidates
+        and duplicate_map["candidate_decisions"] == decisions
+        and duplicate_map["near_duplicate_status"].startswith("CANDIDATES-QUEUED")
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = candidates_ok and project_model_ok and strict_ok
+    return ok, ("candidates=%d decisions=%s malformed=%d"
+                % (len(candidates), decisions, len(malformed)))
 
 
 def t_grimoire_single_tomb():
@@ -2390,6 +2429,7 @@ TESTS = [
     ("OPT-2 inventory-protocol-fields",         t_optimization_inventory_protocol_fields),
     ("OPT-3 project-model-maps",                t_optimization_project_model_maps),
     ("OPT-4 vocabulary-collision-audit",        t_optimization_vocabulary_collision_audit),
+    ("OPT-5 merge-candidate-analysis",          t_optimization_merge_candidate_analysis),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

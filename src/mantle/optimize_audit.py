@@ -128,6 +128,22 @@ REQUIRED_ALIAS_COLLISION_CHECKS = (
     "python_symbol_collisions",
     "filesystem_case_collisions",
 )
+MERGE_CANDIDATE_FIELDS = (
+    "candidate_id",
+    "kind",
+    "items",
+    "shared_key",
+    "score",
+    "shared_purpose",
+    "authority_compatibility",
+    "side_effect_compatibility",
+    "security_compatibility",
+    "lifecycle_compatibility",
+    "proof_compatibility",
+    "callers_known",
+    "decision",
+    "reason",
+)
 INVARIANT_RE = re.compile(
     r"\b(?:HF-[A-Z0-9]+|B-[A-Z0-9]+|SELF-\d+|SYM-\d+|NOC-\d+|SCHED-\d+|"
     r"MEMW-\d+|GRAFT-\d+|RESID-\d+|MEM-\d+|BOOT-\d+|BRIDGE-\d+|GANG-\d+|"
@@ -1009,15 +1025,145 @@ def _change_ledger(report: Dict[str, Any]) -> List[Dict[str, str]]:
     } for f in report["files"]]
 
 
+def _merge_key(name: str) -> str:
+    key = re.sub(r"^(t_|test_|_+)", "", name)
+    key = re.sub(r"[^A-Za-z0-9]+", "_", key).strip("_").casefold()
+    for suffix in ("_ok", "_test", "_audit", "_check", "_helper"):
+        if key.endswith(suffix):
+            key = key[:-len(suffix)]
+    return key
+
+
+def _candidate_score(items: List[Dict[str, Any]]) -> int:
+    paths = [item["path"] for item in items]
+    subsystems = {path.split("/")[0] + "/" + path.split("/")[1]
+                  if "/" in path else path for path in paths}
+    score = 35
+    if len(items) > 2:
+        score += 10
+    if len(subsystems) == 1:
+        score += 10
+    if all(item.get("side_effects") == items[0].get("side_effects") for item in items):
+        score += 15
+    if all(item.get("security") == items[0].get("security") for item in items):
+        score += 15
+    if all(item.get("lifecycle") == items[0].get("lifecycle") for item in items):
+        score += 10
+    return min(score, 100)
+
+
+def _candidate_decision(items: List[Dict[str, Any]], score: int) -> Tuple[str, str]:
+    side_effect_sets = {tuple(item.get("side_effects", [])) for item in items}
+    security_sets = {tuple(item.get("security", [])) for item in items}
+    lifecycle_sets = {tuple(item.get("lifecycle", [])) for item in items}
+    if len(side_effect_sets) > 1 or len(security_sets) > 1:
+        return "blocked", "safety, side-effect, or security envelopes differ"
+    if len(lifecycle_sets) > 1:
+        return "queued-review", "lifecycle positions differ; requires parity matrix"
+    if score >= 70:
+        return "queued-review", "similar enough for steelman and parity review"
+    return "low-confidence", "name similarity alone is insufficient to merge"
+
+
+def _merge_candidates(report: Dict[str, Any]) -> List[Dict[str, Any]]:
+    files = report["files"]
+    by_path = {f["path"]: f for f in files}
+    symbol_groups: Dict[str, List[Dict[str, Any]]] = {}
+    for f in files:
+        if not f["path"].endswith(".py"):
+            continue
+        for symbol in f["public_symbols"]:
+            key = _merge_key(symbol)
+            if key:
+                symbol_groups.setdefault(key, []).append({
+                    "path": f["path"],
+                    "symbol": symbol,
+                    "side_effects": f["side_effects"],
+                    "security": f["security_privacy_relevance"],
+                    "lifecycle": f["lifecycle_roles"],
+                    "proof_path": f["proof_path"],
+                    "importers": f["importers"],
+                    "tests": f["tests"],
+                })
+    candidates: List[Dict[str, Any]] = []
+    for key, items in sorted(symbol_groups.items()):
+        distinct_paths = {item["path"] for item in items}
+        if len(items) < 2 or len(distinct_paths) < 2:
+            continue
+        score = _candidate_score(items)
+        decision, reason = _candidate_decision(items, score)
+        candidate_items = [
+            "%s::%s" % (item["path"], item["symbol"])
+            for item in sorted(items, key=lambda x: (x["path"], x["symbol"]))
+        ]
+        first = items[0]
+        candidates.append({
+            "candidate_id": "py-symbol:%s" % key,
+            "kind": "python-public-symbol",
+            "items": candidate_items,
+            "shared_key": key,
+            "score": score,
+            "shared_purpose": "derived from normalized public symbol name",
+            "authority_compatibility": "unknown; requires steelman before merge",
+            "side_effect_compatibility": len({tuple(i["side_effects"]) for i in items}) == 1,
+            "security_compatibility": len({tuple(i["security"]) for i in items}) == 1,
+            "lifecycle_compatibility": len({tuple(i["lifecycle"]) for i in items}) == 1,
+            "proof_compatibility": all(i["proof_path"] == first["proof_path"] for i in items),
+            "callers_known": {item["path"]: sorted(set(item["importers"] + item["tests"]))
+                              for item in items},
+            "decision": decision,
+            "reason": reason,
+        })
+
+    doc_groups: Dict[str, List[str]] = {}
+    for f in files:
+        if not f["category"].startswith(("C ", "D ")):
+            continue
+        base = os.path.splitext(os.path.basename(f["path"]))[0]
+        key = _merge_key(base)
+        if key:
+            doc_groups.setdefault(key, []).append(f["path"])
+    for key, paths_ in sorted(doc_groups.items()):
+        if len(paths_) < 2:
+            continue
+        items = sorted(paths_)
+        candidates.append({
+            "candidate_id": "doc:%s" % key,
+            "kind": "documentation-topic",
+            "items": items,
+            "shared_key": key,
+            "score": 45,
+            "shared_purpose": "derived from normalized document filename",
+            "authority_compatibility": "unknown; doctrine docs require separate authority review",
+            "side_effect_compatibility": True,
+            "security_compatibility": True,
+            "lifecycle_compatibility": True,
+            "proof_compatibility": True,
+            "callers_known": {path: by_path[path]["documentation_references"] for path in items},
+            "decision": "queued-review",
+            "reason": "possible topic duplication; deletion requires function coverage proof",
+        })
+    return candidates
+
+
 def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
+    candidates = _merge_candidates(report)
+    decisions = Counter(c["decision"] for c in candidates)
     return {
-        "status": "baseline",
+        "status": "candidate-analysis",
         "merges_performed_by_this_audit": [],
         "compatibility_aliases_detected": [
             {"old": "optimize_audit", "new": "optimize-audit",
              "surface": "CLI", "mode": "underscore compatibility alias"}
         ],
         "duplicate_hashes": report["maps"]["duplicate_hashes"],
+        "candidate_fields": list(MERGE_CANDIDATE_FIELDS),
+        "merge_candidates": candidates,
+        "candidate_decisions": dict(sorted(decisions.items())),
+        "merge_policy": (
+            "no candidate is merged by this audit; each requires steelman, parity matrix, "
+            "caller analysis, and proof gates before mutation"
+        ),
     }
 
 
@@ -1138,7 +1284,11 @@ def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
         "duplicate_concept_map": {
             "status": "baseline",
             "exact_duplicate_hashes": maps["duplicate_hashes"],
-            "near_duplicate_status": "UNVERIFIABLE; semantic duplicate review remains queued",
+            "merge_candidates": report["merge_map"]["merge_candidates"],
+            "candidate_decisions": report["merge_map"]["candidate_decisions"],
+            "near_duplicate_status": (
+                "CANDIDATES-QUEUED; semantic merge requires parity review before mutation"
+            ),
         },
     }
     model["status"] = "PASS" if set(REQUIRED_PROJECT_MODEL_MAPS).issubset(model) else "REVISE"
@@ -1268,6 +1418,15 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("missing project model maps: %s" % ", ".join(missing_model_maps))
     if model.get("status") != "PASS":
         failures.append("project model map failed")
+    merge_map = report.get("merge_map", {})
+    malformed_candidates = [
+        c for c in merge_map.get("merge_candidates", [])
+        if any(field not in c for field in MERGE_CANDIDATE_FIELDS)
+    ]
+    if malformed_candidates:
+        failures.append("%d malformed merge candidate rows" % len(malformed_candidates))
+    if merge_map.get("status") != "candidate-analysis":
+        failures.append("merge candidate analysis missing")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -1398,6 +1557,10 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
                name, report["alias_registry"]["collision_audit"]["checks"][name]["status"])
                        for name in REQUIRED_ALIAS_COLLISION_CHECKS)
            + "\n\n"
+           "Merge candidates: %d; decisions=%s\n"
+           % (len(report["merge_map"]["merge_candidates"]),
+              dict(sorted(report["merge_map"]["candidate_decisions"].items())))
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -1419,6 +1582,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nVERSION_ALIGNMENT: %s; package=%s module=%s grimoire=%s/%s invariants=%s.\n"
            "\nPROJECT_MODEL: %s; maps=%d.\n"
            "\nVOCABULARY_COLLISION_AUDIT: %s; checks=%d.\n"
+           "\nMERGE_CANDIDATES: %d candidate(s); decisions=%s; no merges performed.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -1439,7 +1603,9 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["version_alignment"]["security_invariant_count"],
               report["project_model"]["status"], len(REQUIRED_PROJECT_MODEL_MAPS),
               report["alias_registry"]["collision_audit"]["status"],
-              len(REQUIRED_ALIAS_COLLISION_CHECKS)))
+              len(REQUIRED_ALIAS_COLLISION_CHECKS),
+              len(report["merge_map"]["merge_candidates"]),
+              dict(sorted(report["merge_map"]["candidate_decisions"].items()))))
     return artifacts
 
 
