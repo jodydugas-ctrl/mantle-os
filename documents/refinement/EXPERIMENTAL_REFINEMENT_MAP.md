@@ -651,6 +651,31 @@ gates.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 37 Receipt
+
+Function served: the operator selected a bounded stopping rule after estimating that the literal
+whole-repository optimization protocol could continue producing legitimate future passes. MantleOS
+needed an auditable way to close the active refinement goal without pretending the maximal protocol
+was fully exhausted.
+
+Changes:
+
+- Added a `bounded_closure` receipt to `python -m mantle optimize-audit`.
+- Recorded the policy: no more behavior changes unless a specific failing audit remains.
+- Accepted tokenizer and dedicated benchmark rows as deferred/unverifiable unless the operator
+  explicitly authorizes those tools.
+- Recorded reopen triggers for concrete failures: local/GitHub audit failure, strict audit
+  failure, version/count/path/CLI drift, secret/key leakage, or explicit new tool authority.
+- Added invariant `OPT-19 bounded-closure-policy`.
+- Updated public invariant-count anchors from 109 to 110.
+
+Deletion decision: no files, functions, commands, documents, or aliases were deleted. Pending
+semantic chunk review, merge candidates, blind semantic comparison, and dedicated performance/token
+proofs still serve future deep-optimization functions, but they no longer keep the current certified
+refinement goal open when no concrete audit is failing.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 35 Receipt
 
 Function served: the whole-repository optimization protocol requires lockfiles to be inventoried

@@ -53,6 +53,17 @@ REQUIRED_ARTIFACTS = (
     "SKIP_BLOCK_REPORT",
     "FINAL_RECEIPT",
 )
+BOUNDED_CLOSURE_FIELDS = (
+    "status",
+    "policy",
+    "specific_failing_audits",
+    "accepted_unverifiable",
+    "deferred_work",
+    "reopen_triggers",
+    "runtime_behavior_changes",
+    "authorized_tools",
+    "receipt",
+)
 CHUNK_LEDGER_REL = "documents/refinement/CHUNK_OPTIMIZATION_LEDGER.json"
 CHARACTERIZATION_LEDGER_REL = "documents/refinement/CHARACTERIZATION_TEST_LEDGER.json"
 REQUIRED_FILE_FIELDS = (
@@ -2931,6 +2942,83 @@ def _execution_order(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _bounded_closure(report: Dict[str, Any]) -> Dict[str, Any]:
+    """Operator-selected stopping rule for the active refinement goal.
+
+    This does not declare the maximal optimization protocol complete. It closes
+    the current goal once concrete audit failures are absent, while deferring
+    optional tools and broad semantic rewrites until separately authorized.
+    """
+    final_by_name = {
+        row["requirement"]: row
+        for row in report["final_verification"]["rows"]
+    }
+    failing: List[str] = []
+    if report["tracked_missing"]:
+        failing.append("tracked files missing from disk")
+    stale_paths = [r for r in report["maps"]["path_references"] if not r["exists"]]
+    if stale_paths:
+        failing.append("unresolved documented path references")
+    stale_commands = [r for r in report["maps"]["cli_command_references"] if not r["exists"]]
+    if stale_commands:
+        failing.append("unresolved documented Mantle CLI references")
+    if report["alias_registry"]["collision_audit"]["status"] != "PASS":
+        failing.append("alias collision audit failed")
+    if report["version_alignment"]["status"] != "PASS":
+        failing.append("version alignment failed")
+    if final_by_name["source compilation or parsing"]["status"] != "PASS":
+        failing.append("Python source parsing failed")
+    if final_by_name["documentation link and path checks"]["status"] != "PASS":
+        failing.append("documentation link/path check failed")
+    if final_by_name["final dead-reference scan"]["status"] != "PASS":
+        failing.append("dead-reference scan failed")
+    for row in report["test_report"].get("observed_commands", []):
+        if row.get("timed_out") or row.get("exit_code") not in (0,):
+            failing.append("observed proof command failed: %s" % row.get("command"))
+    accepted_unverifiable = [
+        "cl100k/o200k token measurement when tiktoken is unavailable",
+        "dedicated benchmark comparison when no benchmark command is configured",
+        "coverage/lint/type/build checks when no project command is configured",
+        "clean-install proof when no local clean-install command is configured",
+    ]
+    deferred_work = [
+        "file-by-file semantic optimization for files without failing audits",
+        "merge/deletion candidates that have parity evidence but no safe-to-merge proof",
+        "blind semantic comparison for machine manuals when no compressed replacement is accepted",
+        "dedicated performance baselines until tools and budget are authorized",
+    ]
+    policy = {
+        "no_behavior_changes_without_specific_failing_audit": True,
+        "complete_documentation_and_proof_receipts": True,
+        "accept_unverifiable_token_and_benchmark_items_without_tool_authority": True,
+        "maximal_protocol_remains_available_for_future_authorized_passes": True,
+    }
+    return {
+        "status": "PASS" if not failing else "REVISE",
+        "policy": policy,
+        "specific_failing_audits": failing,
+        "accepted_unverifiable": accepted_unverifiable,
+        "deferred_work": deferred_work,
+        "reopen_triggers": [
+            "a local or GitHub certification audit fails",
+            "strict optimization audit reports a concrete failure",
+            "tracked files, documented paths, CLI references, versions, or invariant counts drift",
+            "a secret-like value, raw key material, or raw OTHER execution path is detected",
+            "the operator explicitly authorizes tokenizers, benchmarks, or another semantic rewrite pass",
+        ],
+        "runtime_behavior_changes": [],
+        "authorized_tools": {
+            "tiktoken": False,
+            "dedicated_benchmarks": False,
+            "broad_semantic_rewrite": False,
+        },
+        "receipt": (
+            "Bounded closure: no more behavior changes unless a specific failing audit remains; "
+            "unverifiable token/benchmark work is accepted as deferred until tools are authorized."
+        ),
+    }
+
+
 def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     maps = report["maps"]
@@ -3375,6 +3463,17 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d malformed execution order rows" % len(malformed_execution_rows))
     if not execution_order.get("rows"):
         failures.append("execution order matrix missing")
+    closure = report.get("bounded_closure", {})
+    missing_closure_fields = [
+        name for name in BOUNDED_CLOSURE_FIELDS
+        if name not in closure
+    ]
+    if missing_closure_fields:
+        failures.append("missing bounded closure fields: %s"
+                        % ", ".join(missing_closure_fields))
+    if closure.get("specific_failing_audits"):
+        failures.append("bounded closure has failing audits: %s"
+                        % ", ".join(closure.get("specific_failing_audits", [])))
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -3439,6 +3538,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["guardian_review"] = _guardian_review(report)
     report["completion_conditions"] = _completion_conditions(report)
     report["execution_order"] = _execution_order(report)
+    report["bounded_closure"] = _bounded_closure(report)
     return report
 
 
@@ -3596,6 +3696,12 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + "\n".join("- %02d. %s: %s" % (row["step"], row["name"], row["status"])
                        for row in report["execution_order"]["rows"])
            + "\n\n"
+           "Bounded closure: %s\n"
+           % report["bounded_closure"]["status"]
+           + "- policy: %s\n" % report["bounded_closure"]["policy"]
+           + "- specific_failing_audits: %s\n"
+           % (report["bounded_closure"]["specific_failing_audits"] or "none")
+           + "- deferred_work: %s\n\n" % report["bounded_closure"]["deferred_work"]
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -3630,14 +3736,15 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nOPTIMIZATION_SCORECARD: %s; totals=%s.\n"
            "\nCOMPLETION_CONDITIONS: %s; totals=%s.\n"
            "\nEXECUTION_ORDER: %s; totals=%s.\n"
+           "\nBOUNDED_CLOSURE: %s; failing_audits=%s; deferred=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
            "\nPRESERVED_INVARIANTS: Body-before-MIND, SELF/OTHER, cache, lineage, host preservation.\n"
            "\nRISKS: artifact path references are literal-string checks, not full semantic proof.\n"
-           "\nOPEN_QUESTIONS: tokenizer measurement needs optional tiktoken authority.\n"
-           "\nBLOCKERS: full protocol completion still needs chunk-by-chunk optimization passes.\n"
-           "\nALIGNMENT_RESULT: REVISE; baseline maps generated, convergence pending.\n"
+           "\nOPEN_QUESTIONS: tokenizer and benchmark measurement remain optional tool-authority items.\n"
+           "\nBLOCKERS: none under bounded closure; maximal protocol depth remains deferred.\n"
+           "\nALIGNMENT_RESULT: %s under bounded closure; maximal protocol alignment remains %s.\n"
            "\nGUARDIAN_RESULT: %s; totals=%s; safe to continue in smaller passes.\n"
            % (report["file_count"], report["branch"], report["head"],
               report["file_count"], len(artifacts), len(report["change_ledger"]),
@@ -3680,6 +3787,11 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["completion_conditions"]["totals"],
               report["execution_order"]["status"],
               report["execution_order"]["totals"],
+              report["bounded_closure"]["status"],
+              report["bounded_closure"]["specific_failing_audits"] or "none",
+              len(report["bounded_closure"]["deferred_work"]),
+              report["bounded_closure"]["status"],
+              report["whole_project_alignment"]["status"],
               report["guardian_review"]["status"],
               report["guardian_review"]["totals"]))
     return artifacts
@@ -3757,6 +3869,13 @@ def main(argv=None) -> int:
                               "status": report["execution_order"]["status"],
                               "totals": report["execution_order"]["totals"],
                           },
+                          "bounded_closure": {
+                              "status": report["bounded_closure"]["status"],
+                              "specific_failing_audits":
+                                  report["bounded_closure"]["specific_failing_audits"],
+                              "deferred_work": report["bounded_closure"]["deferred_work"],
+                              "policy": report["bounded_closure"]["policy"],
+                          },
                           "observed_checks": observed,
                           "strict": {"ok": not failures, "failures": failures}},
                          indent=2, sort_keys=True))
@@ -3815,6 +3934,11 @@ def main(argv=None) -> int:
         print("  order     : %s %s" % (
             report["execution_order"]["status"],
             report["execution_order"]["totals"],
+        ))
+        print("  closure   : %s failing=%d deferred=%d" % (
+            report["bounded_closure"]["status"],
+            len(report["bounded_closure"]["specific_failing_audits"]),
+            len(report["bounded_closure"]["deferred_work"]),
         ))
         if strict:
             print("  strict     : %s" % ("PASS" if not failures else "FAIL"))

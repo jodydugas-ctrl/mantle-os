@@ -664,6 +664,199 @@
       ],
       "receipt": "Pass 36 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
       "verified": true
+    },
+    {
+      "path": "src/mantle/optimize_audit.py",
+      "chunk_id": "pass-37.optimize-audit.bounded-closure",
+      "chunk_kind": "python audit-policy function and report-output cluster",
+      "status": "changed-verified",
+      "selected_candidate": "Add bounded_closure as an explicit active-goal stopping receipt while preserving maximal protocol REVISE evidence.",
+      "rejected_candidates": [
+        "Declare the maximal whole-repository protocol fully complete",
+        "Continue semantic rewrite passes without a concrete failing audit",
+        "Install tokenizer or benchmark tooling without operator authority"
+      ],
+      "preserved_invariants": [
+        "no organism runtime behavior change",
+        "strict audit still fails concrete audit errors",
+        "token and benchmark claims remain honest when unverifiable",
+        "future deep optimization remains explicitly deferred"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-19 bounded-closure-policy",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds one explicit closure receipt instead of mutating existing protocol gates",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "maximal protocol rows remain REVISE by design for future authorized passes"
+      ],
+      "receipt": "Pass 37 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-37.invariants.bounded-closure-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Add OPT-19 to prove bounded closure has no failing audits, no runtime behavior changes, and deferred optional tools.",
+      "rejected_candidates": [
+        "Leave the closure policy as prose only",
+        "Weaken existing completion-condition invariants"
+      ],
+      "preserved_invariants": [
+        "security invariant suite remains stdlib-only",
+        "completion matrix still distinguishes maximal protocol REVISE",
+        "bounded closure cannot hide concrete audit failures"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-19 bounded-closure-policy",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: proof semantics pass",
+      "complexity_delta": "adds one focused invariant",
+      "performance_delta": "invariant suite reads the optimization audit report",
+      "risks": [
+        "future tools can reopen token or benchmark proof if explicitly authorized"
+      ],
+      "receipt": "Pass 37 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "README.md",
+      "chunk_id": "pass-37.docs.readme-invariant-anchor",
+      "chunk_kind": "public documentation count anchor",
+      "status": "changed-verified",
+      "selected_candidate": "Update README certification-count anchors after adding OPT-19.",
+      "rejected_candidates": [
+        "Leave public count stale",
+        "Remove the checked README count anchor"
+      ],
+      "preserved_invariants": [
+        "README remains the public certification-count anchor",
+        "no doctrine or runtime behavior changes"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "VERS-1 version-alignment-map",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: documentation count update",
+      "complexity_delta": "no structural change",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "future invariant additions must update checked count anchors together"
+      ],
+      "receipt": "Pass 37 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "documents/guides/Audit_Guide.md",
+      "chunk_id": "pass-37.docs.audit-guide-invariant-anchor",
+      "chunk_kind": "operator guide count anchor",
+      "status": "changed-verified",
+      "selected_candidate": "Update Audit Guide certification-count anchor after adding OPT-19.",
+      "rejected_candidates": [
+        "Leave the guide stale",
+        "Remove the guide's quick command explanation"
+      ],
+      "preserved_invariants": [
+        "Audit Guide remains aligned with README and live invariant suite",
+        "operator commands remain unchanged"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "VERS-1 version-alignment-map",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: documentation count update",
+      "complexity_delta": "no structural change",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "future invariant additions must update checked count anchors together"
+      ],
+      "receipt": "Pass 37 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "documents/refinement/EXPERIMENTAL_REFINEMENT_MAP.md",
+      "chunk_id": "pass-37.docs.refinement-map-receipt",
+      "chunk_kind": "refinement receipt prose",
+      "status": "changed-verified",
+      "selected_candidate": "Record the bounded closure pass, deferred work, deletion decision, and proof path.",
+      "rejected_candidates": [
+        "Close the goal without a documented receipt",
+        "Delete pending optimization surfaces"
+      ],
+      "preserved_invariants": [
+        "every proposed deletion explains function coverage",
+        "no deletion occurred",
+        "future passes can inspect deferred work"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-17 chunk-optimization-ledger",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: receipt prose",
+      "complexity_delta": "adds a bounded closure receipt",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "receipt is documentation evidence, not runtime behavior"
+      ],
+      "receipt": "Pass 37 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "documents/refinement/CHUNK_OPTIMIZATION_LEDGER.json",
+      "chunk_id": "pass-37.docs.chunk-ledger-receipts",
+      "chunk_kind": "structured refinement receipt ledger",
+      "status": "changed-verified",
+      "selected_candidate": "Add structured receipts for every Pass 37 changed chunk.",
+      "rejected_candidates": [
+        "Rely on narrative map alone",
+        "Treat bounded closure as an unreceipted state change"
+      ],
+      "preserved_invariants": [
+        "ledger remains summary-only and secret-free",
+        "partial progress remains distinguishable from maximal protocol completion",
+        "no prompts, completions, tokens, keys, or private file contents are stored"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-17 chunk-optimization-ledger",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: structured proof receipt",
+      "complexity_delta": "adds bounded-closure receipt rows",
+      "performance_delta": "audit reads one small JSON file; runtime path unaffected",
+      "risks": [
+        "ledger must keep recording future closure or reopen decisions explicitly"
+      ],
+      "receipt": "Pass 37 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
     }
   ]
 }

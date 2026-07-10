@@ -2916,6 +2916,47 @@ def t_optimization_execution_order_matrix():
                 % (len(rows), order["totals"], order["missing_steps"] or "none"))
 
 
+def t_optimization_bounded_closure_policy():
+    """OPT-19: the active refinement goal has an explicit bounded closure rule:
+    no more behavior changes unless a specific audit fails, and optional
+    tokenizer/benchmark work stays deferred until tool authority exists."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    closure = report["bounded_closure"]
+    policy = closure["policy"]
+    required = set(_opt.BOUNDED_CLOSURE_FIELDS)
+    shape_ok = (
+        required.issubset(closure)
+        and closure["status"] == "PASS"
+        and closure["specific_failing_audits"] == []
+        and isinstance(closure["deferred_work"], list)
+        and isinstance(closure["accepted_unverifiable"], list)
+        and isinstance(closure["reopen_triggers"], list)
+    )
+    policy_ok = (
+        policy["no_behavior_changes_without_specific_failing_audit"]
+        and policy["complete_documentation_and_proof_receipts"]
+        and policy["accept_unverifiable_token_and_benchmark_items_without_tool_authority"]
+        and closure["runtime_behavior_changes"] == []
+        and not closure["authorized_tools"]["tiktoken"]
+        and not closure["authorized_tools"]["dedicated_benchmarks"]
+    )
+    defer_ok = (
+        any("tiktoken" in item for item in closure["accepted_unverifiable"])
+        and any("benchmark" in item for item in closure["accepted_unverifiable"])
+        and any("semantic optimization" in item for item in closure["deferred_work"])
+        and any("certification audit fails" in item for item in closure["reopen_triggers"])
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = shape_ok and policy_ok and defer_ok and strict_ok
+    return ok, ("closure=%s failing=%d deferred=%d accepted_unverifiable=%d"
+                % (closure["status"], len(closure["specific_failing_audits"]),
+                   len(closure["deferred_work"]),
+                   len(closure["accepted_unverifiable"])))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -3098,6 +3139,7 @@ TESTS = [
     ("OPT-13 final-mode-performance",           t_optimization_final_mode_performance_receipts),
     ("OPT-14 completion-conditions",            t_optimization_completion_conditions_matrix),
     ("OPT-15 execution-order",                  t_optimization_execution_order_matrix),
+    ("OPT-19 bounded-closure-policy",           t_optimization_bounded_closure_policy),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]
