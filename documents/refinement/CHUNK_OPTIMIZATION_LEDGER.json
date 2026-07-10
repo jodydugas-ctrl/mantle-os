@@ -1,0 +1,232 @@
+{
+  "schema": "mantle-chunk-optimization-ledger-v1",
+  "rule": "Verified chunk receipts record section-8 progress without treating partial progress as whole-file completion.",
+  "receipts": [
+    {
+      "path": "src/mantle/optimize_audit.py",
+      "chunk_id": "pass-28.optimize-audit.execution-order-matrix",
+      "chunk_kind": "python function and report-output cluster",
+      "status": "changed-verified",
+      "selected_candidate": "Add an explicit section-20 execution-order matrix to the optimization audit.",
+      "rejected_candidates": [
+        "Claim completion from final green checks alone",
+        "Keep execution order as prose only"
+      ],
+      "preserved_invariants": [
+        "Body-before-MIND",
+        "no runtime behavior change",
+        "strict audit remains non-mutating",
+        "PASS remains unavailable while protocol rows are REVISE"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-15 execution-order",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds explicit matrix rows; avoids implicit completion logic",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "ledger is audit evidence, not proof of whole-project completion"
+      ],
+      "receipt": "Pass 28 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-28.invariants.execution-order-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Add OPT-15 to prove the execution-order matrix is complete and ordered.",
+      "rejected_candidates": [
+        "Rely on manual inspection of optimize-audit output"
+      ],
+      "preserved_invariants": [
+        "security invariant suite remains stdlib-only",
+        "no invariant is weakened",
+        "execution order cannot skip middle protocol steps"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-15 execution-order",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds one focused invariant",
+      "performance_delta": "invariant suite adds one audit assertion",
+      "risks": [
+        "project remains REVISE until later protocol rows pass"
+      ],
+      "receipt": "Pass 28 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/optimize_audit.py",
+      "chunk_id": "pass-29.optimize-audit.characterization-ledger",
+      "chunk_kind": "python audit-ledger function and report-output cluster",
+      "status": "changed-verified",
+      "selected_candidate": "Add section-7 characterization-test receipts for merge and rewrite candidates.",
+      "rejected_candidates": [
+        "Merge candidates before focused characterization tests",
+        "Leave characterization tests as a hard-coded execution-order blocker"
+      ],
+      "preserved_invariants": [
+        "no code merge without parity proof",
+        "mutation_allowed remains false for underspecified behavior",
+        "strict audit remains non-mutating"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-16 characterization-tests",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds focused proof rows before later rewrites",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "queued tests are prerequisites, not completion proof"
+      ],
+      "receipt": "Pass 29 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-29.invariants.characterization-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Add OPT-16 to prove characterization rows block mutation until focused tests exist.",
+      "rejected_candidates": [
+        "Trust audit JSON shape without an invariant"
+      ],
+      "preserved_invariants": [
+        "security invariant suite remains stdlib-only",
+        "merge/deletion remains blocked without characterization"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-16 characterization-tests",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds one focused invariant",
+      "performance_delta": "invariant suite adds one audit assertion",
+      "risks": [
+        "candidate-specific tests still need later implementation"
+      ],
+      "receipt": "Pass 29 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/optimize_audit.py",
+      "chunk_id": "pass-30.optimize-audit.chunk-ledger-integration",
+      "chunk_kind": "python audit-ledger function and file-completion gate cluster",
+      "status": "changed-verified",
+      "selected_candidate": "Load committed chunk receipts and count verified entries as partial file-review progress.",
+      "rejected_candidates": [
+        "Infer durable chunk completion from clean git status",
+        "Mark whole files complete from one changed chunk"
+      ],
+      "preserved_invariants": [
+        "partial progress remains REVISE",
+        "strict audit rejects malformed proof receipts",
+        "no organism runtime behavior change",
+        "secret-like content is rejected from ledger evidence"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-17 chunk-optimization-ledger",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds a small durable receipt reader and file-gate link",
+      "performance_delta": "audit reads one small JSON file; runtime path unaffected",
+      "risks": [
+        "ledger receipt quality depends on future strict invariants"
+      ],
+      "receipt": "Pass 30 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-30.invariants.chunk-ledger-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Add OPT-17 to prove durable chunk receipts are well-formed and counted as partial progress.",
+      "rejected_candidates": [
+        "Allow the ledger without an invariant",
+        "Treat ledger rows as whole-file completion"
+      ],
+      "preserved_invariants": [
+        "security invariant suite remains stdlib-only",
+        "partial chunk progress remains distinguishable from PASS"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-17 chunk-optimization-ledger",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds one focused invariant",
+      "performance_delta": "invariant suite reads the optimization audit report",
+      "risks": [
+        "whole-project completion still requires many pending chunk receipts"
+      ],
+      "receipt": "Pass 30 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "documents/refinement/CHUNK_OPTIMIZATION_LEDGER.json",
+      "chunk_id": "pass-30.docs.chunk-optimization-ledger",
+      "chunk_kind": "structured refinement receipt ledger",
+      "status": "changed-verified",
+      "selected_candidate": "Commit a durable section-8 receipt ledger for verified chunk optimization passes.",
+      "rejected_candidates": [
+        "Keep chunk receipts only in narrative refinement prose",
+        "Generate uncommitted artifacts as the only proof source"
+      ],
+      "preserved_invariants": [
+        "no secrets, keys, prompts, completions, or private file contents are stored",
+        "ledger is evidence only and cannot authorize mutation",
+        "partial progress remains REVISE"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-17 chunk-optimization-ledger",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds one structured receipt file",
+      "performance_delta": "audit reads one small JSON file; runtime path unaffected",
+      "risks": [
+        "ledger must remain summary-only and secret-free"
+      ],
+      "receipt": "Pass 30 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    }
+  ]
+}

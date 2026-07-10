@@ -2358,6 +2358,69 @@ def t_optimization_characterization_tests():
                 % (len(rows), ledger["totals"], len(malformed)))
 
 
+def t_optimization_chunk_optimization_ledger():
+    """OPT-17: section-8 chunk optimization progress is durable, verified,
+    secret-free, and counted only as partial file-review progress."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    ledger = report["chunk_optimization_ledger"]
+    receipts = ledger["receipts"]
+    required = set(_opt.CHUNK_OPTIMIZATION_RECEIPT_FIELDS)
+    malformed = [row.get("chunk_id", "<unknown>") for row in receipts
+                 if required - set(row)]
+    by_path = {row["path"]: row for row in report["file_completion_gate"]["rows"]}
+    receipt_paths = {row["path"] for row in receipts}
+    row_shape_ok = (
+        ledger["status"] == "PASS"
+        and ledger["path"] == _opt.CHUNK_LEDGER_REL
+        and ledger["schema"] == "mantle-chunk-optimization-ledger-v1"
+        and ledger["required_fields"] == list(_opt.CHUNK_OPTIMIZATION_RECEIPT_FIELDS)
+        and receipts
+        and not malformed
+        and not ledger["errors"]
+        and not ledger["missing_paths"]
+        and not ledger["duplicate_chunk_ids"]
+        and ledger["secret_hits"] is False
+        and all(row["verified"] is True for row in receipts)
+        and all(row["evidence"] and row["tests"] for row in receipts)
+        and all(row["token_delta"].startswith("UNVERIFIABLE") for row in receipts)
+    )
+    progress_ok = (
+        ledger["verified_receipts"] == len(receipts)
+        and ledger["totals"].get("changed-verified", 0) == len(receipts)
+        and "src/mantle/optimize_audit.py" in ledger["by_path"]
+        and "src/mantle/audits/invariants.py" in ledger["by_path"]
+        and "documents/refinement/CHUNK_OPTIMIZATION_LEDGER.json" in receipt_paths
+        and by_path["src/mantle/optimize_audit.py"]["status"] in {
+            "PARTIAL_CHUNK_REVIEW", "CHANGED_REVIEW_REQUIRED",
+        }
+        and by_path["src/mantle/optimize_audit.py"]["inspected_chunks"] > 0
+        and (
+            by_path["src/mantle/optimize_audit.py"]["status"] == "CHANGED_REVIEW_REQUIRED"
+            or by_path["src/mantle/optimize_audit.py"]["skipped_chunks"] > 0
+        )
+        and by_path["src/mantle/optimize_audit.py"]["chunk_receipts"]
+        and (report["file_completion_gate"]["totals"].get("PARTIAL_CHUNK_REVIEW", 0) > 0
+             or report["file_completion_gate"]["totals"].get("CHANGED_REVIEW_REQUIRED", 0) > 0)
+    )
+    execution_row = {
+        row["name"]: row for row in report["execution_order"]["rows"]
+    }["File-by-file, chunk-by-chunk optimization"]
+    execution_ok = (
+        execution_row["status"] == "REVISE"
+        and execution_row["evidence"]["chunk_optimization_ledger"] == ledger["totals"]
+        and execution_row["evidence"]["verified_chunk_receipts"] == len(receipts)
+        and execution_row["blockers"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and progress_ok and execution_ok and strict_ok
+    return ok, ("receipts=%d totals=%s partial=%s"
+                % (len(receipts), ledger["totals"],
+                   report["file_completion_gate"]["totals"].get("PARTIAL_CHUNK_REVIEW", 0)))
+
+
 def t_optimization_file_completion_gate():
     """OPT-6: the optimization audit records section 9/12 file and chunk
     completion state without claiming pending files are complete."""
@@ -2382,11 +2445,15 @@ def t_optimization_file_completion_gate():
     status_ok = (
         gate["status"] == "REVISE"
         and gate["totals"].get("PENDING_CHUNK_REVIEW", 0) > 0
+        and (gate["totals"].get("PARTIAL_CHUNK_REVIEW", 0) > 0
+             or gate["totals"].get("CHANGED_REVIEW_REQUIRED", 0) > 0)
         and gate["totals"].get("INVENTORY_ONLY", 0) > 0
         and "complete only when every eligible chunk is inspected" in gate["completion_rule"]
     )
     evidence_ok = (
         by_path["src/mantle/optimize_audit.py"]["eligible_chunks"] > 0
+        and by_path["src/mantle/optimize_audit.py"]["inspected_chunks"] > 0
+        and by_path["src/mantle/optimize_audit.py"]["chunk_receipts"]
         and by_path["src/mantle/optimize_audit.py"]["parse_status"] == "PASS"
         and by_path["README.md"]["chunk_basis"] == "markdown heading section"
         and by_path["documents/grimoire/The Grimoire.md"]["terminology_status"] == "PENDING"
@@ -2921,6 +2988,7 @@ TESTS = [
     ("OPT-5 merge-candidate-analysis",          t_optimization_merge_candidate_analysis),
     ("OPT-11 merge-parity-review",              t_optimization_merge_parity_review),
     ("OPT-16 characterization-tests",           t_optimization_characterization_tests),
+    ("OPT-17 chunk-optimization-ledger",        t_optimization_chunk_optimization_ledger),
     ("OPT-6 file-completion-gate",              t_optimization_file_completion_gate),
     ("OPT-7 subsystem-convergence",             t_optimization_subsystem_convergence),
     ("OPT-8 ripple-queue",                      t_optimization_ripple_queue),

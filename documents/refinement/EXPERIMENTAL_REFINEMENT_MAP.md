@@ -105,6 +105,32 @@ proof path.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 30 Receipt
+
+Function served: protocol section 8 requires file-by-file, chunk-by-chunk optimization progress to
+be receipted. Previous audit passes could report changed files during a dirty-tree run, but a clean
+checkout had no durable way to count which semantic chunks had already been inspected and verified.
+
+Changes:
+
+- Added `documents/refinement/CHUNK_OPTIMIZATION_LEDGER.json`.
+- Added `CHUNK_OPTIMIZATION_RECEIPT_FIELDS` and `CHUNK_LEDGER_REL`.
+- `python -m mantle optimize-audit` now loads the committed chunk ledger and counts only verified
+  receipts as inspected chunks.
+- File-completion rows now carry `chunk_receipts` and can distinguish `PARTIAL_CHUNK_REVIEW` from
+  untouched `PENDING_CHUNK_REVIEW`.
+- Strict audit now rejects malformed chunk receipts, missing paths, duplicate chunk IDs, and
+  secret-like ledger content.
+- Completion conditions, guardian evidence, execution-order step 8, `ALIGNMENT_MATRIX`,
+  `FINAL_RECEIPT`, CLI output, and JSON output now summarize durable chunk progress.
+- Added invariant `OPT-17 chunk-optimization-ledger`.
+- Updated public invariant-count anchors from 107 to 108.
+
+Deletion decision: no files, functions, documents, or aliases were deleted. This pass adds durable
+section-8 evidence while preserving the rule that partial chunk review is not whole-file completion.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 27 Receipt
 
 Function served: protocol section 19 lists the exact conditions required before PASS may be

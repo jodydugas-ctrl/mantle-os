@@ -53,6 +53,7 @@ REQUIRED_ARTIFACTS = (
     "SKIP_BLOCK_REPORT",
     "FINAL_RECEIPT",
 )
+CHUNK_LEDGER_REL = "documents/refinement/CHUNK_OPTIMIZATION_LEDGER.json"
 REQUIRED_FILE_FIELDS = (
     "path",
     "category",
@@ -171,6 +172,23 @@ CHARACTERIZATION_TEST_FIELDS = (
     "blockers",
     "receipt",
 )
+CHUNK_OPTIMIZATION_RECEIPT_FIELDS = (
+    "path",
+    "chunk_id",
+    "chunk_kind",
+    "status",
+    "selected_candidate",
+    "rejected_candidates",
+    "preserved_invariants",
+    "evidence",
+    "tests",
+    "token_delta",
+    "complexity_delta",
+    "performance_delta",
+    "risks",
+    "receipt",
+    "verified",
+)
 FILE_COMPLETION_FIELDS = (
     "path",
     "status",
@@ -179,6 +197,7 @@ FILE_COMPLETION_FIELDS = (
     "changed_chunks",
     "skipped_chunks",
     "chunk_basis",
+    "chunk_receipts",
     "parse_status",
     "reference_status",
     "import_export_status",
@@ -1603,6 +1622,85 @@ def _characterization_tests(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _chunk_optimization_ledger(report: Dict[str, Any]) -> Dict[str, Any]:
+    root = report["repo_root"]
+    ledger_path = os.path.join(root, CHUNK_LEDGER_REL.replace("/", os.sep))
+    file_paths = {f["path"] for f in report["files"]}
+    receipts: List[Dict[str, Any]] = []
+    errors: List[str] = []
+    if os.path.exists(ledger_path):
+        try:
+            with open(ledger_path, encoding="utf-8") as f:
+                data = json.load(f)
+            if data.get("schema") != "mantle-chunk-optimization-ledger-v1":
+                errors.append("unknown ledger schema")
+            raw_receipts = data.get("receipts", [])
+            if not isinstance(raw_receipts, list):
+                errors.append("receipts must be a list")
+                raw_receipts = []
+            for i, raw in enumerate(raw_receipts):
+                if not isinstance(raw, dict):
+                    errors.append("receipt %d is not an object" % i)
+                    continue
+                receipt = dict(raw)
+                receipt.setdefault("verified", False)
+                receipts.append(receipt)
+        except (OSError, json.JSONDecodeError) as e:
+            errors.append("cannot read chunk ledger: %s" % e)
+    else:
+        errors.append("chunk ledger file absent")
+
+    malformed = [
+        r.get("chunk_id", "<unknown>")
+        for r in receipts
+        if any(field not in r for field in CHUNK_OPTIMIZATION_RECEIPT_FIELDS)
+    ]
+    missing_paths = sorted({
+        r.get("path", "<unknown>") for r in receipts
+        if r.get("path") not in file_paths
+    })
+    duplicate_ids = [
+        row["key"] for row in _collisions(
+            [str(r.get("chunk_id", "")) for r in receipts if r.get("chunk_id")]
+        )
+    ]
+    secret_hits = bool(SECRET_RE.search(json.dumps(receipts, sort_keys=True)))
+    verified = [
+        r for r in receipts
+        if r.get("verified") is True
+        and r.get("status") in {"changed-verified", "inspected-no-change"}
+        and r.get("path") in file_paths
+        and not any(field not in r for field in CHUNK_OPTIMIZATION_RECEIPT_FIELDS)
+    ]
+    by_path: Dict[str, List[Dict[str, Any]]] = {}
+    for receipt in verified:
+        by_path.setdefault(receipt["path"], []).append(receipt)
+    totals = Counter(r.get("status", "UNKNOWN") for r in receipts)
+    status = "PASS" if (
+        receipts and not errors and not malformed and not missing_paths
+        and not duplicate_ids and not secret_hits
+    ) else "REVISE"
+    return {
+        "status": status,
+        "path": CHUNK_LEDGER_REL,
+        "schema": "mantle-chunk-optimization-ledger-v1",
+        "receipts": receipts,
+        "verified_receipts": len(verified),
+        "by_path": {path: rows for path, rows in sorted(by_path.items())},
+        "totals": dict(sorted(totals.items())),
+        "malformed": malformed,
+        "missing_paths": missing_paths,
+        "duplicate_chunk_ids": duplicate_ids,
+        "secret_hits": secret_hits,
+        "errors": errors,
+        "required_fields": list(CHUNK_OPTIMIZATION_RECEIPT_FIELDS),
+        "rule": (
+            "Section 8 chunk optimization progress is counted only from committed, "
+            "verified receipts; partial progress must not become whole-file completion."
+        ),
+    }
+
+
 def _chunk_basis(file_row: Dict[str, Any]) -> Tuple[str, int]:
     path = file_row["path"]
     if not file_row["text"]:
@@ -1631,11 +1729,14 @@ def _parse_status(root: str, file_row: Dict[str, Any]) -> str:
 
 def _file_completion_gate(report: Dict[str, Any]) -> Dict[str, Any]:
     root = report["repo_root"]
+    chunk_receipts = report["chunk_optimization_ledger"]["by_path"]
     rows = []
     for f in report["files"]:
         basis, eligible_chunks = _chunk_basis(f)
         pending = f["disposition"] == "pending-pass-review"
-        inspected_chunks = 0 if pending else eligible_chunks
+        receipts = chunk_receipts.get(f["path"], [])
+        receipt_count = min(eligible_chunks, len(receipts))
+        inspected_chunks = receipt_count if pending else eligible_chunks
         skipped_chunks = eligible_chunks - inspected_chunks
         parse_status = _parse_status(root, f)
         stale_refs = [r for r in report["maps"]["path_references"]
@@ -1648,7 +1749,8 @@ def _file_completion_gate(report: Dict[str, Any]) -> Dict[str, Any]:
             else "PASS"
         )
         status = (
-            "PENDING_CHUNK_REVIEW" if pending
+            "PARTIAL_CHUNK_REVIEW" if pending and inspected_chunks > 0
+            else "PENDING_CHUNK_REVIEW" if pending
             else "INVENTORY_ONLY" if f["disposition"] == "inventory-only"
             else "BLOCKED" if f["disposition"] == "blocked"
             else "CHANGED_REVIEW_REQUIRED" if f["disposition"] == "changed"
@@ -1659,9 +1761,10 @@ def _file_completion_gate(report: Dict[str, Any]) -> Dict[str, Any]:
             "status": status,
             "eligible_chunks": eligible_chunks,
             "inspected_chunks": inspected_chunks,
-            "changed_chunks": 0,
+            "changed_chunks": sum(1 for r in receipts if r["status"] == "changed-verified"),
             "skipped_chunks": skipped_chunks,
             "chunk_basis": basis,
+            "chunk_receipts": [r["chunk_id"] for r in receipts],
             "parse_status": parse_status,
             "reference_status": reference_status,
             "import_export_status": "PASS" if not f["imports"] or f["importers"] is not None else "UNKNOWN",
@@ -1672,7 +1775,10 @@ def _file_completion_gate(report: Dict[str, Any]) -> Dict[str, Any]:
             "public_behavior_status": "preserved-no-runtime-edit",
             "ripple_status": "none-applied",
             "proof_path": f["proof_path"],
-            "receipt": f["skip_block_reason"],
+            "receipt": (
+                "%s; verified chunk receipts=%d" % (f["skip_block_reason"], len(receipts))
+                if receipts else f["skip_block_reason"]
+            ),
         })
     totals = Counter(row["status"] for row in rows)
     missing_fields = [
@@ -2364,7 +2470,10 @@ def _optimization_scorecard(report: Dict[str, Any]) -> Dict[str, Any]:
                        {"runtime_behavior_changes": []}),
         _scorecard_row("unresolved risks", "REVISE", None,
                        ["pending chunk review", "tokenizer unavailable", "benchmark comparison pending"],
-                       None, {"file_completion": report["file_completion_gate"]["totals"]},
+                       None, {"file_completion": report["file_completion_gate"]["totals"],
+                              "chunk_optimization_ledger": report["chunk_optimization_ledger"]["totals"],
+                              "verified_chunk_receipts":
+                                  report["chunk_optimization_ledger"]["verified_receipts"]},
                        ["protocol completion still has open proof obligations"]),
         _scorecard_row("unverifiable claims", "REVISE", None,
                        [row["requirement"] for row in report["final_verification"]["rows"]
@@ -2401,11 +2510,15 @@ def _guardian_review(report: Dict[str, Any]) -> Dict[str, Any]:
         _guardian_row("inventory complete", "PASS",
                       {"files": report["file_count"], "tracked_missing": report["tracked_missing"]}),
         _guardian_row("eligible chunks inspected", "REVISE",
-                      {"file_completion": report["file_completion_gate"]["totals"]},
+                      {"file_completion": report["file_completion_gate"]["totals"],
+                       "verified_chunk_receipts":
+                           report["chunk_optimization_ledger"]["verified_receipts"]},
                       ["pending chunk review remains"]),
         _guardian_row("changed chunks verified", "REVISE",
-                      {"changed": report["dispositions"].get("changed", 0)},
-                      ["changed chunks require observed proof receipts"] if report["dispositions"].get("changed", 0) else []),
+                      {"changed": report["dispositions"].get("changed", 0),
+                       "chunk_optimization_ledger": report["chunk_optimization_ledger"]["totals"]},
+                      ["changed chunks require observed proof receipts"]
+                      if report["dispositions"].get("changed", 0) else []),
         _guardian_row("tests remain green", "REVISE",
                       {"final_verification": report["final_verification"]["totals"]},
                       ["not every configured final check is observed"]),
@@ -2485,7 +2598,9 @@ def _completion_conditions(report: Dict[str, Any]) -> Dict[str, Any]:
         _completion_row(
             "every eligible file was inspected",
             "REVISE",
-            {"file_completion": report["file_completion_gate"]["totals"]},
+            {"file_completion": report["file_completion_gate"]["totals"],
+             "chunk_optimization_ledger": report["chunk_optimization_ledger"]["totals"],
+             "verified_chunk_receipts": report["chunk_optimization_ledger"]["verified_receipts"]},
             ["pending eligible chunks remain"],
         ),
         _completion_row(
@@ -2497,7 +2612,8 @@ def _completion_conditions(report: Dict[str, Any]) -> Dict[str, Any]:
             "every changed chunk has observed verification",
             "REVISE",
             {"observed_commands": len(report["test_report"]["observed_commands"]),
-             "changed_files": report["dispositions"].get("changed", 0)},
+             "changed_files": report["dispositions"].get("changed", 0),
+             "verified_chunk_receipts": report["chunk_optimization_ledger"]["verified_receipts"]},
             ["changed chunks require observed verification receipts"],
         ),
         _completion_row(
@@ -2630,7 +2746,10 @@ def _execution_order(report: Dict[str, Any]) -> Dict[str, Any]:
                        ["candidate-specific characterization tests remain queued"]
                        if report["characterization_tests"]["status"] != "PASS" else []),
         _execution_row(8, "File-by-file, chunk-by-chunk optimization", "REVISE",
-                       {"file_completion": report["file_completion_gate"]["totals"]},
+                       {"file_completion": report["file_completion_gate"]["totals"],
+                        "chunk_optimization_ledger": report["chunk_optimization_ledger"]["totals"],
+                        "verified_chunk_receipts":
+                            report["chunk_optimization_ledger"]["verified_receipts"]},
                        ["pending eligible chunks remain"]),
         _execution_row(9, "Immediate ripple resolution",
                        "PASS" if report["ripple_queue"]["status"] == "PASS" else "REVISE",
@@ -3003,6 +3122,21 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
                         % len(malformed_characterization))
     if merge_map.get("merge_candidates") and not characterization.get("rows"):
         failures.append("characterization test ledger missing")
+    chunk_ledger = report.get("chunk_optimization_ledger", {})
+    if chunk_ledger.get("errors"):
+        failures.append("chunk optimization ledger errors: %s"
+                        % "; ".join(chunk_ledger.get("errors", [])))
+    if chunk_ledger.get("malformed"):
+        failures.append("%d malformed chunk optimization receipts"
+                        % len(chunk_ledger.get("malformed", [])))
+    if chunk_ledger.get("missing_paths"):
+        failures.append("chunk ledger references missing paths: %s"
+                        % ", ".join(chunk_ledger.get("missing_paths", [])))
+    if chunk_ledger.get("duplicate_chunk_ids"):
+        failures.append("duplicate chunk ledger ids: %s"
+                        % ", ".join(chunk_ledger.get("duplicate_chunk_ids", [])))
+    if chunk_ledger.get("secret_hits"):
+        failures.append("chunk optimization ledger contains secret-like material")
     completion = report.get("file_completion_gate", {})
     missing_completion = completion.get("missing_fields") or []
     if missing_completion:
@@ -3164,6 +3298,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["merge_map"] = _merge_map(report)
     report["test_report"] = _test_report(report, observed_checks)
     report["characterization_tests"] = _characterization_tests(report)
+    report["chunk_optimization_ledger"] = _chunk_optimization_ledger(report)
     report["performance_report"] = _performance_report(report)
     report["version_alignment"] = _version_alignment(root, _invariant_count(root))
     report["project_model"] = _project_model(report)
@@ -3272,6 +3407,12 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
                row["candidate_id"], row["characterization_status"])
                        for row in report["characterization_tests"]["rows"])
            + "\n\n"
+           "Chunk optimization ledger: %s; receipts=%d; verified=%d; totals=%s\n"
+           % (report["chunk_optimization_ledger"]["status"],
+              len(report["chunk_optimization_ledger"]["receipts"]),
+              report["chunk_optimization_ledger"]["verified_receipts"],
+              report["chunk_optimization_ledger"]["totals"])
+           + "\n\n"
            "File completion gate: %s; totals=%s\n"
            % (report["file_completion_gate"]["status"],
               report["file_completion_gate"]["totals"])
@@ -3349,6 +3490,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nMERGE_CANDIDATES: %d candidate(s); decisions=%s; no merges performed.\n"
            "\nMERGE_PARITY_REVIEW: %s; totals=%s; safe_to_merge_now=0.\n"
            "\nCHARACTERIZATION_TESTS: %s; totals=%s; mutation_allowed=0.\n"
+           "\nCHUNK_OPTIMIZATION_LEDGER: %s; receipts=%d; verified=%d; totals=%s.\n"
            "\nFILE_COMPLETION_GATE: %s; totals=%s.\n"
            "\nSUBSYSTEM_CONVERGENCE: %s; totals=%s.\n"
            "\nRIPPLE_QUEUE: %s; totals=%s; surfaces=%d.\n"
@@ -3385,6 +3527,10 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["merge_map"]["parity_review"]["totals"],
               report["characterization_tests"]["status"],
               report["characterization_tests"]["totals"],
+              report["chunk_optimization_ledger"]["status"],
+              len(report["chunk_optimization_ledger"]["receipts"]),
+              report["chunk_optimization_ledger"]["verified_receipts"],
+              report["chunk_optimization_ledger"]["totals"],
               report["file_completion_gate"]["status"],
               report["file_completion_gate"]["totals"],
               report["subsystem_convergence"]["status"],
@@ -3448,6 +3594,12 @@ def main(argv=None) -> int:
                               "status": report["characterization_tests"]["status"],
                               "totals": report["characterization_tests"]["totals"],
                           },
+                          "chunk_optimization_ledger": {
+                              "status": report["chunk_optimization_ledger"]["status"],
+                              "receipts": len(report["chunk_optimization_ledger"]["receipts"]),
+                              "verified": report["chunk_optimization_ledger"]["verified_receipts"],
+                              "totals": report["chunk_optimization_ledger"]["totals"],
+                          },
                           "final_verification": {
                               "status": report["final_verification"]["status"],
                               "totals": report["final_verification"]["totals"],
@@ -3491,6 +3643,12 @@ def main(argv=None) -> int:
         print("  char-test : %s %s" % (
             report["characterization_tests"]["status"],
             report["characterization_tests"]["totals"],
+        ))
+        print("  chunks    : %s receipts=%d verified=%d %s" % (
+            report["chunk_optimization_ledger"]["status"],
+            len(report["chunk_optimization_ledger"]["receipts"]),
+            report["chunk_optimization_ledger"]["verified_receipts"],
+            report["chunk_optimization_ledger"]["totals"],
         ))
         if observed:
             print("  observed   : %d command(s)" % len(observed))
