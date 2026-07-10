@@ -56,6 +56,31 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 26 Receipt
+
+Function served: protocol sections 14, 15, and 17 require performance evidence and final
+verification receipts. The audit could record observed checks, but performance reporting remained
+baseline-only and there was no bundled final-check mode.
+
+Changes:
+
+- Added `--run-checks=final` to `python -m mantle optimize-audit`.
+- The final bundle runs the local stdlib proof surfaces: `check`, `audit`, `audit-mind`, `prove`,
+  and standalone VCW selftest.
+- `PERFORMANCE_REPORT` now records observed proof-command wall-clock durations as benchmark
+  receipts when checks are run.
+- Performance alignment, final verification, and scorecard rows now distinguish "no benchmark
+  evidence" from observed proof-duration evidence.
+- The audit remains honest that proof-command durations are not a dedicated baseline/final benchmark
+  suite.
+- Added invariant `OPT-13 final-mode-performance`.
+- Updated public invariant-count anchors from 103 to 104.
+
+Deletion decision: no files, functions, documents, or aliases were deleted. This pass improves
+observed verification/performance receipts without adding dependencies or claiming final PASS.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 25 Receipt
 
 Function served: protocol sections 17, 19, and 20 require an optimization scorecard, explicit

@@ -2562,6 +2562,63 @@ def t_optimization_scorecard_guardian_review():
                 % (scorecard["totals"], guardian["totals"]))
 
 
+def t_optimization_final_mode_performance_receipts():
+    """OPT-13: observed final-check receipts feed final verification,
+    scorecard, and performance-report benchmark evidence without installing
+    dependencies or pretending proof-command timing is a dedicated benchmark."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    observed = [
+        {"command": "%s -m mantle check" % sys.executable,
+         "exit_code": 0, "duration_s": 1.0, "stdout_tail": "check green",
+         "stderr_tail": "", "timed_out": False},
+        {"command": "%s -m mantle audit" % sys.executable,
+         "exit_code": 0, "duration_s": 0.2, "stdout_tail": "audit green",
+         "stderr_tail": "", "timed_out": False},
+        {"command": "%s -m mantle audit-mind" % sys.executable,
+         "exit_code": 0, "duration_s": 0.3, "stdout_tail": "mind green",
+         "stderr_tail": "", "timed_out": False},
+        {"command": "%s -m mantle prove" % sys.executable,
+         "exit_code": 0, "duration_s": 0.4, "stdout_tail": "invariants green",
+         "stderr_tail": "", "timed_out": False},
+        {"command": "%s examples/vcw/vcw_cube.py selftest" % sys.executable,
+         "exit_code": 0, "duration_s": 0.1, "stdout_tail": "vcw green",
+         "stderr_tail": "", "timed_out": False},
+    ]
+    report = _opt.build_inventory(_paths.REPO_ROOT, observed_checks=observed)
+    performance = report["performance_report"]
+    final = report["final_verification"]
+    scorecard = report["optimization_scorecard"]
+    final_by_name = {row["requirement"]: row for row in final["rows"]}
+    score_by_metric = {row["metric"]: row for row in scorecard["rows"]}
+    benchmark_rows_ok = (
+        performance["status"] == "observed-proof-durations"
+        and len(performance["benchmarks"]) == len(observed)
+        and all(row["exit_code"] == 0 for row in performance["benchmarks"])
+        and all(row["duration_s"] > 0 for row in performance["benchmarks"])
+        and "not a dedicated benchmark suite" in performance["confidence"]
+    )
+    final_receipts_ok = (
+        final_by_name["integration and full certification tests"]["status"] == "PASS"
+        and final_by_name["Stage 1 audit"]["status"] == "PASS"
+        and final_by_name["Stage 2 readiness audit"]["status"] == "PASS"
+        and final_by_name["unit and invariant tests"]["status"] == "PASS"
+        and final_by_name["schema and serialization round trips"]["status"] == "PASS"
+        and final_by_name["performance benchmarks"]["status"] == "REVISE"
+    )
+    scorecard_ok = (
+        score_by_metric["tests before/after"]["status"] == "PASS"
+        and score_by_metric["benchmark before/after"]["status"] == "REVISE"
+        and score_by_metric["benchmark before/after"]["after"] == len(observed)
+        and "not baseline/final benchmarks" in score_by_metric["benchmark before/after"]["blockers"][0]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = benchmark_rows_ok and final_receipts_ok and scorecard_ok and strict_ok
+    return ok, ("benchmarks=%d final=%s scorecard=%s"
+                % (len(performance["benchmarks"]), final["totals"], scorecard["totals"]))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2738,6 +2795,7 @@ TESTS = [
     ("OPT-9 whole-project-alignment",           t_optimization_whole_project_alignment),
     ("OPT-10 final-verification+semantic",      t_optimization_final_verification_semantic_comparison),
     ("OPT-12 scorecard-guardian-review",        t_optimization_scorecard_guardian_review),
+    ("OPT-13 final-mode-performance",           t_optimization_final_mode_performance_receipts),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

@@ -864,6 +864,13 @@ def _run_checks(root: str, mode: str) -> List[Dict[str, Any]]:
         "prove": [([sys.executable, "-m", "mantle", "prove"], 180)],
         "fast": [([sys.executable, "-m", "mantle", "check", "--fast"], 240)],
         "full": [([sys.executable, "-m", "mantle", "check"], 300)],
+        "final": [
+            ([sys.executable, "-m", "mantle", "check"], 300),
+            ([sys.executable, "-m", "mantle", "audit"], 120),
+            ([sys.executable, "-m", "mantle", "audit-mind"], 180),
+            ([sys.executable, "-m", "mantle", "prove"], 180),
+            ([sys.executable, "examples/vcw/vcw_cube.py", "selftest"], 90),
+        ],
     }
     if mode not in commands:
         return [{"command": mode, "exit_code": None, "duration_s": 0,
@@ -1855,10 +1862,12 @@ def _whole_project_alignment(report: Dict[str, Any]) -> Dict[str, Any]:
         ),
         _alignment_row(
             "O performance alignment",
-            "UNVERIFIABLE",
+            "REVISE" if report["performance_report"]["benchmarks"] else "UNVERIFIABLE",
             {"performance_report": report["performance_report"]["status"],
              "benchmarks": len(report["performance_report"]["benchmarks"])},
-            ["no benchmark command is run by optimize-audit"],
+            (["observed proof-command durations are not a dedicated benchmark suite"]
+             if report["performance_report"]["benchmarks"]
+             else ["no benchmark command is run by optimize-audit"]),
         ),
     ]
     statuses = Counter(row["status"] for row in rows)
@@ -1995,10 +2004,12 @@ def _final_verification(report: Dict[str, Any]) -> Dict[str, Any]:
         ),
         _verification_row(
             "performance benchmarks",
-            "UNVERIFIABLE",
+            "REVISE" if report["performance_report"]["benchmarks"] else "UNVERIFIABLE",
             {"benchmarks": report["performance_report"]["benchmarks"]},
             None,
-            ["no benchmark command is run by optimize-audit"],
+            (["observed proof-command durations are not a dedicated benchmark suite"]
+             if report["performance_report"]["benchmarks"]
+             else ["no benchmark command is run by optimize-audit"]),
         ),
         _verification_row(
             "cl100k and o200k token report",
@@ -2203,16 +2214,20 @@ def _optimization_scorecard(report: Dict[str, Any]) -> Dict[str, Any]:
         _scorecard_row("build before/after", "UNVERIFIABLE", None, None, None,
                        {"build_backend": report["baseline"]["project"]["build_backend"]},
                        ["no build command is configured"]),
-        _scorecard_row("benchmark before/after", "UNVERIFIABLE", None, None, None,
+        _scorecard_row("benchmark before/after",
+                       "REVISE" if report["performance_report"]["benchmarks"] else "UNVERIFIABLE",
+                       None, len(report["performance_report"]["benchmarks"]), None,
                        {"benchmarks": report["performance_report"]["benchmarks"]},
-                       ["no benchmark command is configured"]),
+                       (["observed proof-command durations are not baseline/final benchmarks"]
+                        if report["performance_report"]["benchmarks"]
+                        else ["no benchmark command is configured"])),
         _scorecard_row("public API changes", "PASS", None,
                        ["python -m mantle optimize-audit"], None,
                        {"public_api_changes": "audit CLI exists; runtime contracts unchanged"}),
         _scorecard_row("behavior changes", "PASS", None, [], None,
                        {"runtime_behavior_changes": []}),
         _scorecard_row("unresolved risks", "REVISE", None,
-                       ["pending chunk review", "tokenizer unavailable", "benchmark unavailable"],
+                       ["pending chunk review", "tokenizer unavailable", "benchmark comparison pending"],
                        None, {"file_completion": report["file_completion_gate"]["totals"]},
                        ["protocol completion still has open proof obligations"]),
         _scorecard_row("unverifiable claims", "REVISE", None,
@@ -2493,7 +2508,7 @@ def _test_report(report: Dict[str, Any], observed: Optional[List[Dict[str, Any]]
         "commands": commands,
         "observed_commands": observed,
         "note": ("This command does not run heavy proof gates by default; it records "
-                 "configured proof surfaces. Use --run-checks=prove|fast|full for "
+                 "configured proof surfaces. Use --run-checks=prove|fast|full|final for "
                  "explicit observed exit-code receipts."),
     }
 
@@ -2501,11 +2516,26 @@ def _test_report(report: Dict[str, Any], observed: Optional[List[Dict[str, Any]]
 def _performance_report(report: Dict[str, Any]) -> Dict[str, Any]:
     total_bytes = sum(f["bytes"] for f in report["files"])
     total_lines = sum(f["lines"] for f in report["files"])
+    observed = report.get("test_report", {}).get("observed_commands", [])
+    benchmarks = [
+        {
+            "command": row["command"],
+            "duration_s": row["duration_s"],
+            "exit_code": row["exit_code"],
+            "timed_out": row["timed_out"],
+            "metric": "wall-clock duration of observed proof command",
+        }
+        for row in observed
+        if row.get("duration_s") is not None
+    ]
     return {
-        "status": "baseline-only",
+        "status": "observed-proof-durations" if benchmarks else "baseline-only",
         "metrics": {"files": report["file_count"], "bytes": total_bytes, "lines": total_lines},
-        "benchmarks": [],
-        "confidence": "low; no benchmark command is run by optimize-audit",
+        "benchmarks": benchmarks,
+        "confidence": (
+            "medium for observed proof-command wall-clock receipts; not a dedicated benchmark suite"
+            if benchmarks else "low; no benchmark command is run by optimize-audit"
+        ),
     }
 
 
@@ -2937,7 +2967,7 @@ def main(argv=None) -> int:
         i = argv.index("--out")
         if i + 1 >= len(argv):
             print("usage: python -m mantle optimize-audit [--out DIR] [--json] "
-                  "[--strict] [--run-checks=prove|fast|full]")
+                  "[--strict] [--run-checks=prove|fast|full|final]")
             return 2
         out_dir = argv[i + 1]
     for arg in argv:
