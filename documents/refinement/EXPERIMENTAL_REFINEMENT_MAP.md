@@ -56,6 +56,26 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 14 Receipt
+
+Function served: the repository now has several mechanically important version/count surfaces:
+Python package metadata, module metadata, the single Grimoire tomb stamp, the Grimoire doctrine
+version, and public invariant-count anchors. The whole-repository optimization protocol needs those
+surfaces checked together instead of updated by memory.
+
+Changes:
+
+- Added a `version_alignment` map to `python -m mantle optimize-audit`.
+- Extended strict optimization audit failures to include stale package/module/Grimoire/count
+  alignment.
+- Added invariant `VERS-1 version-alignment-map`.
+- Updated public invariant-count anchors from 91 to 92.
+
+Deletion decision: no files were deleted. This pass adds a guard over existing surfaces; it does
+not collapse package version, Grimoire version, or certification count into one meaning.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 13 Receipt
 
 Function served: the Grimoire 4 one-tomb migration needed an executable guard so future

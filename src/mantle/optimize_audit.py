@@ -300,6 +300,71 @@ def _project_metadata(root: str) -> Dict[str, Any]:
     }
 
 
+def _first_match(pattern: str, text: str) -> Optional[str]:
+    m = re.search(pattern, text, re.MULTILINE)
+    return m.group(1) if m else None
+
+
+def _version_alignment(root: str, invariant_count: int) -> Dict[str, Any]:
+    pyproject = _read_text_optional(root, "pyproject.toml")
+    init_py = _read_text_optional(root, "src/mantle/__init__.py")
+    readme = _read_text_optional(root, "README.md")
+    audit_guide = _read_text_optional(root, "documents/guides/Audit_Guide.md")
+    grimoire = _read_text_optional(root, "documents/grimoire/The Grimoire.md")
+    grimoire_readme = _read_text_optional(root, "documents/grimoire/README.md")
+
+    package_version = _first_match(r'^version\s*=\s*"([^"]+)"', pyproject)
+    module_version = _first_match(r'^__version__\s*=\s*"([^"]+)"', init_py)
+    grimoire_stamp = _first_match(r"^#\s+(G[0-9.]+-[A-Z])", grimoire)
+    grimoire_version = _first_match(r"Version=([0-9]+(?:\.[0-9]+)*)\b", grimoire)
+    readme_count = _first_match(r"Current certification count:\*\*\s+(\d+)\s+security invariants",
+                                readme)
+    audit_count = _first_match(r"prove\s+# the (\d+) security invariants", audit_guide)
+
+    rows = [
+        {"surface": "pyproject.toml", "field": "project.version",
+         "value": package_version, "expected": module_version,
+         "status": "PASS" if package_version and package_version == module_version else "REVISE"},
+        {"surface": "src/mantle/__init__.py", "field": "__version__",
+         "value": module_version, "expected": package_version,
+         "status": "PASS" if module_version and module_version == package_version else "REVISE"},
+        {"surface": "documents/grimoire/The Grimoire.md", "field": "stamp",
+         "value": grimoire_stamp, "expected": "G4.0-U",
+         "status": "PASS" if grimoire_stamp == "G4.0-U" else "REVISE"},
+        {"surface": "documents/grimoire/The Grimoire.md", "field": "Version",
+         "value": grimoire_version, "expected": "4.0",
+         "status": "PASS" if grimoire_version == "4.0" else "REVISE"},
+        {"surface": "documents/grimoire/README.md", "field": "canonical model",
+         "value": "one version-4 canonical tomb" if "one version-4 canonical tomb" in grimoire_readme else None,
+         "expected": "one version-4 canonical tomb",
+         "status": "PASS" if "one version-4 canonical tomb" in grimoire_readme else "REVISE"},
+        {"surface": "README.md", "field": "security invariant count",
+         "value": int(readme_count) if readme_count else None, "expected": invariant_count,
+         "status": "PASS" if readme_count and int(readme_count) == invariant_count else "REVISE"},
+        {"surface": "documents/guides/Audit_Guide.md", "field": "security invariant count",
+         "value": int(audit_count) if audit_count else None, "expected": invariant_count,
+         "status": "PASS" if audit_count and int(audit_count) == invariant_count else "REVISE"},
+    ]
+    return {
+        "status": "PASS" if all(r["status"] == "PASS" for r in rows) else "REVISE",
+        "package_version": package_version,
+        "module_version": module_version,
+        "grimoire_version": grimoire_version,
+        "grimoire_stamp": grimoire_stamp,
+        "security_invariant_count": invariant_count,
+        "rows": rows,
+    }
+
+
+def _invariant_count(root: str) -> int:
+    text = _read_text_optional(root, "src/mantle/audits/invariants.py")
+    if "TESTS = [" in text:
+        text = text.split("TESTS = [", 1)[1]
+    if "\ndef run_all" in text:
+        text = text.split("\ndef run_all", 1)[0]
+    return len(re.findall(r'^\s*\("', text, re.MULTILINE))
+
+
 def _redact_text(text: str) -> str:
     return SECRET_RE.sub("[REDACTED]", text or "")
 
@@ -672,6 +737,8 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
     file_paths = {f.get("path") for f in report.get("files", [])}
     if ledger_paths != file_paths:
         failures.append("change ledger does not cover every inventoried file")
+    if report.get("version_alignment", {}).get("status") != "PASS":
+        failures.append("version alignment map failed")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -721,6 +788,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["merge_map"] = _merge_map(report)
     report["test_report"] = _test_report(report, observed_checks)
     report["performance_report"] = _performance_report(report)
+    report["version_alignment"] = _version_alignment(root, _invariant_count(root))
     return report
 
 
@@ -782,6 +850,12 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + ("" if not stale_commands else "Unresolved command examples:\n"
               + "\n".join("- `%s` in `%s`" % (r["command"], r["from"])
                           for r in stale_commands[:20]) + "\n\n")
+           + "Version alignment: %s\n"
+           % report["version_alignment"]["status"]
+           + "\n".join("- %s `%s`: %r (expected %r) -> %s"
+                       % (r["surface"], r["field"], r["value"], r["expected"], r["status"])
+                       for r in report["version_alignment"]["rows"])
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -800,6 +874,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nPERFORMANCE_DELTA: no runtime path affected; audit cost is file traversal.\n"
            "\nFILES: %d inventoried; %d artifact files written.\n"
            "\nCHANGE_LEDGER: %d per-file disposition receipt(s); dispositions=%s.\n"
+           "\nVERSION_ALIGNMENT: %s; package=%s module=%s grimoire=%s/%s invariants=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -811,7 +886,13 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nGUARDIAN_RESULT: REVISE; safe to continue in smaller passes.\n"
            % (report["file_count"], report["branch"], report["head"],
               report["file_count"], len(artifacts), len(report["change_ledger"]),
-              dict(sorted(report["dispositions"].items()))))
+              dict(sorted(report["dispositions"].items())),
+              report["version_alignment"]["status"],
+              report["version_alignment"]["package_version"],
+              report["version_alignment"]["module_version"],
+              report["version_alignment"]["grimoire_stamp"],
+              report["version_alignment"]["grimoire_version"],
+              report["version_alignment"]["security_invariant_count"]))
     return artifacts
 
 

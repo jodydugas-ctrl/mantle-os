@@ -2123,6 +2123,39 @@ def t_grimoire_single_tomb():
                 % (stale or "none"))
 
 
+def t_version_alignment_map():
+    """VERS-1: package, module, Grimoire, and public invariant-count surfaces are
+    mapped together so mechanical updates cannot leave a stale version/count island."""
+    from .. import optimize_audit as _opt
+
+    report = _opt.build_inventory(paths.REPO_ROOT)
+    alignment = report["version_alignment"]
+    rows = {(r["surface"], r["field"]): r for r in alignment["rows"]}
+    expected_rows = {
+        ("pyproject.toml", "project.version"),
+        ("src/mantle/__init__.py", "__version__"),
+        ("documents/grimoire/The Grimoire.md", "stamp"),
+        ("documents/grimoire/The Grimoire.md", "Version"),
+        ("documents/grimoire/README.md", "canonical model"),
+        ("README.md", "security invariant count"),
+        ("documents/guides/Audit_Guide.md", "security invariant count"),
+    }
+    ok = (
+        alignment["status"] == "PASS"
+        and alignment["package_version"] == alignment["module_version"]
+        and alignment["grimoire_stamp"] == "G4.0-U"
+        and alignment["grimoire_version"] == "4.0"
+        and alignment["security_invariant_count"] == len(TESTS)
+        and expected_rows.issubset(rows)
+        and all(row["status"] == "PASS" for row in rows.values())
+        and _opt.strict_failures(report) == []
+    )
+    return ok, ("package=%s module=%s grimoire=%s/%s invariants=%s"
+                % (alignment["package_version"], alignment["module_version"],
+                   alignment["grimoire_stamp"], alignment["grimoire_version"],
+                   alignment["security_invariant_count"]))
+
+
 TESTS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -2215,6 +2248,7 @@ TESTS = [
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
     ("OPT-1 repository-inventory-audit",        t_optimization_inventory_audit),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
+    ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]
 
 
