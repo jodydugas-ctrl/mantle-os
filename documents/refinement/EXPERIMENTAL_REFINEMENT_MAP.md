@@ -6,7 +6,7 @@ Source: `https://github.com/jodydugas-ctrl/mantle-os`, commit `f1a9695ca2d22c224
 
 ## Boundary Map
 
-- **Mantle doctrine:** `documents/grimoire/` contains the two version-locked canonical Grimoire files. The `documents/Mantle_*.md` and `documents/guides/` files are implementation doctrine, guides, audits, and onboarding material; they explain and interpret the current reference body but are not additional Grimoire editions.
+- **Mantle doctrine:** `documents/grimoire/` contains the single version-4 canonical Grimoire tomb. The `documents/Mantle_*.md` and `documents/guides/` files are implementation doctrine, guides, audits, and onboarding material; they explain and interpret the current reference body but are not additional Grimoire editions.
 - **Mantle implementation:** `src/mantle/core`, `vcw`, `organs`, `audits`, `mind`, and top-level capability modules implement the organism runtime, VCW substrate, certification gates, Phase-2 MIND containment, reproduction, cache-ghost, symbiosis, residency, and applet/face surfaces.
 - **Standard host/app code:** `examples/sample_app`, browser demos, JS smoke tests, standalone VCW examples, eggs, and notepad AppAI examples are examples or host/application artifacts. They remain ordinary code unless explicitly assimilated through Mantle seams.
 - **Essential surfaces:** `python -m mantle check`, Stage-1 and Stage-2 gates, the current invariant suite, no-LLM Phase-1 import boundary, SELF/OTHER proof, Body-owned key material, spore/vault lineage, CLI compatibility, and append-only VCW behavior.
@@ -53,6 +53,28 @@ Changes:
 Deletion decision: no files or features were deleted in this pass. The function served by the
 duplicated lifecycle prose is still onboarding and operator guidance; consolidation should wait for
 a separate deletion-safe documentation pass.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
+## Pass 11 Receipt
+
+Function served: the operator supplied the latest optimized Grimoire tomb and stated that the
+AppAI chapter has been consolidated into one Grimoire, now version 4.
+
+Changes:
+
+- Replaced `documents/grimoire/The Grimoire.md` with the supplied consolidated tomb and stamped it
+  as repository Grimoire `G4.0-U`.
+- Removed the obsolete separate AppAI chapter file so no second canonical
+  chapter competes with the tomb.
+- Rewrote `documents/grimoire/README.md` around the one-file version-4 canonical model.
+- Updated README, implementation docstrings, and doctrine/guides that pointed at the separate
+  AppAI chapter.
+
+Deletion decision: the former separate AppAI chapter previously served as the AppAI domain extension.
+That function is now covered by the consolidated `The Grimoire.md` tomb's MantleOS `@` doctrine,
+including Body/MIND, SELF/OTHER, VCW, residency, reproduction, cache, diagnostics, and lifecycle
+law.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
@@ -178,15 +200,15 @@ Proof path: `PYTHONPATH=src python -m mantle check`.
 
 ## Pass 4 Receipt
 
-Function served: the operator supplied a 3.8.0 LLM-optimized Grimoire archive containing the two
-canonical version-locked files. The repository needed those canonical files updated together while
-preserving the README's two-file authority rule.
+Function served: the operator supplied an earlier LLM-optimized Grimoire archive when the
+repository still used two canonical version-locked files. The repository needed those canonical
+files updated together while preserving the then-current README authority rule.
 
 Changes:
 
 - Replaced `documents/grimoire/The Grimoire.md` from `grimoire_3.8_llm_optimized.zip`.
-- Replaced `documents/grimoire/The Grimoire AppAI Chapter.md` from the same archive.
-- Updated `documents/grimoire/README.md` so the canonical version lock says 3.8.0.
+- Replaced the former separate AppAI chapter file from the same archive.
+- Updated `documents/grimoire/README.md` so the canonical version lock matched that edition.
 
 Deletion decision: no Grimoire files were deleted. The existing README still serves the canonical
 reading-order and version-lock function; the supplied archive replaces only the two canonical bodies.

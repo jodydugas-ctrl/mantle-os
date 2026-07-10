@@ -6,8 +6,8 @@
 > App-Inventory gate, the 17-phase pipeline, the symbol-role table, the hook runtime, the
 > hard-fail list, and the APP_INVENTORY template — now lives in **one canonical home**:
 >
-> 👉 **[`documents/grimoire/The Grimoire AppAI Chapter.md`](grimoire/The%20Grimoire%20AppAI%20Chapter.md)**,
-> section **NECROMANCY — operational detail (the assimilation manual)**.
+> 👉 **[`documents/grimoire/The Grimoire.md`](grimoire/The%20Grimoire.md)**,
+> especially the MantleOS `@` doctrine for `@BG`, `@RP`, residency, and assimilation law.
 >
 > This consolidation reflects that **the egg and assimilation are the same thing**: NECROMANCY
 > (assimilate/anchor/graft) and RESURGERE (reconstruct from an egg/seed) run on one shared

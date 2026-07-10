@@ -141,7 +141,7 @@ any host (a sample app ships in `examples/sample_app/`). The scanner is Python-A
 multi-language (`.js/.mjs/.go/.rs`) via the optional `scanner_ts` (tree-sitter) when
 `mantle-os[multilang]` is installed. The doctrine these modules implement is the single canonical
 NECROMANCY section in
-[`documents/grimoire/The Grimoire AppAI Chapter.md`](grimoire/The%20Grimoire%20AppAI%20Chapter.md).
+[`documents/grimoire/The Grimoire.md`](grimoire/The%20Grimoire.md).
 
 ## 7. The gates
 

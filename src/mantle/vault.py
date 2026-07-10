@@ -2,7 +2,7 @@
 """
 mantle.vault  --  the seed vault: self-reconstruction (Mantle OS · M8)
 
-Doctrine of record: documents/grimoire/The Grimoire AppAI Chapter.md (RESURGERE; the egg and
+Doctrine of record: documents/grimoire/The Grimoire.md (MantleOS @RP Resurgere; the egg and
 assimilation share ONE substrate -- "One substrate, two casts"). reconstruct() carries
 pre-classified roles into hatchery.incubate and re-scans nothing.
 

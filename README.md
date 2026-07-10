@@ -19,8 +19,8 @@ Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 > It is the doctrine the framework follows, not a toll booth for every small task. Routine code
 > reading, narrow documentation fixes, and mechanical concordance patches may proceed from the
 > README, nearby docs, and working code. When doctrine is in scope, start in
-> [`documents/grimoire/`](documents/grimoire/README.md): the **Core Spellbook** comes first;
-> the **AppAI Chapter** extends it. *(Normative when used.)*
+> [`documents/grimoire/`](documents/grimoire/README.md): the single **Grimoire 4.0 tomb**
+> contains both the universal spellbook and MantleOS/AppAI `@` doctrine. *(Normative when used.)*
 
 ## For LLM agents — cast `Intellige` when doctrine is in scope
 
@@ -36,7 +36,7 @@ If you already have the Grimoire loaded:  Intellige Grimoire
 ELSE:
   Step 0 — Read the Grimoire's reading-order file and follow its links:
            https://github.com/jodydugas-ctrl/mantle-os/blob/main/documents/grimoire/README.md
-  Step 1 — Cast Intellige on the Grimoire only — the Core first, then the AppAI Chapter.
+  Step 1 — Cast Intellige on the single Grimoire tomb.
 ```
 
 The stable operator interface is the Latin **macro** layer: `Intellige`, `Vestigare`, `Animare`,
@@ -61,8 +61,8 @@ project as "organ meat" is doctrine bleed, not extra insight.
 > changing doctrine, operating or assimilating an AppAI, interpreting macro language, mutating
 > Mantle tissue, or resolving a disagreement between metaphor and code. For simple inspection,
 > small docs edits, and mechanical count/typo concordance, local repo evidence is enough. When
-> Grimoire context is needed, read [`documents/grimoire/`](documents/grimoire/README.md) in order:
-> the **Core Spellbook** first, then the **AppAI Chapter**. *(Normative when used.)*
+> Grimoire context is needed, read [`documents/grimoire/`](documents/grimoire/README.md) and load
+> the single **Grimoire 4.0 tomb**. *(Normative when used.)*
 
 ---
 
@@ -322,7 +322,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     face.py teach.py     the PNG self-portrait + the running Field Guide
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
-  grimoire/              the two version-locked Grimoire files: Core + AppAI chapter
+  grimoire/              the single version-4 Grimoire tomb
   FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   Mantle_Architecture.md · guides/ (VCW · lifecycle · contracts · audit · visual)
   Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
@@ -359,8 +359,8 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
   Phase 2. The `src/mantle/` package is the runnable skeleton.
 - **Path B — assimilate existing code** (any language, including apps that already have agents).
   Canonical doctrine:
-  [`documents/grimoire/The Grimoire AppAI Chapter.md`](documents/grimoire/The%20Grimoire%20AppAI%20Chapter.md)
-  (NECROMANCY — operational detail); runnable cheatsheet:
+  [`documents/grimoire/The Grimoire.md`](documents/grimoire/The%20Grimoire.md)
+  (`@BG`, `@RP`, residency, and assimilation law); runnable cheatsheet:
   [`documents/guides/Assimilation_Guide.md`](documents/guides/Assimilation_Guide.md). Dissect read-only, map organs,
   sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same
   MIND fusion.

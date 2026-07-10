@@ -2,7 +2,7 @@
 """
 mantle.anchor  --  ANCHORING: an AppAI takes residence in a codebase (Mantle OS)
 
-Doctrine of record: documents/grimoire/The Grimoire AppAI Chapter.md (NECROMANCY -- operational
+Doctrine of record: documents/grimoire/The Grimoire.md (MantleOS @ residency/assimilation law --
 detail). Dissection here REUSES the single canonical scanner (assimilator.dry_run ->
 scan_project); anchor adds no scanning of its own.
 
