@@ -222,6 +222,23 @@ REQUIRED_RIPPLE_SURFACES = (
     "error handlers",
     "logs and dashboards",
 )
+ALIGNMENT_AUDIT_DOMAINS = (
+    "A file alignment",
+    "B import/export alignment",
+    "C API alignment",
+    "D CLI alignment",
+    "E configuration alignment",
+    "F schema/storage alignment",
+    "G documentation alignment",
+    "H test alignment",
+    "I AppAI alignment",
+    "J terminology alignment",
+    "K token-dialect alignment",
+    "L duplication alignment",
+    "M version alignment",
+    "N security/privacy alignment",
+    "O performance alignment",
+)
 RIPPLE_QUEUE_FIELDS = (
     "queue_id",
     "source",
@@ -1523,6 +1540,150 @@ def _ripple_queue(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _alignment_row(domain: str, status: str, evidence: Dict[str, Any],
+                   blockers: List[str]) -> Dict[str, Any]:
+    return {
+        "domain": domain,
+        "status": status,
+        "evidence": evidence,
+        "blockers": blockers,
+    }
+
+
+def _whole_project_alignment(report: Dict[str, Any]) -> Dict[str, Any]:
+    maps = report["maps"]
+    model = report["project_model"]
+    stale_paths = [r for r in maps["path_references"] if not r["exists"]]
+    stale_commands = [r for r in maps["cli_command_references"] if not r["exists"]]
+    missing_coverage = [r for r in report["coverage_matrix"] if r["status"] != "present"]
+    rows = [
+        _alignment_row(
+            "A file alignment",
+            "PASS" if not stale_paths and not report["tracked_missing"] else "REVISE",
+            {"path_refs": len(maps["path_references"]),
+             "stale_paths": len(stale_paths),
+             "tracked_missing": len(report["tracked_missing"])},
+            ([] if not stale_paths and not report["tracked_missing"]
+             else ["unresolved path or missing tracked file"]),
+        ),
+        _alignment_row(
+            "B import/export alignment",
+            "PASS" if model["python_import_export_graph"]["modules"] else "REVISE",
+            {"modules": len(model["python_import_export_graph"]["modules"]),
+             "import_edges": len(model["python_import_export_graph"]["imports"]),
+             "public_api_files": len(model["public_api_graph"]["public_symbols"])},
+            [] if model["python_import_export_graph"]["modules"] else ["no module graph"],
+        ),
+        _alignment_row(
+            "C API alignment",
+            "REVISE" if report["merge_map"]["merge_candidates"] else "PASS",
+            {"public_api_files": len(model["public_api_graph"]["public_symbols"]),
+             "merge_candidates": len(report["merge_map"]["merge_candidates"])},
+            ["merge candidates require parity review"] if report["merge_map"]["merge_candidates"] else [],
+        ),
+        _alignment_row(
+            "D CLI alignment",
+            "PASS" if not stale_commands else "REVISE",
+            {"known_commands": len(maps["known_cli_commands"]),
+             "cli_refs": len(maps["cli_command_references"]),
+             "stale_commands": len(stale_commands)},
+            [] if not stale_commands else ["unresolved documented CLI command"],
+        ),
+        _alignment_row(
+            "E configuration alignment",
+            "PASS",
+            {"config_files": len(model["configuration_graph"]["files"]),
+             "environment_variables": len(model["configuration_graph"]["environment_variables"])},
+            [],
+        ),
+        _alignment_row(
+            "F schema/storage alignment",
+            "PASS" if model["schema_serialization_graph"]["files"] else "REVISE",
+            {"schema_files": len(model["schema_serialization_graph"]["files"]),
+             "vcw_files": len(model["vcw_band_owner_writer_map"]["files"])},
+            [] if model["schema_serialization_graph"]["files"] else ["no schema/storage map"],
+        ),
+        _alignment_row(
+            "G documentation alignment",
+            "PASS" if not stale_paths else "REVISE",
+            {"documentation_files": len(model["documentation_to_implementation_graph"]["documentation_files"]),
+             "implementation_targets": len(model["documentation_to_implementation_graph"]["implementation_targets"])},
+            [] if not stale_paths else ["stale documented paths"],
+        ),
+        _alignment_row(
+            "H test alignment",
+            "PASS" if not missing_coverage else "REVISE",
+            {"test_files": len(model["test_to_production_coverage_graph"]["test_files"]),
+             "proof_surfaces": len(report["coverage_matrix"]),
+             "missing_proof_surfaces": len(missing_coverage)},
+            [] if not missing_coverage else ["missing proof surface"],
+        ),
+        _alignment_row(
+            "I AppAI alignment",
+            "PASS" if report["coverage_matrix"] else "REVISE",
+            {"lifecycle_roles": sum(1 for v in model["lifecycle_graph"]["roles"].values() if v),
+             "organ_roles": sum(1 for v in model["appai_organ_map"]["roles"].values() if v),
+             "hard_fail_files": len(model["hard_fail_map"]["invariant_files"])},
+            [],
+        ),
+        _alignment_row(
+            "J terminology alignment",
+            "PASS" if report["alias_registry"]["collision_audit"]["status"] == "PASS" else "REVISE",
+            {"aliases": len(report["alias_registry"]["aliases"]),
+             "collision_checks": len(report["alias_registry"]["collision_audit"]["checks"])},
+            ([] if report["alias_registry"]["collision_audit"]["status"] == "PASS"
+             else ["vocabulary collision audit failed"]),
+        ),
+        _alignment_row(
+            "K token-dialect alignment",
+            "UNVERIFIABLE" if report["token_status"].get("tiktoken unavailable") else "PASS",
+            {"token_status": report["token_status"],
+             "tokenizer_status": report["alias_registry"]["tokenizer_status"]},
+            (["tiktoken unavailable; token dialect costs not measured"]
+             if report["token_status"].get("tiktoken unavailable") else []),
+        ),
+        _alignment_row(
+            "L duplication alignment",
+            "REVISE" if report["merge_map"]["merge_candidates"] else "PASS",
+            {"exact_duplicate_hashes": len(maps["duplicate_hashes"]),
+             "merge_candidates": len(report["merge_map"]["merge_candidates"]),
+             "candidate_decisions": report["merge_map"]["candidate_decisions"]},
+            ["candidate review remains queued"] if report["merge_map"]["merge_candidates"] else [],
+        ),
+        _alignment_row(
+            "M version alignment",
+            report["version_alignment"]["status"],
+            {"package": report["version_alignment"]["package_version"],
+             "module": report["version_alignment"]["module_version"],
+             "grimoire": report["version_alignment"]["grimoire_version"]},
+            [] if report["version_alignment"]["status"] == "PASS" else ["version drift"],
+        ),
+        _alignment_row(
+            "N security/privacy alignment",
+            "PASS",
+            {"security_files": sum(1 for f in report["files"] if f["security_privacy_relevance"]),
+             "secret_redaction_surface": bool(model["self_other_boundary_map"]["files"])},
+            [],
+        ),
+        _alignment_row(
+            "O performance alignment",
+            "UNVERIFIABLE",
+            {"performance_report": report["performance_report"]["status"],
+             "benchmarks": len(report["performance_report"]["benchmarks"])},
+            ["no benchmark command is run by optimize-audit"],
+        ),
+    ]
+    statuses = Counter(row["status"] for row in rows)
+    missing = [d for d in ALIGNMENT_AUDIT_DOMAINS if d not in {r["domain"] for r in rows}]
+    return {
+        "status": "REVISE" if any(row["status"] != "PASS" for row in rows) else "PASS",
+        "rows": rows,
+        "totals": dict(sorted(statuses.items())),
+        "missing_domains": missing,
+        "rule": "Section 14 A-O alignment rebuilt from the current tree after audit passes.",
+    }
+
+
 def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     maps = report["maps"]
@@ -1801,6 +1962,12 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
     ]
     if missing_ripple_surfaces:
         failures.append("missing ripple surfaces: %s" % ", ".join(missing_ripple_surfaces))
+    alignment = report.get("whole_project_alignment", {})
+    missing_alignment_domains = alignment.get("missing_domains") or []
+    if missing_alignment_domains:
+        failures.append("missing alignment domains: %s" % ", ".join(missing_alignment_domains))
+    if not alignment.get("rows"):
+        failures.append("whole-project alignment audit missing")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -1856,6 +2023,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["file_completion_gate"] = _file_completion_gate(report)
     report["subsystem_convergence"] = _subsystem_convergence(report)
     report["ripple_queue"] = _ripple_queue(report)
+    report["whole_project_alignment"] = _whole_project_alignment(report)
     return report
 
 
@@ -1950,6 +2118,12 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            % (report["ripple_queue"]["status"], report["ripple_queue"]["totals"],
               len(report["ripple_queue"]["required_surfaces"]))
            + "\n\n"
+           "Whole-project alignment: %s; totals=%s\n"
+           % (report["whole_project_alignment"]["status"],
+              report["whole_project_alignment"]["totals"])
+           + "\n".join("- %s: %s" % (row["domain"], row["status"])
+                       for row in report["whole_project_alignment"]["rows"])
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -1975,6 +2149,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nFILE_COMPLETION_GATE: %s; totals=%s.\n"
            "\nSUBSYSTEM_CONVERGENCE: %s; totals=%s.\n"
            "\nRIPPLE_QUEUE: %s; totals=%s; surfaces=%d.\n"
+           "\nWHOLE_PROJECT_ALIGNMENT: %s; totals=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -2003,7 +2178,9 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["subsystem_convergence"]["status"],
               report["subsystem_convergence"]["totals"],
               report["ripple_queue"]["status"], report["ripple_queue"]["totals"],
-              len(report["ripple_queue"]["required_surfaces"])))
+              len(report["ripple_queue"]["required_surfaces"]),
+              report["whole_project_alignment"]["status"],
+              report["whole_project_alignment"]["totals"]))
     return artifacts
 
 

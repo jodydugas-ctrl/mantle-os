@@ -56,6 +56,30 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 22 Receipt
+
+Function served: protocol section 14 requires a fresh whole-project A-O alignment audit after
+file and subsystem passes. The existing alignment artifact had useful local references, but not the
+full section-14 domain matrix.
+
+Changes:
+
+- Added `ALIGNMENT_AUDIT_DOMAINS` for section 14 A through O.
+- Added `whole_project_alignment` to `python -m mantle optimize-audit`.
+- The audit reports file, import/export, API, CLI, configuration, schema/storage, documentation,
+  tests, AppAI, terminology, token dialect, duplication, version, security/privacy, and performance
+  alignment.
+- The matrix explicitly marks unresolved candidate review and unavailable token/benchmark data as
+  `REVISE` or `UNVERIFIABLE` instead of claiming final pass.
+- Strict audit now requires the A-O alignment rows.
+- Added invariant `OPT-9 whole-project-alignment`.
+- Updated public invariant-count anchors from 99 to 100.
+
+Deletion decision: no files were deleted. This pass rebuilds alignment evidence from the current
+tree; it does not claim the final protocol is complete.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 21 Receipt
 
 Function served: protocol section 11 requires every name, path, command, field, mode, schema,

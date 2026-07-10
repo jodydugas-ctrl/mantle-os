@@ -2385,6 +2385,41 @@ def t_optimization_ripple_queue():
                 % (len(rows), queue["totals"], len(required_surfaces), len(missing_rows)))
 
 
+def t_optimization_whole_project_alignment():
+    """OPT-9: the optimization audit rebuilds the section 14 whole-project
+    A-O alignment matrix from the current tree."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    alignment = report["whole_project_alignment"]
+    rows = alignment["rows"]
+    by_domain = {row["domain"]: row for row in rows}
+    required = set(_opt.ALIGNMENT_AUDIT_DOMAINS)
+    row_shape_ok = (
+        required == set(by_domain)
+        and not alignment["missing_domains"]
+        and all({"domain", "status", "evidence", "blockers"}.issubset(row) for row in rows)
+        and all(row["status"] in {"PASS", "REVISE", "UNVERIFIABLE"} for row in rows)
+    )
+    expected_current_state = (
+        by_domain["A file alignment"]["status"] == "PASS"
+        and by_domain["D CLI alignment"]["status"] == "PASS"
+        and by_domain["M version alignment"]["status"] == "PASS"
+        and by_domain["K token-dialect alignment"]["status"] == "UNVERIFIABLE"
+        and by_domain["O performance alignment"]["status"] == "UNVERIFIABLE"
+        and by_domain["L duplication alignment"]["status"] == "REVISE"
+        and alignment["totals"].get("REVISE", 0) > 0
+        and alignment["totals"].get("UNVERIFIABLE", 0) > 0
+        and alignment["status"] == "REVISE"
+        and "Section 14 A-O alignment" in alignment["rule"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and expected_current_state and strict_ok
+    return ok, ("domains=%d totals=%s missing=%s"
+                % (len(rows), alignment["totals"], alignment["missing_domains"] or "none"))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2557,6 +2592,7 @@ TESTS = [
     ("OPT-6 file-completion-gate",              t_optimization_file_completion_gate),
     ("OPT-7 subsystem-convergence",             t_optimization_subsystem_convergence),
     ("OPT-8 ripple-queue",                      t_optimization_ripple_queue),
+    ("OPT-9 whole-project-alignment",           t_optimization_whole_project_alignment),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]
