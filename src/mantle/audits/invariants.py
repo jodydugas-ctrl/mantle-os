@@ -2046,9 +2046,23 @@ def t_optimization_inventory_audit():
                 for c in test_index["commands"])
         and test_index["observed_commands"] == []
     )
+    observed = _opt.build_inventory(
+        _paths.REPO_ROOT,
+        observed_checks=[{"command": "%s -m mantle prove" % sys.executable,
+                          "exit_code": 0, "duration_s": 0.001,
+                          "stdout_tail": "90/90 invariants green",
+                          "stderr_tail": "", "timed_out": False}]
+    )["test_report"]
+    observed_ok = (
+        len(observed["observed_commands"]) == 1
+        and any(isinstance(c["observed"], dict) and c["observed"]["exit_code"] == 0
+                for c in observed["commands"])
+        and not any("sk-SECRET" in json.dumps(c, default=str)
+                    for c in observed["observed_commands"])
+    )
     return (tracked_seen and key_classes and honest_tokens and artifact_ok and artifact_set
             and outside_source and aliases_ok and coverage_ok and cli_refs_ok and path_refs_ok
-            and cli_registry_ok and strict_ok and baseline_ok and test_index_ok,
+            and cli_registry_ok and strict_ok and baseline_ok and test_index_ok and observed_ok,
             "%d files inventoried; %d required artifacts outside source tree; %d CLI refs and %d path refs checked; token status=%s"
             % (report["file_count"], len(required),
                len(report["maps"]["cli_command_references"]),

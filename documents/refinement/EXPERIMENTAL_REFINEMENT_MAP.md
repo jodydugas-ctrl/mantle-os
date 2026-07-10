@@ -56,6 +56,27 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 10 Receipt
+
+Function served: the protocol's `TEST_REPORT` requires observed command receipts when proof
+commands are actually run. The inventory path should remain cheap by default, but the operator
+needs an explicit way to attach exit-code evidence.
+
+Changes:
+
+- Added optional `python -m mantle optimize-audit --run-checks=prove|fast|full`.
+- Observed command receipts include command, exit code, timeout status, duration, and redacted
+  stdout/stderr tails.
+- Default `optimize-audit` behavior still records only the verification index and does not run
+  heavy gates.
+- Strengthened `OPT-1` to prove observed receipts can be attached without leaking secret-like
+  strings.
+
+Deletion decision: no files were deleted. The prior unobserved proof index still serves cheap
+baseline inventory; observed receipts are now an explicit mode rather than a competing artifact.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 9 Receipt
 
 Function served: the whole-repository optimization protocol requires baseline runtime metadata and

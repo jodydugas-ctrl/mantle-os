@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -34,6 +35,11 @@ SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".tox", "nod
 COMMAND_RE = re.compile(r"python\s+-m\s+mantle(?:\s+[A-Za-z0-9_.-]+)*")
 PATH_RE = re.compile(r"(?:(?:src|documents|examples|\.github)/[A-Za-z0-9_./ -]+)")
 ENV_RE = re.compile(r"\b[A-Z][A-Z0-9_]{2,}\b")
+SECRET_RE = re.compile(
+    r"(sk-[A-Za-z0-9_-]{12,}|sk-or-v1-[A-Za-z0-9_-]+|"
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----)",
+    re.DOTALL,
+)
 REQUIRED_ARTIFACTS = (
     "FILE_INVENTORY",
     "CHANGE_LEDGER",
@@ -262,6 +268,57 @@ def _project_metadata(root: str) -> Dict[str, Any]:
     }
 
 
+def _redact_text(text: str) -> str:
+    return SECRET_RE.sub("[REDACTED]", text or "")
+
+
+def _tail(text: str, limit: int = 1200) -> str:
+    text = _redact_text(text)
+    return text[-limit:] if len(text) > limit else text
+
+
+def _run_command(root: str, argv: List[str], timeout_s: int) -> Dict[str, Any]:
+    env = {**os.environ, "PYTHONPATH": paths.SRC_DIR}
+    start = time.perf_counter()
+    try:
+        p = subprocess.run(argv, cwd=root, env=env, text=True, capture_output=True,
+                           timeout=timeout_s)
+        duration = time.perf_counter() - start
+        return {
+            "command": " ".join(argv),
+            "exit_code": p.returncode,
+            "duration_s": round(duration, 3),
+            "stdout_tail": _tail(p.stdout),
+            "stderr_tail": _tail(p.stderr),
+            "timed_out": False,
+        }
+    except subprocess.TimeoutExpired as e:
+        duration = time.perf_counter() - start
+        stdout = e.stdout if isinstance(e.stdout, str) else ""
+        stderr = e.stderr if isinstance(e.stderr, str) else ""
+        return {
+            "command": " ".join(argv),
+            "exit_code": None,
+            "duration_s": round(duration, 3),
+            "stdout_tail": _tail(stdout),
+            "stderr_tail": _tail(stderr),
+            "timed_out": True,
+        }
+
+
+def _run_checks(root: str, mode: str) -> List[Dict[str, Any]]:
+    commands = {
+        "prove": [([sys.executable, "-m", "mantle", "prove"], 180)],
+        "fast": [([sys.executable, "-m", "mantle", "check", "--fast"], 240)],
+        "full": [([sys.executable, "-m", "mantle", "check"], 300)],
+    }
+    if mode not in commands:
+        return [{"command": mode, "exit_code": None, "duration_s": 0,
+                 "stdout_tail": "", "stderr_tail": "unknown --run-checks mode",
+                 "timed_out": False}]
+    return [_run_command(root, argv, timeout_s) for argv, timeout_s in commands[mode]]
+
+
 def _baseline_stats(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     return {
@@ -484,7 +541,10 @@ def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _test_report(report: Dict[str, Any]) -> Dict[str, Any]:
+def _test_report(report: Dict[str, Any], observed: Optional[List[Dict[str, Any]]] = None
+                 ) -> Dict[str, Any]:
+    observed = observed or []
+    observed_by_command = {r["command"]: r for r in observed}
     configured = [
         {"command": "PYTHONPATH=src python -m mantle optimize-audit --strict",
          "coverage": "artifact generation and strict alignment gate",
@@ -520,16 +580,31 @@ def _test_report(report: Dict[str, Any]) -> Dict[str, Any]:
          "coverage": "live agent browser smoke test",
          "source": ".github/workflows/demos.yml", "network": False},
     ]
+    commands = []
+    for command in configured:
+        row = dict(command)
+        observed_row = observed_by_command.get(row["command"])
+        if observed_row is None and row["command"].startswith("PYTHONPATH=src "):
+            bare = row["command"].replace("PYTHONPATH=src ", "", 1)
+            mantle_tail = None
+            if " -m mantle" in bare:
+                mantle_tail = " -m mantle" + bare.split(" -m mantle", 1)[1]
+            observed_row = next((r for r in observed
+                                 if r["command"].endswith(bare)
+                                 or (mantle_tail and r["command"].endswith(mantle_tail))),
+                                None)
+        row["observed"] = observed_row or "not-run-by-optimize-audit"
+        commands.append(row)
     return {
         "status": "verification-index",
         "environment": report["baseline"]["runtime"],
         "git": report["baseline"]["git"],
         "project": report["baseline"]["project"],
-        "commands": [dict(c, observed="not-run-by-optimize-audit") for c in configured],
-        "observed_commands": [],
+        "commands": commands,
+        "observed_commands": observed,
         "note": ("This command does not run heavy proof gates by default; it records "
-                 "configured proof surfaces and leaves observed exit-code receipts to "
-                 "the operator, CI, or an explicit future runner."),
+                 "configured proof surfaces. Use --run-checks=prove|fast|full for "
+                 "explicit observed exit-code receipts."),
     }
 
 
@@ -574,7 +649,8 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
     return failures
 
 
-def build_inventory(root: str = paths.REPO_ROOT) -> Dict[str, Any]:
+def build_inventory(root: str = paths.REPO_ROOT,
+                    observed_checks: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     root = os.path.abspath(root)
     tracked = _tracked(root)
     untracked = _status_untracked(root)
@@ -602,7 +678,7 @@ def build_inventory(root: str = paths.REPO_ROOT) -> Dict[str, Any]:
     report["coverage_matrix"] = _coverage_matrix(report)
     report["change_ledger"] = _change_ledger(report)
     report["merge_map"] = _merge_map(report)
-    report["test_report"] = _test_report(report)
+    report["test_report"] = _test_report(report, observed_checks)
     report["performance_report"] = _performance_report(report)
     return report
 
@@ -695,23 +771,31 @@ def main(argv=None) -> int:
     argv = list(argv or [])
     out_dir = default_out_dir()
     strict = "--strict" in argv
+    run_checks = "none"
     if "--out" in argv:
         i = argv.index("--out")
         if i + 1 >= len(argv):
-            print("usage: python -m mantle optimize-audit [--out DIR] [--json]")
+            print("usage: python -m mantle optimize-audit [--out DIR] [--json] "
+                  "[--strict] [--run-checks=prove|fast|full]")
             return 2
         out_dir = argv[i + 1]
     for arg in argv:
         if arg.startswith("--out="):
             out_dir = arg.split("=", 1)[1]
-    report = build_inventory()
+        if arg.startswith("--run-checks="):
+            run_checks = arg.split("=", 1)[1]
+    observed = [] if run_checks in ("", "none") else _run_checks(paths.REPO_ROOT, run_checks)
+    report = build_inventory(observed_checks=observed)
     artifacts = write_artifacts(report, out_dir)
     failures = strict_failures(report, artifacts)
+    observed_failed = [r for r in observed if r.get("exit_code") not in (0,)]
+    failures.extend("observed check failed: %s" % r.get("command") for r in observed_failed)
     if "--json" in argv:
         print(json.dumps({"ok": True, "out_dir": out_dir, "artifacts": artifacts,
                           "file_count": report["file_count"],
                           "categories": report["categories"],
                           "token_status": report["token_status"],
+                          "observed_checks": observed,
                           "strict": {"ok": not failures, "failures": failures}},
                          indent=2, sort_keys=True))
     else:
@@ -723,6 +807,11 @@ def main(argv=None) -> int:
             print("    %-16s %s" % (name, path))
         if report["token_status"].get("tiktoken unavailable"):
             print("  tokens     : UNVERIFIABLE (tiktoken unavailable)")
+        if observed:
+            print("  observed   : %d command(s)" % len(observed))
+            for row in observed:
+                code = "timeout" if row.get("timed_out") else row.get("exit_code")
+                print("    %-8s %s" % (code, row.get("command")))
         if strict:
             print("  strict     : %s" % ("PASS" if not failures else "FAIL"))
             for failure in failures:
