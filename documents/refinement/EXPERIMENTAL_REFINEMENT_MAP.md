@@ -131,6 +131,34 @@ section-8 evidence while preserving the rule that partial chunk review is not wh
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 31 Receipt
+
+Function served: protocol section 7 requires focused characterization before merge, deletion, or
+semantic rewrite. Four documentation-topic merge candidates were queued because they looked similar
+by filename, but their behavior surfaces had not been characterized.
+
+Changes:
+
+- Added `documents/refinement/CHARACTERIZATION_TEST_LEDGER.json`.
+- Added `CHARACTERIZATION_LEDGER_REL` and `CHARACTERIZATION_CASE_FIELDS`.
+- `python -m mantle optimize-audit` now loads verified characterization cases and marks covered
+  candidates as `CHARACTERIZED` instead of `QUEUED`.
+- Strict audit now rejects malformed characterization cases, duplicate cases, unknown candidates,
+  and unreadable characterization ledgers.
+- The four documentation-topic candidates are characterized as distinct scoped documentation
+  surfaces; no merge, deletion, or rewrite is authorized by this pass.
+- The section-20 execution-order row for characterization tests can now reach `PASS` while later
+  chunk optimization remains `REVISE`.
+- Strengthened invariant `OPT-16 characterization-tests`.
+- Added invariant `OPT-18 characterization-case-ledger`.
+- Updated public invariant-count anchors from 108 to 109.
+
+Deletion decision: no files, functions, documents, or aliases were deleted. The characterization
+cases explain the current function of each candidate pair and why the function remains covered by
+keeping the surfaces separate for now.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 27 Receipt
 
 Function served: protocol section 19 lists the exact conditions required before PASS may be

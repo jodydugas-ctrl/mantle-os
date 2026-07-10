@@ -54,6 +54,7 @@ REQUIRED_ARTIFACTS = (
     "FINAL_RECEIPT",
 )
 CHUNK_LEDGER_REL = "documents/refinement/CHUNK_OPTIMIZATION_LEDGER.json"
+CHARACTERIZATION_LEDGER_REL = "documents/refinement/CHARACTERIZATION_TEST_LEDGER.json"
 REQUIRED_FILE_FIELDS = (
     "path",
     "category",
@@ -171,6 +172,19 @@ CHARACTERIZATION_TEST_FIELDS = (
     "mutation_allowed",
     "blockers",
     "receipt",
+)
+CHARACTERIZATION_CASE_FIELDS = (
+    "candidate_id",
+    "status",
+    "scope",
+    "behavior_surface",
+    "parity_matrix",
+    "required_tests",
+    "decision",
+    "mutation_allowed",
+    "evidence",
+    "receipt",
+    "verified",
 )
 CHUNK_OPTIMIZATION_RECEIPT_FIELDS = (
     "path",
@@ -1555,6 +1569,47 @@ def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _characterization_tests(report: Dict[str, Any]) -> Dict[str, Any]:
+    root = report["repo_root"]
+    ledger_path = os.path.join(root, CHARACTERIZATION_LEDGER_REL.replace("/", os.sep))
+    cases: List[Dict[str, Any]] = []
+    errors: List[str] = []
+    if os.path.exists(ledger_path):
+        try:
+            with open(ledger_path, encoding="utf-8") as f:
+                data = json.load(f)
+            if data.get("schema") != "mantle-characterization-test-ledger-v1":
+                errors.append("unknown characterization ledger schema")
+            raw_cases = data.get("cases", [])
+            if not isinstance(raw_cases, list):
+                errors.append("cases must be a list")
+                raw_cases = []
+            for i, raw in enumerate(raw_cases):
+                if not isinstance(raw, dict):
+                    errors.append("case %d is not an object" % i)
+                    continue
+                cases.append(dict(raw))
+        except (OSError, json.JSONDecodeError) as e:
+            errors.append("cannot read characterization ledger: %s" % e)
+    else:
+        errors.append("characterization ledger file absent")
+    malformed_cases = [
+        c.get("candidate_id", "<unknown>")
+        for c in cases
+        if any(field not in c for field in CHARACTERIZATION_CASE_FIELDS)
+    ]
+    duplicate_cases = [
+        row["key"] for row in _collisions(
+            [str(c.get("candidate_id", "")) for c in cases if c.get("candidate_id")]
+        )
+    ]
+    case_by_candidate = {
+        c["candidate_id"]: c for c in cases
+        if not any(field not in c for field in CHARACTERIZATION_CASE_FIELDS)
+        and c.get("verified") is True
+        and c.get("status") == "characterized"
+    }
+    candidate_ids = {c["candidate_id"] for c in report["merge_map"]["merge_candidates"]}
+    unknown_cases = sorted(set(case_by_candidate) - candidate_ids)
     rows = []
     observed = report["test_report"]["observed_commands"]
     observed_green = bool(observed) and all(
@@ -1562,10 +1617,11 @@ def _characterization_tests(report: Dict[str, Any]) -> Dict[str, Any]:
     )
     for candidate in report["merge_map"]["merge_candidates"]:
         blocked = candidate["decision"] == "blocked"
-        status = "BLOCKED" if blocked else "QUEUED"
+        case = case_by_candidate.get(candidate["candidate_id"])
+        status = "BLOCKED" if blocked else "CHARACTERIZED" if case else "QUEUED"
         rows.append({
             "candidate_id": candidate["candidate_id"],
-            "source": "merge-candidate-analysis",
+            "source": "characterization-ledger" if case else "merge-candidate-analysis",
             "target_items": candidate["items"],
             "behavior_surface": {
                 "kind": candidate["kind"],
@@ -1579,15 +1635,18 @@ def _characterization_tests(report: Dict[str, Any]) -> Dict[str, Any]:
             },
             "specification_status": (
                 "underspecified-or-boundary-divergent"
-                if blocked else "candidate-needs-edge-case-specification"
+                if blocked else "characterized-by-focused-ledger"
+                if case else "candidate-needs-edge-case-specification"
             ),
             "characterization_status": status,
             "existing_evidence": {
                 "parity_review": report["merge_map"]["parity_review"]["status"],
                 "observed_green_checks": observed_green,
                 "observed_command_count": len(observed),
+                "case_evidence": case["evidence"] if case else [],
+                "case_decision": case["decision"] if case else None,
             },
-            "required_tests": [
+            "required_tests": case["required_tests"] if case else [
                 "input/output parity matrix",
                 "edge-case and exception comparison",
                 "caller compatibility assertions",
@@ -1597,24 +1656,34 @@ def _characterization_tests(report: Dict[str, Any]) -> Dict[str, Any]:
             "mutation_allowed": False,
             "blockers": (
                 ["candidate is blocked because safety, authority, or boundary semantics differ"]
-                if blocked else
+                if blocked else [] if case else
                 ["candidate-specific characterization tests are not yet attached"]
             ),
-            "receipt": (
+            "receipt": case["receipt"] if case else (
                 "Section 7 characterization receipt: candidate remains non-mutating "
                 "until behavior is specified by focused tests and full proof gates."
             ),
         })
     totals = Counter(row["characterization_status"] for row in rows)
+    queued = totals.get("QUEUED", 0)
     return {
-        "status": "REVISE" if rows else "PASS",
+        "status": "PASS" if rows and not queued and not errors and not malformed_cases
+        and not duplicate_cases and not unknown_cases else "REVISE",
         "rows": rows,
         "totals": dict(sorted(totals.items())),
+        "case_path": CHARACTERIZATION_LEDGER_REL,
+        "cases": cases,
+        "case_totals": dict(sorted(Counter(c.get("status", "UNKNOWN") for c in cases).items())),
+        "malformed_cases": malformed_cases,
+        "duplicate_cases": duplicate_cases,
+        "unknown_cases": unknown_cases,
+        "errors": errors,
         "missing_candidates": [
             c["candidate_id"] for c in report["merge_map"]["merge_candidates"]
             if c["candidate_id"] not in {row["candidate_id"] for row in rows}
         ],
         "required_fields": list(CHARACTERIZATION_TEST_FIELDS),
+        "case_required_fields": list(CHARACTERIZATION_CASE_FIELDS),
         "rule": (
             "Section 7 characterization tests must specify poorly described behavior "
             "before merge, deletion, or semantic rewrite."
@@ -3122,6 +3191,18 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
                         % len(malformed_characterization))
     if merge_map.get("merge_candidates") and not characterization.get("rows"):
         failures.append("characterization test ledger missing")
+    if characterization.get("errors"):
+        failures.append("characterization ledger errors: %s"
+                        % "; ".join(characterization.get("errors", [])))
+    if characterization.get("malformed_cases"):
+        failures.append("%d malformed characterization cases"
+                        % len(characterization.get("malformed_cases", [])))
+    if characterization.get("duplicate_cases"):
+        failures.append("duplicate characterization cases: %s"
+                        % ", ".join(characterization.get("duplicate_cases", [])))
+    if characterization.get("unknown_cases"):
+        failures.append("characterization cases for unknown candidates: %s"
+                        % ", ".join(characterization.get("unknown_cases", [])))
     chunk_ledger = report.get("chunk_optimization_ledger", {})
     if chunk_ledger.get("errors"):
         failures.append("chunk optimization ledger errors: %s"
@@ -3406,6 +3487,9 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + "\n".join("- %s: %s" % (
                row["candidate_id"], row["characterization_status"])
                        for row in report["characterization_tests"]["rows"])
+           + "\nCases: %d; case_totals=%s\n"
+           % (len(report["characterization_tests"]["cases"]),
+              report["characterization_tests"]["case_totals"])
            + "\n\n"
            "Chunk optimization ledger: %s; receipts=%d; verified=%d; totals=%s\n"
            % (report["chunk_optimization_ledger"]["status"],
@@ -3489,7 +3573,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nVOCABULARY_COLLISION_AUDIT: %s; checks=%d.\n"
            "\nMERGE_CANDIDATES: %d candidate(s); decisions=%s; no merges performed.\n"
            "\nMERGE_PARITY_REVIEW: %s; totals=%s; safe_to_merge_now=0.\n"
-           "\nCHARACTERIZATION_TESTS: %s; totals=%s; mutation_allowed=0.\n"
+           "\nCHARACTERIZATION_TESTS: %s; totals=%s; cases=%d; mutation_allowed=0.\n"
            "\nCHUNK_OPTIMIZATION_LEDGER: %s; receipts=%d; verified=%d; totals=%s.\n"
            "\nFILE_COMPLETION_GATE: %s; totals=%s.\n"
            "\nSUBSYSTEM_CONVERGENCE: %s; totals=%s.\n"
@@ -3527,6 +3611,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["merge_map"]["parity_review"]["totals"],
               report["characterization_tests"]["status"],
               report["characterization_tests"]["totals"],
+              len(report["characterization_tests"]["cases"]),
               report["chunk_optimization_ledger"]["status"],
               len(report["chunk_optimization_ledger"]["receipts"]),
               report["chunk_optimization_ledger"]["verified_receipts"],
@@ -3593,6 +3678,8 @@ def main(argv=None) -> int:
                           "characterization_tests": {
                               "status": report["characterization_tests"]["status"],
                               "totals": report["characterization_tests"]["totals"],
+                              "cases": len(report["characterization_tests"]["cases"]),
+                              "case_totals": report["characterization_tests"]["case_totals"],
                           },
                           "chunk_optimization_ledger": {
                               "status": report["chunk_optimization_ledger"]["status"],
@@ -3643,6 +3730,10 @@ def main(argv=None) -> int:
         print("  char-test : %s %s" % (
             report["characterization_tests"]["status"],
             report["characterization_tests"]["totals"],
+        ))
+        print("              cases=%d %s" % (
+            len(report["characterization_tests"]["cases"]),
+            report["characterization_tests"]["case_totals"],
         ))
         print("  chunks    : %s receipts=%d verified=%d %s" % (
             report["chunk_optimization_ledger"]["status"],

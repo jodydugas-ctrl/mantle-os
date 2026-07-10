@@ -2306,7 +2306,8 @@ def t_optimization_merge_parity_review():
 
 def t_optimization_characterization_tests():
     """OPT-16: risky merge or rewrite candidates carry explicit characterization
-    test receipts before mutation is allowed."""
+    test receipts before mutation is allowed; documentation candidates may be
+    characterized without being merged."""
     from .. import optimize_audit as _opt
     from .. import paths as _paths
 
@@ -2323,26 +2324,31 @@ def t_optimization_characterization_tests():
         and not malformed
         and ledger["missing_candidates"] == []
         and ledger["required_fields"] == list(_opt.CHARACTERIZATION_TEST_FIELDS)
-        and all(row["source"] == "merge-candidate-analysis" for row in rows)
+        and ledger["case_required_fields"] == list(_opt.CHARACTERIZATION_CASE_FIELDS)
+        and not ledger["errors"]
+        and not ledger["malformed_cases"]
+        and not ledger["duplicate_cases"]
+        and not ledger["unknown_cases"]
+        and len(ledger["cases"]) == 4
+        and all(case["verified"] is True for case in ledger["cases"])
+        and all(case["mutation_allowed"] is False for case in ledger["cases"])
         and all(row["target_items"] for row in rows)
         and all(row["required_tests"] for row in rows)
         and all(row["mutation_allowed"] is False for row in rows)
-        and all(row["blockers"] for row in rows)
+        and all(row["receipt"] for row in rows)
+        and all(row["blockers"] for row in rows
+                if row["characterization_status"] != "CHARACTERIZED")
+        and all(row["source"] == "characterization-ledger"
+                for row in rows if row["characterization_status"] == "CHARACTERIZED")
         and all(row["receipt"] for row in rows)
     )
-    required_test_names = {
-        "input/output parity matrix",
-        "edge-case and exception comparison",
-        "caller compatibility assertions",
-        "security/privacy boundary assertions",
-        "focused characterization tests plus python -m mantle check",
-    }
     status_ok = (
-        ledger["status"] == "REVISE"
-        and ledger["totals"].get("QUEUED", 0) > 0
+        ledger["status"] == "PASS"
+        and ledger["totals"].get("QUEUED", 0) == 0
+        and ledger["totals"].get("CHARACTERIZED", 0) == 4
         and ledger["totals"].get("BLOCKED", 0) > 0
+        and ledger["case_totals"].get("characterized", 0) == 4
         and "Section 7 characterization tests" in ledger["rule"]
-        and all(set(row["required_tests"]) == required_test_names for row in rows)
     )
     execution_row = {
         row["name"]: row for row in report["execution_order"]["rows"]
@@ -2350,12 +2356,72 @@ def t_optimization_characterization_tests():
     execution_ok = (
         execution_row["status"] == ledger["status"]
         and execution_row["evidence"]["characterization_tests"] == ledger["totals"]
-        and execution_row["blockers"]
+        and not execution_row["blockers"]
     )
     strict_ok = _opt.strict_failures(report) == []
     ok = row_shape_ok and status_ok and execution_ok and strict_ok
     return ok, ("rows=%d totals=%s malformed=%d"
                 % (len(rows), ledger["totals"], len(malformed)))
+
+
+def t_optimization_characterization_case_ledger():
+    """OPT-18: the committed characterization ledger covers every queued
+    documentation-topic merge candidate without authorizing mutation."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    ledger = report["characterization_tests"]
+    cases = ledger["cases"]
+    by_case = {case["candidate_id"]: case for case in cases}
+    expected = {
+        "doc:mantle_part1_body",
+        "doc:mantle_part2_mind",
+        "doc:organism_lifecycle",
+        "doc:readme",
+    }
+    row_by_candidate = {row["candidate_id"]: row for row in ledger["rows"]}
+    required = set(_opt.CHARACTERIZATION_CASE_FIELDS)
+    malformed = [case.get("candidate_id", "<unknown>") for case in cases
+                 if required - set(case)]
+    cases_ok = (
+        ledger["case_path"] == _opt.CHARACTERIZATION_LEDGER_REL
+        and set(by_case) == expected
+        and not malformed
+        and not ledger["errors"]
+        and not ledger["malformed_cases"]
+        and not ledger["duplicate_cases"]
+        and not ledger["unknown_cases"]
+        and all(case["status"] == "characterized" for case in cases)
+        and all(case["scope"] == "documentation-topic" for case in cases)
+        and all(case["verified"] is True for case in cases)
+        and all(case["mutation_allowed"] is False for case in cases)
+        and all(case["parity_matrix"] for case in cases)
+        and all(case["required_tests"] for case in cases)
+        and all("keep separate" in case["decision"] for case in cases)
+    )
+    row_ok = (
+        all(row_by_candidate[candidate]["characterization_status"] == "CHARACTERIZED"
+            for candidate in expected)
+        and all(row_by_candidate[candidate]["source"] == "characterization-ledger"
+                for candidate in expected)
+        and all(row_by_candidate[candidate]["mutation_allowed"] is False
+                for candidate in expected)
+        and ledger["totals"].get("QUEUED", 0) == 0
+        and ledger["status"] == "PASS"
+    )
+    execution_row = {
+        row["name"]: row for row in report["execution_order"]["rows"]
+    }["Characterization tests for poorly specified behavior"]
+    execution_ok = (
+        execution_row["status"] == "PASS"
+        and not execution_row["blockers"]
+        and execution_row["evidence"]["characterization_tests"] == ledger["totals"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = cases_ok and row_ok and execution_ok and strict_ok
+    return ok, ("cases=%d totals=%s malformed=%d"
+                % (len(cases), ledger["totals"], len(malformed)))
 
 
 def t_optimization_chunk_optimization_ledger():
@@ -2988,6 +3054,7 @@ TESTS = [
     ("OPT-5 merge-candidate-analysis",          t_optimization_merge_candidate_analysis),
     ("OPT-11 merge-parity-review",              t_optimization_merge_parity_review),
     ("OPT-16 characterization-tests",           t_optimization_characterization_tests),
+    ("OPT-18 characterization-case-ledger",      t_optimization_characterization_case_ledger),
     ("OPT-17 chunk-optimization-ledger",        t_optimization_chunk_optimization_ledger),
     ("OPT-6 file-completion-gate",              t_optimization_file_completion_gate),
     ("OPT-7 subsystem-convergence",             t_optimization_subsystem_convergence),

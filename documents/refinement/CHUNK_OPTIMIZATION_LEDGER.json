@@ -227,6 +227,108 @@
       ],
       "receipt": "Pass 30 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
       "verified": true
+    },
+    {
+      "path": "src/mantle/optimize_audit.py",
+      "chunk_id": "pass-31.optimize-audit.characterization-case-ledger",
+      "chunk_kind": "python audit-ledger function and report-output cluster",
+      "status": "changed-verified",
+      "selected_candidate": "Load verified characterization cases and mark covered documentation candidates as characterized.",
+      "rejected_candidates": [
+        "Leave documentation candidates queued after characterization evidence exists",
+        "Merge documentation surfaces without deletion-safe proof"
+      ],
+      "preserved_invariants": [
+        "mutation_allowed remains false",
+        "strict audit rejects malformed characterization evidence",
+        "documentation characterization does not authorize merge or deletion",
+        "runtime behavior is unchanged"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-16 characterization-tests",
+        "OPT-18 characterization-case-ledger",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds a small characterization-case reader and stricter validation",
+      "performance_delta": "audit reads one small JSON file; runtime path unaffected",
+      "risks": [
+        "case evidence is a merge prerequisite, not merge authority"
+      ],
+      "receipt": "Pass 31 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-31.invariants.characterization-case-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Strengthen OPT-16 to prove documentation candidates are characterized and still non-mutating.",
+      "rejected_candidates": [
+        "Accept characterization cases without invariant coverage",
+        "Keep OPT-16 expecting queued documentation candidates"
+      ],
+      "preserved_invariants": [
+        "security invariant suite remains stdlib-only",
+        "no merge or deletion is allowed by characterization alone",
+        "Section 7 can pass while later protocol rows remain REVISE"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-16 characterization-tests",
+        "OPT-18 characterization-case-ledger",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "updates one focused invariant",
+      "performance_delta": "invariant suite reads the optimization audit report",
+      "risks": [
+        "whole-project completion still requires chunk and subsystem convergence"
+      ],
+      "receipt": "Pass 31 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "documents/refinement/CHARACTERIZATION_TEST_LEDGER.json",
+      "chunk_id": "pass-31.docs.characterization-test-ledger",
+      "chunk_kind": "structured characterization receipt ledger",
+      "status": "changed-verified",
+      "selected_candidate": "Commit focused characterization cases for all queued documentation-topic merge candidates.",
+      "rejected_candidates": [
+        "Keep characterization evidence only in generated artifacts",
+        "Treat same-name documentation pairs as removable duplicates"
+      ],
+      "preserved_invariants": [
+        "no secrets, keys, prompts, completions, or private file contents are stored",
+        "documentation functions remain covered by keeping surfaces separate",
+        "mutation_allowed remains false"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-16 characterization-tests",
+        "OPT-18 characterization-case-ledger",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds one structured characterization evidence file",
+      "performance_delta": "audit reads one small JSON file; runtime path unaffected",
+      "risks": [
+        "future consolidation still needs deletion-safe doc parity proof"
+      ],
+      "receipt": "Pass 31 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
     }
   ]
 }
