@@ -2082,6 +2082,47 @@ def t_optimization_inventory_audit():
                len(report["maps"]["path_references"]), report["token_status"]))
 
 
+def t_grimoire_single_tomb():
+    """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
+    surface must not remain as a competing source of authority or stale path reference."""
+    root = paths.REPO_ROOT
+    tomb = os.path.join(root, "documents", "grimoire", "The Grimoire.md")
+    readme = os.path.join(root, "documents", "grimoire", "README.md")
+    old_name = "The Grimoire " + "AppAI Chapter.md"
+    old_encoded = "The%20Grimoire%20" + "AppAI%20Chapter.md"
+    old_chapter = os.path.join(root, "documents", "grimoire", old_name)
+    with open(tomb, encoding="utf-8") as f:
+        tomb_text = f.read()
+    with open(readme, encoding="utf-8") as f:
+        readme_text = f.read()
+    stale = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in {
+            ".git", "__pycache__", ".pytest_cache", "node_modules",
+        }]
+        for name in filenames:
+            path = os.path.join(dirpath, name)
+            if not name.lower().endswith((".md", ".py", ".txt", ".yaml", ".yml", ".json")):
+                continue
+            try:
+                text = open(path, encoding="utf-8").read()
+            except UnicodeDecodeError:
+                continue
+            if old_name in text or old_encoded in text:
+                stale.append(os.path.relpath(path, root).replace(os.sep, "/"))
+    ok = (
+        os.path.exists(tomb)
+        and os.path.exists(readme)
+        and not os.path.exists(old_chapter)
+        and tomb_text.startswith("# G4.0-U")
+        and "Version=4.0" in tomb_text.splitlines()[1]
+        and "one version-4 canonical tomb" in readme_text
+        and not stale
+    )
+    return ok, ("single G4.0 tomb; old chapter absent; stale refs=%s"
+                % (stale or "none"))
+
+
 TESTS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -2173,6 +2214,7 @@ TESTS = [
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
     ("OPT-1 repository-inventory-audit",        t_optimization_inventory_audit),
+    ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
 ]
 
 

@@ -56,6 +56,24 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 13 Receipt
+
+Function served: the Grimoire 4 one-tomb migration needed an executable guard so future
+edits cannot accidentally restore the obsolete two-file authority model.
+
+Changes:
+
+- Added invariant `GRIM-1 single-grimoire-tomb`.
+- The invariant proves `The Grimoire.md` is stamped `G4.0-U`, the grimoire README presents the
+  single tomb, the former AppAI chapter file is absent, and stale exact chapter path references are
+  gone.
+- Updated the public invariant-count anchors from 90 to 91.
+
+Deletion decision: no files were deleted in this pass. The former chapter deletion was completed
+in Pass 11; this pass adds a guard over that already-migrated shape.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 12 Receipt
 
 Function served: the whole-repository optimization protocol requires every changed, skipped,
