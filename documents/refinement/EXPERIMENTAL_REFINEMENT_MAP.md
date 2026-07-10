@@ -56,6 +56,25 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 12 Receipt
+
+Function served: the whole-repository optimization protocol requires every changed, skipped,
+generated, binary, vendored, blocked, and pending file to be recorded. The previous ledger only
+reported working-tree changes or a clean-tree placeholder.
+
+Changes:
+
+- Added per-file `git_status`, `disposition`, and `skip_block_reason` fields to the inventory.
+- Changed `CHANGE_LEDGER` to emit one receipt per inventoried file.
+- Added disposition totals to token/final reports and expanded `SKIP_BLOCK_REPORT` into
+  non-pending and pending sections.
+- Strengthened `--strict` and `OPT-1` so ledger coverage must exactly match the file inventory.
+
+Deletion decision: no files were deleted. This pass improves accounting only; semantic
+file-by-file rewrites still remain pending where the ledger says `pending-pass-review`.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 11 Receipt
 
 Function served: the operator supplied the latest optimized Grimoire tomb and stated that the

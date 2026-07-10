@@ -2037,6 +2037,18 @@ def t_optimization_inventory_audit():
         and bool(report["baseline"]["runtime"]["python"])
         and report["baseline"]["project"]["requires_python"] == ">=3.8"
     )
+    ledger_paths = {row["path"] for row in report["change_ledger"]}
+    file_paths = {f["path"] for f in report["files"]}
+    disposition_total = sum(report["dispositions"].values())
+    disposition_ok = (
+        ledger_paths == file_paths
+        and len(report["change_ledger"]) == report["file_count"]
+        and disposition_total == report["file_count"]
+        and all(f["disposition"] in {
+            "changed", "inventory-only", "pending-pass-review", "blocked"
+        } for f in report["files"])
+        and all("receipt" in row and row["receipt"] for row in report["change_ledger"])
+    )
     test_index = report["test_report"]
     test_index_ok = (
         test_index["status"] == "verification-index"
@@ -2062,9 +2074,10 @@ def t_optimization_inventory_audit():
     )
     return (tracked_seen and key_classes and honest_tokens and artifact_ok and artifact_set
             and outside_source and aliases_ok and coverage_ok and cli_refs_ok and path_refs_ok
-            and cli_registry_ok and strict_ok and baseline_ok and test_index_ok and observed_ok,
-            "%d files inventoried; %d required artifacts outside source tree; %d CLI refs and %d path refs checked; token status=%s"
-            % (report["file_count"], len(required),
+            and cli_registry_ok and strict_ok and baseline_ok and disposition_ok
+            and test_index_ok and observed_ok,
+            "%d files inventoried; %d ledger rows; %d required artifacts outside source tree; %d CLI refs and %d path refs checked; token status=%s"
+            % (report["file_count"], len(report["change_ledger"]), len(required),
                len(report["maps"]["cli_command_references"]),
                len(report["maps"]["path_references"]), report["token_status"]))
 

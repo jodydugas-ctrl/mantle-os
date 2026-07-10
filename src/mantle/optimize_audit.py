@@ -230,6 +230,38 @@ def _status_rows(root: str) -> List[Dict[str, str]]:
     return rows
 
 
+def _status_map(root: str) -> Dict[str, str]:
+    return {row["path"].replace("\\", "/"): row["status"] for row in _status_rows(root)}
+
+
+def _file_disposition(file_row: Dict[str, Any], status: Optional[str]) -> Dict[str, str]:
+    category = file_row["category"]
+    if status:
+        return {
+            "disposition": "changed",
+            "reason": "git status %r; requires diff review and Mantle proof gates" % status,
+        }
+    if not file_row["text"] or category.startswith("N "):
+        return {
+            "disposition": "inventory-only",
+            "reason": "binary/media; optimize only by reference, rendered evidence, or hash evidence",
+        }
+    if category.startswith("Q "):
+        return {
+            "disposition": "blocked",
+            "reason": "unknown category; classify before semantic optimization",
+        }
+    if file_row["token_status"] == "tiktoken unavailable":
+        return {
+            "disposition": "pending-pass-review",
+            "reason": "eligible text file; token counts unverifiable until optional tokenizer is available",
+        }
+    return {
+        "disposition": "pending-pass-review",
+        "reason": "eligible text file; no semantic chunk rewrite selected in this audit pass",
+    }
+
+
 def _read_text_optional(root: str, rel: str) -> str:
     try:
         with open(os.path.join(root, rel.replace("/", os.sep)), encoding="utf-8") as f:
@@ -515,18 +547,14 @@ def _coverage_matrix(report: Dict[str, Any]) -> List[Dict[str, str]]:
 
 
 def _change_ledger(report: Dict[str, Any]) -> List[Dict[str, str]]:
-    rows = []
-    status = _status_rows(report["repo_root"])
-    for item in status:
-        rows.append({
-            "path": item["path"],
-            "status": item["status"],
-            "receipt": "working-tree change present; verify with git diff and mantle check",
-        })
-    if not rows:
-        rows.append({"path": "*", "status": "clean",
-                     "receipt": "no working-tree changes at audit time"})
-    return rows
+    return [{
+        "path": f["path"],
+        "status": f.get("git_status") or "clean",
+        "category": f["category"],
+        "disposition": f["disposition"],
+        "receipt": f["skip_block_reason"],
+        "proof_path": f["proof_path"],
+    } for f in report["files"]]
 
 
 def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
@@ -640,6 +668,10 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
     missing_coverage = [r for r in report["coverage_matrix"] if r["status"] != "present"]
     if missing_coverage:
         failures.append("%d missing proof surfaces" % len(missing_coverage))
+    ledger_paths = {r.get("path") for r in report.get("change_ledger", [])}
+    file_paths = {f.get("path") for f in report.get("files", [])}
+    if ledger_paths != file_paths:
+        failures.append("change ledger does not cover every inventoried file")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -654,10 +686,18 @@ def build_inventory(root: str = paths.REPO_ROOT,
     root = os.path.abspath(root)
     tracked = _tracked(root)
     untracked = _status_untracked(root)
+    statuses = _status_map(root)
     files = [inventory_file(path, root, tracked, untracked)
              for path in sorted(iter_repo_files(root), key=lambda p: _rel(p, root).lower())]
+    for f in files:
+        git_status = statuses.get(f["path"])
+        disposition = _file_disposition(f, git_status)
+        f["git_status"] = git_status
+        f["disposition"] = disposition["disposition"]
+        f["skip_block_reason"] = disposition["reason"]
     categories = Counter(f["category"] for f in files)
     token_status = Counter(f["token_status"] for f in files)
+    dispositions = Counter(f["disposition"] for f in files)
     tracked_missing = sorted(x for x in tracked
                              if not os.path.exists(os.path.join(root, x.replace("/", os.sep))))
     report = {
@@ -669,6 +709,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
         "tracked_count": len(tracked),
         "tracked_missing": tracked_missing,
         "categories": dict(sorted(categories.items())),
+        "dispositions": dict(sorted(dispositions.items())),
         "token_status": dict(sorted(token_status.items())),
         "files": files,
     }
@@ -706,6 +747,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            json.dumps(report["coverage_matrix"], indent=2, sort_keys=True))
     _write(artifacts["TOKEN_REPORT"], json.dumps({
         "baseline": report["baseline"]["metrics"],
+        "dispositions": report["dispositions"],
         "token_status": report["token_status"],
         "files": [{"path": f["path"], "tokens": f["tokens"],
                    "token_status": f["token_status"], "bytes": f["bytes"],
@@ -715,11 +757,19 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            json.dumps(report["test_report"], indent=2, sort_keys=True))
     _write(artifacts["PERFORMANCE_REPORT"],
            json.dumps(report["performance_report"], indent=2, sort_keys=True))
-    skipped = [f for f in files if not f["text"] or f["category"].startswith("N ")]
+    skipped = [f for f in files if f["disposition"] != "pending-pass-review"]
+    pending = [f for f in files if f["disposition"] == "pending-pass-review"]
     _write(artifacts["SKIP_BLOCK_REPORT"],
            "# Skip / Block Report\n\n"
-           + "\n".join("- `%s`: %s" % (f["path"], f["optimization_eligibility"])
-                       for f in skipped) + "\n")
+           "Inventory-only, changed, and blocked files are listed with reasons. "
+           "Eligible text files not selected in this pass remain pending.\n\n"
+           "## Non-Pending Files\n\n"
+           + ("\n".join("- `%s`: %s" % (f["path"], f["skip_block_reason"])
+                        for f in skipped) or "- none")
+           + "\n\n## Pending Eligible Files\n\n"
+           + ("\n".join("- `%s`: %s" % (f["path"], f["skip_block_reason"])
+                        for f in pending) or "- none")
+           + "\n")
     stale_paths = [r for r in report["maps"]["path_references"] if not r["exists"]]
     stale_commands = [r for r in report["maps"]["cli_command_references"] if not r["exists"]]
     _write(artifacts["ALIGNMENT_MATRIX"],
@@ -749,6 +799,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nCOMPLEXITY_DELTA: adds one stdlib-only audit module and one CLI route.\n"
            "\nPERFORMANCE_DELTA: no runtime path affected; audit cost is file traversal.\n"
            "\nFILES: %d inventoried; %d artifact files written.\n"
+           "\nCHANGE_LEDGER: %d per-file disposition receipt(s); dispositions=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -759,7 +810,8 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nALIGNMENT_RESULT: REVISE; baseline maps generated, convergence pending.\n"
            "\nGUARDIAN_RESULT: REVISE; safe to continue in smaller passes.\n"
            % (report["file_count"], report["branch"], report["head"],
-              report["file_count"], len(artifacts)))
+              report["file_count"], len(artifacts), len(report["change_ledger"]),
+              dict(sorted(report["dispositions"].items()))))
     return artifacts
 
 
