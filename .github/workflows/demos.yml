@@ -13,6 +13,7 @@ on:
 jobs:
   demo-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,14 +22,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
+          cache-dependency-path: examples/tests/package-lock.json
 
       - name: Install Playwright (chromium only)
         working-directory: examples/tests
+        timeout-minutes: 8
         run: |
-          npm install
+          npm ci --no-audit --no-fund --prefer-offline
           npx playwright install --with-deps chromium
 
       - name: Serve examples/ (static)
+        timeout-minutes: 1
         run: |
           python -m http.server 8765 --directory examples &
           # wait for the server to answer before launching the browser
@@ -39,10 +44,12 @@ jobs:
 
       - name: Smoke-test both demos (mount + self-audit)
         working-directory: examples/tests
+        timeout-minutes: 3
         env:
           BASE_URL: http://localhost:8765
         run: node demo_smoke.mjs
 
       - name: Smoke-test the live agent (jsdom mount + runnable Stage-1 gate)
         working-directory: examples/tests
+        timeout-minutes: 2
         run: node live_agent_smoke.mjs

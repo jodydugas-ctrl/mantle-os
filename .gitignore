@@ -28,7 +28,7 @@ tmp/
 
 # Node (the headless demo smoke tests under examples/tests/ — Python stays dependency-free)
 node_modules/
-package-lock.json
+/package-lock.json
 playwright-report/
 test-results/
 
