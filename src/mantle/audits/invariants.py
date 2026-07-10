@@ -1998,6 +1998,49 @@ def t_sporeagent_lifecycle_receipt():
             "and absent from pure spore.py/spore_min.py")
 
 
+def t_optimization_inventory_audit():
+    """OPT-1: the whole-repository optimization protocol has an executable, non-mutating
+    inventory bone. It inventories every non-VCS tracked file, classifies key doctrine/code
+    surfaces, writes required baseline artifacts outside the source tree, and labels token
+    counts as measured or unverifiable instead of pretending."""
+    import os as _os
+    import tempfile as _tempfile
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    from ..cli import known_commands
+    by_path = {f["path"]: f for f in report["files"]}
+    tracked_seen = all(p in by_path for p in _opt._tracked(_paths.REPO_ROOT))
+    key_classes = (
+        by_path["README.md"]["category"].startswith("D ")
+        and by_path["documents/grimoire/The Grimoire.md"]["category"].startswith("C ")
+        and by_path["src/mantle/optimize_audit.py"]["category"].startswith("A ")
+        and by_path["src/mantle/cli.py"]["category"].startswith("G ")
+    )
+    honest_tokens = all(f["token_status"] in ("measured", "not-text", "tiktoken unavailable")
+                        for f in report["files"])
+    out_dir = _os.path.join(_tempfile.gettempdir(), "mantle-opt-invariant")
+    artifacts = _opt.write_artifacts(report, out_dir)
+    required = set(_opt.REQUIRED_ARTIFACTS)
+    strict_ok = _opt.strict_failures(report, artifacts) == []
+    artifact_ok = all(_os.path.exists(p) for p in artifacts.values())
+    artifact_set = set(artifacts) == required
+    outside_source = not _os.path.abspath(out_dir).startswith(_paths.REPO_ROOT)
+    aliases_ok = report["alias_registry"]["collision_audit"]["status"] == "PASS"
+    coverage_ok = all(r["status"] == "present" for r in report["coverage_matrix"])
+    cli_refs_ok = all(r["exists"] for r in report["maps"]["cli_command_references"])
+    path_refs_ok = all(r["exists"] for r in report["maps"]["path_references"])
+    cli_registry_ok = "optimize-audit" in known_commands()
+    return (tracked_seen and key_classes and honest_tokens and artifact_ok and artifact_set
+            and outside_source and aliases_ok and coverage_ok and cli_refs_ok and path_refs_ok
+            and cli_registry_ok and strict_ok,
+            "%d files inventoried; %d required artifacts outside source tree; %d CLI refs and %d path refs checked; token status=%s"
+            % (report["file_count"], len(required),
+               len(report["maps"]["cli_command_references"]),
+               len(report["maps"]["path_references"]), report["token_status"]))
+
+
 TESTS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -2088,6 +2131,7 @@ TESTS = [
     ("REPRO-4 anchor-births-through-hatchery", t_repro_anchor_births_through_hatchery),
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
+    ("OPT-1 repository-inventory-audit",        t_optimization_inventory_audit),
 ]
 
 

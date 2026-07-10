@@ -56,6 +56,84 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 8 Receipt
+
+Function served: the optimization audit needed a gate mode, not only a report mode, so the
+whole-project alignment audit can fail loudly on unresolved references or incomplete artifact
+coverage.
+
+Changes:
+
+- Added `python -m mantle optimize-audit --strict`.
+- `--strict` fails on unknown file categories, missing tracked files, unresolved normalized path
+  references, unresolved Mantle CLI references, alias collisions, missing proof surfaces, or missing
+  required artifacts.
+- Added strict-mode status to JSON output.
+- Strengthened `OPT-1` to prove strict-mode failure detection currently returns no failures.
+
+Deletion decision: no files were deleted. This pass adds an explicit gate over the existing
+generated artifacts and alignment maps.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
+## Pass 7 Receipt
+
+Function served: the optimization audit must not maintain a competing CLI command registry. The
+actual CLI router is the canonical command surface; alignment checks should read from that source.
+
+Changes:
+
+- Added `known_commands()` to `src/mantle/cli.py` as the canonical machine-readable command list.
+- Normalized underscore compatibility aliases through one alias map before routing.
+- Changed `src/mantle/optimize_audit.py` to consume `known_commands()` instead of a local duplicate
+  command set.
+- Strengthened `OPT-1` to prove `optimize-audit` is present in the canonical CLI registry.
+
+Deletion decision: no files were deleted. A duplicate in-code registry was removed from the audit
+module and replaced by the canonical CLI helper.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
+## Pass 6 Receipt
+
+Function served: the optimization audit's alignment matrix needed to separate real stale
+references from prose fragments, wildcard examples, and command placeholders before it could guide
+safe whole-repo optimization.
+
+Changes:
+
+- Normalized documented file and directory references before checking them.
+- Added Mantle CLI command reference extraction and validation against the known command surface.
+- Filtered weak non-path fragments from stale-path reporting.
+- Strengthened `OPT-1` so the invariant proves zero unresolved normalized path references and zero
+  unresolved Mantle CLI command references in the generated alignment map.
+
+Deletion decision: no files were deleted. The pass reduces false-positive alignment noise without
+removing any documented behavior.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
+## Pass 5 Receipt
+
+Function served: the whole-repository optimization protocol requires a complete file inventory,
+token-measurement honesty, skip/block accounting, and generated artifacts before safe semantic
+optimization. MantleOS now has an executable baseline audit instead of a manual-only checklist.
+
+Changes:
+
+- Added `src/mantle/optimize_audit.py`, a stdlib-only non-mutating repository inventory and
+  artifact generator.
+- Added `python -m mantle optimize-audit [--out=DIR] [--json]` to the CLI.
+- Added invariant `OPT-1 repository-inventory-audit` to prove tracked files are inventoried,
+  key surfaces are classified, artifacts are written outside the source tree, and token counts are
+  labeled measured or unverifiable.
+- Updated checked invariant-count anchors from 89 to 90.
+
+Deletion decision: no files were deleted. The protocol's required final artifacts are generated
+outside the production source tree unless the operator separately authorizes committing them.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 4 Receipt
 
 Function served: the operator supplied a 3.8.0 LLM-optimized Grimoire archive containing the two

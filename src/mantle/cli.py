@@ -18,10 +18,11 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
   the gates and narrated tours:
     python -m mantle demo                           narrated Phase-1 life (no LLM)
     python -m mantle audit [--break-hash|--break-primer|--break-seal]
-    python -m mantle prove                          the 88 security invariants
+    python -m mantle prove                          the current security invariant suite
     python -m mantle mind                           narrated Phase-2 fusion (offline)
     python -m mantle audit-mind                     Stage-2 gate + Stage-1 regression
     python -m mantle assimilate <path> --dry-run    Path B read-only dissection
+    python -m mantle optimize-audit [--out=DIR] [--strict] repository inventory artifacts
     python -m mantle check [--fast]                 EVERYTHING above that certifies, in
                                                       one command (the CI sequence, local)
 """
@@ -41,8 +42,63 @@ _USAGE = ("usage: python -m mantle "
           "applet-audit <dir> <name> | applet-clone <dir> <https-github-url> <name> | "
           "hatch-spore <spore.png> [--out=DIR] | "
           "reproduce | spore <op> ... | ghost <op> ... | "
-          "demo | audit | prove | mind | audit-mind | check [--fast] | "
+          "demo | audit | prove | mind | audit-mind | optimize-audit [--out=DIR] [--strict] | "
+          "check [--fast] | "
           "assimilate <path> [--dry-run] [--out=DIR]]")
+
+_COMMAND_ALIASES = {
+    "anchor": "anchor",
+    "ask": "ask",
+    "feed": "feed",
+    "vitals": "vitals",
+    "hatch": "hatch",
+    "graft": "graft",
+    "spore": "spore",
+    "ghost": "ghost",
+    "reproduce": "reproduce",
+    "doctor": "doctor",
+    "teach": "teach",
+    "face": "face",
+    "face-list": "face-list",
+    "face_list": "face-list",
+    "face-save": "face-save",
+    "face_save": "face-save",
+    "face-wear": "face-wear",
+    "face_wear": "face-wear",
+    "applet-create": "applet-create",
+    "applet_create": "applet-create",
+    "applet-list": "applet-list",
+    "applet_list": "applet-list",
+    "applet-show": "applet-show",
+    "applet_show": "applet-show",
+    "applet-export": "applet-export",
+    "applet_export": "applet-export",
+    "applet-wear": "applet-wear",
+    "applet_wear": "applet-wear",
+    "applet-audit": "applet-audit",
+    "applet_audit": "applet-audit",
+    "applet-clone": "applet-clone",
+    "applet_clone": "applet-clone",
+    "hatch-spore": "hatch-spore",
+    "hatch_spore": "hatch-spore",
+    "demo": "demo",
+    "audit": "audit",
+    "prove": "prove",
+    "mind": "mind",
+    "audit-mind": "audit-mind",
+    "audit_mind": "audit-mind",
+    "assimilate": "assimilate",
+    "optimize-audit": "optimize-audit",
+    "optimize_audit": "optimize-audit",
+    "check": "check",
+}
+
+
+def known_commands(include_aliases: bool = False):
+    """The canonical CLI command registry used by docs/alignment audits."""
+    if include_aliases:
+        return sorted(_COMMAND_ALIASES)
+    return sorted(set(_COMMAND_ALIASES.values()))
 
 
 def _split(argv):
@@ -632,7 +688,8 @@ def cmd_applet_clone(argv):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmd = argv[0] if argv else "teach"
+    raw_cmd = argv[0] if argv else "teach"
+    cmd = _COMMAND_ALIASES.get(raw_cmd, raw_cmd)
     rest = argv[1:]
     if cmd == "anchor":
         return cmd_anchor(rest)
@@ -659,27 +716,27 @@ def main(argv=None):
         return teach.main(rest)
     if cmd == "face":
         return cmd_face(rest)
-    if cmd in ("face-list", "face_list"):
+    if cmd == "face-list":
         return cmd_face_list(rest)
-    if cmd in ("face-save", "face_save"):
+    if cmd == "face-save":
         return cmd_face_save(rest)
-    if cmd in ("face-wear", "face_wear"):
+    if cmd == "face-wear":
         return cmd_face_wear(rest)
-    if cmd in ("applet-create", "applet_create"):
+    if cmd == "applet-create":
         return cmd_applet_create(rest)
-    if cmd in ("applet-list", "applet_list"):
+    if cmd == "applet-list":
         return cmd_applet_list(rest)
-    if cmd in ("applet-show", "applet_show"):
+    if cmd == "applet-show":
         return cmd_applet_show(rest)
-    if cmd in ("applet-export", "applet_export"):
+    if cmd == "applet-export":
         return cmd_applet_export(rest)
-    if cmd in ("applet-wear", "applet_wear"):
+    if cmd == "applet-wear":
         return cmd_applet_wear(rest)
-    if cmd in ("applet-audit", "applet_audit"):
+    if cmd == "applet-audit":
         return cmd_applet_audit(rest)
-    if cmd in ("applet-clone", "applet_clone"):
+    if cmd == "applet-clone":
         return cmd_applet_clone(rest)
-    if cmd in ("hatch-spore", "hatch_spore"):
+    if cmd == "hatch-spore":
         return cmd_hatch_spore(rest)
     # ---- the narrated tours and the gates ----
     if cmd == "demo":
@@ -694,17 +751,20 @@ def main(argv=None):
     if cmd == "mind":
         from . import demos
         return demos.mind_demo(rest)
-    if cmd in ("audit-mind", "audit_mind"):
+    if cmd == "audit-mind":
         from .audits import stage2
         return stage2.main(rest)
     if cmd == "assimilate":
         from . import demos
         return demos.assimilate(rest)
+    if cmd == "optimize-audit":
+        from . import optimize_audit
+        return optimize_audit.main(rest)
     if cmd == "check":
         from . import check
         return check.main(rest)
     print(_USAGE)
-    return 2 if cmd in ("-h", "--help", "help") else 1
+    return 2 if raw_cmd in ("-h", "--help", "help") else 1
 
 
 if __name__ == "__main__":

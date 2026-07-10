@@ -6,10 +6,10 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 89 security invariants, the
+*The organism re-certifies on every commit: the Stage-1 gate, 90 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
-**Current certification count:** 89 security invariants (`python -m mantle prove`).
+**Current certification count:** 90 security invariants (`python -m mantle prove`).
 
 > **New here, or skeptical of the biology metaphor?** Start with
 > [`documents/Mantle_Positioning.md`](documents/Mantle_Positioning.md) — a plain-language summary and an honest
@@ -133,7 +133,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 89 security invariants, red/green
+python -m mantle prove         # 90 security invariants, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash
@@ -188,6 +188,7 @@ python -m mantle hatch examples/eggs/greeter.json --out=nest/          # a whole
 python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
 python -m mantle graft examples/eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
 python -m mantle doctor nest/                  # deployment checkup (incl. docs-vs-code coherence)
+python -m mantle optimize-audit --strict --out=C:\tmp\mantle-opt   # whole-repo optimization inventory artifacts
 ```
 
 **The substrate continuum — the cache-ghost.** A seed keeps its memory *somewhere*, and persistence
