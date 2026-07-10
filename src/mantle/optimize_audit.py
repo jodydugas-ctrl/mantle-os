@@ -539,8 +539,15 @@ def _language(path: str) -> str:
     }.get(ext, ext[1:] or "unknown")
 
 
+def _is_python_build_output(rel: str) -> bool:
+    parts = rel.lower().split("/")
+    return any(part.endswith(".egg-info") for part in parts)
+
+
 def _category(rel: str, text: bool) -> str:
     p = rel.lower()
+    if _is_python_build_output(p):
+        return "O cache/build output"
     if not text:
         return "N binary/media"
     if p.startswith(".github/") or p in {".gitignore", "pyproject.toml"}:
@@ -574,6 +581,8 @@ def _subsystem(rel: str) -> str:
 def _purpose(rel: str, category: str) -> str:
     if rel == "README.md":
         return "repository overview and checked certification-count anchor"
+    if category.startswith("O "):
+        return "generated cache/build output; inventory-only residue"
     if rel.endswith("pyproject.toml"):
         return "package metadata and dependency declaration"
     if rel.startswith("documents/grimoire/"):
@@ -797,6 +806,11 @@ def _file_disposition(file_row: Dict[str, Any], status: Optional[str]) -> Dict[s
         return {
             "disposition": "changed",
             "reason": "git status %r; requires diff review and Mantle proof gates" % status,
+        }
+    if category.startswith("O "):
+        return {
+            "disposition": "inventory-only",
+            "reason": "cache/build output; inventory and ignore-rule review only",
         }
     if not file_row["text"] or category.startswith("N "):
         return {
@@ -1056,8 +1070,8 @@ def inventory_file(path: str, root: str, tracked: set, untracked: set) -> Dict[s
         "text": is_text,
         "encoding": enc,
         "language": _language(rel),
-        "generated": False,
-        "generator": None,
+        "generated": category.startswith("O "),
+        "generator": "python packaging/editable install" if _is_python_build_output(rel) else None,
         "purpose": _purpose(rel, category),
         "subsystem": _subsystem(rel),
         "imports": imports,
@@ -1084,7 +1098,10 @@ def inventory_file(path: str, root: str, tracked: set, untracked: set) -> Dict[s
         "token_status": token_note or ("measured" if text is not None else "not-text"),
         "complexity_indicators": _complexity_indicators(text, imports, public),
         "duplication_indicators": {"exact_duplicate_paths": [], "near_duplicate_note": "not-analyzed"},
-        "optimization_eligibility": "inventory-only" if not is_text else "eligible-for-pass-review",
+        "optimization_eligibility": (
+            "inventory-only" if (not is_text or category.startswith("O "))
+            else "eligible-for-pass-review"
+        ),
         "risk": "high" if rel.startswith("src/mantle/core/") else "normal",
         "proof_path": "PYTHONPATH=src python -m mantle check",
         "skip_block_reason": "pending disposition; finalized after git status review",

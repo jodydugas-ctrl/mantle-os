@@ -2049,6 +2049,17 @@ def t_optimization_inventory_audit():
         } for f in report["files"])
         and all("receipt" in row and row["receipt"] for row in report["change_ledger"])
     )
+    egg_info_category = _opt._category("src/mantle_os.egg-info/PKG-INFO", True)
+    egg_info_disposition = _opt._file_disposition({
+        "category": egg_info_category,
+        "text": True,
+        "token_status": "tiktoken unavailable",
+    }, None)
+    build_output_ok = (
+        egg_info_category == "O cache/build output"
+        and egg_info_disposition["disposition"] == "inventory-only"
+        and "cache/build output" in egg_info_disposition["reason"]
+    )
     test_index = report["test_report"]
     test_index_ok = (
         test_index["status"] == "verification-index"
@@ -2075,6 +2086,7 @@ def t_optimization_inventory_audit():
     return (tracked_seen and key_classes and honest_tokens and artifact_ok and artifact_set
             and outside_source and aliases_ok and coverage_ok and cli_refs_ok and path_refs_ok
             and cli_registry_ok and strict_ok and baseline_ok and disposition_ok
+            and build_output_ok
             and test_index_ok and observed_ok,
             "%d files inventoried; %d ledger rows; %d required artifacts outside source tree; %d CLI refs and %d path refs checked; token status=%s"
             % (report["file_count"], len(report["change_ledger"]), len(required),

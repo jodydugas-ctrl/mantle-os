@@ -397,6 +397,72 @@
       ],
       "receipt": "Pass 32 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
       "verified": true
+    },
+    {
+      "path": "src/mantle/optimize_audit.py",
+      "chunk_id": "pass-33.optimize-audit.build-output-classification",
+      "chunk_kind": "python inventory classification and disposition helper",
+      "status": "changed-verified",
+      "selected_candidate": "Classify Python editable-install egg-info metadata as cache/build output instead of production source.",
+      "rejected_candidates": [
+        "Ignore egg-info directories entirely",
+        "Keep src fallback classification for generated packaging metadata"
+      ],
+      "preserved_invariants": [
+        "tracked source files are still inventoried",
+        "generated residue remains visible in receipts",
+        "runtime behavior is unchanged",
+        "cache/build output is inventory-only"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle optimize-audit --strict",
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-1 repository-inventory-audit",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds one small path classifier and reuses existing inventory-only disposition",
+      "performance_delta": "no runtime path affected",
+      "risks": [
+        "other build-output shapes still need future classification receipts"
+      ],
+      "receipt": "Pass 33 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
+    },
+    {
+      "path": "src/mantle/audits/invariants.py",
+      "chunk_id": "pass-33.invariants.build-output-proof",
+      "chunk_kind": "python invariant function",
+      "status": "changed-verified",
+      "selected_candidate": "Strengthen OPT-1 to prove egg-info metadata is cache/build output and inventory-only.",
+      "rejected_candidates": [
+        "Trust the classifier without invariant coverage",
+        "Use a CI-specific assertion"
+      ],
+      "preserved_invariants": [
+        "security invariant suite remains stdlib-only",
+        "no new invariant count anchor is needed",
+        "unknown categories still fail strict audit"
+      ],
+      "evidence": [
+        "PYTHONPATH=src python -m mantle prove",
+        "PYTHONPATH=src python -m mantle check"
+      ],
+      "tests": [
+        "OPT-1 repository-inventory-audit",
+        "full Mantle check"
+      ],
+      "token_delta": "UNVERIFIABLE: tiktoken unavailable",
+      "complexity_delta": "adds focused category/disposition assertions",
+      "performance_delta": "invariant suite cost unchanged in practice",
+      "risks": [
+        "whole-project completion still requires remaining chunk and subsystem convergence"
+      ],
+      "receipt": "Pass 33 receipt in EXPERIMENTAL_REFINEMENT_MAP.md",
+      "verified": true
     }
   ]
 }

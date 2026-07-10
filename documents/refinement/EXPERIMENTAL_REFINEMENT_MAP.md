@@ -630,6 +630,27 @@ module and replaced by the canonical CLI helper.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 33 Receipt
+
+Function served: the whole-repository protocol says cache/build output must be inventoried and
+reviewed by ignore/build-output rules, not optimized as production source. Editable Python installs
+can create `*.egg-info` files under `src/`, which previously inherited the `src/` production-source
+category.
+
+Changes:
+
+- Added Python packaging `*.egg-info` path recognition to the optimization inventory.
+- Classified those files as `O cache/build output`.
+- Marked build output as generated, inventory-only, and ineligible for semantic chunk rewriting.
+- Strengthened `OPT-1` to prove `src/*.egg-info` metadata maps to cache/build output and
+  inventory-only disposition.
+
+Deletion decision: no files or features were deleted. The prior `src/` fallback served broad source
+classification; this pass narrows only generated packaging residue while preserving tracked source
+coverage and all certification gates.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 32 Receipt
 
 Function served: GitHub Action emails showed the online `Zombie Body Audit` failing in `OPT-14`
