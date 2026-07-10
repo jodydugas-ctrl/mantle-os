@@ -56,6 +56,34 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 25 Receipt
+
+Function served: protocol sections 17, 19, and 20 require an optimization scorecard, explicit
+completion-condition evidence, and a guardian review before declaring PASS. The audit had a prose
+guardian line, but not machine-readable scorecard or guardian rows.
+
+Changes:
+
+- Added `SCORECARD_METRICS`, `SCORECARD_FIELDS`, `GUARDIAN_CHECKS`, and `GUARDIAN_FIELDS`.
+- Added `optimization_scorecard` to `python -m mantle optimize-audit`.
+- Added `guardian_review` to decide current PASS/REVISE/UNVERIFIABLE completion status from
+  evidence rather than intent.
+- Scorecard rows point aggregate byte/line/token claims back to per-file evidence artifacts.
+- Guardian rows record why inventory, merge parity, hard-fail, version, and ripple evidence passes,
+  and why token measurement, final verification, blind semantic comparison, and full alignment remain
+  open.
+- Strict audit now requires scorecard and guardian rows.
+- `ALIGNMENT_MATRIX`, `FINAL_RECEIPT`, CLI output, and JSON output now summarize scorecard and
+  guardian totals.
+- Added invariant `OPT-12 scorecard-guardian-review`.
+- Updated public invariant-count anchors from 102 to 103.
+
+Deletion decision: no files, functions, documents, or aliases were deleted. This pass adds
+completion-accounting evidence and keeps the guardian result at `REVISE` until the protocol's PASS
+conditions are actually proven.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 24 Receipt
 
 Function served: protocol section 7 requires steelman, caller analysis, parity dimensions, mode

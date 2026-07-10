@@ -2514,6 +2514,54 @@ def t_optimization_final_verification_semantic_comparison():
                    len(semantic["machine_doctrine_files"])))
 
 
+def t_optimization_scorecard_guardian_review():
+    """OPT-12: the optimization audit records the section-17 scorecard and
+    section-20 guardian review as machine-readable evidence, while keeping the
+    protocol at REVISE until completion conditions are actually met."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    scorecard = report["optimization_scorecard"]
+    guardian = report["guardian_review"]
+    score_rows = scorecard["rows"]
+    guard_rows = guardian["rows"]
+    score_by_metric = {row["metric"]: row for row in score_rows}
+    guard_by_check = {row["check"]: row for row in guard_rows}
+    score_shape_ok = (
+        set(score_by_metric) == set(_opt.SCORECARD_METRICS)
+        and not scorecard["missing_metrics"]
+        and all({"metric", "status", "before", "after", "delta", "evidence", "blockers"}
+                .issubset(row) for row in score_rows)
+        and all(row["status"] in {"PASS", "REVISE", "UNVERIFIABLE"} for row in score_rows)
+    )
+    guardian_shape_ok = (
+        set(guard_by_check) == set(_opt.GUARDIAN_CHECKS)
+        and not guardian["missing_checks"]
+        and all({"check", "status", "evidence", "blockers"}.issubset(row)
+                for row in guard_rows)
+        and all(row["status"] in {"PASS", "REVISE", "UNVERIFIABLE"} for row in guard_rows)
+    )
+    expected_current_state = (
+        scorecard["status"] == "REVISE"
+        and score_by_metric["cl100k token counts"]["status"] == "UNVERIFIABLE"
+        and score_by_metric["o200k token counts"]["status"] == "UNVERIFIABLE"
+        and score_by_metric["duplicate implementations removed"]["status"] == "REVISE"
+        and score_by_metric["bytes"]["evidence"]["per_file_data"] == "FILE_INVENTORY"
+        and score_by_metric["cl100k token counts"]["evidence"]["per_file_data"] == "TOKEN_REPORT"
+        and guardian["status"] == "REVISE"
+        and guard_by_check["inventory complete"]["status"] == "PASS"
+        and guard_by_check["merge parity evidence"]["status"] == "PASS"
+        and guard_by_check["whole-project token count measured"]["status"] == "UNVERIFIABLE"
+        and guard_by_check["final verification"]["status"] == "REVISE"
+        and "Section 20 guardian review" in guardian["rule"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = score_shape_ok and guardian_shape_ok and expected_current_state and strict_ok
+    return ok, ("scorecard=%s guardian=%s"
+                % (scorecard["totals"], guardian["totals"]))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2689,6 +2737,7 @@ TESTS = [
     ("OPT-8 ripple-queue",                      t_optimization_ripple_queue),
     ("OPT-9 whole-project-alignment",           t_optimization_whole_project_alignment),
     ("OPT-10 final-verification+semantic",      t_optimization_final_verification_semantic_comparison),
+    ("OPT-12 scorecard-guardian-review",        t_optimization_scorecard_guardian_review),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

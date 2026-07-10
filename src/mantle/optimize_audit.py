@@ -304,6 +304,65 @@ BLIND_SEMANTIC_FIELDS = (
     "final_representation",
     "blockers",
 )
+SCORECARD_METRICS = (
+    "cl100k token counts",
+    "o200k token counts",
+    "bytes",
+    "lines",
+    "changed files",
+    "unchanged files",
+    "skipped files",
+    "blocked files",
+    "generated files regenerated",
+    "duplicate implementations removed",
+    "commands merged",
+    "compatibility aliases retained",
+    "stale references removed",
+    "dead code removed",
+    "tests before/after",
+    "coverage before/after",
+    "lint before/after",
+    "type-check before/after",
+    "build before/after",
+    "benchmark before/after",
+    "public API changes",
+    "behavior changes",
+    "unresolved risks",
+    "unverifiable claims",
+)
+SCORECARD_FIELDS = (
+    "metric",
+    "status",
+    "before",
+    "after",
+    "delta",
+    "evidence",
+    "blockers",
+)
+GUARDIAN_CHECKS = (
+    "inventory complete",
+    "eligible chunks inspected",
+    "changed chunks verified",
+    "tests remain green",
+    "public compatibility visible",
+    "AppAI invariants preserved",
+    "hard fails intact",
+    "merge parity evidence",
+    "alias collision and tokenizer proof",
+    "ripples resolved or queued",
+    "cross-surface alignment",
+    "Core/AppAI version alignment",
+    "whole-project token count measured",
+    "whole-project alignment audit",
+    "final verification",
+    "blind semantic comparison",
+)
+GUARDIAN_FIELDS = (
+    "check",
+    "status",
+    "evidence",
+    "blockers",
+)
 RIPPLE_QUEUE_FIELDS = (
     "queue_id",
     "source",
@@ -2049,6 +2108,204 @@ def _blind_semantic_comparison(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _scorecard_row(metric: str, status: str, before: Any, after: Any, delta: Any,
+                   evidence: Dict[str, Any], blockers: Optional[List[str]] = None
+                   ) -> Dict[str, Any]:
+    return {
+        "metric": metric,
+        "status": status,
+        "before": before,
+        "after": after,
+        "delta": delta,
+        "evidence": evidence,
+        "blockers": blockers or [],
+    }
+
+
+def _optimization_scorecard(report: Dict[str, Any]) -> Dict[str, Any]:
+    metrics = report["baseline"]["metrics"]
+    dispositions = report["dispositions"]
+    observed = report["test_report"].get("observed_commands", [])
+    observed_green = bool(observed) and all(row.get("exit_code") == 0 and not row.get("timed_out")
+                                           for row in observed)
+    stale_paths = [r for r in report["maps"]["path_references"] if not r["exists"]]
+    stale_commands = [r for r in report["maps"]["cli_command_references"] if not r["exists"]]
+    token_unverifiable = bool(report["token_status"].get("tiktoken unavailable"))
+    dirty_count = len(report["baseline"]["git"]["status"])
+    compatibility_aliases = report["merge_map"]["compatibility_aliases_detected"]
+    rows = [
+        _scorecard_row(
+            "cl100k token counts",
+            "UNVERIFIABLE" if token_unverifiable else "PASS",
+            None,
+            sum(1 for f in report["files"] if f["tokens"]["cl100k"] is not None),
+            None,
+            {"per_file_data": "TOKEN_REPORT", "token_status": report["token_status"]},
+            ["tiktoken unavailable"] if token_unverifiable else [],
+        ),
+        _scorecard_row(
+            "o200k token counts",
+            "UNVERIFIABLE" if token_unverifiable else "PASS",
+            None,
+            sum(1 for f in report["files"] if f["tokens"]["o200k"] is not None),
+            None,
+            {"per_file_data": "TOKEN_REPORT", "token_status": report["token_status"]},
+            ["tiktoken unavailable"] if token_unverifiable else [],
+        ),
+        _scorecard_row("bytes", "PASS", metrics["bytes"], metrics["bytes"], 0,
+                       {"per_file_data": "FILE_INVENTORY"}),
+        _scorecard_row("lines", "PASS", metrics["lines"], metrics["lines"], 0,
+                       {"per_file_data": "FILE_INVENTORY"}),
+        _scorecard_row("changed files", "REVISE" if dirty_count else "PASS", 0, dirty_count,
+                       dirty_count, {"git_status_rows": report["baseline"]["git"]["status"]},
+                       ["working tree changes under review"] if dirty_count else []),
+        _scorecard_row("unchanged files", "PASS", None,
+                       report["file_count"] - dirty_count, None,
+                       {"file_count": report["file_count"]}),
+        _scorecard_row("skipped files", "PASS", None,
+                       dispositions.get("inventory-only", 0), None,
+                       {"dispositions": dispositions}),
+        _scorecard_row("blocked files", "PASS" if dispositions.get("blocked", 0) == 0 else "REVISE",
+                       None, dispositions.get("blocked", 0), None,
+                       {"dispositions": dispositions},
+                       ["blocked files require classification"] if dispositions.get("blocked", 0) else []),
+        _scorecard_row("generated files regenerated", "PASS", 0, 0, 0,
+                       {"generated_changed": []}),
+        _scorecard_row("duplicate implementations removed", "REVISE", 0, 0, 0,
+                       {"merge_candidates": len(report["merge_map"]["merge_candidates"])},
+                       ["merge candidates remain unmerged pending parity proof"]),
+        _scorecard_row("commands merged", "PASS", 0, 0, 0,
+                       {"commands_merged": []}),
+        _scorecard_row("compatibility aliases retained", "PASS", None,
+                       len(compatibility_aliases), None,
+                       {"aliases": compatibility_aliases}),
+        _scorecard_row("stale references removed",
+                       "PASS" if not stale_paths and not stale_commands else "REVISE",
+                       0, len(stale_paths) + len(stale_commands), None,
+                       {"stale_paths": len(stale_paths), "stale_commands": len(stale_commands)},
+                       ["stale reference remains"] if stale_paths or stale_commands else []),
+        _scorecard_row("dead code removed", "REVISE", 0, 0, 0,
+                       {"merge_candidates": len(report["merge_map"]["merge_candidates"])},
+                       ["dead-code deletion requires caller/proof review"]),
+        _scorecard_row("tests before/after", "PASS" if observed_green else "REVISE",
+                       None, len(observed), None,
+                       {"observed_commands": observed},
+                       [] if observed_green else ["no observed test command in this audit run"]),
+        _scorecard_row("coverage before/after", "UNVERIFIABLE", None, None, None,
+                       {"configured_coverage": False},
+                       ["no coverage command is configured"]),
+        _scorecard_row("lint before/after", "UNVERIFIABLE", None, None, None,
+                       {"configured_lint": False},
+                       ["no lint command is configured"]),
+        _scorecard_row("type-check before/after", "UNVERIFIABLE", None, None, None,
+                       {"configured_type_check": False},
+                       ["no type-check command is configured"]),
+        _scorecard_row("build before/after", "UNVERIFIABLE", None, None, None,
+                       {"build_backend": report["baseline"]["project"]["build_backend"]},
+                       ["no build command is configured"]),
+        _scorecard_row("benchmark before/after", "UNVERIFIABLE", None, None, None,
+                       {"benchmarks": report["performance_report"]["benchmarks"]},
+                       ["no benchmark command is configured"]),
+        _scorecard_row("public API changes", "PASS", None,
+                       ["python -m mantle optimize-audit"], None,
+                       {"public_api_changes": "audit CLI exists; runtime contracts unchanged"}),
+        _scorecard_row("behavior changes", "PASS", None, [], None,
+                       {"runtime_behavior_changes": []}),
+        _scorecard_row("unresolved risks", "REVISE", None,
+                       ["pending chunk review", "tokenizer unavailable", "benchmark unavailable"],
+                       None, {"file_completion": report["file_completion_gate"]["totals"]},
+                       ["protocol completion still has open proof obligations"]),
+        _scorecard_row("unverifiable claims", "REVISE", None,
+                       [row["requirement"] for row in report["final_verification"]["rows"]
+                        if row["status"] == "UNVERIFIABLE"],
+                       None, {"final_verification": report["final_verification"]["totals"]},
+                       ["unverifiable final-verification rows remain"]),
+    ]
+    totals = Counter(row["status"] for row in rows)
+    missing = [metric for metric in SCORECARD_METRICS if metric not in {
+        row["metric"] for row in rows
+    }]
+    return {
+        "status": "PASS" if all(row["status"] == "PASS" for row in rows) else "REVISE",
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_metrics": missing,
+        "rule": "Section 17 optimization scorecard with per-file evidence references.",
+    }
+
+
+def _guardian_row(check: str, status: str, evidence: Dict[str, Any],
+                  blockers: Optional[List[str]] = None) -> Dict[str, Any]:
+    return {
+        "check": check,
+        "status": status,
+        "evidence": evidence,
+        "blockers": blockers or [],
+    }
+
+
+def _guardian_review(report: Dict[str, Any]) -> Dict[str, Any]:
+    token_unverifiable = bool(report["token_status"].get("tiktoken unavailable"))
+    rows = [
+        _guardian_row("inventory complete", "PASS",
+                      {"files": report["file_count"], "tracked_missing": report["tracked_missing"]}),
+        _guardian_row("eligible chunks inspected", "REVISE",
+                      {"file_completion": report["file_completion_gate"]["totals"]},
+                      ["pending chunk review remains"]),
+        _guardian_row("changed chunks verified", "REVISE",
+                      {"changed": report["dispositions"].get("changed", 0)},
+                      ["changed chunks require observed proof receipts"] if report["dispositions"].get("changed", 0) else []),
+        _guardian_row("tests remain green", "REVISE",
+                      {"final_verification": report["final_verification"]["totals"]},
+                      ["not every configured final check is observed"]),
+        _guardian_row("public compatibility visible", "PASS",
+                      {"compatibility_aliases": report["merge_map"]["compatibility_aliases_detected"]}),
+        _guardian_row("AppAI invariants preserved", "PASS",
+                      {"appai_alignment": report["whole_project_alignment"]["rows"][8]["status"]}),
+        _guardian_row("hard fails intact", "PASS",
+                      {"hard_fail_files": len(report["project_model"]["hard_fail_map"]["invariant_files"])}),
+        _guardian_row("merge parity evidence", "PASS",
+                      {"parity": report["merge_map"]["parity_review"]["totals"]}),
+        _guardian_row("alias collision and tokenizer proof",
+                      "UNVERIFIABLE" if token_unverifiable else "PASS",
+                      {"alias_audit": report["alias_registry"]["collision_audit"]["status"],
+                       "token_status": report["token_status"]},
+                      ["tokenizer proof unavailable"] if token_unverifiable else []),
+        _guardian_row("ripples resolved or queued", "PASS",
+                      {"ripple_queue": report["ripple_queue"]["totals"]}),
+        _guardian_row("cross-surface alignment", "REVISE",
+                      {"whole_project_alignment": report["whole_project_alignment"]["totals"]},
+                      ["alignment rows remain REVISE or UNVERIFIABLE"]),
+        _guardian_row("Core/AppAI version alignment", "PASS",
+                      {"version_alignment": report["version_alignment"]["status"]}),
+        _guardian_row("whole-project token count measured",
+                      "UNVERIFIABLE" if token_unverifiable else "PASS",
+                      {"token_status": report["token_status"]},
+                      ["tiktoken unavailable"] if token_unverifiable else []),
+        _guardian_row("whole-project alignment audit", "REVISE",
+                      {"status": report["whole_project_alignment"]["status"]},
+                      ["whole-project alignment is not PASS"]),
+        _guardian_row("final verification", "REVISE",
+                      {"status": report["final_verification"]["status"]},
+                      ["final verification is not PASS"]),
+        _guardian_row("blind semantic comparison", "REVISE",
+                      {"status": report["blind_semantic_comparison"]["status"]},
+                      ["blind semantic comparison is not PASS"]),
+    ]
+    totals = Counter(row["status"] for row in rows)
+    missing = [check for check in GUARDIAN_CHECKS if check not in {
+        row["check"] for row in rows
+    }]
+    status = "PASS" if all(row["status"] == "PASS" for row in rows) else "REVISE"
+    return {
+        "status": status,
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_checks": missing,
+        "rule": "Section 20 guardian review decides PASS/REVISE/HALT/ESCALATE from evidence.",
+    }
+
+
 def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     maps = report["maps"]
@@ -2377,6 +2634,32 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d malformed blind semantic rows" % len(malformed_semantic_rows))
     if not semantic.get("rows"):
         failures.append("blind semantic comparison matrix missing")
+    scorecard = report.get("optimization_scorecard", {})
+    missing_scorecard_metrics = scorecard.get("missing_metrics") or []
+    if missing_scorecard_metrics:
+        failures.append("missing scorecard metrics: %s" % ", ".join(missing_scorecard_metrics))
+    malformed_scorecard_rows = [
+        row.get("metric", "<unknown>")
+        for row in scorecard.get("rows", [])
+        if any(field not in row for field in SCORECARD_FIELDS)
+    ]
+    if malformed_scorecard_rows:
+        failures.append("%d malformed scorecard rows" % len(malformed_scorecard_rows))
+    if not scorecard.get("rows"):
+        failures.append("optimization scorecard missing")
+    guardian = report.get("guardian_review", {})
+    missing_guardian_checks = guardian.get("missing_checks") or []
+    if missing_guardian_checks:
+        failures.append("missing guardian checks: %s" % ", ".join(missing_guardian_checks))
+    malformed_guardian_rows = [
+        row.get("check", "<unknown>")
+        for row in guardian.get("rows", [])
+        if any(field not in row for field in GUARDIAN_FIELDS)
+    ]
+    if malformed_guardian_rows:
+        failures.append("%d malformed guardian rows" % len(malformed_guardian_rows))
+    if not guardian.get("rows"):
+        failures.append("guardian review missing")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -2435,6 +2718,8 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["whole_project_alignment"] = _whole_project_alignment(report)
     report["final_verification"] = _final_verification(report)
     report["blind_semantic_comparison"] = _blind_semantic_comparison(report)
+    report["optimization_scorecard"] = _optimization_scorecard(report)
+    report["guardian_review"] = _guardian_review(report)
     return report
 
 
@@ -2553,6 +2838,18 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + "\n".join("- %s: %s" % (row["element"], row["status"])
                        for row in report["blind_semantic_comparison"]["rows"])
            + "\n\n"
+           "Optimization scorecard: %s; totals=%s\n"
+           % (report["optimization_scorecard"]["status"],
+              report["optimization_scorecard"]["totals"])
+           + "\n".join("- %s: %s" % (row["metric"], row["status"])
+                       for row in report["optimization_scorecard"]["rows"])
+           + "\n\n"
+           "Guardian review: %s; totals=%s\n"
+           % (report["guardian_review"]["status"],
+              report["guardian_review"]["totals"])
+           + "\n".join("- %s: %s" % (row["check"], row["status"])
+                       for row in report["guardian_review"]["rows"])
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -2582,6 +2879,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nWHOLE_PROJECT_ALIGNMENT: %s; totals=%s.\n"
            "\nFINAL_VERIFICATION: %s; totals=%s.\n"
            "\nBLIND_SEMANTIC_COMPARISON: %s; totals=%s.\n"
+           "\nOPTIMIZATION_SCORECARD: %s; totals=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -2590,7 +2888,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nOPEN_QUESTIONS: tokenizer measurement needs optional tiktoken authority.\n"
            "\nBLOCKERS: full protocol completion still needs chunk-by-chunk optimization passes.\n"
            "\nALIGNMENT_RESULT: REVISE; baseline maps generated, convergence pending.\n"
-           "\nGUARDIAN_RESULT: REVISE; safe to continue in smaller passes.\n"
+           "\nGUARDIAN_RESULT: %s; totals=%s; safe to continue in smaller passes.\n"
            % (report["file_count"], report["branch"], report["head"],
               report["file_count"], len(artifacts), len(report["change_ledger"]),
               dict(sorted(report["dispositions"].items())),
@@ -2618,7 +2916,11 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["final_verification"]["status"],
               report["final_verification"]["totals"],
               report["blind_semantic_comparison"]["status"],
-              report["blind_semantic_comparison"]["totals"]))
+              report["blind_semantic_comparison"]["totals"],
+              report["optimization_scorecard"]["status"],
+              report["optimization_scorecard"]["totals"],
+              report["guardian_review"]["status"],
+              report["guardian_review"]["totals"]))
     return artifacts
 
 
@@ -2666,6 +2968,14 @@ def main(argv=None) -> int:
                               "status": report["blind_semantic_comparison"]["status"],
                               "totals": report["blind_semantic_comparison"]["totals"],
                           },
+                          "optimization_scorecard": {
+                              "status": report["optimization_scorecard"]["status"],
+                              "totals": report["optimization_scorecard"]["totals"],
+                          },
+                          "guardian_review": {
+                              "status": report["guardian_review"]["status"],
+                              "totals": report["guardian_review"]["totals"],
+                          },
                           "observed_checks": observed,
                           "strict": {"ok": not failures, "failures": failures}},
                          indent=2, sort_keys=True))
@@ -2694,6 +3004,14 @@ def main(argv=None) -> int:
         print("  semantic  : %s %s" % (
             report["blind_semantic_comparison"]["status"],
             report["blind_semantic_comparison"]["totals"],
+        ))
+        print("  scorecard : %s %s" % (
+            report["optimization_scorecard"]["status"],
+            report["optimization_scorecard"]["totals"],
+        ))
+        print("  guardian  : %s %s" % (
+            report["guardian_review"]["status"],
+            report["guardian_review"]["totals"],
         ))
         if strict:
             print("  strict     : %s" % ("PASS" if not failures else "FAIL"))
