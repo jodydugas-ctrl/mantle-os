@@ -56,6 +56,29 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 20 Receipt
+
+Function served: protocol section 13 requires subsystem convergence passes after file completion.
+Before any subsystem can be called converged, the audit needs a subsystem ledger covering imports,
+exports, terminology, duplicates, config, schemas, docs/tests/examples, organ/lifecycle ownership,
+SELF/OTHER boundaries, effect proofs, hard-fail coverage, performance, tokens, and file-completion
+state.
+
+Changes:
+
+- Added `SUBSYSTEM_CONVERGENCE_FIELDS` as the checked subsystem row contract.
+- Added `subsystem_convergence` to `python -m mantle optimize-audit`.
+- The report groups files by subsystem and records convergence status, proof paths, pending chunk
+  counts, token status, and section-13 alignment dimensions.
+- Strict audit now requires the subsystem convergence ledger and required row fields.
+- Added invariant `OPT-7 subsystem-convergence`.
+- Updated public invariant-count anchors from 97 to 98.
+
+Deletion decision: no files were deleted. This pass creates the subsystem convergence evidence
+needed before future subsystem rewrites or completion claims.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 19 Receipt
 
 Function served: protocol sections 9 and 12 require every file/chunk optimization pass to record

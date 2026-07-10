@@ -164,6 +164,30 @@ FILE_COMPLETION_FIELDS = (
     "proof_path",
     "receipt",
 )
+SUBSYSTEM_CONVERGENCE_FIELDS = (
+    "subsystem",
+    "status",
+    "files",
+    "internal_import_status",
+    "public_export_status",
+    "terminology_status",
+    "duplicate_status",
+    "configuration_status",
+    "schema_status",
+    "docs_code_status",
+    "tests_code_status",
+    "example_api_status",
+    "organ_ownership_status",
+    "lifecycle_status",
+    "self_other_status",
+    "effect_proof_status",
+    "hard_fail_status",
+    "performance_status",
+    "token_status",
+    "file_completion_status",
+    "proof_paths",
+    "receipt",
+)
 INVARIANT_RE = re.compile(
     r"\b(?:HF-[A-Z0-9]+|B-[A-Z0-9]+|SELF-\d+|SYM-\d+|NOC-\d+|SCHED-\d+|"
     r"MEMW-\d+|GRAFT-\d+|RESID-\d+|MEM-\d+|BOOT-\d+|BRIDGE-\d+|GANG-\d+|"
@@ -1280,6 +1304,89 @@ def _model_paths(files: List[Dict[str, Any]], predicate) -> List[str]:
     return sorted(f["path"] for f in files if predicate(f))
 
 
+def _subsystem_convergence(report: Dict[str, Any]) -> Dict[str, Any]:
+    files = report["files"]
+    completion_by_path = {
+        row["path"]: row for row in report["file_completion_gate"]["rows"]
+    }
+    groups: Dict[str, List[Dict[str, Any]]] = {}
+    for f in files:
+        groups.setdefault(f["subsystem"], []).append(f)
+
+    rows = []
+    for subsystem, group in sorted(groups.items()):
+        paths_ = sorted(f["path"] for f in group)
+        completion_statuses = Counter(
+            completion_by_path[f["path"]]["status"] for f in group
+        )
+        pending = sum(
+            completion_by_path[f["path"]]["eligible_chunks"]
+            - completion_by_path[f["path"]]["inspected_chunks"]
+            for f in group
+        )
+        duplicate_files = [
+            f["path"] for f in group
+            if f["duplication_indicators"]["exact_duplicate_paths"]
+        ]
+        token_unverified = [
+            f["path"] for f in group if f["token_status"] != "measured"
+        ]
+        row = {
+            "subsystem": subsystem,
+            "status": "REVISE" if pending else "PASS",
+            "files": paths_,
+            "internal_import_status": "mapped",
+            "public_export_status": "mapped" if any(f["public_symbols"] for f in group) else "none",
+            "terminology_status": (
+                "pending" if any(f["category"].startswith(("C ", "D ")) for f in group)
+                else "mapped"
+            ),
+            "duplicate_status": "review" if duplicate_files else "pass",
+            "configuration_status": "mapped" if any(f["configuration_keys"] for f in group) else "none",
+            "schema_status": "mapped" if any(f["schemas"] for f in group) else "none",
+            "docs_code_status": (
+                "mapped" if any(f["documentation_references"] for f in group)
+                or any(f["category"].startswith(("C ", "D ")) for f in group)
+                else "unmapped"
+            ),
+            "tests_code_status": "mapped" if any(f["tests"] for f in group) else "unmapped",
+            "example_api_status": "mapped" if any(f["category"].startswith("H ") for f in group) else "none",
+            "organ_ownership_status": "mapped" if any(f["appai_roles"] for f in group) else "none",
+            "lifecycle_status": "mapped" if any(f["lifecycle_roles"] for f in group) else "none",
+            "self_other_status": (
+                "mapped" if any("identity-boundary" in f["security_privacy_relevance"]
+                                 for f in group) else "none"
+            ),
+            "effect_proof_status": "mapped" if any(f["side_effects"] for f in group) else "none",
+            "hard_fail_status": "mapped" if any(f["invariants"] for f in group) else "none",
+            "performance_status": "baseline-only",
+            "token_status": "unverified" if token_unverified else "measured",
+            "file_completion_status": dict(sorted(completion_statuses.items())),
+            "proof_paths": sorted(set(f["proof_path"] for f in group)),
+            "receipt": (
+                "%d file(s), %d pending chunk(s); subsystem convergence remains REVISE "
+                "until file completion rows reach PASS or justified inventory-only states"
+                % (len(group), pending)
+            ),
+        }
+        rows.append(row)
+    missing_fields = [
+        row["subsystem"] for row in rows
+        if any(field not in row for field in SUBSYSTEM_CONVERGENCE_FIELDS)
+    ]
+    return {
+        "status": "REVISE" if any(row["status"] != "PASS" for row in rows) else "PASS",
+        "rows": rows,
+        "totals": dict(sorted(Counter(row["status"] for row in rows).items())),
+        "missing_fields": missing_fields,
+        "rule": (
+            "Subsystem convergence follows file completion and checks imports, exports, "
+            "terminology, duplicates, config, schemas, docs/tests/examples, organ/lifecycle "
+            "ownership, SELF/OTHER, effect proofs, hard fails, performance, and tokens."
+        ),
+    }
+
+
 def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     maps = report["maps"]
@@ -1542,6 +1649,12 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d file completion rows missing required fields" % len(missing_completion))
     if not completion.get("rows"):
         failures.append("file completion gate ledger missing")
+    subsystem = report.get("subsystem_convergence", {})
+    missing_subsystems = subsystem.get("missing_fields") or []
+    if missing_subsystems:
+        failures.append("%d subsystem convergence rows missing required fields" % len(missing_subsystems))
+    if not subsystem.get("rows"):
+        failures.append("subsystem convergence report missing")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -1595,6 +1708,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["version_alignment"] = _version_alignment(root, _invariant_count(root))
     report["project_model"] = _project_model(report)
     report["file_completion_gate"] = _file_completion_gate(report)
+    report["subsystem_convergence"] = _subsystem_convergence(report)
     return report
 
 
@@ -1681,6 +1795,10 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            % (report["file_completion_gate"]["status"],
               report["file_completion_gate"]["totals"])
            + "\n\n"
+           "Subsystem convergence: %s; totals=%s\n"
+           % (report["subsystem_convergence"]["status"],
+              report["subsystem_convergence"]["totals"])
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -1704,6 +1822,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nVOCABULARY_COLLISION_AUDIT: %s; checks=%d.\n"
            "\nMERGE_CANDIDATES: %d candidate(s); decisions=%s; no merges performed.\n"
            "\nFILE_COMPLETION_GATE: %s; totals=%s.\n"
+           "\nSUBSYSTEM_CONVERGENCE: %s; totals=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -1728,7 +1847,9 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               len(report["merge_map"]["merge_candidates"]),
               dict(sorted(report["merge_map"]["candidate_decisions"].items())),
               report["file_completion_gate"]["status"],
-              report["file_completion_gate"]["totals"]))
+              report["file_completion_gate"]["totals"],
+              report["subsystem_convergence"]["status"],
+              report["subsystem_convergence"]["totals"]))
     return artifacts
 
 

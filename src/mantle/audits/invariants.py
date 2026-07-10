@@ -2302,6 +2302,49 @@ def t_optimization_file_completion_gate():
                 % (len(rows), gate["totals"], len(missing)))
 
 
+def t_optimization_subsystem_convergence():
+    """OPT-7: the optimization audit records section 13 subsystem convergence
+    status without claiming pending subsystems are complete."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    convergence = report["subsystem_convergence"]
+    rows = convergence["rows"]
+    required = set(_opt.SUBSYSTEM_CONVERGENCE_FIELDS)
+    missing = [row["subsystem"] for row in rows if required - set(row)]
+    by_name = {row["subsystem"]: row for row in rows}
+    mantle_rows = [row for row in rows if row["subsystem"].startswith("src/mantle")]
+    row_shape_ok = (
+        rows
+        and not missing
+        and all(row["files"] for row in rows)
+        and all(row["proof_paths"] for row in rows)
+        and all(row["receipt"] for row in rows)
+        and all(row["status"] in {"PASS", "REVISE"} for row in rows)
+    )
+    status_ok = (
+        convergence["status"] == "REVISE"
+        and convergence["totals"].get("REVISE", 0) > 0
+        and "Subsystem convergence follows file completion" in convergence["rule"]
+    )
+    evidence_ok = (
+        mantle_rows
+        and "documents" in by_name
+        and "examples" in by_name
+        and any(row["public_export_status"] == "mapped" for row in mantle_rows)
+        and by_name["documents"]["terminology_status"] == "pending"
+        and any(row["token_status"] == "unverified" for row in rows)
+        and any(row["organ_ownership_status"] == "mapped" for row in rows)
+        and any(row["self_other_status"] == "mapped" for row in rows)
+        and any(row["hard_fail_status"] == "mapped" for row in rows)
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and status_ok and evidence_ok and strict_ok
+    return ok, ("subsystems=%d totals=%s missing=%d"
+                % (len(rows), convergence["totals"], len(missing)))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2472,6 +2515,7 @@ TESTS = [
     ("OPT-4 vocabulary-collision-audit",        t_optimization_vocabulary_collision_audit),
     ("OPT-5 merge-candidate-analysis",          t_optimization_merge_candidate_analysis),
     ("OPT-6 file-completion-gate",              t_optimization_file_completion_gate),
+    ("OPT-7 subsystem-convergence",             t_optimization_subsystem_convergence),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]
