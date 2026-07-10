@@ -56,6 +56,29 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 27 Receipt
+
+Function served: protocol section 19 lists the exact conditions required before PASS may be
+declared. Scorecard and guardian rows existed, but the PASS conditions themselves were not yet a
+first-class checked matrix.
+
+Changes:
+
+- Added `COMPLETION_CONDITIONS` and `COMPLETION_CONDITION_FIELDS`.
+- Added `completion_conditions` to `python -m mantle optimize-audit`.
+- Each section-19 PASS condition now records `PASS`, `REVISE`, or `UNVERIFIABLE` with evidence and
+  blockers.
+- Strict audit now requires the completion-condition matrix and row fields.
+- `ALIGNMENT_MATRIX`, `FINAL_RECEIPT`, CLI output, and JSON output now summarize completion totals.
+- Added invariant `OPT-14 completion-conditions`.
+- Updated public invariant-count anchors from 104 to 105.
+
+Deletion decision: no files, functions, documents, or aliases were deleted. This pass prevents
+completion from being inferred from partial evidence; PASS remains blocked until every section-19
+condition is proven.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 26 Receipt
 
 Function served: protocol sections 14, 15, and 17 require performance evidence and final

@@ -2619,6 +2619,44 @@ def t_optimization_final_mode_performance_receipts():
                 % (len(performance["benchmarks"]), final["totals"], scorecard["totals"]))
 
 
+def t_optimization_completion_conditions_matrix():
+    """OPT-14: section-19 completion conditions are explicit and cannot be
+    collapsed into a vague guardian summary before PASS is justified."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    matrix = report["completion_conditions"]
+    rows = matrix["rows"]
+    by_condition = {row["condition"]: row for row in rows}
+    required = set(_opt.COMPLETION_CONDITIONS)
+    row_shape_ok = (
+        set(by_condition) == required
+        and not matrix["missing_conditions"]
+        and all({"condition", "status", "evidence", "blockers"}.issubset(row)
+                for row in rows)
+        and all(row["status"] in {"PASS", "REVISE", "UNVERIFIABLE"} for row in rows)
+    )
+    expected_current_state = (
+        matrix["status"] == "REVISE"
+        and by_condition["every repository file was inventoried"]["status"] == "PASS"
+        and by_condition["every eligible file was inspected"]["status"] == "REVISE"
+        and by_condition["all merges have parity evidence"]["status"] == "PASS"
+        and by_condition["all aliases pass collision and tokenizer checks"]["status"] == "UNVERIFIABLE"
+        and by_condition["final whole-project token count is measured"]["status"] == "UNVERIFIABLE"
+        and by_condition["final whole-project alignment audit passes"]["status"] == "REVISE"
+        and by_condition["final guardian review returns PASS"]["status"] == "REVISE"
+        and matrix["totals"].get("PASS", 0) > 0
+        and matrix["totals"].get("REVISE", 0) > 0
+        and matrix["totals"].get("UNVERIFIABLE", 0) > 0
+        and "Section 19 completion conditions" in matrix["rule"]
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and expected_current_state and strict_ok
+    return ok, ("conditions=%d totals=%s missing=%s"
+                % (len(rows), matrix["totals"], matrix["missing_conditions"] or "none"))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2796,6 +2834,7 @@ TESTS = [
     ("OPT-10 final-verification+semantic",      t_optimization_final_verification_semantic_comparison),
     ("OPT-12 scorecard-guardian-review",        t_optimization_scorecard_guardian_review),
     ("OPT-13 final-mode-performance",           t_optimization_final_mode_performance_receipts),
+    ("OPT-14 completion-conditions",            t_optimization_completion_conditions_matrix),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

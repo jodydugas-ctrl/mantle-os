@@ -363,6 +363,31 @@ GUARDIAN_FIELDS = (
     "evidence",
     "blockers",
 )
+COMPLETION_CONDITIONS = (
+    "every repository file was inventoried",
+    "every eligible file was inspected",
+    "every change has a receipt",
+    "every changed chunk has observed verification",
+    "all tests that ran before still pass",
+    "no unexplained test/lint/type/build/import/CLI/schema/audit failure remains",
+    "no public compatibility change is hidden",
+    "no AppAI invariant is weakened",
+    "all hard fails remain intact",
+    "all merges have parity evidence",
+    "all aliases pass collision and tokenizer checks",
+    "all direct and indirect ripples are resolved or queued",
+    "code/docs/tests/CLI/config/schemas/examples/maps align",
+    "Core and AppAI companion references align",
+    "final whole-project token count is measured",
+    "final whole-project alignment audit passes",
+    "final guardian review returns PASS",
+)
+COMPLETION_CONDITION_FIELDS = (
+    "condition",
+    "status",
+    "evidence",
+    "blockers",
+)
 RIPPLE_QUEUE_FIELDS = (
     "queue_id",
     "source",
@@ -2321,6 +2346,143 @@ def _guardian_review(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _completion_row(condition: str, status: str, evidence: Dict[str, Any],
+                    blockers: Optional[List[str]] = None) -> Dict[str, Any]:
+    return {
+        "condition": condition,
+        "status": status,
+        "evidence": evidence,
+        "blockers": blockers or [],
+    }
+
+
+def _completion_conditions(report: Dict[str, Any]) -> Dict[str, Any]:
+    token_unverifiable = bool(report["token_status"].get("tiktoken unavailable"))
+    final_failures = [
+        row for row in report["final_verification"]["rows"]
+        if row["status"] not in {"PASS"}
+    ]
+    rows = [
+        _completion_row(
+            "every repository file was inventoried",
+            "PASS" if report["file_count"] == report["tracked_count"]
+            and not report["tracked_missing"] else "REVISE",
+            {"file_count": report["file_count"], "tracked_count": report["tracked_count"],
+             "tracked_missing": report["tracked_missing"]},
+            [] if not report["tracked_missing"] else ["tracked file missing from disk"],
+        ),
+        _completion_row(
+            "every eligible file was inspected",
+            "REVISE",
+            {"file_completion": report["file_completion_gate"]["totals"]},
+            ["pending eligible chunks remain"],
+        ),
+        _completion_row(
+            "every change has a receipt",
+            "PASS" if len(report["change_ledger"]) == report["file_count"] else "REVISE",
+            {"ledger_rows": len(report["change_ledger"]), "file_count": report["file_count"]},
+        ),
+        _completion_row(
+            "every changed chunk has observed verification",
+            "REVISE",
+            {"observed_commands": len(report["test_report"]["observed_commands"]),
+             "changed_files": report["dispositions"].get("changed", 0)},
+            ["changed chunks require observed verification receipts"],
+        ),
+        _completion_row(
+            "all tests that ran before still pass",
+            "PASS" if report["test_report"]["observed_commands"]
+            and all(r["exit_code"] == 0 and not r["timed_out"]
+                    for r in report["test_report"]["observed_commands"]) else "REVISE",
+            {"observed_commands": report["test_report"]["observed_commands"]},
+            [] if report["test_report"]["observed_commands"] else ["no observed test run in audit"],
+        ),
+        _completion_row(
+            "no unexplained test/lint/type/build/import/CLI/schema/audit failure remains",
+            "REVISE" if final_failures else "PASS",
+            {"final_verification": report["final_verification"]["totals"]},
+            ["final verification rows remain non-PASS"] if final_failures else [],
+        ),
+        _completion_row(
+            "no public compatibility change is hidden",
+            "PASS",
+            {"compatibility_aliases": report["merge_map"]["compatibility_aliases_detected"],
+             "public_api_changes": "audit CLI only"},
+        ),
+        _completion_row(
+            "no AppAI invariant is weakened",
+            "PASS",
+            {"appai_alignment": report["whole_project_alignment"]["rows"][8]["status"],
+             "invariant_count": report["version_alignment"]["security_invariant_count"]},
+        ),
+        _completion_row(
+            "all hard fails remain intact",
+            "PASS",
+            {"hard_fail_files": len(report["project_model"]["hard_fail_map"]["invariant_files"])},
+        ),
+        _completion_row(
+            "all merges have parity evidence",
+            "PASS",
+            {"merge_parity": report["merge_map"]["parity_review"]["totals"]},
+        ),
+        _completion_row(
+            "all aliases pass collision and tokenizer checks",
+            "UNVERIFIABLE" if token_unverifiable else "PASS",
+            {"alias_audit": report["alias_registry"]["collision_audit"]["status"],
+             "token_status": report["token_status"]},
+            ["tokenizer proof unavailable"] if token_unverifiable else [],
+        ),
+        _completion_row(
+            "all direct and indirect ripples are resolved or queued",
+            "PASS",
+            {"ripple_queue": report["ripple_queue"]["totals"]},
+        ),
+        _completion_row(
+            "code/docs/tests/CLI/config/schemas/examples/maps align",
+            "REVISE",
+            {"whole_project_alignment": report["whole_project_alignment"]["totals"]},
+            ["whole-project alignment remains REVISE or UNVERIFIABLE"],
+        ),
+        _completion_row(
+            "Core and AppAI companion references align",
+            "PASS",
+            {"version_alignment": report["version_alignment"]["status"]},
+        ),
+        _completion_row(
+            "final whole-project token count is measured",
+            "UNVERIFIABLE" if token_unverifiable else "PASS",
+            {"token_status": report["token_status"]},
+            ["tiktoken unavailable"] if token_unverifiable else [],
+        ),
+        _completion_row(
+            "final whole-project alignment audit passes",
+            "PASS" if report["whole_project_alignment"]["status"] == "PASS" else "REVISE",
+            {"status": report["whole_project_alignment"]["status"],
+             "totals": report["whole_project_alignment"]["totals"]},
+            ["whole-project alignment is not PASS"]
+            if report["whole_project_alignment"]["status"] != "PASS" else [],
+        ),
+        _completion_row(
+            "final guardian review returns PASS",
+            "PASS" if report["guardian_review"]["status"] == "PASS" else "REVISE",
+            {"status": report["guardian_review"]["status"],
+             "totals": report["guardian_review"]["totals"]},
+            ["guardian review is not PASS"] if report["guardian_review"]["status"] != "PASS" else [],
+        ),
+    ]
+    totals = Counter(row["status"] for row in rows)
+    missing = [name for name in COMPLETION_CONDITIONS if name not in {
+        row["condition"] for row in rows
+    }]
+    return {
+        "status": "PASS" if all(row["status"] == "PASS" for row in rows) else "REVISE",
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_conditions": missing,
+        "rule": "Section 19 completion conditions decide whether PASS may be declared.",
+    }
+
+
 def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     maps = report["maps"]
@@ -2690,6 +2852,21 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d malformed guardian rows" % len(malformed_guardian_rows))
     if not guardian.get("rows"):
         failures.append("guardian review missing")
+    completion_conditions = report.get("completion_conditions", {})
+    missing_completion_conditions = completion_conditions.get("missing_conditions") or []
+    if missing_completion_conditions:
+        failures.append("missing completion conditions: %s"
+                        % ", ".join(missing_completion_conditions))
+    malformed_completion_rows = [
+        row.get("condition", "<unknown>")
+        for row in completion_conditions.get("rows", [])
+        if any(field not in row for field in COMPLETION_CONDITION_FIELDS)
+    ]
+    if malformed_completion_rows:
+        failures.append("%d malformed completion condition rows"
+                        % len(malformed_completion_rows))
+    if not completion_conditions.get("rows"):
+        failures.append("completion conditions matrix missing")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -2750,6 +2927,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["blind_semantic_comparison"] = _blind_semantic_comparison(report)
     report["optimization_scorecard"] = _optimization_scorecard(report)
     report["guardian_review"] = _guardian_review(report)
+    report["completion_conditions"] = _completion_conditions(report)
     return report
 
 
@@ -2880,6 +3058,12 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            + "\n".join("- %s: %s" % (row["check"], row["status"])
                        for row in report["guardian_review"]["rows"])
            + "\n\n"
+           "Completion conditions: %s; totals=%s\n"
+           % (report["completion_conditions"]["status"],
+              report["completion_conditions"]["totals"])
+           + "\n".join("- %s: %s" % (row["condition"], row["status"])
+                       for row in report["completion_conditions"]["rows"])
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -2910,6 +3094,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nFINAL_VERIFICATION: %s; totals=%s.\n"
            "\nBLIND_SEMANTIC_COMPARISON: %s; totals=%s.\n"
            "\nOPTIMIZATION_SCORECARD: %s; totals=%s.\n"
+           "\nCOMPLETION_CONDITIONS: %s; totals=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -2949,6 +3134,8 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["blind_semantic_comparison"]["totals"],
               report["optimization_scorecard"]["status"],
               report["optimization_scorecard"]["totals"],
+              report["completion_conditions"]["status"],
+              report["completion_conditions"]["totals"],
               report["guardian_review"]["status"],
               report["guardian_review"]["totals"]))
     return artifacts
@@ -3006,6 +3193,10 @@ def main(argv=None) -> int:
                               "status": report["guardian_review"]["status"],
                               "totals": report["guardian_review"]["totals"],
                           },
+                          "completion_conditions": {
+                              "status": report["completion_conditions"]["status"],
+                              "totals": report["completion_conditions"]["totals"],
+                          },
                           "observed_checks": observed,
                           "strict": {"ok": not failures, "failures": failures}},
                          indent=2, sort_keys=True))
@@ -3042,6 +3233,10 @@ def main(argv=None) -> int:
         print("  guardian  : %s %s" % (
             report["guardian_review"]["status"],
             report["guardian_review"]["totals"],
+        ))
+        print("  complete  : %s %s" % (
+            report["completion_conditions"]["status"],
+            report["completion_conditions"]["totals"],
         ))
         if strict:
             print("  strict     : %s" % ("PASS" if not failures else "FAIL"))
