@@ -144,6 +144,26 @@ MERGE_CANDIDATE_FIELDS = (
     "decision",
     "reason",
 )
+FILE_COMPLETION_FIELDS = (
+    "path",
+    "status",
+    "eligible_chunks",
+    "inspected_chunks",
+    "changed_chunks",
+    "skipped_chunks",
+    "chunk_basis",
+    "parse_status",
+    "reference_status",
+    "import_export_status",
+    "terminology_status",
+    "duplicate_status",
+    "token_measurement_status",
+    "tests_status",
+    "public_behavior_status",
+    "ripple_status",
+    "proof_path",
+    "receipt",
+)
 INVARIANT_RE = re.compile(
     r"\b(?:HF-[A-Z0-9]+|B-[A-Z0-9]+|SELF-\d+|SYM-\d+|NOC-\d+|SCHED-\d+|"
     r"MEMW-\d+|GRAFT-\d+|RESID-\d+|MEM-\d+|BOOT-\d+|BRIDGE-\d+|GANG-\d+|"
@@ -1167,6 +1187,95 @@ def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _chunk_basis(file_row: Dict[str, Any]) -> Tuple[str, int]:
+    path = file_row["path"]
+    if not file_row["text"]:
+        return "binary/media inventory unit", 0
+    if path.endswith(".py"):
+        symbols = len(file_row["public_symbols"])
+        return "python public symbol plus module body", max(1, symbols)
+    if path.endswith(".md"):
+        return "markdown heading section", max(1, file_row["complexity_indicators"].get(
+            "heading_count", 0))
+    if file_row["language"] in {"json", "toml", "yaml"}:
+        return "structured document block", 1
+    return "text file section", 1
+
+
+def _parse_status(root: str, file_row: Dict[str, Any]) -> str:
+    if not file_row["text"] or not file_row["path"].endswith(".py"):
+        return "not-python"
+    text = _read_text_optional(root, file_row["path"])
+    try:
+        ast.parse(text)
+    except SyntaxError as e:
+        return "syntax-error:%s" % e.lineno
+    return "PASS"
+
+
+def _file_completion_gate(report: Dict[str, Any]) -> Dict[str, Any]:
+    root = report["repo_root"]
+    rows = []
+    for f in report["files"]:
+        basis, eligible_chunks = _chunk_basis(f)
+        pending = f["disposition"] == "pending-pass-review"
+        inspected_chunks = 0 if pending else eligible_chunks
+        skipped_chunks = eligible_chunks - inspected_chunks
+        parse_status = _parse_status(root, f)
+        stale_refs = [r for r in report["maps"]["path_references"]
+                      if r["from"] == f["path"] and not r["exists"]]
+        stale_cmds = [r for r in report["maps"]["cli_command_references"]
+                      if r["from"] == f["path"] and not r["exists"]]
+        reference_status = "PASS" if not stale_refs and not stale_cmds else "REVISE"
+        duplicate_status = (
+            "REVIEW" if f["duplication_indicators"]["exact_duplicate_paths"]
+            else "PASS"
+        )
+        status = (
+            "PENDING_CHUNK_REVIEW" if pending
+            else "INVENTORY_ONLY" if f["disposition"] == "inventory-only"
+            else "BLOCKED" if f["disposition"] == "blocked"
+            else "CHANGED_REVIEW_REQUIRED" if f["disposition"] == "changed"
+            else "UNKNOWN"
+        )
+        rows.append({
+            "path": f["path"],
+            "status": status,
+            "eligible_chunks": eligible_chunks,
+            "inspected_chunks": inspected_chunks,
+            "changed_chunks": 0,
+            "skipped_chunks": skipped_chunks,
+            "chunk_basis": basis,
+            "parse_status": parse_status,
+            "reference_status": reference_status,
+            "import_export_status": "PASS" if not f["imports"] or f["importers"] is not None else "UNKNOWN",
+            "terminology_status": "PENDING" if f["category"].startswith(("C ", "D ")) else "PASS",
+            "duplicate_status": duplicate_status,
+            "token_measurement_status": f["token_status"],
+            "tests_status": "mapped" if f["tests"] else "unmapped",
+            "public_behavior_status": "preserved-no-runtime-edit",
+            "ripple_status": "none-applied",
+            "proof_path": f["proof_path"],
+            "receipt": f["skip_block_reason"],
+        })
+    totals = Counter(row["status"] for row in rows)
+    missing_fields = [
+        row["path"] for row in rows
+        if any(field not in row for field in FILE_COMPLETION_FIELDS)
+    ]
+    return {
+        "status": "REVISE" if totals.get("PENDING_CHUNK_REVIEW") else "PASS",
+        "rows": rows,
+        "totals": dict(sorted(totals.items())),
+        "missing_fields": missing_fields,
+        "completion_rule": (
+            "A file is complete only when every eligible chunk is inspected, changed chunks "
+            "are verified, references align, token measurement is recorded or marked "
+            "unverifiable, tests/proof path pass, and ripples are resolved."
+        ),
+    }
+
+
 def _model_paths(files: List[Dict[str, Any]], predicate) -> List[str]:
     return sorted(f["path"] for f in files if predicate(f))
 
@@ -1427,6 +1536,12 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d malformed merge candidate rows" % len(malformed_candidates))
     if merge_map.get("status") != "candidate-analysis":
         failures.append("merge candidate analysis missing")
+    completion = report.get("file_completion_gate", {})
+    missing_completion = completion.get("missing_fields") or []
+    if missing_completion:
+        failures.append("%d file completion rows missing required fields" % len(missing_completion))
+    if not completion.get("rows"):
+        failures.append("file completion gate ledger missing")
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -1479,6 +1594,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["performance_report"] = _performance_report(report)
     report["version_alignment"] = _version_alignment(root, _invariant_count(root))
     report["project_model"] = _project_model(report)
+    report["file_completion_gate"] = _file_completion_gate(report)
     return report
 
 
@@ -1561,6 +1677,10 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            % (len(report["merge_map"]["merge_candidates"]),
               dict(sorted(report["merge_map"]["candidate_decisions"].items())))
            + "\n\n"
+           "File completion gate: %s; totals=%s\n"
+           % (report["file_completion_gate"]["status"],
+              report["file_completion_gate"]["totals"])
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -1583,6 +1703,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nPROJECT_MODEL: %s; maps=%d.\n"
            "\nVOCABULARY_COLLISION_AUDIT: %s; checks=%d.\n"
            "\nMERGE_CANDIDATES: %d candidate(s); decisions=%s; no merges performed.\n"
+           "\nFILE_COMPLETION_GATE: %s; totals=%s.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -1605,7 +1726,9 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["alias_registry"]["collision_audit"]["status"],
               len(REQUIRED_ALIAS_COLLISION_CHECKS),
               len(report["merge_map"]["merge_candidates"]),
-              dict(sorted(report["merge_map"]["candidate_decisions"].items()))))
+              dict(sorted(report["merge_map"]["candidate_decisions"].items())),
+              report["file_completion_gate"]["status"],
+              report["file_completion_gate"]["totals"]))
     return artifacts
 
 

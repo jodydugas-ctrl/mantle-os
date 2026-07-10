@@ -2261,6 +2261,47 @@ def t_optimization_merge_candidate_analysis():
                 % (len(candidates), decisions, len(malformed)))
 
 
+def t_optimization_file_completion_gate():
+    """OPT-6: the optimization audit records section 9/12 file and chunk
+    completion state without claiming pending files are complete."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    gate = report["file_completion_gate"]
+    rows = gate["rows"]
+    required = set(_opt.FILE_COMPLETION_FIELDS)
+    missing = [row["path"] for row in rows if required - set(row)]
+    by_path = {row["path"]: row for row in rows}
+    row_shape_ok = (
+        len(rows) == report["file_count"]
+        and not missing
+        and all(row["eligible_chunks"] >= row["inspected_chunks"] for row in rows)
+        and all(row["skipped_chunks"] == row["eligible_chunks"] - row["inspected_chunks"]
+                for row in rows)
+        and all(row["proof_path"] for row in rows)
+        and all(row["receipt"] for row in rows)
+    )
+    status_ok = (
+        gate["status"] == "REVISE"
+        and gate["totals"].get("PENDING_CHUNK_REVIEW", 0) > 0
+        and gate["totals"].get("INVENTORY_ONLY", 0) > 0
+        and "complete only when every eligible chunk is inspected" in gate["completion_rule"]
+    )
+    evidence_ok = (
+        by_path["src/mantle/optimize_audit.py"]["eligible_chunks"] > 0
+        and by_path["src/mantle/optimize_audit.py"]["parse_status"] == "PASS"
+        and by_path["README.md"]["chunk_basis"] == "markdown heading section"
+        and by_path["documents/grimoire/The Grimoire.md"]["terminology_status"] == "PENDING"
+        and any(row["token_measurement_status"] == "tiktoken unavailable" for row in rows)
+        and any(row["tests_status"] == "mapped" for row in rows)
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and status_ok and evidence_ok and strict_ok
+    return ok, ("rows=%d totals=%s missing=%d"
+                % (len(rows), gate["totals"], len(missing)))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2430,6 +2471,7 @@ TESTS = [
     ("OPT-3 project-model-maps",                t_optimization_project_model_maps),
     ("OPT-4 vocabulary-collision-audit",        t_optimization_vocabulary_collision_audit),
     ("OPT-5 merge-candidate-analysis",          t_optimization_merge_candidate_analysis),
+    ("OPT-6 file-completion-gate",              t_optimization_file_completion_gate),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

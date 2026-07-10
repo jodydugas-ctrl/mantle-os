@@ -56,6 +56,29 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 19 Receipt
+
+Function served: protocol sections 9 and 12 require every file/chunk optimization pass to record
+identified chunks, inspection state, proof paths, skipped chunks, token status, references,
+imports/exports, duplicate state, tests, public behavior, and ripples before a file can be called
+complete.
+
+Changes:
+
+- Added `FILE_COMPLETION_FIELDS` as the checked file-completion row contract.
+- Added `file_completion_gate` to `python -m mantle optimize-audit`.
+- The gate identifies conservative chunk units for Python, Markdown, structured data, text, and
+  binary/media files.
+- The gate explicitly reports pending chunk review instead of claiming whole-repository completion.
+- Strict audit now requires the completion ledger and required row fields.
+- Added invariant `OPT-6 file-completion-gate`.
+- Updated public invariant-count anchors from 96 to 97.
+
+Deletion decision: no files were deleted. This pass records the completion state needed before
+future chunk rewrites or file-level completion claims.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 18 Receipt
 
 Function served: protocol section 7 requires searching the whole repository for duplicate and
