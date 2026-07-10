@@ -188,6 +188,50 @@ SUBSYSTEM_CONVERGENCE_FIELDS = (
     "proof_paths",
     "receipt",
 )
+REQUIRED_RIPPLE_SURFACES = (
+    "imports",
+    "exports",
+    "__all__",
+    "type references",
+    "string references",
+    "dynamic imports",
+    "plugin registries",
+    "entry points",
+    "CLI commands",
+    "CLI help",
+    "shell scripts",
+    "CI",
+    "configuration",
+    "environment variables",
+    "serializers",
+    "deserializers",
+    "migrations",
+    "templates",
+    "generated files",
+    "tests",
+    "fixtures",
+    "snapshots",
+    "examples",
+    "README files",
+    "guides",
+    "architecture documents",
+    "implementation maps",
+    "comments",
+    "docstrings",
+    "hard-fail tables",
+    "error handlers",
+    "logs and dashboards",
+)
+RIPPLE_QUEUE_FIELDS = (
+    "queue_id",
+    "source",
+    "trigger",
+    "changed_surface",
+    "required_surfaces",
+    "matched_surfaces",
+    "status",
+    "receipt",
+)
 INVARIANT_RE = re.compile(
     r"\b(?:HF-[A-Z0-9]+|B-[A-Z0-9]+|SELF-\d+|SYM-\d+|NOC-\d+|SCHED-\d+|"
     r"MEMW-\d+|GRAFT-\d+|RESID-\d+|MEM-\d+|BOOT-\d+|BRIDGE-\d+|GANG-\d+|"
@@ -1387,6 +1431,98 @@ def _subsystem_convergence(report: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _matched_ripple_surfaces(report: Dict[str, Any], source_path: str) -> List[str]:
+    files = report["files"]
+    by_path = {f["path"]: f for f in files}
+    row = by_path.get(source_path, {})
+    surfaces = set()
+    if row.get("imports") or row.get("importers"):
+        surfaces.update({"imports", "exports"})
+    if row.get("public_symbols"):
+        surfaces.update({"exports", "type references"})
+    if row.get("referenced_paths") or row.get("documentation_references"):
+        surfaces.update({"string references", "README files", "guides"})
+    if row.get("referenced_commands"):
+        surfaces.update({"CLI commands", "CLI help"})
+    if row.get("configuration_keys"):
+        surfaces.add("configuration")
+    if row.get("environment_variables"):
+        surfaces.add("environment variables")
+    if row.get("schemas"):
+        surfaces.update({"serializers", "deserializers"})
+    if row.get("tests"):
+        surfaces.update({"tests", "fixtures"})
+    if row.get("category", "").startswith("H "):
+        surfaces.add("examples")
+    if row.get("category", "").startswith(("C ", "D ")):
+        surfaces.update({"guides", "architecture documents", "comments"})
+    if row.get("invariants"):
+        surfaces.update({"hard-fail tables", "implementation maps"})
+    if source_path.startswith(".github/"):
+        surfaces.update({"CI", "shell scripts"})
+    if source_path.startswith("examples/"):
+        surfaces.add("examples")
+    if source_path.endswith(".py"):
+        surfaces.update({"docstrings", "error handlers"})
+    return sorted(surfaces)
+
+
+def _ripple_queue(report: Dict[str, Any]) -> Dict[str, Any]:
+    rows = []
+    for status in report["baseline"]["git"]["status"]:
+        source = status["path"].replace("\\", "/")
+        matched = _matched_ripple_surfaces(report, source)
+        rows.append({
+            "queue_id": "git-status:%s" % source,
+            "source": source,
+            "trigger": "working-tree-change:%s" % status["status"].strip(),
+            "changed_surface": "source file",
+            "required_surfaces": list(REQUIRED_RIPPLE_SURFACES),
+            "matched_surfaces": matched,
+            "status": "queued" if matched else "review-required",
+            "receipt": "direct ripple queue for current working-tree change",
+        })
+
+    for candidate in report["merge_map"]["merge_candidates"]:
+        if candidate["decision"] != "queued-review":
+            continue
+        source = candidate["candidate_id"]
+        candidate_surfaces = {
+            "imports", "exports", "tests", "examples", "implementation maps",
+        }
+        candidate_surfaces.update(
+            "guides" if item.startswith("doc:") else "string references"
+            for item in candidate["items"]
+        )
+        rows.append({
+            "queue_id": "merge-candidate:%s" % candidate["shared_key"],
+            "source": source,
+            "trigger": "merge-candidate:%s" % candidate["kind"],
+            "changed_surface": "possible canonical implementation",
+            "required_surfaces": list(REQUIRED_RIPPLE_SURFACES),
+            "matched_surfaces": sorted(candidate_surfaces),
+            "status": "queued-review",
+            "receipt": "candidate only; no merge until parity, callers, and proof gates pass",
+        })
+
+    missing_fields = [
+        row["queue_id"] for row in rows
+        if any(field not in row for field in RIPPLE_QUEUE_FIELDS)
+    ]
+    return {
+        "status": "PASS" if not missing_fields else "REVISE",
+        "rows": rows,
+        "totals": dict(sorted(Counter(row["status"] for row in rows).items())),
+        "required_surfaces": list(REQUIRED_RIPPLE_SURFACES),
+        "missing_fields": missing_fields,
+        "rule": (
+            "Any change to a name, path, command, field, mode, schema, error code, default, "
+            "or public behavior must queue imports, exports, CLI, config, serializers, tests, "
+            "examples, docs, implementation maps, hard-fail tables, and related surfaces."
+        ),
+    }
+
+
 def _project_model(report: Dict[str, Any]) -> Dict[str, Any]:
     files = report["files"]
     maps = report["maps"]
@@ -1655,6 +1791,16 @@ def strict_failures(report: Dict[str, Any], artifacts: Optional[Dict[str, str]] 
         failures.append("%d subsystem convergence rows missing required fields" % len(missing_subsystems))
     if not subsystem.get("rows"):
         failures.append("subsystem convergence report missing")
+    ripple = report.get("ripple_queue", {})
+    missing_ripple_fields = ripple.get("missing_fields") or []
+    if missing_ripple_fields:
+        failures.append("%d ripple queue rows missing required fields" % len(missing_ripple_fields))
+    missing_ripple_surfaces = [
+        name for name in REQUIRED_RIPPLE_SURFACES
+        if name not in ripple.get("required_surfaces", [])
+    ]
+    if missing_ripple_surfaces:
+        failures.append("missing ripple surfaces: %s" % ", ".join(missing_ripple_surfaces))
     if artifacts is not None:
         missing_artifacts = [name for name, path in artifacts.items() if not os.path.exists(path)]
         if missing_artifacts:
@@ -1709,6 +1855,7 @@ def build_inventory(root: str = paths.REPO_ROOT,
     report["project_model"] = _project_model(report)
     report["file_completion_gate"] = _file_completion_gate(report)
     report["subsystem_convergence"] = _subsystem_convergence(report)
+    report["ripple_queue"] = _ripple_queue(report)
     return report
 
 
@@ -1799,6 +1946,10 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            % (report["subsystem_convergence"]["status"],
               report["subsystem_convergence"]["totals"])
            + "\n\n"
+           "Ripple queue: %s; totals=%s; surfaces=%d\n"
+           % (report["ripple_queue"]["status"], report["ripple_queue"]["totals"],
+              len(report["ripple_queue"]["required_surfaces"]))
+           + "\n\n"
            + "Proof surfaces:\n"
            + "\n".join("- %s: %s (%s)" % (r["concept"], r["proof"], r["status"])
                        for r in report["coverage_matrix"])
@@ -1823,6 +1974,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nMERGE_CANDIDATES: %d candidate(s); decisions=%s; no merges performed.\n"
            "\nFILE_COMPLETION_GATE: %s; totals=%s.\n"
            "\nSUBSYSTEM_CONVERGENCE: %s; totals=%s.\n"
+           "\nRIPPLE_QUEUE: %s; totals=%s; surfaces=%d.\n"
            "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
@@ -1849,7 +2001,9 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
               report["file_completion_gate"]["status"],
               report["file_completion_gate"]["totals"],
               report["subsystem_convergence"]["status"],
-              report["subsystem_convergence"]["totals"]))
+              report["subsystem_convergence"]["totals"],
+              report["ripple_queue"]["status"], report["ripple_queue"]["totals"],
+              len(report["ripple_queue"]["required_surfaces"])))
     return artifacts
 
 

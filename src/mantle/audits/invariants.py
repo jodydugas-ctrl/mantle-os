@@ -2345,6 +2345,46 @@ def t_optimization_subsystem_convergence():
                 % (len(rows), convergence["totals"], len(missing)))
 
 
+def t_optimization_ripple_queue():
+    """OPT-8: the optimization audit records section 11 ripple surfaces for
+    active changes and queued merge candidates before completion can be claimed."""
+    from .. import optimize_audit as _opt
+    from .. import paths as _paths
+
+    report = _opt.build_inventory(_paths.REPO_ROOT)
+    queue = report["ripple_queue"]
+    rows = queue["rows"]
+    required_fields = set(_opt.RIPPLE_QUEUE_FIELDS)
+    required_surfaces = set(_opt.REQUIRED_RIPPLE_SURFACES)
+    missing_rows = [row["queue_id"] for row in rows if required_fields - set(row)]
+    row_shape_ok = (
+        rows
+        and not missing_rows
+        and queue["status"] == "PASS"
+        and required_surfaces == set(queue["required_surfaces"])
+        and not queue["missing_fields"]
+        and all(row["required_surfaces"] == queue["required_surfaces"] for row in rows)
+        and all(row["receipt"] for row in rows)
+    )
+    candidates = [row for row in rows if row["trigger"].startswith("merge-candidate:")]
+    candidate_ok = (
+        candidates
+        and all(row["status"] == "queued-review" for row in candidates)
+        and any("tests" in row["matched_surfaces"] for row in candidates)
+        and any("implementation maps" in row["matched_surfaces"] for row in candidates)
+    )
+    rule_ok = (
+        "name, path, command, field, mode, schema, error code" in queue["rule"]
+        and "CLI commands" in required_surfaces
+        and "hard-fail tables" in required_surfaces
+        and "logs and dashboards" in required_surfaces
+    )
+    strict_ok = _opt.strict_failures(report) == []
+    ok = row_shape_ok and candidate_ok and rule_ok and strict_ok
+    return ok, ("rows=%d totals=%s surfaces=%d missing=%d"
+                % (len(rows), queue["totals"], len(required_surfaces), len(missing_rows)))
+
+
 def t_grimoire_single_tomb():
     """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
@@ -2516,6 +2556,7 @@ TESTS = [
     ("OPT-5 merge-candidate-analysis",          t_optimization_merge_candidate_analysis),
     ("OPT-6 file-completion-gate",              t_optimization_file_completion_gate),
     ("OPT-7 subsystem-convergence",             t_optimization_subsystem_convergence),
+    ("OPT-8 ripple-queue",                      t_optimization_ripple_queue),
     ("GRIM-1 single-grimoire-tomb",             t_grimoire_single_tomb),
     ("VERS-1 version-alignment-map",            t_version_alignment_map),
 ]

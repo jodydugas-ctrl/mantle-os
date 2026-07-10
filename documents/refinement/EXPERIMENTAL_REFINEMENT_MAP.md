@@ -56,6 +56,28 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 21 Receipt
+
+Function served: protocol section 11 requires every name, path, command, field, mode, schema,
+error-code, default, or public-behavior change to enqueue all possible ripples before a chunk or
+file can be marked complete.
+
+Changes:
+
+- Added `REQUIRED_RIPPLE_SURFACES` and `RIPPLE_QUEUE_FIELDS` as checked ripple contracts.
+- Added `ripple_queue` to `python -m mantle optimize-audit`.
+- The queue records current working-tree changes and queued merge candidates, mapping them to
+  imports, exports, CLI, config, schema, tests, examples, docs, implementation maps, hard-fail
+  tables, error handlers, and other required ripple surfaces.
+- Strict audit now requires ripple surfaces and row fields.
+- Added invariant `OPT-8 ripple-queue`.
+- Updated public invariant-count anchors from 98 to 99.
+
+Deletion decision: no files were deleted. This pass records ripple obligations for future rewrites;
+it does not resolve or claim completion for any semantic chunk.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 20 Receipt
 
 Function served: protocol section 13 requires subsystem convergence passes after file completion.
