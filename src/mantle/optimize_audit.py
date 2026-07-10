@@ -14,7 +14,9 @@ import ast
 import hashlib
 import json
 import os
+import platform
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -209,11 +211,89 @@ def _command_name(command: str) -> Optional[str]:
 
 def _status_rows(root: str) -> List[Dict[str, str]]:
     rows = []
-    for line in _git_lines(root, "status", "--short"):
+    try:
+        p = subprocess.run(["git", "status", "--short"], cwd=root, text=True,
+                           capture_output=True, timeout=30)
+        lines = p.stdout.splitlines() if p.returncode == 0 else []
+    except Exception:
+        lines = []
+    for line in lines:
         if len(line) < 4:
             continue
         rows.append({"status": line[:2], "path": line[3:]})
     return rows
+
+
+def _read_text_optional(root: str, rel: str) -> str:
+    try:
+        with open(os.path.join(root, rel.replace("/", os.sep)), encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return ""
+
+
+def _project_metadata(root: str) -> Dict[str, Any]:
+    pyproject = _read_text_optional(root, "pyproject.toml")
+    build_backend = None
+    requires_python = None
+    m = re.search(r'build-backend\s*=\s*"([^"]+)"', pyproject)
+    if m:
+        build_backend = m.group(1)
+    m = re.search(r'requires-python\s*=\s*"([^"]+)"', pyproject)
+    if m:
+        requires_python = m.group(1)
+    package_managers = []
+    if pyproject:
+        package_managers.append({"name": "pip/setuptools", "source": "pyproject.toml"})
+    if os.path.exists(os.path.join(root, "examples", "tests", "package.json")):
+        package_managers.append({"name": "npm", "source": "examples/tests/package.json"})
+    workflow_dir = os.path.join(root, ".github", "workflows")
+    workflows = []
+    if os.path.isdir(workflow_dir):
+        workflows = sorted(_rel(os.path.join(workflow_dir, name), root)
+                           for name in os.listdir(workflow_dir)
+                           if os.path.isfile(os.path.join(workflow_dir, name)))
+    return {
+        "build_backend": build_backend,
+        "requires_python": requires_python,
+        "runtime_dependencies_declared": "dependencies = []" not in pyproject,
+        "package_managers": package_managers,
+        "ci_workflows": workflows,
+    }
+
+
+def _baseline_stats(report: Dict[str, Any]) -> Dict[str, Any]:
+    files = report["files"]
+    return {
+        "runtime": {
+            "python": sys.version.split()[0],
+            "python_executable": sys.executable,
+            "python_implementation": platform.python_implementation(),
+            "platform": platform.platform(),
+        },
+        "tools": {
+            "git": shutil.which("git") or "unavailable",
+            "node": shutil.which("node") or "unavailable",
+            "npm": shutil.which("npm") or "unavailable",
+        },
+        "git": {
+            "branch": report["branch"],
+            "head": report["head"],
+            "status": _status_rows(report["repo_root"]),
+        },
+        "project": _project_metadata(report["repo_root"]),
+        "metrics": {
+            "files": report["file_count"],
+            "tracked_files": report["tracked_count"],
+            "bytes": sum(f["bytes"] for f in files),
+            "lines": sum(f["lines"] for f in files),
+            "words": sum(f["words"] for f in files),
+            "text_files": sum(1 for f in files if f["text"]),
+            "binary_files": sum(1 for f in files if not f["text"]),
+            "categories": report["categories"],
+            "token_status": report["token_status"],
+        },
+    }
 
 
 def _token_counts(text: Optional[str]) -> Tuple[Dict[str, Optional[int]], Optional[str]]:
@@ -405,19 +485,51 @@ def _merge_map(report: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _test_report(report: Dict[str, Any]) -> Dict[str, Any]:
+    configured = [
+        {"command": "PYTHONPATH=src python -m mantle optimize-audit --strict",
+         "coverage": "artifact generation and strict alignment gate",
+         "source": "src/mantle/cli.py", "network": False},
+        {"command": "PYTHONPATH=src python -m mantle check --fast",
+         "coverage": "fast certification subset",
+         "source": "README.md", "network": False},
+        {"command": "PYTHONPATH=src python -m mantle check",
+         "coverage": "full local certification",
+         "source": "README.md", "network": False},
+        {"command": "PYTHONPATH=src python -m mantle prove",
+         "coverage": "security invariants",
+         "source": "README.md", "network": False},
+        {"command": "PYTHONPATH=src python -m mantle audit",
+         "coverage": "Stage-1 Zombie Body gate",
+         "source": "documents/guides/Audit_Guide.md", "network": False},
+        {"command": "PYTHONPATH=src python -m mantle audit-mind",
+         "coverage": "Stage-2 MIND containment gate",
+         "source": "documents/guides/Audit_Guide.md", "network": False},
+        {"command": "PYTHONPATH=src python examples/vcw/vcw_cube.py selftest",
+         "coverage": "standalone VCW codec conformance",
+         "source": "README.md", "network": False},
+        {"command": "npm install",
+         "coverage": "browser smoke-test dependencies",
+         "source": ".github/workflows/demos.yml", "network": True},
+        {"command": "npx playwright install --with-deps chromium",
+         "coverage": "browser smoke-test runtime",
+         "source": ".github/workflows/demos.yml", "network": True},
+        {"command": "node demo_smoke.mjs",
+         "coverage": "reference demo browser smoke tests",
+         "source": ".github/workflows/demos.yml", "network": False},
+        {"command": "node live_agent_smoke.mjs",
+         "coverage": "live agent browser smoke test",
+         "source": ".github/workflows/demos.yml", "network": False},
+    ]
     return {
-        "status": "audit-artifact declaration",
-        "environment": {"python": sys.version.split()[0], "branch": report["branch"],
-                         "head": report["head"]},
-        "commands": [
-            {"command": "PYTHONPATH=src python -m mantle optimize-audit",
-             "coverage": "artifact generation", "result": "run by caller when generated"},
-            {"command": "PYTHONPATH=src python -m mantle prove",
-             "coverage": "security invariants", "result": "required final proof"},
-            {"command": "PYTHONPATH=src python -m mantle check",
-             "coverage": "full certification", "result": "required final proof"},
-        ],
-        "note": "This command does not run the suite; it records the proof path to keep inventory non-mutating.",
+        "status": "verification-index",
+        "environment": report["baseline"]["runtime"],
+        "git": report["baseline"]["git"],
+        "project": report["baseline"]["project"],
+        "commands": [dict(c, observed="not-run-by-optimize-audit") for c in configured],
+        "observed_commands": [],
+        "note": ("This command does not run heavy proof gates by default; it records "
+                 "configured proof surfaces and leaves observed exit-code receipts to "
+                 "the operator, CI, or an explicit future runner."),
     }
 
 
@@ -484,6 +596,7 @@ def build_inventory(root: str = paths.REPO_ROOT) -> Dict[str, Any]:
         "token_status": dict(sorted(token_status.items())),
         "files": files,
     }
+    report["baseline"] = _baseline_stats(report)
     report["maps"] = _derived_maps(report)
     report["alias_registry"] = _alias_registry()
     report["coverage_matrix"] = _coverage_matrix(report)
@@ -516,6 +629,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
     _write(artifacts["COVERAGE_MATRIX"],
            json.dumps(report["coverage_matrix"], indent=2, sort_keys=True))
     _write(artifacts["TOKEN_REPORT"], json.dumps({
+        "baseline": report["baseline"]["metrics"],
         "token_status": report["token_status"],
         "files": [{"path": f["path"], "tokens": f["tokens"],
                    "token_status": f["token_status"], "bytes": f["bytes"],
@@ -559,7 +673,7 @@ def write_artifacts(report: Dict[str, Any], out_dir: str) -> Dict[str, str]:
            "\nCOMPLEXITY_DELTA: adds one stdlib-only audit module and one CLI route.\n"
            "\nPERFORMANCE_DELTA: no runtime path affected; audit cost is file traversal.\n"
            "\nFILES: %d inventoried; %d artifact files written.\n"
-           "\nTESTS: run `python -m mantle prove` and `python -m mantle check` after changes.\n"
+           "\nTESTS: TEST_REPORT lists configured proof commands; observed exit codes remain external receipts.\n"
            "\nPUBLIC_API_CHANGES: adds `python -m mantle optimize-audit`.\n"
            "\nBEHAVIOR_CHANGES: none to organism runtime behavior.\n"
            "\nPRESERVED_INVARIANTS: Body-before-MIND, SELF/OTHER, cache, lineage, host preservation.\n"

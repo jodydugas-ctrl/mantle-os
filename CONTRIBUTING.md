@@ -38,7 +38,7 @@ Mantle has a small number of load-bearing principles. Changes should respect the
   python -m mantle check      # every gate, proof, demo, and test in one command
   ```
 
-  (`check` runs the Stage-1 gate, the three tamper proofs, the 83 invariants, the Stage-2
+  (`check` runs the Stage-1 gate, the three tamper proofs, the current invariant suite, the Stage-2
   gate, both demos, the assimilation dry-run, the standalone cube codec conformance, the
   SPORE purity gates, and the parity test — the same sequence CI runs.)
 

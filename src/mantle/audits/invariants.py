@@ -2032,9 +2032,23 @@ def t_optimization_inventory_audit():
     cli_refs_ok = all(r["exists"] for r in report["maps"]["cli_command_references"])
     path_refs_ok = all(r["exists"] for r in report["maps"]["path_references"])
     cli_registry_ok = "optimize-audit" in known_commands()
+    baseline_ok = (
+        report["baseline"]["metrics"]["files"] == report["file_count"]
+        and bool(report["baseline"]["runtime"]["python"])
+        and report["baseline"]["project"]["requires_python"] == ">=3.8"
+    )
+    test_index = report["test_report"]
+    test_index_ok = (
+        test_index["status"] == "verification-index"
+        and any(c["command"] == "PYTHONPATH=src python -m mantle check"
+                for c in test_index["commands"])
+        and any(c["source"] == ".github/workflows/demos.yml"
+                for c in test_index["commands"])
+        and test_index["observed_commands"] == []
+    )
     return (tracked_seen and key_classes and honest_tokens and artifact_ok and artifact_set
             and outside_source and aliases_ok and coverage_ok and cli_refs_ok and path_refs_ok
-            and cli_registry_ok and strict_ok,
+            and cli_registry_ok and strict_ok and baseline_ok and test_index_ok,
             "%d files inventoried; %d required artifacts outside source tree; %d CLI refs and %d path refs checked; token status=%s"
             % (report["file_count"], len(required),
                len(report["maps"]["cli_command_references"]),

@@ -56,6 +56,27 @@ a separate deletion-safe documentation pass.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 9 Receipt
+
+Function served: the whole-repository optimization protocol requires baseline runtime metadata and
+configured verification-command discovery before later file-by-file rewrite claims can be trusted.
+
+Changes:
+
+- Added runtime/tool/project baseline metadata to `FILE_INVENTORY` and `TOKEN_REPORT`.
+- Changed `TEST_REPORT` from a generic proof-path note into a verification index that names
+  discovered local and CI proof commands, with network requirements marked where applicable.
+- Kept observed exit-code receipts out of `optimize-audit` by default so the inventory command
+  stays non-mutating and cheap.
+- Strengthened `OPT-1` to prove the baseline metadata and verification index are present.
+- Removed the stale invariant-count claim from `CONTRIBUTING.md`.
+
+Deletion decision: no files were deleted. The stale exact count in `CONTRIBUTING.md` served
+operator orientation, and that function remains covered by the README anchor plus the live
+`python -m mantle prove` output.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 8 Receipt
 
 Function served: the optimization audit needed a gate mode, not only a report mode, so the
