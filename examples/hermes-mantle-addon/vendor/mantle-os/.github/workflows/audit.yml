@@ -1,0 +1,27 @@
+# "Everything is provable" — so prove it on every commit, with the same single command a
+# contributor runs locally: `python -m mantle check`. It executes the Stage-1 gate, the
+# three tamper proofs (which must FAIL to pass), the 84 security invariants, the Stage-2
+# gate, both narrated demos, the assimilation dry-run, the standalone cube codec
+# conformance (selftest + interop), the SPORE purity gates, and the multi-language parity
+# test. Pure standard library; Pillow is installed so the SPORE gates run rather than skip.
+name: Zombie Body Audit
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Mantle (editable, src-layout, with the spore extra)
+        run: pip install -e ".[spore]"
+
+      - name: The whole certification, one command
+        run: python -m mantle check
