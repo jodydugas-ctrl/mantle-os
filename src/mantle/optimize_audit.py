@@ -32,6 +32,7 @@ TEXT_EXTS = {
 }
 BINARY_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".zip"}
 SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".tox", "node_modules"}
+EXTERNAL_EXAMPLE_MARKER = "plugin.yaml"
 COMMAND_RE = re.compile(r"python\s+-m\s+mantle(?:\s+[A-Za-z0-9_.-]+)*")
 PATH_RE = re.compile(r"(?:(?:src|documents|examples|\.github)/[A-Za-z0-9_./ -]+)")
 ENV_RE = re.compile(r"\b[A-Z][A-Z0-9_]{2,}\b")
@@ -508,18 +509,57 @@ def _git_lines(root: str, *args: str) -> List[str]:
     return [x.strip().replace("\\", "/") for x in p.stdout.splitlines() if x.strip()]
 
 
+def _external_example_prefixes(root: str) -> set:
+    """Return repo-relative prefixes for self-contained plugin examples.
+
+    A plugin example owns its own manifest and may contain a vendored source
+    snapshot. The root Mantle inventory should verify the host project, not
+    reinterpret that nested project as host source or documentation.
+    """
+    examples = os.path.join(root, "examples")
+    if not os.path.isdir(examples):
+        return set()
+    prefixes = set()
+    for name in os.listdir(examples):
+        candidate = os.path.join(examples, name)
+        if (os.path.isdir(candidate)
+                and os.path.isfile(os.path.join(candidate, EXTERNAL_EXAMPLE_MARKER))):
+            prefixes.add("examples/%s/" % name)
+    return prefixes
+
+
+def _is_external_example_path(rel: str, prefixes: set) -> bool:
+    rel = rel.replace("\\", "/").lstrip("./")
+    return any(rel == prefix.rstrip("/") or rel.startswith(prefix) for prefix in prefixes)
+
+
 def _tracked(root: str) -> set:
-    return set(_git_lines(root, "ls-files"))
+    prefixes = _external_example_prefixes(root)
+    return {path for path in _git_lines(root, "ls-files")
+            if not _is_external_example_path(path, prefixes)}
 
 
 def _status_untracked(root: str) -> set:
-    return {x[3:] for x in _git_lines(root, "status", "--short")
-            if x.startswith("?? ")}
+    prefixes = _external_example_prefixes(root)
+    return {path[3:] for path in _git_lines(root, "status", "--short")
+            if path.startswith("?? ")
+            and not _is_external_example_path(path[3:], prefixes)}
 
 
 def iter_repo_files(root: str) -> Iterable[str]:
+    prefixes = _external_example_prefixes(root)
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        rel_dir = _rel(dirpath, root)
+        if rel_dir and _is_external_example_path(rel_dir, prefixes):
+            dirnames[:] = []
+            continue
+        kept_dirs = []
+        for dirname in dirnames:
+            child_rel = _rel(os.path.join(dirpath, dirname), root)
+            if dirname in SKIP_DIRS or _is_external_example_path(child_rel, prefixes):
+                continue
+            kept_dirs.append(dirname)
+        dirnames[:] = kept_dirs
         for name in filenames:
             yield os.path.join(dirpath, name)
 
