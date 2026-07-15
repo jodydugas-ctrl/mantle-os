@@ -2,4 +2,3 @@ __pycache__/
 *.py[cod]
 .runtime/
 .test-hermes/
-vendor/mantle-os/

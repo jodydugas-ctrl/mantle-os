@@ -70,6 +70,11 @@ class VendorIsolationTests(unittest.TestCase):
             capture_output=True, text=True, check=False,
         )
         receipt = json.loads(completed.stdout)
+        self.assertIn("untracked", receipt)
+        self.assertEqual([], receipt["untracked"])
+        self.assertEqual(receipt["snapshot_files"], receipt["tracked_files"])
+        self.assertEqual([], receipt["index_missing"])
+        self.assertEqual([], receipt["index_extra"])
         self.assertEqual(completed.returncode, 0, receipt)
         self.assertTrue(receipt["aligned"])
         self.assertEqual(receipt["snapshot_files"], receipt["vendor_files"])

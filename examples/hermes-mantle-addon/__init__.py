@@ -2,8 +2,10 @@
 
 from functools import partial
 
+from .mantle_addon.authority import HmacAuthorityProvider
 from .mantle_addon.config import ResidentConfig
 from .mantle_addon.runtime import OBSERVER_HOOKS, RuntimeRegistry
+from .mantle_addon.transport import build_model
 from .schemas import MANTLE_RECORD_DISCOVERY, MANTLE_STATUS
 from .tools import mantle_record_discovery, mantle_status
 
@@ -19,6 +21,8 @@ def register(ctx):
     runtimes = RuntimeRegistry(
         profile_resolver=lambda: ctx.profile_name,
         config_resolver=active_config,
+        model_factory=lambda: build_model(ctx.llm),
+        authority_provider_factory=HmacAuthorityProvider.from_environment,
     )
     ctx.register_tool(
         name="mantle_status",

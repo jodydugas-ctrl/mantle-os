@@ -27,7 +27,7 @@ class ResidentConfigTests(unittest.TestCase):
             fails=[],
             framework_passed=True,
             framework_rows=20,
-            framework_invariants=111,
+            framework_invariants=90,
             framework_failures=[],
             summary="complete test receipt",
             issued_at=issued_at,
@@ -84,6 +84,8 @@ class ResidentConfigTests(unittest.TestCase):
     def test_direct_constructor_cannot_bypass_phase1_gates(self):
         with self.assertRaisesRegex(ConfigError, "authorize_phase2"):
             ResidentConfig(mind_enabled=True)
+        with self.assertRaises(TypeError):
+            ResidentConfig(mind_enabled=True, _phase2_grant=object())
         with self.assertRaisesRegex(ConfigError, "raw payload retention"):
             ResidentConfig(record_raw_prompts=True)
 
@@ -116,20 +118,16 @@ class ResidentConfigTests(unittest.TestCase):
                 fusion_authorized=True,
             )
 
-    def test_phase2_transition_requires_complete_fresh_target_bound_authority(self):
-        base = ResidentConfig.from_mapping({})
-        phase2 = ResidentConfig.authorize_phase2(
-            base,
-            stage1_receipt=self._complete_receipt(),
-            readiness_report=self._readiness(),
-            authorization=self._approval(),
-            now=self.now,
-        )
-
-        self.assertFalse(base.mind_enabled)
-        self.assertTrue(phase2.mind_enabled)
-        self.assertTrue(phase2.body_enabled)
-        self.assertNotIn("_phase2_grant", phase2.to_dict())
+    def test_structurally_fabricated_authority_cannot_enable_phase2(self):
+        """Unsigned caller-authored JSON is evidence, not independent human authority."""
+        with self.assertRaisesRegex(ConfigError, "authenticated.*unavailable"):
+            ResidentConfig.authorize_phase2(
+                ResidentConfig.from_mapping({}),
+                stage1_receipt=self._complete_receipt(),
+                readiness_report=self._readiness(),
+                authorization=self._approval(),
+                now=self.now,
+            )
 
     def test_phase2_transition_rejects_incomplete_stale_or_mismatched_evidence(self):
         base = ResidentConfig.from_mapping({})

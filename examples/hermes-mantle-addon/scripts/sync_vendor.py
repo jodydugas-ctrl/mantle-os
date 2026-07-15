@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import subprocess
 
 
 ADDON_ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +43,20 @@ def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _tracked_vendor_files() -> set[str]:
+    prefix = str(VENDOR_ROOT.relative_to(REPOSITORY_ROOT)) + "/"
+    completed = subprocess.run(
+        ["git", "ls-files", "-z", "--", prefix],
+        cwd=REPOSITORY_ROOT, capture_output=True, check=True,
+    )
+    tracked = set()
+    for item in completed.stdout.split(b"\0"):
+        path = item.decode("utf-8")
+        if path.startswith(prefix):
+            tracked.add(path[len(prefix):])
+    return tracked
+
+
 def status() -> dict[str, object]:
     expected = {rel: _digest(path) for rel, path in _included_source_files().items()}
     actual = {
@@ -54,15 +69,24 @@ def status() -> dict[str, object]:
     extra = sorted(set(actual) - set(expected))
     changed = sorted(path for path in set(expected) & set(actual)
                      if expected[path] != actual[path])
+    tracked = _tracked_vendor_files()
+    untracked = sorted(set(actual) - tracked)
+    index_missing = sorted(set(expected) - tracked)
+    index_extra = sorted(tracked - set(expected))
     source_files = sum(path.startswith("src/mantle/") for path in expected)
     return {
         "snapshot_files": len(expected),
         "vendor_files": len(actual),
+        "tracked_files": len(tracked),
         "source_files": source_files,
         "missing": missing,
         "extra": extra,
         "changed": changed,
-        "aligned": not missing and not extra and not changed,
+        "untracked": untracked,
+        "index_missing": index_missing,
+        "index_extra": index_extra,
+        "aligned": not any((missing, extra, changed, untracked,
+                            index_missing, index_extra)),
     }
 
 

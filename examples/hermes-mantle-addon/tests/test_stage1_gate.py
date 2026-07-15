@@ -9,6 +9,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -47,8 +48,22 @@ class Stage1GateTests(unittest.TestCase):
         runtime = ResidentRuntime(config, profile_id=profile, factory=factory)
         return config, handle, runtime
 
-    def test_gate_passes_on_fresh_resident(self):
-        """A freshly birthed resident with no activity should pass the gate."""
+    def _run_with_framework_evidence(self, organism, config, path, runtime,
+                                     passed, evidence):
+        from mantle_addon.vendor import vendored_symbol as real_vendored_symbol
+
+        def framework_stub(module_name, symbol_name):
+            if module_name == "audits.stage1" and symbol_name == "run":
+                return lambda *_args, **_kwargs: (passed, evidence)
+            return real_vendored_symbol(module_name, symbol_name)
+
+        with patch("mantle_addon.vendor.vendored_symbol",
+                   side_effect=framework_stub):
+            return run_gate(organism, config, path, runtime,
+                            include_framework=True)
+
+    def test_addon_probes_pass_without_granting_stage1(self):
+        """Addon-only probes are diagnostic and cannot grant certification."""
         config, handle, runtime = self._make_resident()
         # Access runtime.organism to trigger _ensure_handle which installs dual-flush
         organism = runtime.organism
@@ -56,9 +71,10 @@ class Stage1GateTests(unittest.TestCase):
         receipt = run_gate(organism, config, handle.path, runtime,
                            include_framework=False)
 
-        self.assertTrue(receipt.passed, msg=format_receipt(receipt))
+        self.assertFalse(receipt.passed, msg=format_receipt(receipt))
         self.assertEqual([], receipt.fails)
-        self.assertTrue(organism.stage1_certified)
+        self.assertTrue(all(row.result == PASS for row in receipt.rows))
+        self.assertFalse(organism.stage1_certified)
 
     def test_gate_produces_fourteen_addon_rows(self):
         """The gate should produce exactly 14 addon-specific probe rows."""
@@ -149,16 +165,81 @@ class Stage1GateTests(unittest.TestCase):
 
         a06 = next(r for r in receipt.rows if r.code == "A-06")
         self.assertEqual(NA, a06.result)
+        self.assertFalse(receipt.passed)
+        self.assertFalse(handle.organism.stage1_certified)
 
-    def test_a11_na_with_no_proofs(self):
-        """A-11 should be NA when no Action Execution Proofs exist."""
+    def test_a06_hook_exception_fails_instead_of_being_swallowed(self):
+        """A hook that raises is not evidence of a fail-open observer boundary."""
+        config, handle, runtime = self._make_resident()
+
+        def broken_hook(**_kwargs):
+            raise RuntimeError("observer escaped")
+
+        runtime.pre_tool_call = broken_hook
+        receipt = run_gate(handle.organism, config, handle.path, runtime,
+                           include_framework=False)
+
+        a06 = next(r for r in receipt.rows if r.code == "A-06")
+        self.assertEqual(FAIL, a06.result)
+        self.assertIn("raised:RuntimeError", a06.note)
+        self.assertFalse(receipt.passed)
+
+    def test_a11_passes_vacuously_with_no_proofs(self):
+        """A-11 is vacuously true before the first Action Execution Proof exists."""
         config, handle, runtime = self._make_resident()
 
         receipt = run_gate(handle.organism, config, handle.path, runtime,
                            include_framework=False)
 
         a11 = next(r for r in receipt.rows if r.code == "A-11")
-        self.assertEqual(NA, a11.result)
+        self.assertEqual(PASS, a11.result)
+
+    def test_skipping_framework_gate_never_certifies_stage1(self):
+        """Fast addon probes are evidence only, never complete Stage-1 certification."""
+        config, handle, runtime = self._make_resident()
+        organism = runtime.organism
+
+        receipt = run_gate(organism, config, handle.path, runtime,
+                           include_framework=False)
+
+        self.assertFalse(receipt.passed)
+        self.assertIsNone(receipt.framework_passed)
+        self.assertFalse(organism.stage1_certified)
+
+    def test_incomplete_framework_evidence_never_certifies_stage1(self):
+        """A framework PASS without substantive evidence must fail closed."""
+        config, handle, runtime = self._make_resident()
+        organism = runtime.organism
+        receipt = self._run_with_framework_evidence(
+            organism, config, handle.path, runtime, True,
+            {"substrate_rows": [], "mesh_rows": [], "invariants": []},
+        )
+
+        self.assertTrue(receipt.framework_passed)
+        self.assertEqual(0, receipt.framework_rows)
+        self.assertEqual(0, receipt.framework_invariants)
+        self.assertFalse(receipt.passed)
+        self.assertFalse(organism.stage1_certified)
+
+    def test_framework_failure_detail_overrides_pass_flag(self):
+        """Contradictory framework evidence cannot certify a resident."""
+        config, handle, runtime = self._make_resident()
+        organism = runtime.organism
+        receipt = self._run_with_framework_evidence(
+            organism, config, handle.path, runtime, True,
+            {
+                "substrate_rows": [{"result": "PASS"}],
+                "mesh_rows": [],
+                "invariants": [
+                    {"ok": False, "name": "forced-failure", "detail": "test"},
+                ],
+            },
+        )
+
+        self.assertTrue(receipt.framework_passed)
+        self.assertEqual(["forced-failure: test"], receipt.framework_failures)
+        self.assertFalse(receipt.passed)
+        self.assertFalse(organism.stage1_certified)
 
     def test_a11_passes_after_observed_tool_call(self):
         """A-11 should pass after a post_tool_call produces a BODY-authored proof."""
@@ -200,8 +281,14 @@ class Stage1GateTests(unittest.TestCase):
         organism = runtime.organism  # trigger dual-flush install
         self.assertFalse(organism.stage1_certified)
 
-        receipt = run_gate(organism, config, handle.path, runtime,
-                           include_framework=False)
+        receipt = self._run_with_framework_evidence(
+            organism, config, handle.path, runtime, True,
+            {
+                "substrate_rows": [{"result": "PASS"}],
+                "mesh_rows": [],
+                "invariants": [{"ok": True}],
+            },
+        )
 
         self.assertTrue(receipt.passed)
         self.assertTrue(organism.stage1_certified)
@@ -215,7 +302,7 @@ class Stage1GateTests(unittest.TestCase):
                            include_framework=False)
 
         data = json.loads(receipt.to_json())
-        self.assertTrue(data["passed"])
+        self.assertFalse(data["passed"])
         self.assertEqual(14, len(data["rows"]))
         self.assertIsNone(data["framework_rows"])
         self.assertIsNone(data["framework_invariants"])
@@ -233,8 +320,8 @@ class Stage1GateTests(unittest.TestCase):
         self.assertIn("STAGE 1 GATE", text)
         self.assertIn("A-01", text)
         self.assertIn("A-14", text)
-        self.assertIn("PASSED", text)
-        self.assertIn("eligible for separate Phase-2 readiness", text)
+        self.assertIn("BLOCKED", text)
+        self.assertIn("framework-incomplete", text)
         self.assertNotIn("Phase 2 authorized", text)
 
     def test_framework_stage1_integration(self):

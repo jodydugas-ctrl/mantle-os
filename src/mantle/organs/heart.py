@@ -177,27 +177,40 @@ class Heart(Organ):
         return self.flushes
 
     # ---- the pulse ---------------------------------------------------------
+    def body_pulse(self, assemble: bool = False) -> Dict[str, Any]:
+        """Run Body circulation for a host event without consuming cognition cadence.
+
+        A fused resident may observe many host events between natural heartbeats. Those
+        events keep the autonomic Body current but never invoke the MIND. Any stressor
+        discovered here remains pending for the lifecycle-owned scheduler to escalate.
+        """
+        return self._pulse(assemble=assemble, cognitive=False)
+
     def beat(self, assemble: bool = False,
              wake: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """One complete pulse in the fixed order. Returns a beat report. `assemble`
-        forces context assembly even with no fused Brain (deterministic, LLM-free either
-        way). `wake` marks this pulse as unscheduled (a `pain` escalation). A fused MIND is
-        offered every pulse; a pending wake adds localized stressor coordinates."""
+        """Run one natural or stressor-driven pulse, including fused cognition."""
+        return self._pulse(assemble=assemble, wake=wake, cognitive=True)
+
+    def _pulse(self, assemble: bool = False,
+               wake: Optional[Dict[str, Any]] = None,
+               cognitive: bool = True) -> Dict[str, Any]:
+        """Execute the fixed Body order and optionally extend it with cognition."""
         report: Dict[str, Any] = {"beat": self.tick()}
         if wake is not None:
             self._wake = dict(wake)
-        due = self._fire_due_schedules()        # planning ahead: a scheduled wake comes due
-        if due is not None:
-            report["scheduled_wake"] = due
-            if self._wake is None:              # a live stressor this pulse takes precedence
-                self._wake = due
+        if cognitive:
+            due = self._fire_due_schedules()    # scheduled cognition comes due naturally
+            if due is not None:
+                report["scheduled_wake"] = due
+                if self._wake is None:          # a live stressor takes precedence
+                    self._wake = due
         self.bus.emit("pulse", {"beat": self.beats})                    # 1 tick
         report["ok"] = self.pulse_check()
         report["intake"] = self.org.senses.drain()                      # 2 sense intake
         #                                          (SIGNIFICANT -> on_significant -> _wake)
         snapshot = None
         fused = self.org.brain.fused
-        if assemble or fused:
+        if assemble or (fused and cognitive):
             snapshot = self.org.nervous.assemble()                      # 3 context assembly
             report["assembled"] = snapshot.get("_complete", False)
         # 4 reflex execution: bus subscribers fired during emit (registration order)
@@ -209,9 +222,10 @@ class Heart(Organ):
             report["wake"] = self._wake          # observable even with no fused Brain
             if snapshot is not None:
                 snapshot["_stressor"] = self._wake  # pre-anchor to the pain coordinates
-        if fused:                                             # unconditional P2 baseline
+        if fused and cognitive:                               # unconditional P2 baseline
             report["cognition"] = self.org.brain.cognize(snapshot)
-        self._wake = None                              # the pulse consumed the wake
+        if cognitive:
+            self._wake = None                          # cognition consumed the wake
         self.bus.emit("checkpoint", {"beat": self.beats})
         return report
 

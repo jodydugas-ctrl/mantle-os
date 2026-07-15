@@ -377,6 +377,18 @@ class ResidentRuntimeTests(unittest.TestCase):
         self.assertIsNone(self.runtime.subagent_stop())
         self.assertIsNone(self.runtime.pre_gateway_dispatch())
 
+    def test_observer_hooks_never_cognize_between_natural_heartbeats(self):
+        """Hermes activity drives the Body, not the fused MIND cadence."""
+        organism = self.runtime.organism
+        mind = SimpleNamespace(cognize=lambda _snapshot: "thought")
+        organism.brain._mind = mind
+
+        with patch.object(mind, "cognize", wraps=mind.cognize) as cognize:
+            self.runtime.pre_llm_call(user_message="private")
+            cognize.assert_not_called()
+            organism.heart.beat()
+            cognize.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

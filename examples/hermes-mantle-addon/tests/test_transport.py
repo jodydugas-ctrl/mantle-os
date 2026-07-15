@@ -1,69 +1,135 @@
-"""Tests for the Hermes LLM provider transport (mantle_addon.transport)."""
+"""Tests for bounded host-owned Hermes LLM cognition."""
 
 from __future__ import annotations
 
+from pathlib import Path
+from types import SimpleNamespace
+import json
 import sys
 import unittest
-from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from mantle_addon.config import ResidentConfig, ConfigError
-from mantle_addon.transport import build_model, stub_model, _normalize_usage
+from mantle_addon.transport import (
+    CognitionBudgetExceeded,
+    CognitionPolicy,
+    CognitionUnavailable,
+    HermesModel,
+)
 
 
-class StubModelTests(unittest.TestCase):
-    def test_stub_returns_deterministic_response(self):
-        """The stub model should return a deterministic, offline response."""
-        result1 = stub_model("hello world")
-        result2 = stub_model("hello world")
-        self.assertEqual(result1, result2)
-        self.assertIn("offline", result1.lower())
-        self.assertIn("11", result1)  # len("hello world")
-
-    def test_stub_never_touches_network(self):
-        """The stub model should not require any network or key."""
-        result = stub_model("test prompt")
-        self.assertIsInstance(result, str)
-        self.assertTrue(len(result) > 0)
+class _Usage:
+    def __init__(self, total_tokens=0, cost_usd=None) -> None:
+        self.input_tokens = max(0, total_tokens - 2)
+        self.output_tokens = min(2, total_tokens)
+        self.total_tokens = total_tokens
+        self.cache_read_tokens = 0
+        self.cache_write_tokens = 0
+        self.cost_usd = cost_usd
 
 
-class TransportBoundaryTests(unittest.TestCase):
-    def test_bespoke_transport_is_unreachable_from_valid_phase1_config(self):
-        """B-05 remains blocked until transport uses Hermes's profile-aware LLM facade."""
-        config = ResidentConfig.from_mapping({})
-        with self.assertRaisesRegex(ConfigError, "MIND fusion is not enabled"):
-            build_model(
-                config,
-                api_key="must-not-be-used",
-                model_name="must-not-be-used",
-            )
+class _Llm:
+    def __init__(self, outcomes) -> None:
+        self.outcomes = list(outcomes)
+        self.calls = []
 
-    def test_normalize_usage_extracts_fields(self):
-        """_normalize_usage should extract token counts from a response."""
-        data = {
-            "id": "gen-123",
-            "model": "test-model",
-            "usage": {
-                "prompt_tokens": 100,
-                "completion_tokens": 50,
-                "total_tokens": 150,
-            },
-        }
-        usage = _normalize_usage(data)
-        self.assertEqual(100, usage["prompt_tokens"])
-        self.assertEqual(50, usage["completion_tokens"])
-        self.assertEqual(150, usage["total_tokens"])
-        self.assertEqual("test-model", usage["model"])
-        self.assertEqual("gen-123", usage["id"])
+    def complete(self, messages, **kwargs):
+        self.calls.append((messages, kwargs))
+        outcome = self.outcomes.pop(0)
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return outcome
 
-    def test_normalize_usage_handles_missing_usage(self):
-        """_normalize_usage should handle responses with no usage block."""
-        data = {"id": "x", "model": "m", "choices": [{"message": {"content": "hi"}}]}
-        usage = _normalize_usage(data)
-        self.assertEqual(0, usage["prompt_tokens"])
-        self.assertEqual(0, usage["total_tokens"])
+
+def _result(text="reflection", *, tokens=5, cost=0.01):
+    return SimpleNamespace(
+        text=text,
+        provider="active-provider",
+        model="active-model",
+        usage=_Usage(tokens, cost),
+    )
+
+
+class HermesModelTests(unittest.TestCase):
+    def test_uses_active_host_route_without_provider_or_secret_inputs(self):
+        llm = _Llm([_result()])
+        model = HermesModel(llm, CognitionPolicy(max_attempts=1))
+
+        self.assertEqual("reflection", model("private prompt"))
+
+        messages, kwargs = llm.calls[0]
+        self.assertEqual("private prompt", messages[0]["content"])
+        self.assertNotIn("provider", kwargs)
+        self.assertNotIn("model", kwargs)
+        self.assertEqual("mantle-cognitive-heartbeat", kwargs["purpose"])
+        self.assertEqual(256, kwargs["max_tokens"])
+        self.assertEqual(30.0, kwargs["timeout"])
+        self.assertEqual("active-provider", model.last_usage["provider"])
+        self.assertEqual("active-model", model.last_usage["model"])
+
+    def test_transient_failures_retry_with_bounded_backoff(self):
+        llm = _Llm([TimeoutError("secret one"), ConnectionError("secret two"), _result()])
+        sleeps = []
+        model = HermesModel(
+            llm,
+            CognitionPolicy(max_attempts=3, backoff_seconds=1.0),
+            sleep=sleeps.append,
+        )
+
+        self.assertEqual("reflection", model("private prompt"))
+        self.assertEqual([1.0, 2.0], sleeps)
+        self.assertEqual(3, len(llm.calls))
+        self.assertEqual("SUCCESS", model.last_receipt["outcome"])
+        self.assertEqual(3, model.last_receipt["attempts"])
+
+    def test_exhausted_outage_is_redacted_and_bounded(self):
+        llm = _Llm([TimeoutError("secret one"), TimeoutError("secret two")])
+        model = HermesModel(
+            llm,
+            CognitionPolicy(max_attempts=2),
+            sleep=lambda _delay: None,
+        )
+
+        with self.assertRaises(CognitionUnavailable):
+            model("private prompt")
+
+        serialized = json.dumps(model.last_receipt, sort_keys=True)
+        self.assertEqual(2, len(llm.calls))
+        self.assertEqual("OUTAGE", model.last_receipt["outcome"])
+        self.assertNotIn("secret", serialized)
+        self.assertNotIn("private prompt", serialized)
+
+    def test_permanent_failure_is_not_retried(self):
+        llm = _Llm([ValueError("secret invalid request")])
+        model = HermesModel(llm, CognitionPolicy(max_attempts=3))
+
+        with self.assertRaises(CognitionUnavailable):
+            model("private prompt")
+
+        self.assertEqual(1, len(llm.calls))
+        self.assertEqual("REFUSED", model.last_receipt["outcome"])
+
+    def test_token_and_cost_budgets_fail_closed_before_another_call(self):
+        llm = _Llm([_result(tokens=7, cost=0.02)])
+        model = HermesModel(
+            llm,
+            CognitionPolicy(
+                max_attempts=1,
+                max_output_tokens=2,
+                max_tokens_per_window=7,
+                max_cost_usd_per_window=0.02,
+            ),
+        )
+
+        self.assertEqual("reflection", model("first"))
+        with self.assertRaises(CognitionBudgetExceeded):
+            model("second")
+
+        self.assertEqual(1, len(llm.calls))
+        self.assertEqual("BUDGET_BLOCKED", model.last_receipt["outcome"])
+
+
 if __name__ == "__main__":
     unittest.main()

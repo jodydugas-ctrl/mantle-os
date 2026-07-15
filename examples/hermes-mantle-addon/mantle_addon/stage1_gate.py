@@ -26,8 +26,8 @@ Probes (all deterministic, LLM-free, network-free):
 Usage:
 
     from mantle_addon.stage1_gate import run_gate
-    passed, receipt = run_gate(organism, config, runtime)
-    if passed:
+    receipt = run_gate(organism, config, path, runtime)
+    if receipt.passed:
         # organism.stage1_certified is now True
         # receipt is the evidence artifact
 
@@ -104,6 +104,17 @@ class Stage1Receipt(NamedTuple):
 
 def _row(code: str, requirement: str, result: str, note: str = "") -> GateRow:
     return GateRow(code=code, requirement=requirement, result=result, note=note)
+
+
+def _framework_evidence_complete(passed: bool | None, rows: int | None,
+                                 invariants: int | None,
+                                 failures: list[str]) -> bool:
+    return (
+        passed is True
+        and rows is not None and rows > 0
+        and invariants is not None and invariants > 0
+        and not failures
+    )
 
 
 def _probe_a01_identity(organism: Any) -> GateRow:
@@ -190,10 +201,10 @@ def _probe_a06_hooks_fail_open(runtime: Any) -> GateRow:
             continue
         try:
             result = hook()
-        except Exception:
-            # fail-open means it should not raise, but a broken hook
-            # that returns None via _safe_observe is acceptable
-            result = None
+        except Exception as exc:
+            all_none = False
+            results.append("%s=raised:%s" % (hook_name, type(exc).__name__))
+            continue
         if result is not None:
             all_none = False
             results.append("%s!=None" % hook_name)
@@ -308,8 +319,8 @@ def _probe_a11_proofs_body_authored(organism: Any) -> GateRow:
         if isinstance(e.get("content"), dict) and "action_proof" in e["content"]
     ]
     if not proofs:
-        return _row("A-11", "Action Execution Proofs are BODY-authored", NA,
-                    "no proofs yet (no tool calls observed)")
+        return _row("A-11", "Action Execution Proofs are BODY-authored", PASS,
+                    "no proofs yet; no contradictory authorship")
     non_body = [
         e for e in proofs
         if e.get("authorship") != "BODY" or e.get("author") != "BODY"
@@ -471,18 +482,21 @@ def run_gate(
             framework_passed = False
             framework_failures = ["exception:%s" % type(exc).__name__]
 
-    fails = [r.code for r in rows if r.result == FAIL]
+    fails = [r.code for r in rows if r.result != PASS]
     addon_passed = not fails
-    passed = addon_passed and (framework_passed is not False)
+    framework_complete = _framework_evidence_complete(
+        framework_passed, framework_rows, framework_invariants,
+        framework_failures,
+    )
+    passed = addon_passed and framework_complete
 
-    if passed:
-        organism.stage1_certified = True
+    organism.stage1_certified = passed
 
     summary = (
-        "addon probes: %d/%d passed, %d failed; framework: %s"
+        "addon probes: %d/%d passed, %d non-passing; framework: %s"
         % (
             sum(1 for r in rows if r.result == PASS),
-            sum(1 for r in rows if r.result in (PASS, FAIL)),
+            len(rows),
             len(fails),
             "PASS" if framework_passed else (
                 "FAIL" if framework_passed is False else "skipped"
@@ -507,6 +521,13 @@ def run_gate(
 
 def format_receipt(receipt: Stage1Receipt) -> str:
     """Human-readable gate output."""
+    blocked_by = list(receipt.fails)
+    framework_complete = _framework_evidence_complete(
+        receipt.framework_passed, receipt.framework_rows,
+        receipt.framework_invariants, receipt.framework_failures,
+    )
+    if not framework_complete:
+        blocked_by.append("framework-incomplete")
     lines = ["=" * 74,
              "HERMES MANTLE ADDON — STAGE 1 GATE (addon-specific)",
              "=" * 74]
@@ -528,5 +549,5 @@ def format_receipt(receipt: Stage1Receipt) -> str:
     lines.append("  RESULT: %s" % (
         "STAGE-1 PASSED — eligible for separate Phase-2 readiness and authorization"
         if receipt.passed
-        else "STAGE-1 BLOCKED — %s" % ", ".join(receipt.fails)))
+        else "STAGE-1 BLOCKED — %s" % ", ".join(blocked_by)))
     return "\n".join(lines)

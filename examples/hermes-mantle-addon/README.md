@@ -13,12 +13,16 @@ Version `0.4.0` provides:
 - a sealed Primer and cryptographic SELF minted once at Body birth;
 - observer-only integration through twelve documented Hermes hooks, including approval lifecycle, subagent lifecycle, and gateway ingress;
 - redacted/derived Senses records rather than raw prompts, tool arguments, tool results, approval commands, subagent goals, or gateway messages;
-- a Body heartbeat after each observed hook, with an atomic durable checkpoint by default (or deferred to session end/finalization when `checkpoint_each_turn=false`);
+- a non-cognitive Body pulse after each observed hook, with an atomic durable checkpoint by default (or deferred to session end/finalization when `checkpoint_each_turn=false`);
 - Action Execution Proofs for observed `post_tool_call` outcomes;
 - Immune events for observed tool failures;
-- fail-open hook behavior so instrumentation faults do not change Hermes control flow.
+- fail-open hook behavior so instrumentation faults do not change Hermes control flow;
+- a reversible, receipt-backed MIND lifecycle that is dormant unless authenticated dual authority is present;
+- exactly one fixed 600-second cognitive scheduler per fused resident, with additional queued distress wakes;
+- Hermes-native provider/model/auth routing through `PluginContext.llm`; and
+- bounded retries, backoff, timeout, rolling token/cost budgets, serialized calls, and redacted usage receipts.
 
-The Brain is present but dormant and unfused. Isolated addon and framework Stage-1 receipts pass, but the real plugin resident remains uncertified. A fail-closed Phase-2 configuration transition exists, but the live `NOT_READY`/`DEFERRED` evidence cannot satisfy it and no runtime fusion lifecycle exists. MIND fusion and reproduction activation remain unauthorized. The sole model-facing mutation is confined to unverified discoveries; it cannot write facts, Primer, Genome, immune state, or host files.
+The software engineering verdict is `READY`, while the Brain remains dormant and unfused by default. Complete Stage-1 fails closed on missing framework evidence. Positive attachment requires a fresh resident-bound `READY` report plus independently authenticated operator and guardian signatures; caller-authored JSON alone has no authority. Missing, shared, malformed, or tampered credentials fail closed. The controlled offline acceptance proves attach → cognitive heartbeat → authority-free defusion → 14/14 addon and 90/90 framework Stage-1 PASS. No production fusion approval or credential is bundled, and reproduction remains unauthorized. The sole model-facing mutation is confined to unverified discoveries; it cannot write facts, Primer, Genome, immune state, or host files.
 
 ## Bounded mutation
 
@@ -81,7 +85,7 @@ The immutable defaults are recorded in `config/defaults.json`. Raw prompts, raw 
 - `vendor/mantle-os/` — complete 146-file non-addon Mantle OS 1.3.0 snapshot, reproducibly checked by `scripts/sync_vendor.py --check`
 - `docs/assimilation/` — reviewed Phase-0 inventory, nine-organ map, and host census
 - `docs/FUSION_DECISIONS.{md,json}` — human and machine-readable operator/guardian decisions
-- `docs/MIND_READINESS.{md,json}` — Step-9 evidence report; current verdict `NOT_READY`
+- `docs/MIND_READINESS.{md,json}` — engineering evidence report; current software verdict `READY`
 - `VENDOR_PROVENANCE.md` — source commit, snapshot-integrity receipt, and certification result
 
 ## Test
@@ -98,7 +102,9 @@ PYTHONPATH=vendor/mantle-os/src python3 -m mantle check --fast
 
 ## Fusion decision gate
 
-[`docs/FUSION_DECISIONS.json`](docs/FUSION_DECISIONS.json) is the machine-readable authority and [`docs/FUSION_DECISIONS.md`](docs/FUSION_DECISIONS.md) is its human-readable explanation. Both operator and guardian approve the current bounded Phase-1 runtime while explicitly **deferring MIND fusion**. The Step-9 [`MIND_READINESS.json`](docs/MIND_READINESS.json) verdict is **NOT READY**. Roadmap continuation, runtime approval, silence, enthusiasm, or a future readiness PASS cannot substitute for separate explicit operator and guardian fusion approvals.
+[`docs/FUSION_DECISIONS.json`](docs/FUSION_DECISIONS.json) is the machine-readable authority and [`docs/FUSION_DECISIONS.md`](docs/FUSION_DECISIONS.md) is its human-readable explanation. Both operator and guardian approve the software release while explicitly **deferring production MIND fusion**. [`MIND_READINESS.json`](docs/MIND_READINESS.json) is `READY` for software publication. Release approval, runtime approval, silence, enthusiasm, or readiness cannot substitute for separate authenticated operator and guardian fusion approvals bound to a concrete resident.
+
+Repository JSON records are evidence, not authenticated human authority. `HmacAuthorityProvider` verifies target-bound records with distinct `MANTLE_OPERATOR_AUTH_KEY` and `MANTLE_GUARDIAN_AUTH_KEY` deployment secrets and distinct key IDs. The addon verifies but never generates production approvals. Fusion lifecycle methods are internal runtime safety controls, not model-facing tools.
 
 ## Roadmap
 
@@ -107,23 +113,23 @@ PYTHONPATH=vendor/mantle-os/src python3 -m mantle check --fast
 | 1 | Addon-specific Stage-1 gate | ✅ Complete |
 | 2 | Dual-flush / atexit proof | ✅ Complete |
 | 3 | Reconstruction proof | ✅ Complete |
-| 4 | Hermes-routed MIND transport adapter | ⛔ Blocked — current OpenAI-compatible prototype bypasses Hermes provider routing |
+| 4 | Hermes-routed MIND transport adapter | ✅ Complete — host-owned `PluginContext.llm`, no provider/model override |
 | 5 | Approval, subagent, and gateway observer hooks | ✅ Complete |
 | 6 | Bounded mutating addon tool | ✅ Complete |
 | 7 | Adversarial containment verification | ✅ Complete |
-| 8 | Operator and guardian fusion-decision updates | ✅ Complete — both fusion decisions DEFERRED |
-| 9 | Final MIND-readiness report | ✅ Complete — original verdict NOT READY |
-| 10 | Complete Mantle OS repository alignment: verify every file against the plugin architecture and improve Mantle OS using lessons from building the plugin | ✅ Complete — 339-file receipt PASS; fusion and reproduction still unauthorized |
+| 8 | Operator and guardian decision updates | ✅ Complete — release approved; production fusion deferred |
+| 9 | Final MIND-readiness report | ✅ Complete — software verdict READY, activation separately gated |
+| 10 | Repository alignment and gate rationalization | ✅ Complete — mutable OPT/VERS ledgers are advisory, not runtime security gates |
 
 ## Doctrine receipt
 
 - **WHAT:** built the deterministic profile-resident Body, twelve observer hooks, one bounded discovery mutation, and an eleven-row adversarial containment audit.
 - **WHY:** establish Body-before-MIND residency while permitting the smallest useful durable host-to-Body knowledge path without granting fact, instruction, Genome, immune, reproduction, or host-file writes.
-- **EVIDENCE:** 96/96 addon tests, both tools through Hermes's real dispatcher, 14/14 addon Stage-1 probes, 20/20 target framework rows (21/21 in the reborn standalone demo), 111/111 invariants, 7/7 Stage-2 technical rows, 11/11 containment rows, 12/12 real observer hooks, 146-file vendor parity, and the 339-file alignment receipt pass.
-- **CONFIDENCE:** high for the bounded Phase-1 addon and repaired core paths covered by the matrix. MIND readiness remains explicitly NOT READY.
-- **NEXT:** separately scope B-03, the reversible addon fusion lifecycle; do not fuse MIND or activate reproduction.
-- **RISKS:** the supported B-02 transition requires target-bound Stage-1, READY, and dual-authority evidence but no reversible addon fusion lifecycle exists; the addon lacks a ten-minute scheduler, Hermes-native provider route, and complete heartbeat budget/outage policy; discovery text is intentionally durable and callers must not submit secrets; host activity outside registered hooks remains external.
+- **EVIDENCE:** 14/14 addon Stage-1 rows, 90/90 framework security invariants, 11/11 containment rows, vendor parity, and authenticated offline attach-heartbeat-defuse-post-Stage-1 acceptance.
+- **CONFIDENCE:** high for the bounded Phase-1 runtime and dormant Phase-2 implementation. Production activation remains separately fail-closed.
+- **NEXT:** publish the verified software release; do not fuse a production MIND without fresh target-bound signed approvals.
+- **RISKS:** authority keys are deployment secrets; discovery text is intentionally durable and callers must not submit secrets; host activity outside registered hooks remains external; MacroDroid runtime semantics remain outside the Python release gate.
 - **FILES:** source, docs, tests, examples, workflows, package metadata, and the non-recursive vendor snapshot were aligned in Step 10.
-- **OPEN GAPS:** five blockers remain in the readiness set; a future READY report and new explicit target-bound fusion approvals remain incomplete.
-- **OPERATOR DECISION:** current bounded Phase-1 runtime APPROVED; MIND fusion DEFERRED. Continuation does not authorize fusion or reproduction.
-- **GUARDIAN DECISION:** current bounded Phase-1 runtime APPROVED; MIND fusion DEFERRED until readiness evidence is complete and both roles issue separate explicit approvals.
+- **OPEN GAPS:** no engineering blocker remains. Production activation still requires a fresh resident-bound READY report and two independently authenticated approvals; reproduction remains prohibited.
+- **OPERATOR DECISION:** software release APPROVED; production MIND fusion DEFERRED.
+- **GUARDIAN DECISION:** software release APPROVED; production MIND fusion DEFERRED until the deployment activation protocol is satisfied.

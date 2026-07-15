@@ -1,74 +1,61 @@
-# Operator and Guardian Fusion Decisions
+# Operator and Guardian Decisions
 
 **Target:** `mantle-os` v0.4.0 (`Hermes.Mantle.AppAI`)
 
-**Recorded:** 2026-07-14T21:18:41-03:00
+**Recorded:** 2026-07-15T14:32:35-03:00
 
-**Machine-readable authority:** [`FUSION_DECISIONS.json`](FUSION_DECISIONS.json)
+**Machine-readable record:** [`FUSION_DECISIONS.json`](FUSION_DECISIONS.json)
 
 ## Effective decision
 
 | Surface | Decision |
 |---|---|
+| Mantle OS 1.3.0 software release | **APPROVED** |
 | Current deterministic Phase-1 runtime | **APPROVED** |
-| Twelve fail-open observer hooks | **APPROVED** |
-| `mantle_status` | **APPROVED** |
-| Bounded `mantle_record_discovery` | **APPROVED** |
-| Separately scoped Phase-2 engineering | **PERMITTED WITHOUT FUSION** |
-| MIND fusion | **DEFERRED — NOT AUTHORIZED** |
+| Twelve fail-open observer hooks and bounded tools | **APPROVED** |
+| Dormant Phase-2 implementation and offline acceptance | **APPROVED** |
+| Production MIND fusion | **DEFERRED — NOT AUTHORIZED** |
 | Reproduction activation | **DEFERRED — NOT AUTHORIZED** |
 
-A request to continue or complete engineering is not fusion authorization. A readiness PASS
-will not itself authorize fusion. Fusion requires separate, explicit, target-bound
-`fusion_decision=APPROVED` decisions from both operator and guardian.
+The code is technically ready for release. Release approval is not fusion approval. A production
+resident must independently satisfy the runtime authority protocol.
 
 ## Evidence considered
 
-- Roadmap Steps 1 through 10 are complete.
-- The addon suite is 96/96 and the addon Stage-1 receipt is 14/14.
-- The full Mantle 1.3.0 framework is 20/20 gate rows and 111/111 invariants.
-- C-01 through C-11 passed in an isolated containment resident.
-- Real Hermes `PluginManager` verification registers twelve valid observer hooks.
-- Owner-only atomic storage, raw-payload exclusion, and 146-file vendor alignment pass.
-- APPLET-5 and gate-language alignment are resolved.
-- The model-facing mutation remains one unverified discovery plus its BODY-authored proof.
-
-## Open gates
-
-1. The reissued readiness verdict is **NOT READY** with five blockers.
-2. A fail-closed Phase-2 configuration transition exists, but no reversible addon fusion lifecycle exists.
-3. Core baseline cognition is proven, but the addon has no legal ten-minute scheduler.
-4. Provider routing is still a bounded OpenAI-compatible HTTP prototype, not Hermes-native.
-5. No complete heartbeat cost, retry/backoff, outage, or usage policy exists.
-6. Neither authority has issued an explicit APPROVED fusion decision.
+- Addon Stage-1: 14/14.
+- Framework Stage-1: 20/20 rows and 90/90 runtime/security invariants.
+- Containment: C-01 through C-11.
+- Complete 146-file vendored framework snapshot.
+- Owner-only, symlink-safe atomic persistence.
+- Exactly one fixed 600-second scheduler per fused resident.
+- Hermes-owned provider/model/auth routing through `PluginContext.llm`.
+- Bounded retries, backoff, timeouts, rolling token/cost budgets, and redacted receipts.
+- Authenticated offline attach → heartbeat → defuse → post-defusion Stage-1 PASS.
 
 ## Operator decision
 
-**Current runtime: APPROVED. MIND fusion: DEFERRED.**
+**Software release: APPROVED. Production MIND fusion: DEFERRED.**
 
-The operator authorized Step-10 engineering and verification. That authority did not include
-fusion, reproduction, arbitrary mutation, authority promotion, or model-facing writes to
-facts, Primer, Special Instructions, Genome, immune state, identity, policy, or host files.
+The request to complete and publish the release authorizes repository, package, documentation,
+and GitHub publication work. It does not provide a cryptographic approval bound to a concrete
+resident identity and Body fingerprint.
 
 ## Guardian decision
 
-**Current runtime: APPROVED. MIND fusion: DEFERRED.**
+**Software release: APPROVED. Production MIND fusion: DEFERRED.**
 
-The guardian accepts the demonstrated Phase-1 envelope and the Step-10 framework repairs.
-The guardian does not authorize fusion because readiness remains NOT_READY and independent
-explicit dual authorization is absent.
+Publishing dormant, fail-closed capability is acceptable because absent, shared, malformed, or
+tampered authority credentials cannot attach cognition. Defusion remains authority-free.
 
-Before reconsidering fusion, the guardian requires:
+Before production fusion, the guardian requires:
 
-1. Resolution of B-03 through B-07 in `MIND_READINESS.json`.
-2. Preservation of the 111/111 framework and 14/14 addon Stage-1 receipts.
-3. Verified Hermes-native transport, addon ten-minute scheduler, budget/outage policy, and
-   reversible fusion lifecycle.
-4. A reissued `READY` report.
-5. A new explicit target-bound operator approval.
-6. A separate explicit target-bound guardian approval.
+1. a fresh 14/14 addon and 90/90 framework Stage-1 PASS on the target resident;
+2. a fresh `READY` report bound to that resident and Body fingerprint;
+3. a signed operator `APPROVED` record from the configured operator key;
+4. a separately signed guardian `APPROVED` record from the configured guardian key;
+5. explicit reproduction denial.
 
 ## Decision invariant
 
-> Silence, enthusiasm, roadmap continuation, current-runtime approval, technical
-> certification, or a readiness PASS must never be interpreted as MIND-fusion authorization.
+> Release approval, enthusiasm, roadmap continuation, runtime approval, technical certification,
+> or a `READY` engineering report must never be interpreted as production MIND-fusion authority.

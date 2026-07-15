@@ -107,5 +107,5 @@ class Brain(Organ):
             return self._mind.cognize(snapshot)
         except Exception as e:                   # noqa: BLE001 -- cognition is fail-open
             self.org.immune_event("cognition_fault",
-                                  {"error": "%s: %s" % (type(e).__name__, e)})
+                                  {"error_type": type(e).__name__})
             return None

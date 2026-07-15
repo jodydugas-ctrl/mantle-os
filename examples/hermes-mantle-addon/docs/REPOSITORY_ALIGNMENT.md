@@ -2,7 +2,7 @@
 
 **Status:** **PASS**
 
-**Files covered:** **339**
+**Files covered:** **348**
 
 **MIND fusion authorized:** **NO**
 
@@ -18,12 +18,12 @@ every git-tracked or non-ignored repository file; ignored caches/build output ex
 |---|---:|
 | asset | 8 |
 | core-source | 72 |
-| documentation | 45 |
-| example-or-addon-source | 23 |
+| documentation | 47 |
+| example-or-addon-source | 25 |
 | machine-data | 15 |
 | metadata-or-other | 9 |
-| test | 21 |
-| vendor | 144 |
+| test | 24 |
+| vendor | 146 |
 | workflow | 2 |
 
 ## Resolved findings
@@ -36,10 +36,13 @@ every git-tracked or non-ignored repository file; ignored caches/build output ex
 - invalid MacroDroid YAML
 - root/vendor snapshot drift
 - framework version and invariant-count drift
+- reversible authenticated fusion lifecycle
+- fixed 600-second addon cognitive scheduler
+- Hermes-native model routing and bounded outage policy
 
-## Remaining MIND-readiness blockers
+## Deployment activation boundary
 
-B-03 through B-07 remain blocking. See `MIND_READINESS.json`. Technical alignment does not authorize fusion.
+No engineering blocker remains. Production fusion still requires fresh resident-bound evidence and two independently authenticated approvals. Technical alignment does not authorize fusion.
 
 ## Machine evidence
 

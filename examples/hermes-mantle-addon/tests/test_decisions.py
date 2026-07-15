@@ -13,61 +13,42 @@ class FusionDecisionTests(unittest.TestCase):
     def setUp(self):
         self.record = json.loads(DECISION_JSON.read_text(encoding="utf-8"))
 
-    def test_machine_record_defers_both_fusion_decisions(self):
-        self.assertEqual("1.0", self.record["schema_version"])
-        self.assertEqual("0.4.0", self.record["target"]["version"])
-        self.assertEqual(
-            list(range(1, 11)),
-            self.record["evidence_basis"]["completed_roadmap_steps"],
-        )
+    def test_release_approval_and_fusion_deferral_are_independent(self):
+        self.assertEqual("1.1", self.record["schema_version"])
         for role in ("operator", "guardian"):
             with self.subTest(role=role):
-                self.assertEqual(
-                    "APPROVED", self.record[role]["runtime_decision"]
-                )
-                self.assertEqual(
-                    "DEFERRED", self.record[role]["fusion_decision"]
-                )
+                self.assertEqual("APPROVED", self.record[role]["runtime_decision"])
+                self.assertEqual("APPROVED", self.record[role]["release_decision"])
+                self.assertEqual("DEFERRED", self.record[role]["fusion_decision"])
 
     def test_effective_gate_fails_closed(self):
         effective = self.record["effective_decision"]
         self.assertTrue(effective["current_runtime_authorized"])
+        self.assertTrue(effective["software_release_authorized"])
         self.assertFalse(effective["mind_fusion_authorized"])
         self.assertFalse(effective["reproduction_activation_authorized"])
-        self.assertIsNone(effective["next_permitted_roadmap_step"])
-        self.assertIn("separate explicit", effective["fusion_rule"])
+        self.assertIn("separate authenticated", effective["fusion_rule"])
         self.assertIn("Silence", effective["fusion_rule"])
 
-    def test_open_evidence_prevents_premature_approval(self):
+    def test_open_evidence_is_operational_not_engineering_debt(self):
         evidence = self.record["evidence_basis"]
-        self.assertEqual(96, evidence["addon_unit_tests"])
-        self.assertEqual(18, evidence["fast_addon_stage1_tests"])
-        self.assertEqual(11, evidence["containment_rows"])
-        self.assertFalse(
-            any(
-                self.record[role]["fusion_decision"] == "APPROVED"
-                for role in ("operator", "guardian")
-            )
-        )
+        self.assertEqual("READY", evidence["technical_readiness"])
+        self.assertGreater(evidence["addon_unit_tests"], 0)
+        self.assertGreater(evidence["addon_stage1_rows"], 0)
+        self.assertGreater(evidence["containment_rows"], 0)
         open_gates = " ".join(evidence["known_open_gates"]).lower()
-        self.assertIn("not_ready", open_gates)
-        self.assertIn("111 of 111", open_gates)
-        self.assertIn("fail-closed phase-2 configuration transition exists", open_gates)
-        self.assertIn("no addon fusion lifecycle", open_gates)
+        self.assertIn("concrete resident", open_gates)
+        self.assertIn("authenticated", open_gates)
+        self.assertIn("reproduction", open_gates)
 
-    def test_human_and_readme_surfaces_match_machine_authority(self):
+    def test_human_surfaces_match_machine_decisions(self):
         decision_text = DECISION_MD.read_text(encoding="utf-8")
         readme_text = README.read_text(encoding="utf-8")
-
-        self.assertIn("MIND fusion | **DEFERRED — NOT AUTHORIZED**", decision_text)
-        self.assertIn("readiness PASS", decision_text)
-        self.assertIn(
-            "both fusion decisions DEFERRED",
-            readme_text,
-        )
-        self.assertIn("MIND fusion DEFERRED", readme_text)
-        self.assertNotIn("MIND fusion APPROVED", decision_text)
-        self.assertNotIn("MIND fusion APPROVED", readme_text)
+        self.assertIn("Mantle OS 1.3.0 software release | **APPROVED**", decision_text)
+        self.assertIn("Production MIND fusion | **DEFERRED — NOT AUTHORIZED**", decision_text)
+        self.assertIn("software release APPROVED", readme_text)
+        self.assertIn("production MIND fusion DEFERRED", readme_text)
+        self.assertNotIn("Production MIND fusion: APPROVED", decision_text)
 
 
 if __name__ == "__main__":

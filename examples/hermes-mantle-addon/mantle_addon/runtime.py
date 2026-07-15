@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass, replace
+from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
 from threading import RLock
 import time
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Literal, Mapping
 
 from .aep import record_action_execution_proof
 from .body import ResidentBodyFactory, save_resident
-from .config import ResidentConfig
+from .config import ConfigError, ResidentConfig
+from .scheduler import CognitiveScheduler
+from .vendor import vendored_symbol
 
 
 def _safe_save(organism: Any, path: Any) -> None:
@@ -39,6 +43,44 @@ OBSERVER_HOOKS = (
 
 DISCOVERY_CONTROL_ID = "hermes.mantle.record_discovery"
 MAX_DISCOVERY_CHARS = 2_000
+_DEFUSION_REASONS = {"operator", "guardian", "shutdown", "recovery", "fault", "rollback"}
+
+
+@dataclass(frozen=True)
+class FusionReceipt:
+    """Redacted BODY-authored evidence for one fusion lifecycle transition."""
+
+    schema_version: str
+    transition: str
+    outcome: str
+    from_state: str
+    to_state: str
+    reason_code: str
+    resident_identity: str
+    body_fingerprint: str
+    stage1_certified: bool
+    mind_attached: bool
+    body_preserved: bool
+    reproduction_authorized: Literal[False]
+    recorded_at: str
+    durable: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def body_record(self) -> dict[str, Any]:
+        """Return the lifecycle fact without claiming its own durability."""
+        record = self.to_dict()
+        record.pop("durable")
+        return record
+
+
+class FusionLifecycleError(PermissionError):
+    """A fusion request was refused without attaching or invoking a MIND."""
+
+    def __init__(self, receipt: FusionReceipt) -> None:
+        super().__init__(f"fusion refused: {receipt.reason_code}")
+        self.receipt = receipt
 
 
 def _validated_discovery(value: Any) -> str:
@@ -67,6 +109,9 @@ class ResidentRuntime:
         profile_id: str,
         hermes_home: str | Path | None = None,
         factory: Any | None = None,
+        model_factory: Callable[[], Any] | None = None,
+        authority_provider_factory: Callable[[], Any] | None = None,
+        scheduler_factory: Callable[..., Any] = CognitiveScheduler,
     ) -> None:
         self.config = config
         self.profile_id = profile_id
@@ -74,38 +119,63 @@ class ResidentRuntime:
         self._handle: Any | None = None
         self._sequence = 0
         self._lock = RLock()
+        self._model_factory = model_factory
+        self._authority_provider_factory = authority_provider_factory or (lambda: None)
+        self._scheduler_factory = scheduler_factory
+        self._scheduler: Any | None = None
+        self._model: Any | None = None
         self.diagnostics: list[dict[str, str]] = []
 
     @property
     def organism(self) -> Any:
         return self._ensure_handle().organism
 
+    @property
+    def fusion_state(self) -> Literal["DORMANT", "FUSED"]:
+        """Report live attachment state; configuration is never treated as state."""
+        with self._lock:
+            return "FUSED" if self._ensure_handle().organism.brain.fused else "DORMANT"
+
     def _ensure_handle(self) -> Any:
-        if self._handle is None:
-            handle = self.factory.get_or_create(self.profile_id)
-            organism = handle.organism
-            path = handle.path
-            if self.config.checkpoint_each_turn:
-                organism.heart.set_circulate(
-                    lambda organism=organism, path=path: save_resident(organism, path)
-                )
-            else:
-                organism.heart.set_circulate(None)
-            # Dual-flush: persist on BOTH explicit checkpoint AND atexit, so a
-            # cube is never lost to an ungraceful shutdown. The atexit handler
-            # calls circulate(), which is a no-op when the circulate callback is
-            # None (deferred mode) — but in deferred mode we install our own
-            # atexit handler below that performs the full save.
-            organism.heart.install_dual_flush()
-            if not self.config.checkpoint_each_turn:
-                import atexit as _atexit
-                _atexit.register(
-                    lambda organism=organism, path=path: _safe_save(organism, path)
-                )
-            self._wire_controls(organism)
-            self._handle = handle
-            return handle
-        return self._handle
+        with self._lock:
+            if self._handle is None:
+                handle = self.factory.get_or_create(self.profile_id)
+                organism = handle.organism
+                path = handle.path
+                if organism.brain.fused:
+                    before = self._body_snapshot(organism)
+                    organism.brain.defuse()
+                    organism.stage1_certified = False
+                    receipt = self._new_fusion_receipt(
+                        organism,
+                        transition="RECOVERED_DORMANT",
+                        outcome="COMMITTED",
+                        from_state="FUSED",
+                        to_state="DORMANT",
+                        reason_code="UNEXPECTED_FUSED_STATE",
+                        body_preserved=before == self._body_snapshot(organism),
+                    )
+                    self._persist_fusion_receipt(organism, path, receipt)
+                if self.config.checkpoint_each_turn:
+                    organism.heart.set_circulate(
+                        lambda organism=organism, path=path: save_resident(organism, path)
+                    )
+                else:
+                    organism.heart.set_circulate(None)
+                # Dual-flush: persist on BOTH explicit checkpoint AND atexit, so a
+                # cube is never lost to an ungraceful shutdown. The atexit handler
+                # calls circulate(), which is a no-op when the circulate callback is
+                # None (deferred mode) — but in deferred mode we install our own
+                # atexit handler below that performs the full save.
+                organism.heart.install_dual_flush()
+                if not self.config.checkpoint_each_turn:
+                    import atexit as _atexit
+                    _atexit.register(
+                        lambda organism=organism, path=path: _safe_save(organism, path)
+                    )
+                self._wire_controls(organism)
+                self._handle = handle
+            return self._handle
 
     @staticmethod
     def _wire_controls(organism: Any) -> None:
@@ -132,6 +202,234 @@ class ResidentRuntime:
             },
             record_discovery,
         )
+
+    @staticmethod
+    def _body_snapshot(organism: Any) -> tuple[Any, ...]:
+        """Capture the Body properties that defusion must not alter."""
+        return (
+            id(organism),
+            organism.body.identity_name(),
+            organism.body.key_fingerprint,
+            organism.body.primer_sealed,
+            frozenset(organism.organs()),
+        )
+
+    @staticmethod
+    def _new_fusion_receipt(
+        organism: Any,
+        *,
+        transition: str,
+        outcome: str,
+        from_state: str,
+        to_state: str,
+        reason_code: str,
+        body_preserved: bool,
+    ) -> FusionReceipt:
+        return FusionReceipt(
+            schema_version="mantle-fusion-lifecycle-v1",
+            transition=transition,
+            outcome=outcome,
+            from_state=from_state,
+            to_state=to_state,
+            reason_code=reason_code,
+            resident_identity=organism.body.identity_name(),
+            body_fingerprint=organism.body.key_fingerprint,
+            stage1_certified=organism.stage1_certified,
+            mind_attached=organism.brain.fused,
+            body_preserved=body_preserved,
+            reproduction_authorized=False,
+            recorded_at=datetime.now(timezone.utc).isoformat(),
+            durable=False,
+        )
+
+    def _persist_fusion_receipt(
+        self,
+        organism: Any,
+        path: Any,
+        receipt: FusionReceipt,
+    ) -> FusionReceipt:
+        """Append a redacted receipt and report whether the checkpoint succeeded."""
+        try:
+            make_entry = vendored_symbol("vcw.entry", "make_entry")
+            entry = make_entry(
+                {"fusion_lifecycle": receipt.body_record()},
+                opcode=receipt.transition,
+                author="BODY",
+                authorship="BODY",
+            )
+            organism.limbs.append("brain", entry)
+            save_resident(organism, path)
+        except Exception as exc:
+            try:
+                organism.immune_event(
+                    "fusion_lifecycle_checkpoint_failed",
+                    {
+                        "transition": receipt.transition,
+                        "error_type": type(exc).__name__,
+                    },
+                )
+            except Exception:
+                pass
+            return receipt
+        return replace(receipt, durable=True)
+
+    def request_fusion(
+        self,
+        *,
+        stage1_receipt: Any,
+        readiness_report: Mapping[str, Any],
+        authorization: Mapping[str, Any],
+    ) -> FusionReceipt:
+        """Authenticate, attach, and start one cognitive scheduler transactionally."""
+        with self._lock:
+            handle = self._ensure_handle()
+            organism = handle.organism
+            if organism.brain.fused:
+                receipt = self._new_fusion_receipt(
+                    organism,
+                    transition="FUSION_REFUSED",
+                    outcome="REFUSED",
+                    from_state="FUSED",
+                    to_state="FUSED",
+                    reason_code="ALREADY_FUSED",
+                    body_preserved=True,
+                )
+                receipt = self._persist_fusion_receipt(organism, handle.path, receipt)
+                raise FusionLifecycleError(receipt)
+
+            try:
+                verified_authority = ResidentConfig.authorize_phase2(
+                    self.config,
+                    stage1_receipt=stage1_receipt,
+                    readiness_report=readiness_report,
+                    authorization=authorization,
+                    authority_provider=self._authority_provider_factory(),
+                )
+            except ConfigError as exc:
+                reason_code = (
+                    "AUTHORITY_UNAVAILABLE"
+                    if str(exc) == "authenticated fusion authority provider is unavailable"
+                    else "PREFLIGHT_REFUSED"
+                )
+            except Exception as exc:
+                reason_code = "PREFLIGHT_ERROR"
+                organism.immune_event(
+                    "fusion_preflight_error",
+                    {"error_type": type(exc).__name__},
+                )
+            else:
+                if self._model_factory is None:
+                    reason_code = "MODEL_PROVIDER_UNAVAILABLE"
+                elif organism.stage1_certified is not True:
+                    reason_code = "LIVE_STAGE1_UNCERTIFIED"
+                else:
+                    try:
+                        self._model = self._model_factory()
+                        fuse = vendored_symbol("mind.mind", "fuse")
+                        fuse(organism, self._model, authorization=verified_authority)
+                        self._scheduler = self._scheduler_factory(self._cognitive_pulse)
+                        if self._scheduler.start() is not True:
+                            raise RuntimeError("scheduler did not start")
+                        receipt = self._new_fusion_receipt(
+                            organism,
+                            transition="FUSION",
+                            outcome="COMMITTED",
+                            from_state="DORMANT",
+                            to_state="FUSED",
+                            reason_code="AUTHORIZED",
+                            body_preserved=True,
+                        )
+                        receipt = self._persist_fusion_receipt(
+                            organism, handle.path, receipt
+                        )
+                        if receipt.durable:
+                            return receipt
+                        reason_code = "FUSION_CHECKPOINT_FAILED"
+                    except Exception as exc:
+                        reason_code = "FUSION_COMMIT_FAILED"
+                        organism.immune_event(
+                            "fusion_commit_failed",
+                            {"error_type": type(exc).__name__},
+                        )
+                    if self._scheduler is not None:
+                        self._scheduler.stop()
+                    self._scheduler = None
+                    self._model = None
+                    if organism.brain.fused:
+                        organism.brain.defuse()
+                    organism.stage1_certified = False
+
+            receipt = self._new_fusion_receipt(
+                organism,
+                transition="FUSION_REFUSED",
+                outcome="REFUSED",
+                from_state="DORMANT",
+                to_state="DORMANT",
+                reason_code=reason_code,
+                body_preserved=True,
+            )
+            receipt = self._persist_fusion_receipt(organism, handle.path, receipt)
+            raise FusionLifecycleError(receipt)
+
+    def _cognitive_pulse(self, stressor: dict[str, Any] | None) -> None:
+        """Run one cognition pulse and persist only its redacted receipt."""
+        with self._lock:
+            if self._handle is None or not self._handle.organism.brain.fused:
+                return
+            organism = self._handle.organism
+            organism.heart.beat(assemble=True, wake=stressor)
+            receipt = getattr(self._model, "last_receipt", None)
+            if isinstance(receipt, Mapping):
+                make_entry = vendored_symbol("vcw.entry", "make_entry")
+                organism.limbs.append(
+                    "brain",
+                    make_entry(
+                        {"cognition_receipt": dict(receipt)},
+                        opcode="MODEL.RECEIPT",
+                        author="BODY",
+                        authorship="BODY",
+                    ),
+                )
+            save_resident(organism, self._handle.path)
+
+    def defuse(
+        self,
+        *,
+        reason: Literal[
+            "operator", "guardian", "shutdown", "recovery", "fault", "rollback"
+        ] = "operator",
+    ) -> FusionReceipt:
+        """Detach cognition without authority; never reattach on checkpoint failure."""
+        if reason not in _DEFUSION_REASONS:
+            raise ValueError("unsupported defusion reason")
+        with self._lock:
+            handle = self._ensure_handle()
+            organism = handle.organism
+            before = self._body_snapshot(organism)
+            from_state = "FUSED" if organism.brain.fused else "DORMANT"
+            if self._scheduler is not None:
+                self._scheduler.stop()
+            self._scheduler = None
+            self._model = None
+            if organism.brain.fused:
+                organism.brain.defuse()
+            organism.stage1_certified = False
+            body_preserved = before == self._body_snapshot(organism)
+            if not body_preserved:
+                organism.immune_event(
+                    "defusion_body_integrity_failure",
+                    {"reason_code": reason.upper()},
+                )
+            receipt = self._new_fusion_receipt(
+                organism,
+                transition="DEFUSION",
+                outcome="COMMITTED" if from_state == "FUSED" else "NOOP",
+                from_state=from_state,
+                to_state="DORMANT",
+                reason_code=reason.upper(),
+                body_preserved=body_preserved,
+            )
+            return self._persist_fusion_receipt(organism, handle.path, receipt)
 
     def record_discovery(self, text: Any) -> dict[str, Any]:
         """Record one inferred discovery through Limbs and persist its proof."""
@@ -321,7 +619,9 @@ class ResidentRuntime:
                     "host_tool_status_invalid",
                     {"tool": tool_name, "status": status[:64]},
                 )
-        organism.heart.beat(assemble=False)
+        pulse = organism.heart.body_pulse(assemble=False)
+        if self._scheduler is not None and isinstance(pulse.get("wake"), Mapping):
+            self._scheduler.wake(dict(pulse["wake"]))
         if (
             not self.config.checkpoint_each_turn
             and event_type in {"on_session_end", "on_session_finalize"}
@@ -393,6 +693,8 @@ class RuntimeRegistry:
         profile_resolver: Callable[[], str],
         home_resolver: Callable[[], str | Path] | None = None,
         config_resolver: Callable[[], ResidentConfig] | None = None,
+        model_factory: Callable[[], Any] | None = None,
+        authority_provider_factory: Callable[[], Any] | None = None,
     ) -> None:
         if config is None and config_resolver is None:
             raise ValueError("config or config_resolver is required")
@@ -400,6 +702,8 @@ class RuntimeRegistry:
         self._config_resolver = config_resolver or (lambda: config)  # type: ignore[return-value]
         self._profile_resolver = profile_resolver
         self._home_resolver = home_resolver or self._active_hermes_home
+        self._model_factory = model_factory
+        self._authority_provider_factory = authority_provider_factory
         self._lock = RLock()
         self._runtimes: dict[
             tuple[str, str, tuple[tuple[str, Any], ...]], ResidentRuntime
@@ -426,6 +730,8 @@ class RuntimeRegistry:
                     config,
                     profile_id=profile,
                     hermes_home=home,
+                    model_factory=self._model_factory,
+                    authority_provider_factory=self._authority_provider_factory,
                 )
                 self._runtimes[key] = runtime
             return runtime

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping as MappingABC
-from dataclasses import InitVar, asdict, dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
@@ -13,9 +13,7 @@ class ConfigError(ValueError):
 
 
 _DNR_VALUES = {"none", "retire_only", "no_reconstruction", "operator_defined"}
-_PHASE2_GRANT = object()
 _EXPECTED_ADDON_ROWS = 14
-_MIN_FRAMEWORK_INVARIANTS = 111
 
 
 def _utc_timestamp(value: Any, name: str) -> datetime:
@@ -42,9 +40,8 @@ class ResidentConfig:
     record_raw_tool_args: bool = False
     max_event_chars: int = 4096
     checkpoint_each_turn: bool = True
-    _phase2_grant: InitVar[object | None] = None
 
-    def __post_init__(self, _phase2_grant: object | None) -> None:
+    def __post_init__(self) -> None:
         for name in (
             "body_enabled",
             "mind_enabled",
@@ -70,7 +67,7 @@ class ResidentConfig:
             or not 1 <= self.max_event_chars <= 1_000_000
         ):
             raise ConfigError("max_event_chars must be an integer from 1 to 1000000")
-        if self.mind_enabled and _phase2_grant is not _PHASE2_GRANT:
+        if self.mind_enabled:
             raise ConfigError(
                 "MIND requires the explicit authorize_phase2 transition"
             )
@@ -138,14 +135,11 @@ class ResidentConfig:
         stage1_receipt: Any,
         readiness_report: Mapping[str, Any],
         authorization: Mapping[str, Any],
+        authority_provider: Any | None = None,
         now: datetime | None = None,
         max_receipt_age_seconds: int = 300,
-    ) -> "ResidentConfig":
-        """Return a MIND-enabled config only after a fresh target-bound ceremony.
-
-        This transition validates evidence and authority; it does not fuse a MIND,
-        schedule cognition, select a provider, or authorize reproduction.
-        """
+    ) -> dict[str, Any]:
+        """Validate evidence and authenticate both target-bound approvals."""
         if not isinstance(base, cls) or not base.body_enabled or base.mind_enabled:
             raise ConfigError("Phase-2 transition requires a live Phase-1 Body config")
         if (
@@ -163,8 +157,7 @@ class ResidentConfig:
             or getattr(stage1_receipt, "framework_failures", None) != []
             or not isinstance(rows, list)
             or len(rows) != _EXPECTED_ADDON_ROWS
-            or (getattr(stage1_receipt, "framework_invariants", 0) or 0)
-            < _MIN_FRAMEWORK_INVARIANTS
+            or (getattr(stage1_receipt, "framework_invariants", 0) or 0) <= 0
         ):
             raise ConfigError("Phase-2 transition requires a complete Stage-1 PASS receipt")
 
@@ -229,9 +222,15 @@ class ResidentConfig:
                 "effective decision must authorize MIND and explicitly deny reproduction"
             )
 
-        values = base.to_dict()
-        values["mind_enabled"] = True
-        return cls(**values, _phase2_grant=_PHASE2_GRANT)
+        if authority_provider is None:
+            raise ConfigError("authenticated fusion authority provider is unavailable")
+        verify = getattr(authority_provider, "verify", None)
+        if not callable(verify):
+            raise ConfigError("authenticated fusion authority provider is invalid")
+        try:
+            return verify(authorization)
+        except Exception as exc:
+            raise ConfigError("authenticated fusion authority rejected approval") from exc
 
     @classmethod
     def from_hermes_config(

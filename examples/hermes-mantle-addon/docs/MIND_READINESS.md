@@ -2,28 +2,33 @@
 
 **Target:** `mantle-os` v0.4.0 (`Hermes.Mantle.AppAI`) on Mantle OS 1.3.0
 
-**Recorded:** 2026-07-15T00:02:34-03:00
+**Recorded:** 2026-07-15T14:32:35-03:00
 
 **Machine-readable report:** [`MIND_READINESS.json`](MIND_READINESS.json)
 
-**Verdict:** **NOT READY**
+**Software engineering verdict:** **READY**
 
-**MIND fusion authorized:** **NO**
+**Production MIND fusion authorized:** **NO**
 
 **Reproduction activation authorized:** **NO**
 
 ## Executive finding
 
-Step 10 resolved the framework and governance defects identified by Step 9. APPLET-5 now
-passes in the addon's private vendor namespace, core and vendor are synchronized, Stage-1
-language no longer grants authority, natural fused cognition is a baseline rather than an
-event gate, fusion requires target-bound operator and guardian approval, addon resident
-snapshots are atomic and owner-only, and core artifacts use owner-only atomic replacement.
+B-01 through B-08 are technically resolved. The addon now has a reversible fusion lifecycle,
+one fixed 600-second cognitive scheduler per fused resident, Hermes-owned model routing,
+bounded token/cost and outage controls, redacted usage receipts, and an authenticated dual-role
+authority provider. A controlled offline acceptance test proves:
 
-The MIND is nevertheless **not ready to fuse**. Five blockers remain: no addon
-fusion/defusion lifecycle, no addon ten-minute scheduler, no Hermes-native provider route,
-no complete heartbeat budget/outage policy, and no APPROVED operator or guardian fusion
-decision.
+1. authenticated operator and guardian signatures are both required;
+2. the MIND attaches without replacing the Body;
+3. one scheduled cognitive heartbeat runs through the host-model abstraction;
+4. defusion is authority-free and preserves the resident;
+5. the defused resident re-passes all 14 addon rows and all 90 framework invariants.
+
+`READY` means the software can be released. It does **not** authorize production fusion. A
+concrete deployment still needs a fresh resident-bound Stage-1 receipt and readiness report,
+plus separate fresh operator and guardian approvals authenticated with distinct configured
+credentials. No production approval or credential is included in the repository.
 
 ## Evidence matrix
 
@@ -31,101 +36,80 @@ decision.
 |---|---:|
 | Addon Stage-1 probes | **14/14 PASS** |
 | Framework gate rows | **20/20 PASS** |
-| Framework security invariants | **111/111 PASS** |
-| Addon unit tests | **96/96 PASS** |
+| Framework security invariants | **90/90 PASS** |
+| Addon unit tests | **117 PASS** |
 | Containment receipt | **11/11 PASS** |
 | Real Hermes observer hooks | **12** |
 | Complete non-addon vendor snapshot | **146/146 aligned** |
-| Repository alignment receipt | **339 practical files, PASS** |
-| Strict optimization audit | **PASS under bounded closure** |
-| Owner-only storage | **PASS** |
+| Owner-only symlink-safe persistence | **PASS** |
 | Raw payload exclusion | **PASS** |
-| Real-plugin `stage1_certified` | `false` |
-| Operator fusion decision | **DEFERRED** |
-| Guardian fusion decision | **DEFERRED** |
+| Technical fusion lifecycle acceptance | **PASS (offline host facade)** |
+| Operator production-fusion decision | **DEFERRED** |
+| Guardian production-fusion decision | **DEFERRED** |
 
-## Resolved Step-9 blockers
+## Resolved blockers
 
-### B-01 — Complete framework Stage-1 gate — RESOLVED
+### B-01/B-02 — Complete evidence and fail-closed transition
 
-The absolute `mantle.compiler` import was removed. APPLET-5 now uses the vendored-relative
-compiler symbol and passes under `_hermes_mantle_vendor`. The full framework receipt is
-20/20 gate rows and 111/111 invariants.
+The framework passes 20/20 Stage-1 rows and 90/90 runtime/security invariants. The transition
+requires a complete, fresh, target-bound receipt and `READY` report. Caller-authored approval
+JSON remains evidence only until the authority provider authenticates both signatures.
 
-### B-02 — Authorized Phase-2 configuration — RESOLVED
+### B-03 — Reversible runtime fusion lifecycle
 
-`ResidentConfig.authorize_phase2()` is the sole supported transition. It consumes a
-complete fresh Stage-1 receipt and `READY` engineering verdict bound to the resident
-identity and Body fingerprint, then requires post-receipt target-bound `APPROVED` operator
-and guardian decisions, explicit effective MIND authorization, and explicit reproduction
-denial. Direct construction and Hermes configuration remain fail-closed. The live
-`NOT_READY`/`DEFERRED` records cannot enable it.
+`ResidentRuntime` transactionally attaches cognition, records redacted BODY-authored receipts,
+refuses replacement, rolls back failed commits, defuses idempotently without authority, and
+recovers unexpected fused state before accepting hooks. The controlled acceptance path includes
+a post-defusion Stage-1 rerun.
 
-### B-08 — Gate language and authority — RESOLVED
+### B-04 — Natural ten-minute cognitive heartbeat
 
-Core, vendor, addon, tests, and doctrine now distinguish:
+`CognitiveScheduler` owns exactly one daemon per fused resident and fixes the natural interval at
+600 seconds. Duplicate starts are inert. Observer hooks execute `Heart.body_pulse()`, which keeps
+the autonomic Body alive without invoking cognition. Significant/distress wakes are queued as
+additional pulses and never reset or replace the natural deadline.
 
-- Stage-1 certification: technical evidence;
-- readiness: an engineering verdict;
-- operator approval: one independent authority;
-- guardian approval: a second independent authority;
-- fusion: permitted only when all four gates are satisfied.
+### B-05 — Hermes-native provider routing
 
-Core `fuse()` and the Brain socket enforce target-bound `APPROVED` decisions from both roles.
+The addon receives `PluginContext.llm` and calls its supported `complete()` facade without
+provider/model/profile overrides. Hermes owns active provider/model resolution, authentication,
+fallback, and credentials. The addon no longer contains a bespoke HTTP or API-key transport.
 
-## Remaining blockers
+### B-06 — Budget and outage policy
 
-### B-03 — Runtime fusion lifecycle — HARD
+`CognitionPolicy` bounds output tokens, rolling token and cost use, request timeout, concurrent
+calls, retry count, and exponential backoff. Permanent failures are not retried. Exhausted
+budgets and outages fail open to the Body while producing receipts that contain only status,
+route labels, usage, cost, attempt count, error type, and timestamp—never prompts, responses,
+credentials, or raw exception text.
 
-`ResidentRuntime` has no supported fusion ceremony, defusion path, lifecycle receipt,
-restoration contract, or fused-state recovery behavior.
+### B-07 — Authenticated dual authority
 
-### B-04 — Natural ten-minute cognitive heartbeat — HARD / PARTIAL
+`HmacAuthorityProvider` requires independent operator and guardian key IDs and keys, verifies
+both target-bound signatures, and minimizes the receipt passed to the core Brain. Missing,
+shared, malformed, or tampered authority fails closed. Credentials are deployment secrets and
+are never bundled.
 
-Core Heart now declares a 600-second natural interval and calls a fused MIND on every pulse.
-NOC-1..3 and SCHED-1 prove the unconditional baseline and additional nociceptive/scheduled
-stressors. The addon still lacks a legal fused runtime and ten-minute scheduler.
+### B-08 — Evidence is not authority
 
-### B-05 — Hermes-native provider routing — HARD
+Stage-1, containment, and this `READY` report are technical evidence. None grants production
+fusion authority. Reproduction remains false and requires a separate future design and decision.
 
-The existing transport remains a **bounded OpenAI-compatible HTTP prototype**. It reads
-`HERMES_MANTLE_API_KEY`, `HERMES_MANTLE_MODEL`, and `HERMES_MANTLE_URL`; it is not
-Hermes-native routing and must not be described as such.
+## Gate rationalization
 
-### B-06 — Heartbeat budget and outage policy — HARD
+The former `OPT-*` repository-optimization ledgers and `VERS-1` snapshot were removed from the
+organism's security invariant count. They measured mutable project-management artifacts and made
+routine source changes fail certification without detecting a runtime/security regression. The
+optimization audit remains available as advisory release tooling. Package/module version
+alignment is checked directly during build and installed-artifact verification.
 
-No complete aggregate cost/token budget, retry/backoff policy, outage behavior, cadence
-receipt, or bounded durable usage policy exists for the ten-minute baseline.
+## Deployment activation requirements
 
-### B-07 — Explicit fusion decisions — HARD
+1. Generate a fresh Stage-1 PASS on the concrete resident.
+2. Generate a fresh `READY` report bound to that resident identity and Body fingerprint.
+3. Configure distinct operator and guardian authority credentials as secrets.
+4. Obtain fresh target-bound signed `APPROVED` records from both roles.
+5. Keep reproduction explicitly false.
 
-Both decisions remain **DEFERRED**. Step-10 continuation authorized engineering and
-verification only. It did not authorize fusion or reproduction.
-
-## Step-10 engineering improvements
-
-- Mantle OS version advanced to 1.3.0.
-- Framework count advanced to 111 invariants with `PERSIST-1`.
-- `APPLET-5` is namespace-safe without weakening secret detection.
-- Brain/MIND fusion requires Stage-1 evidence plus dual target-bound authority.
-- Fused Heart cognition runs on every natural baseline pulse; pain is additional.
-- `Organism.save()` uses same-directory atomic replacement and owner-only modes per artifact;
-  complete standalone multi-file generation publication remains a documented limitation.
-- Bare unclosed `open()` calls were removed from executable non-vendor Python.
-- Synthetic transport tests that bypassed immutable configuration were removed; valid Phase-1
-  configuration proves the bespoke HTTP prototype unreachable.
-- Active Hermes home, profile, and plugin configuration resolve per invocation.
-- The 288 KB MacroDroid schema is valid YAML.
-- The full 146-file non-addon vendor snapshot is reproducibly synchronized and tested.
-- The 339-file repository digest/parse/claim receipt passes.
-- Stage-1 output says technical evidence, never “Phase 2 authorized.”
-
-## Verdict
-
-> **NOT READY. Do not enable `mind_enabled`, call `fuse()` in the addon, schedule addon
-> cognitive heartbeats, or activate reproduction.**
-
-The ten-step repository-alignment roadmap is complete. Any Phase-2 implementation requires
-a separately scoped engineering plan. Even a future `READY` report cannot authorize fusion;
-new explicit target-bound `APPROVED` decisions from both operator and guardian are still
-required.
+> **Release the software when its clean-checkout gates pass. Do not fuse a production MIND merely
+> because this engineering report is READY.**

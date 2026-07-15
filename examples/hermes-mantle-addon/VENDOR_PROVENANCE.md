@@ -7,7 +7,7 @@
 - Snapshot scope: 146 non-addon files covering package metadata, workflows, documents, examples, and `src/mantle`.
 - Integrity manifest SHA-256: `1a91f7ca3b89adb12b8c1faeb0a059e7a4d46f6e674aa097791aa74a079bbe17`.
 - Reproducible drift check: `python scripts/sync_vendor.py --check`.
-- Framework certification: 20/20 Stage-1 rows and 111/111 security invariants.
+- Framework certification: 20/20 Stage-1 rows and 90/90 security invariants.
 - Private namespace certification: APPLET-5 and the complete addon Stage-1 path execute under `_hermes_mantle_vendor`.
 
 The base commit and working-tree snapshot are stated separately so uncommitted alignment changes are

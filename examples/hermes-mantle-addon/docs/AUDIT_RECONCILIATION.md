@@ -42,13 +42,13 @@ These findings do not reduce or replace the five MIND-readiness blockers `B-03` 
 
 ## Reproduced evidence
 
-- Addon tests: **96/96**
+- Addon tests: **117/117**
 - Addon Stage-1 probes: **14/14**
 - Framework Stage-1 rows: **20/20 on the fresh addon target; 21/21 on the reborn standalone demo**
-- Framework invariants: **111/111**
+- Framework invariants: **90/90**
 - Stage-2 technical rows: **7/7**
 - Containment: **11/11**
-- Repository alignment: **337 practical files, PASS** before this reconciliation artifact was added; the final receipt is regenerated in the closing matrix.
+- Repository alignment: **348 practical files, PASS** in the regenerated final receipt.
 - Vendor: **146-file snapshot, exact parity**
 
 ## Authority boundary

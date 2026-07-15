@@ -22,6 +22,7 @@ GENERATED = {
     str(JSON_REPORT.relative_to(ROOT)),
     str(MD_REPORT.relative_to(ROOT)),
 }
+INTERNAL_PREFIXES = (".hermes/",)
 
 
 def repository_paths() -> list[str]:
@@ -29,7 +30,13 @@ def repository_paths() -> list[str]:
         ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
         cwd=ROOT, capture_output=True, check=True,
     )
-    paths = {item.decode("utf-8") for item in completed.stdout.split(b"\0") if item}
+    paths = {
+        path
+        for item in completed.stdout.split(b"\0")
+        if item
+        for path in (item.decode("utf-8"),)
+        if not path.startswith(INTERNAL_PREFIXES)
+    }
     paths.update(GENERATED)
     return sorted(paths)
 
@@ -158,8 +165,11 @@ def build() -> dict[str, object]:
             "invalid MacroDroid YAML",
             "root/vendor snapshot drift",
             "framework version and invariant-count drift",
+            "reversible authenticated fusion lifecycle",
+            "fixed 600-second addon cognitive scheduler",
+            "Hermes-native model routing and bounded outage policy",
         ],
-        "remaining_readiness_blockers": ["B-03", "B-04", "B-05", "B-06", "B-07"],
+        "remaining_readiness_blockers": [],
         "mind_fusion_authorized": False,
         "reproduction_activation_authorized": False,
         "status": "PASS" if not parse_errors and not stale_claims else "FAIL",
@@ -197,9 +207,9 @@ def write_reports(report: dict[str, object]) -> None:
         "",
         *["- %s" % item for item in report["resolved_findings"]],
         "",
-        "## Remaining MIND-readiness blockers",
+        "## Deployment activation boundary",
         "",
-        "B-03 through B-07 remain blocking. See `MIND_READINESS.json`. Technical alignment does not authorize fusion.",
+        "No engineering blocker remains. Production fusion still requires fresh resident-bound evidence and two independently authenticated approvals. Technical alignment does not authorize fusion.",
         "",
         "## Machine evidence",
         "",

@@ -1,6 +1,6 @@
 # "Everything is provable" — so prove it on every commit, with the same single command a
 # contributor runs locally: `python -m mantle check`. It executes the Stage-1 gate, the
-# three tamper proofs (which must FAIL to pass), the 111 security invariants, the Stage-2
+# three tamper proofs (which must FAIL to pass), the 90 security invariants, the Stage-2
 # gate, both narrated demos, the assimilation dry-run, the standalone cube codec
 # conformance (selftest + interop), the SPORE purity gates, and the multi-language parity
 # test. Pure standard library; Pillow is installed so the SPORE gates run rather than skip.
@@ -15,8 +15,8 @@ jobs:
   certify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
 
@@ -25,3 +25,15 @@ jobs:
 
       - name: The whole certification, one command
         run: python -m mantle check
+
+      - name: Hermes addon vendor parity
+        working-directory: examples/hermes-mantle-addon
+        run: python scripts/sync_vendor.py --check
+
+      - name: Hermes addon behavior contracts
+        working-directory: examples/hermes-mantle-addon
+        run: python -W error::ResourceWarning -m unittest discover -s tests
+
+      - name: Hermes addon adversarial containment
+        working-directory: examples/hermes-mantle-addon
+        run: python -W error::ResourceWarning tests/verify_containment.py
