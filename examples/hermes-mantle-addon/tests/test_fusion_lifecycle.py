@@ -1,20 +1,24 @@
+import base64
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-import hashlib
-import hmac
 import json
 from pathlib import Path
 import shutil
 import sys
+from threading import Thread
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from mantle_addon.authority import HmacAuthorityProvider, _canonical_payload
+from mantle_addon.authority import Ed25519AuthorityProvider, _canonical_payload
 from mantle_addon.config import ResidentConfig
 from mantle_addon.runtime import FusionLifecycleError, ResidentRuntime
 from mantle_addon.stage1_gate import GateRow, Stage1Receipt, run_gate
@@ -113,6 +117,7 @@ class FusionLifecycleTests(unittest.TestCase):
             body_fingerprint=fingerprint,
         )
         readiness = {
+            "recorded_at": (now - timedelta(seconds=45)).isoformat(),
             "verdict": "READY",
             "target": {
                 "resident_identity": identity,
@@ -138,20 +143,26 @@ class FusionLifecycleTests(unittest.TestCase):
 
     @staticmethod
     def _authenticate(authorization):
-        provider = HmacAuthorityProvider(
+        private_keys = {
+            "operator": Ed25519PrivateKey.from_private_bytes(b"o" * 32),
+            "guardian": Ed25519PrivateKey.from_private_bytes(b"g" * 32),
+        }
+        provider = Ed25519AuthorityProvider(
             operator_key_id="operator-test",
-            operator_key=b"o" * 32,
+            operator_public_key=private_keys["operator"].public_key().public_bytes(
+                serialization.Encoding.Raw, serialization.PublicFormat.Raw
+            ),
             guardian_key_id="guardian-test",
-            guardian_key=b"g" * 32,
+            guardian_public_key=private_keys["guardian"].public_key().public_bytes(
+                serialization.Encoding.Raw, serialization.PublicFormat.Raw
+            ),
         )
-        for role, key in (("operator", b"o" * 32), ("guardian", b"g" * 32)):
+        for role, key in private_keys.items():
             key_id = f"{role}-test"
             authorization[role]["key_id"] = key_id
-            authorization[role]["signature"] = hmac.new(
-                key,
-                _canonical_payload(role, authorization, key_id),
-                hashlib.sha256,
-            ).hexdigest()
+            authorization[role]["signature"] = base64.b64encode(
+                key.sign(_canonical_payload(role, authorization, key_id))
+            ).decode()
         return provider
 
     @staticmethod
@@ -257,6 +268,122 @@ class FusionLifecycleTests(unittest.TestCase):
             f"{post_defusion.summary}; failures={post_defusion.fails}",
         )
         self.assertEqual(90, post_defusion.framework_invariants)
+
+    def test_defusion_stops_scheduler_without_holding_runtime_lock(self):
+        receipt, readiness, authorization = self._evidence()
+        provider = self._authenticate(authorization)
+        runtime = None
+
+        class LockProbeScheduler(_Scheduler):
+            def stop(self):
+                acquired = []
+
+                def probe():
+                    locked = runtime._lock.acquire(timeout=0.2)
+                    acquired.append(locked)
+                    if locked:
+                        runtime._lock.release()
+
+                probe_thread = Thread(target=probe)
+                probe_thread.start()
+                probe_thread.join()
+                if acquired != [True]:
+                    raise AssertionError("runtime lock held while scheduler stopped")
+                return super().stop()
+
+        runtime = ResidentRuntime(
+            self.config,
+            profile_id="default",
+            model_factory=_Model,
+            authority_provider_factory=lambda: provider,
+            scheduler_factory=LockProbeScheduler,
+        )
+        runtime.organism.stage1_certified = True
+        runtime.request_fusion(
+            stage1_receipt=receipt,
+            readiness_report=readiness,
+            authorization=authorization,
+        )
+
+        defused = runtime.defuse(reason="operator")
+
+        self.assertEqual("COMMITTED", defused.outcome)
+        self.assertEqual("DORMANT", runtime.fusion_state)
+
+    def test_defusion_remains_fail_safe_when_scheduler_stop_reports_timeout(self):
+        class StuckScheduler:
+            def stop(self):
+                raise RuntimeError("scheduler thread did not stop")
+
+        organism = self.runtime.organism
+        organism.brain._mind = _Mind()
+        self.runtime._scheduler = StuckScheduler()
+
+        defused = self.runtime.defuse(reason="shutdown")
+
+        self.assertEqual("COMMITTED", defused.outcome)
+        self.assertFalse(organism.brain.fused)
+        self.assertTrue(
+            any(
+                row.get("code") == "SCHEDULER_STOP_FAILED"
+                for row in self.runtime.diagnostics
+            )
+        )
+
+    def test_failed_fusion_checkpoint_stops_scheduler_without_runtime_lock(self):
+        receipt, readiness, authorization = self._evidence()
+        provider = self._authenticate(authorization)
+        runtime = None
+
+        class LockProbeScheduler(_Scheduler):
+            def stop(self):
+                acquired = []
+
+                def probe():
+                    locked = runtime._lock.acquire(timeout=0.2)
+                    acquired.append(locked)
+                    if locked:
+                        runtime._lock.release()
+
+                probe_thread = Thread(target=probe)
+                probe_thread.start()
+                probe_thread.join()
+                if acquired != [True]:
+                    raise AssertionError("runtime lock held during fusion rollback")
+                return super().stop()
+
+        runtime = ResidentRuntime(
+            self.config,
+            profile_id="default",
+            model_factory=_Model,
+            authority_provider_factory=lambda: provider,
+            scheduler_factory=LockProbeScheduler,
+        )
+        runtime.organism.stage1_certified = True
+        nondurable = runtime._new_fusion_receipt(
+            runtime.organism,
+            transition="FUSION",
+            outcome="COMMITTED",
+            from_state="DORMANT",
+            to_state="FUSED",
+            reason_code="AUTHORIZED",
+            body_preserved=True,
+        )
+        def persist(_organism, _path, candidate):
+            if candidate.transition == "FUSION":
+                return nondurable
+            return replace(candidate, durable=True)
+
+        with patch.object(runtime, "_persist_fusion_receipt", side_effect=persist):
+            with self.assertRaises(FusionLifecycleError) as raised:
+                runtime.request_fusion(
+                    stage1_receipt=receipt,
+                    readiness_report=readiness,
+                    authorization=authorization,
+                )
+
+        self.assertEqual("FUSION_CHECKPOINT_FAILED", raised.exception.receipt.reason_code)
+        self.assertEqual("DORMANT", runtime.fusion_state)
 
     def test_already_fused_mind_is_not_replaced(self):
         organism = self.runtime.organism

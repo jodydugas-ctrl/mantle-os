@@ -281,6 +281,7 @@ class ResidentRuntime:
         authorization: Mapping[str, Any],
     ) -> FusionReceipt:
         """Authenticate, attach, and start one cognitive scheduler transactionally."""
+        scheduler: Any | None = None
         with self._lock:
             handle = self._ensure_handle()
             organism = handle.organism
@@ -297,6 +298,7 @@ class ResidentRuntime:
                 receipt = self._persist_fusion_receipt(organism, handle.path, receipt)
                 raise FusionLifecycleError(receipt)
 
+            reason_code: str | None = None
             try:
                 verified_authority = ResidentConfig.authorize_phase2(
                     self.config,
@@ -317,48 +319,64 @@ class ResidentRuntime:
                     "fusion_preflight_error",
                     {"error_type": type(exc).__name__},
                 )
-            else:
+            if reason_code is None:
                 if self._model_factory is None:
                     reason_code = "MODEL_PROVIDER_UNAVAILABLE"
                 elif organism.stage1_certified is not True:
                     reason_code = "LIVE_STAGE1_UNCERTIFIED"
-                else:
-                    try:
-                        self._model = self._model_factory()
-                        fuse = vendored_symbol("mind.mind", "fuse")
-                        fuse(organism, self._model, authorization=verified_authority)
-                        self._scheduler = self._scheduler_factory(self._cognitive_pulse)
-                        if self._scheduler.start() is not True:
-                            raise RuntimeError("scheduler did not start")
-                        receipt = self._new_fusion_receipt(
-                            organism,
-                            transition="FUSION",
-                            outcome="COMMITTED",
-                            from_state="DORMANT",
-                            to_state="FUSED",
-                            reason_code="AUTHORIZED",
-                            body_preserved=True,
-                        )
-                        receipt = self._persist_fusion_receipt(
-                            organism, handle.path, receipt
-                        )
-                        if receipt.durable:
-                            return receipt
-                        reason_code = "FUSION_CHECKPOINT_FAILED"
-                    except Exception as exc:
-                        reason_code = "FUSION_COMMIT_FAILED"
-                        organism.immune_event(
-                            "fusion_commit_failed",
-                            {"error_type": type(exc).__name__},
-                        )
-                    if self._scheduler is not None:
-                        self._scheduler.stop()
-                    self._scheduler = None
-                    self._model = None
-                    if organism.brain.fused:
-                        organism.brain.defuse()
-                    organism.stage1_certified = False
+            if reason_code is None:
+                try:
+                    self._model = self._model_factory()
+                    fuse = vendored_symbol("mind.mind", "fuse")
+                    fuse(organism, self._model, authorization=verified_authority)
+                    self._scheduler = self._scheduler_factory(self._cognitive_pulse)
+                    if self._scheduler.start() is not True:
+                        raise RuntimeError("scheduler did not start")
+                    receipt = self._new_fusion_receipt(
+                        organism,
+                        transition="FUSION",
+                        outcome="COMMITTED",
+                        from_state="DORMANT",
+                        to_state="FUSED",
+                        reason_code="AUTHORIZED",
+                        body_preserved=True,
+                    )
+                    receipt = self._persist_fusion_receipt(
+                        organism, handle.path, receipt
+                    )
+                    if receipt.durable:
+                        return receipt
+                    reason_code = "FUSION_CHECKPOINT_FAILED"
+                except Exception as exc:
+                    reason_code = "FUSION_COMMIT_FAILED"
+                    organism.immune_event(
+                        "fusion_commit_failed",
+                        {"error_type": type(exc).__name__},
+                    )
+            scheduler = self._scheduler
+            self._scheduler = None
+            self._model = None
+            if organism.brain.fused:
+                organism.brain.defuse()
+            organism.stage1_certified = False
 
+        stop_error: Exception | None = None
+        if scheduler is not None:
+            try:
+                scheduler.stop()
+            except Exception as exc:
+                stop_error = exc
+        with self._lock:
+            handle = self._ensure_handle()
+            organism = handle.organism
+            if stop_error is not None:
+                detail = {
+                    "code": "SCHEDULER_STOP_FAILED",
+                    "error_type": type(stop_error).__name__,
+                }
+                organism.immune_event("scheduler_stop_failed", detail)
+                self.diagnostics.append(detail)
+                del self.diagnostics[:-100]
             receipt = self._new_fusion_receipt(
                 organism,
                 transition="FUSION_REFUSED",
@@ -369,7 +387,7 @@ class ResidentRuntime:
                 body_preserved=True,
             )
             receipt = self._persist_fusion_receipt(organism, handle.path, receipt)
-            raise FusionLifecycleError(receipt)
+        raise FusionLifecycleError(receipt)
 
     def _cognitive_pulse(self, stressor: dict[str, Any] | None) -> None:
         """Run one cognition pulse and persist only its redacted receipt."""
@@ -403,13 +421,27 @@ class ResidentRuntime:
         if reason not in _DEFUSION_REASONS:
             raise ValueError("unsupported defusion reason")
         with self._lock:
+            scheduler = self._scheduler
+            self._scheduler = None
+        stop_error: Exception | None = None
+        if scheduler is not None:
+            try:
+                scheduler.stop()
+            except Exception as exc:
+                stop_error = exc
+        with self._lock:
             handle = self._ensure_handle()
             organism = handle.organism
+            if stop_error is not None:
+                detail = {
+                    "code": "SCHEDULER_STOP_FAILED",
+                    "error_type": type(stop_error).__name__,
+                }
+                organism.immune_event("scheduler_stop_failed", detail)
+                self.diagnostics.append(detail)
+                del self.diagnostics[:-100]
             before = self._body_snapshot(organism)
             from_state = "FUSED" if organism.brain.fused else "DORMANT"
-            if self._scheduler is not None:
-                self._scheduler.stop()
-            self._scheduler = None
             self._model = None
             if organism.brain.fused:
                 organism.brain.defuse()
@@ -705,9 +737,7 @@ class RuntimeRegistry:
         self._model_factory = model_factory
         self._authority_provider_factory = authority_provider_factory
         self._lock = RLock()
-        self._runtimes: dict[
-            tuple[str, str, tuple[tuple[str, Any], ...]], ResidentRuntime
-        ] = {}
+        self._runtimes: dict[tuple[str, str], ResidentRuntime] = {}
 
     @staticmethod
     def _active_hermes_home() -> Path:
@@ -721,8 +751,7 @@ class RuntimeRegistry:
         config = self._config_resolver()
         if not isinstance(config, ResidentConfig):
             raise TypeError("config_resolver must return ResidentConfig")
-        config_key = tuple(sorted(config.to_dict().items()))
-        key = (str(home), profile, config_key)
+        key = (str(home), profile)
         with self._lock:
             runtime = self._runtimes.get(key)
             if runtime is None:

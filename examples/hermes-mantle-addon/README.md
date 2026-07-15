@@ -20,7 +20,7 @@ Version `0.4.0` provides:
 - a reversible, receipt-backed MIND lifecycle that is dormant unless authenticated dual authority is present;
 - exactly one fixed 600-second cognitive scheduler per fused resident, with additional queued distress wakes;
 - Hermes-native provider/model/auth routing through `PluginContext.llm`; and
-- bounded retries, backoff, timeout, rolling token/cost budgets, serialized calls, and redacted usage receipts.
+- one bounded addon dispatch per heartbeat, host-owned fallback/retries, timeout, rolling token/cost budgets, serialized calls, and redacted usage receipts.
 
 The software engineering verdict is `READY`, while the Brain remains dormant and unfused by default. Complete Stage-1 fails closed on missing framework evidence. Positive attachment requires a fresh resident-bound `READY` report plus independently authenticated operator and guardian signatures; caller-authored JSON alone has no authority. Missing, shared, malformed, or tampered credentials fail closed. The controlled offline acceptance proves attach → cognitive heartbeat → authority-free defusion → 14/14 addon and 90/90 framework Stage-1 PASS. No production fusion approval or credential is bundled, and reproduction remains unauthorized. The sole model-facing mutation is confined to unverified discoveries; it cannot write facts, Primer, Genome, immune state, or host files.
 
@@ -104,7 +104,7 @@ PYTHONPATH=vendor/mantle-os/src python3 -m mantle check --fast
 
 [`docs/FUSION_DECISIONS.json`](docs/FUSION_DECISIONS.json) is the machine-readable authority and [`docs/FUSION_DECISIONS.md`](docs/FUSION_DECISIONS.md) is its human-readable explanation. Both operator and guardian approve the software release while explicitly **deferring production MIND fusion**. [`MIND_READINESS.json`](docs/MIND_READINESS.json) is `READY` for software publication. Release approval, runtime approval, silence, enthusiasm, or readiness cannot substitute for separate authenticated operator and guardian fusion approvals bound to a concrete resident.
 
-Repository JSON records are evidence, not authenticated human authority. `HmacAuthorityProvider` verifies target-bound records with distinct `MANTLE_OPERATOR_AUTH_KEY` and `MANTLE_GUARDIAN_AUTH_KEY` deployment secrets and distinct key IDs. The addon verifies but never generates production approvals. Fusion lifecycle methods are internal runtime safety controls, not model-facing tools.
+Repository JSON records are evidence, not authenticated human authority. `Ed25519AuthorityProvider` verifies target-bound records with distinct base64 `MANTLE_OPERATOR_PUBLIC_KEY` and `MANTLE_GUARDIAN_PUBLIC_KEY` values plus distinct key IDs. Private signing keys remain outside the addon process, so verifier material cannot mint approvals. The addon verifies but never generates production approvals. Fusion lifecycle methods are internal runtime safety controls, not model-facing tools.
 
 ## Roadmap
 
@@ -128,7 +128,7 @@ Repository JSON records are evidence, not authenticated human authority. `HmacAu
 - **EVIDENCE:** 14/14 addon Stage-1 rows, 90/90 framework security invariants, 11/11 containment rows, vendor parity, and authenticated offline attach-heartbeat-defuse-post-Stage-1 acceptance.
 - **CONFIDENCE:** high for the bounded Phase-1 runtime and dormant Phase-2 implementation. Production activation remains separately fail-closed.
 - **NEXT:** publish the verified software release; do not fuse a production MIND without fresh target-bound signed approvals.
-- **RISKS:** authority keys are deployment secrets; discovery text is intentionally durable and callers must not submit secrets; host activity outside registered hooks remains external; MacroDroid runtime semantics remain outside the Python release gate.
+- **RISKS:** authority private keys must remain with their independent signers; discovery text is intentionally durable and callers must not submit secrets; host activity outside registered hooks remains external; MacroDroid runtime semantics remain outside the Python release gate.
 - **FILES:** source, docs, tests, examples, workflows, package metadata, and the non-recursive vendor snapshot were aligned in Step 10.
 - **OPEN GAPS:** no engineering blocker remains. Production activation still requires a fresh resident-bound READY report and two independently authenticated approvals; reproduction remains prohibited.
 - **OPERATOR DECISION:** software release APPROVED; production MIND fusion DEFERRED.

@@ -52,6 +52,7 @@ class ResidentConfigTests(unittest.TestCase):
 
     def _readiness(self) -> dict:
         return {
+            "recorded_at": (self.now - timedelta(seconds=45)).isoformat(),
             "verdict": "READY",
             "target": {
                 "resident_identity": "Hermes.Mantle.AppAI",
@@ -140,6 +141,21 @@ class ResidentConfigTests(unittest.TestCase):
             self._approval(),
             "complete",
         ))
+        contradictory_rows = [row._replace(result="FAIL") for row in receipt.rows]
+        cases.append((
+            receipt._replace(rows=contradictory_rows),
+            self._readiness(),
+            self._approval(),
+            "complete",
+        ))
+        duplicate_codes = list(receipt.rows)
+        duplicate_codes[-1] = duplicate_codes[-1]._replace(code="A-01")
+        cases.append((
+            receipt._replace(rows=duplicate_codes),
+            self._readiness(),
+            self._approval(),
+            "complete",
+        ))
         cases.append((
             receipt._replace(issued_at=(self.now - timedelta(seconds=301)).isoformat()),
             self._readiness(),
@@ -149,6 +165,19 @@ class ResidentConfigTests(unittest.TestCase):
         not_ready = self._readiness()
         not_ready["verdict"] = "NOT_READY"
         cases.append((receipt, not_ready, self._approval(), "READY"))
+        missing_readiness_time = self._readiness()
+        missing_readiness_time.pop("recorded_at")
+        cases.append((
+            receipt,
+            missing_readiness_time,
+            self._approval(),
+            "readiness recorded_at",
+        ))
+        early_readiness = self._readiness()
+        early_readiness["recorded_at"] = (
+            self.now - timedelta(seconds=90)
+        ).isoformat()
+        cases.append((receipt, early_readiness, self._approval(), "readiness.*follow"))
         wrong_target = self._approval()
         wrong_target["target"]["body_fingerprint"] = "different-body"
         cases.append((receipt, self._readiness(), wrong_target, "target"))

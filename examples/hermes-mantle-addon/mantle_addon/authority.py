@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 from collections.abc import Mapping
-import hashlib
-import hmac
 import json
 import os
 from typing import Any
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 
 class AuthorityError(PermissionError):
@@ -19,60 +22,81 @@ def _canonical_payload(
     authorization: Mapping[str, Any],
     key_id: str,
 ) -> bytes:
+    record = authorization.get(role)
+    effective = authorization.get("effective_decision")
+    if not isinstance(record, Mapping) or not isinstance(effective, Mapping):
+        raise AuthorityError("fusion authorization is incomplete")
     payload = {
         "schema_version": "mantle-fusion-approval-v1",
         "role": role,
         "key_id": key_id,
-        "fusion_decision": "APPROVED",
+        "fusion_decision": record.get("fusion_decision"),
         "recorded_at": authorization.get("recorded_at"),
         "target": authorization.get("target"),
-        "mind_fusion_authorized": True,
-        "reproduction_activation_authorized": False,
+        "mind_fusion_authorized": effective.get("mind_fusion_authorized"),
+        "reproduction_activation_authorized": effective.get(
+            "reproduction_activation_authorized"
+        ),
     }
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-class HmacAuthorityProvider:
-    """Verify separate operator and guardian approvals without signing them."""
+class Ed25519AuthorityProvider:
+    """Verify approvals with public keys that cannot mint new approvals."""
 
     def __init__(
         self,
         *,
         operator_key_id: str,
-        operator_key: bytes,
+        operator_public_key: bytes,
         guardian_key_id: str,
-        guardian_key: bytes,
+        guardian_public_key: bytes,
     ) -> None:
         if not operator_key_id or not guardian_key_id:
             raise ValueError("authority key ids must be non-empty")
         if operator_key_id == guardian_key_id:
             raise ValueError("operator and guardian key ids must be distinct")
-        if len(operator_key) < 32 or len(guardian_key) < 32:
-            raise ValueError("authority keys must contain at least 32 bytes")
-        if hmac.compare_digest(operator_key, guardian_key):
+        if len(operator_public_key) != 32 or len(guardian_public_key) != 32:
+            raise ValueError("authority public keys must contain exactly 32 bytes")
+        if operator_public_key == guardian_public_key:
             raise ValueError("operator and guardian keys must be independent")
         self._keys = {
-            "operator": (operator_key_id, bytes(operator_key)),
-            "guardian": (guardian_key_id, bytes(guardian_key)),
+            "operator": (
+                operator_key_id,
+                Ed25519PublicKey.from_public_bytes(operator_public_key),
+            ),
+            "guardian": (
+                guardian_key_id,
+                Ed25519PublicKey.from_public_bytes(guardian_public_key),
+            ),
         }
 
     @classmethod
     def from_environment(
         cls, environment: Mapping[str, str] | None = None
-    ) -> "HmacAuthorityProvider | None":
-        """Load authority credentials only from secret environment variables."""
+    ) -> "Ed25519AuthorityProvider | None":
+        """Load verifier-only public keys from the deployment environment."""
         env = environment or os.environ
-        values = {
+        raw_values = {
             "operator_key_id": env.get("MANTLE_OPERATOR_KEY_ID", ""),
-            "operator_key": env.get("MANTLE_OPERATOR_APPROVAL_KEY", "").encode(),
+            "operator_public_key": env.get("MANTLE_OPERATOR_PUBLIC_KEY", ""),
             "guardian_key_id": env.get("MANTLE_GUARDIAN_KEY_ID", ""),
-            "guardian_key": env.get("MANTLE_GUARDIAN_APPROVAL_KEY", "").encode(),
+            "guardian_public_key": env.get("MANTLE_GUARDIAN_PUBLIC_KEY", ""),
         }
-        if not any(values.values()):
+        if not any(raw_values.values()):
             return None
         try:
-            return cls(**values)
-        except ValueError as exc:
+            return cls(
+                operator_key_id=raw_values["operator_key_id"],
+                operator_public_key=base64.b64decode(
+                    raw_values["operator_public_key"], validate=True
+                ),
+                guardian_key_id=raw_values["guardian_key_id"],
+                guardian_public_key=base64.b64decode(
+                    raw_values["guardian_public_key"], validate=True
+                ),
+            )
+        except (ValueError, binascii.Error) as exc:
             raise AuthorityError("fusion authority credentials are invalid") from exc
 
     def verify(self, authorization: Mapping[str, Any]) -> dict[str, Any]:
@@ -89,7 +113,7 @@ class HmacAuthorityProvider:
         ):
             raise AuthorityError("fusion authorization has unsafe effective scope")
 
-        for role, (expected_key_id, secret) in self._keys.items():
+        for role, (expected_key_id, public_key) in self._keys.items():
             record = authorization.get(role)
             if not isinstance(record, Mapping):
                 raise AuthorityError(f"{role} approval is missing")
@@ -97,13 +121,16 @@ class HmacAuthorityProvider:
             signature = record.get("signature")
             if key_id != expected_key_id or not isinstance(signature, str):
                 raise AuthorityError(f"{role} approval key is not trusted")
-            expected = hmac.new(
-                secret,
-                _canonical_payload(role, authorization, expected_key_id),
-                hashlib.sha256,
-            ).hexdigest()
-            if not hmac.compare_digest(signature, expected):
+            try:
+                signature_bytes = base64.b64decode(signature, validate=True)
+                public_key.verify(
+                    signature_bytes,
+                    _canonical_payload(role, authorization, expected_key_id),
+                )
+            except (InvalidSignature, ValueError, binascii.Error):
                 raise AuthorityError(f"{role} approval signature is invalid")
+            if record.get("fusion_decision") != "APPROVED":
+                raise AuthorityError(f"{role} approval must explicitly approve fusion")
 
         return {
             "recorded_at": authorization.get("recorded_at"),

@@ -10,9 +10,11 @@ All notable release-level changes are documented here.
 - Exactly one fixed 600-second cognitive scheduler per fused resident, with separate queued
   nociceptive wakeups.
 - Hermes-native cognition through the host-owned `PluginContext.llm` provider/model abstraction.
-- Rolling token/cost budgets, bounded retries and backoff, request timeouts, outage handling,
-  serialized cognition, and redacted usage receipts.
-- Distinct authenticated operator and guardian approval verification for production fusion.
+- Rolling token/cost budgets, one addon dispatch through host-owned fallback/retries, request
+  timeouts, outage handling, conservative unknown-usage charging, serialized cognition, and
+  redacted usage receipts.
+- Distinct Ed25519-authenticated operator and guardian approval verification using verifier-only
+  public keys for production fusion.
 - Controlled offline attach → heartbeat → defuse → post-defusion Stage-1 acceptance coverage.
 - Complete tracked 146-file Mantle OS snapshot in the Hermes addon example.
 

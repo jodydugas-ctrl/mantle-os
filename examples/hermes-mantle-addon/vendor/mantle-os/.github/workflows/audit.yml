@@ -27,7 +27,7 @@ jobs:
           path: .ci/hermes-agent
 
       - name: Install Mantle (editable, src-layout, with the spore extra)
-        run: pip install -e ".[spore]" pyyaml==6.0.3
+        run: pip install -e ".[spore]" cryptography==46.0.7 pyyaml==6.0.3
 
       - name: The whole certification, one command
         run: python -m mantle check

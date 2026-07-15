@@ -22,7 +22,7 @@ GENERATED = {
     str(JSON_REPORT.relative_to(ROOT)),
     str(MD_REPORT.relative_to(ROOT)),
 }
-INTERNAL_PREFIXES = (".hermes/",)
+INTERNAL_PREFIXES = (".ci/", ".hermes/")
 
 
 def repository_paths() -> list[str]:

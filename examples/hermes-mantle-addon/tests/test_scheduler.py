@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+from threading import Event
 import unittest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +33,14 @@ class _Thread:
 
     def join(self, _timeout=None) -> None:
         self.joined += 1
+
+    def is_alive(self) -> bool:
+        return False
+
+
+class _StuckThread(_Thread):
+    def is_alive(self) -> bool:
+        return True
 
 
 class SchedulerTests(unittest.TestCase):
@@ -100,6 +109,27 @@ class SchedulerTests(unittest.TestCase):
             [{"reason": str(index)} for index in range(4, 20)],
             self.pulses,
         )
+
+    def test_stop_reports_a_thread_that_did_not_quiesce(self):
+        scheduler = CognitiveScheduler(
+            self.pulses.append,
+            clock=self.clock,
+            thread_factory=lambda **kwargs: _StuckThread(**kwargs),
+        )
+        scheduler.start()
+
+        with self.assertRaisesRegex(RuntimeError, "did not stop"):
+            scheduler.stop()
+
+    def test_real_worker_processes_wake_and_quiesces(self):
+        pulsed = Event()
+        scheduler = CognitiveScheduler(lambda _stressor: pulsed.set())
+        scheduler.start()
+
+        self.assertTrue(scheduler.wake({"reason": "distress"}))
+        self.assertTrue(pulsed.wait(1.0))
+        self.assertTrue(scheduler.stop())
+        self.assertFalse(scheduler.running)
 
 
 if __name__ == "__main__":

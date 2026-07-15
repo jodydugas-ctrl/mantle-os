@@ -25,7 +25,7 @@
       "failed_invariant": null,
       "root_cause": "Security/runtime invariants remain in the certification gate. Repository-optimization ledgers and version snapshots are advisory release tooling rather than organism security invariants."
     },
-    "addon_unit_tests": 117,
+    "addon_unit_tests": 127,
     "containment_rows_passed": 11,
     "real_plugin_hooks": 12,
     "real_plugin_stage1_certified": false,
@@ -68,12 +68,12 @@
     {
       "id": "B-06",
       "status": "RESOLVED",
-      "resolution": "CognitionPolicy enforces bounded output, rolling token/cost budgets, serialized calls, bounded transient retries, exponential backoff, timeout/outage behavior, and redacted usage receipts."
+      "resolution": "CognitionPolicy enforces bounded output, rolling token/cost budgets, serialized calls, one addon dispatch through Hermes-owned fallback/retries, timeout/outage behavior, conservative unknown-usage charging, and redacted usage receipts."
     },
     {
       "id": "B-07",
       "status": "RESOLVED",
-      "resolution": "HmacAuthorityProvider verifies distinct operator and guardian credentials and target-bound signatures. No production approval or key is bundled; deployment activation remains separately deferred."
+      "resolution": "Ed25519AuthorityProvider verifies distinct operator and guardian public keys and target-bound signatures without loading private signing material. No production approval or key is bundled; deployment activation remains separately deferred."
     },
     {
       "id": "B-08",

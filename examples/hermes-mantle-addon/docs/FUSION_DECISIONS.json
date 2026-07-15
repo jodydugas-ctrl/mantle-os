@@ -8,7 +8,7 @@
   },
   "evidence_basis": {
     "completed_roadmap_steps": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    "addon_unit_tests": 117,
+    "addon_unit_tests": 127,
     "addon_stage1_rows": 14,
     "framework_gate_rows": 20,
     "framework_invariants": "90/90",

@@ -12,7 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from mantle_addon.config import ResidentConfig
-from mantle_addon.runtime import OBSERVER_HOOKS, ResidentRuntime
+from mantle_addon.runtime import OBSERVER_HOOKS, ResidentRuntime, RuntimeRegistry
 
 
 class ResidentRuntimeTests(unittest.TestCase):
@@ -388,6 +388,27 @@ class ResidentRuntimeTests(unittest.TestCase):
             cognize.assert_not_called()
             organism.heart.beat()
             cognize.assert_called_once()
+
+    def test_registry_does_not_fork_a_resident_when_config_changes(self):
+        configs = [self.runtime.config]
+        registry = RuntimeRegistry(
+            profile_resolver=lambda: "default",
+            home_resolver=lambda: self.runtime_root,
+            config_resolver=lambda: configs[0],
+        )
+        first = registry.current()
+        first.organism.brain._mind = SimpleNamespace(cognize=lambda _snapshot: "thought")
+        configs[0] = ResidentConfig.from_mapping(
+            {
+                "storage_root": str(self.runtime_root),
+                "max_event_chars": 8192,
+            }
+        )
+
+        second = registry.current()
+
+        self.assertIs(first, second)
+        self.assertTrue(second.organism.brain.fused)
 
 
 if __name__ == "__main__":

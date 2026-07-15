@@ -37,7 +37,7 @@ credentials. No production approval or credential is included in the repository.
 | Addon Stage-1 probes | **14/14 PASS** |
 | Framework gate rows | **20/20 PASS** |
 | Framework security invariants | **90/90 PASS** |
-| Addon unit tests | **117 PASS** |
+| Addon unit tests | **127 PASS** |
 | Containment receipt | **11/11 PASS** |
 | Real Hermes observer hooks | **12** |
 | Complete non-addon vendor snapshot | **146/146 aligned** |
@@ -77,18 +77,19 @@ fallback, and credentials. The addon no longer contains a bespoke HTTP or API-ke
 
 ### B-06 — Budget and outage policy
 
-`CognitionPolicy` bounds output tokens, rolling token and cost use, request timeout, concurrent
-calls, retry count, and exponential backoff. Permanent failures are not retried. Exhausted
-budgets and outages fail open to the Body while producing receipts that contain only status,
+`CognitionPolicy` bounds output tokens, rolling token and cost use, request timeout, and concurrent
+calls. The addon makes one dispatch and never nests retries around Hermes's host-owned fallback
+and retry policy. Unknown usage is charged conservatively. Exhausted budgets and outages fail open
+to the Body while producing receipts that contain only status,
 route labels, usage, cost, attempt count, error type, and timestamp—never prompts, responses,
 credentials, or raw exception text.
 
 ### B-07 — Authenticated dual authority
 
-`HmacAuthorityProvider` requires independent operator and guardian key IDs and keys, verifies
-both target-bound signatures, and minimizes the receipt passed to the core Brain. Missing,
-shared, malformed, or tampered authority fails closed. Credentials are deployment secrets and
-are never bundled.
+`Ed25519AuthorityProvider` requires independent operator and guardian key IDs and public keys,
+verifies both target-bound signatures, and minimizes the receipt passed to the core Brain.
+Private signing keys never enter the addon process, so verifier material cannot mint approvals.
+Missing, shared, malformed, or tampered authority fails closed. No approval or key is bundled.
 
 ### B-08 — Evidence is not authority
 
@@ -107,7 +108,8 @@ alignment is checked directly during build and installed-artifact verification.
 
 1. Generate a fresh Stage-1 PASS on the concrete resident.
 2. Generate a fresh `READY` report bound to that resident identity and Body fingerprint.
-3. Configure distinct operator and guardian authority credentials as secrets.
+3. Configure distinct operator and guardian Ed25519 public keys and key IDs; keep each private
+   signing key outside the addon process with its independent signer.
 4. Obtain fresh target-bound signed `APPROVED` records from both roles.
 5. Keep reproduction explicitly false.
 

@@ -70,6 +70,9 @@ class CognitiveScheduler:
             self._changed.set()
         if thread is not None:
             thread.join(2.0)
+            is_alive = getattr(thread, "is_alive", None)
+            if callable(is_alive) and is_alive():
+                raise RuntimeError("cognitive scheduler thread did not stop")
         return True
 
     def wake(self, stressor: dict[str, Any]) -> bool:

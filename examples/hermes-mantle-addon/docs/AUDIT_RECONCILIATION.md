@@ -42,7 +42,7 @@ These findings do not reduce or replace the five MIND-readiness blockers `B-03` 
 
 ## Reproduced evidence
 
-- Addon tests: **117/117**
+- Addon tests: **127/127**
 - Addon Stage-1 probes: **14/14**
 - Framework Stage-1 rows: **20/20 on the fresh addon target; 21/21 on the reborn standalone demo**
 - Framework invariants: **90/90**

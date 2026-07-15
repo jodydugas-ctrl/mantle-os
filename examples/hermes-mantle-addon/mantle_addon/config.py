@@ -13,7 +13,7 @@ class ConfigError(ValueError):
 
 
 _DNR_VALUES = {"none", "retire_only", "no_reconstruction", "operator_defined"}
-_EXPECTED_ADDON_ROWS = 14
+_EXPECTED_ADDON_CODES = tuple(f"A-{index:02d}" for index in range(1, 15))
 
 
 def _utc_timestamp(value: Any, name: str) -> datetime:
@@ -150,13 +150,16 @@ class ResidentConfig:
             raise ConfigError("max_receipt_age_seconds must be a positive integer")
 
         rows = getattr(stage1_receipt, "rows", None)
+        row_codes = tuple(getattr(row, "code", None) for row in rows or ())
+        row_results = tuple(getattr(row, "result", None) for row in rows or ())
         if (
             getattr(stage1_receipt, "passed", None) is not True
             or getattr(stage1_receipt, "framework_passed", None) is not True
             or getattr(stage1_receipt, "fails", None) != []
             or getattr(stage1_receipt, "framework_failures", None) != []
             or not isinstance(rows, list)
-            or len(rows) != _EXPECTED_ADDON_ROWS
+            or row_codes != _EXPECTED_ADDON_CODES
+            or any(result != "PASS" for result in row_results)
             or (getattr(stage1_receipt, "framework_invariants", 0) or 0) <= 0
         ):
             raise ConfigError("Phase-2 transition requires a complete Stage-1 PASS receipt")
@@ -190,6 +193,11 @@ class ResidentConfig:
             )
         if readiness_report.get("reproduction_activation_authorized") is not False:
             raise ConfigError("MIND readiness must explicitly deny reproduction")
+        readiness_at = _utc_timestamp(
+            readiness_report.get("recorded_at"), "readiness recorded_at"
+        )
+        if readiness_at < issued or readiness_at > current:
+            raise ConfigError("readiness report must follow the fresh Stage-1 receipt")
         if not isinstance(authorization, MappingABC):
             raise ConfigError("fusion authorization must be a mapping")
         target = authorization.get("target")

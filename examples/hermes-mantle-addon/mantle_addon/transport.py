@@ -19,8 +19,6 @@ class CognitionBudgetExceeded(CognitionUnavailable):
 
 @dataclass(frozen=True)
 class CognitionPolicy:
-    max_attempts: int = 3
-    backoff_seconds: float = 1.0
     timeout_seconds: float = 30.0
     max_output_tokens: int = 256
     window_seconds: float = 3600.0
@@ -28,10 +26,6 @@ class CognitionPolicy:
     max_cost_usd_per_window: float = 1.0
 
     def __post_init__(self) -> None:
-        if not 1 <= self.max_attempts <= 5:
-            raise ValueError("max_attempts must be from 1 to 5")
-        if not 0 <= self.backoff_seconds <= 60:
-            raise ValueError("backoff_seconds must be from 0 to 60")
         if not 1 <= self.timeout_seconds <= 300:
             raise ValueError("timeout_seconds must be from 1 to 300")
         if not 1 <= self.max_output_tokens <= 4096:
@@ -53,7 +47,6 @@ class HermesModel:
         policy: CognitionPolicy | None = None,
         *,
         clock: Callable[[], float] = time.monotonic,
-        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         complete = getattr(llm, "complete", None)
         if not callable(complete):
@@ -61,7 +54,6 @@ class HermesModel:
         self._llm = llm
         self.policy = policy or CognitionPolicy()
         self._clock = clock
-        self._sleep = sleep
         self._lock = RLock()
         self._window_started = clock()
         self._tokens_used = 0
@@ -102,7 +94,7 @@ class HermesModel:
             self._tokens_used = 0
             self._cost_used = 0.0
 
-    def _check_budget(self, prompt: str) -> None:
+    def _check_budget(self, prompt: str) -> int:
         self._reset_window_if_due()
         estimated_input = max(1, (len(prompt) + 3) // 4)
         reservation = estimated_input + self.policy.max_output_tokens
@@ -112,6 +104,7 @@ class HermesModel:
         if self._cost_used >= self.policy.max_cost_usd_per_window:
             self.last_receipt = self._receipt("BUDGET_BLOCKED", 0, "CostBudget")
             raise CognitionBudgetExceeded("cognition cost budget exhausted")
+        return reservation
 
     def _receipt(
         self,
@@ -139,38 +132,30 @@ class HermesModel:
         if not isinstance(prompt, str) or not prompt:
             raise ValueError("cognition prompt must be a non-empty string")
         with self._lock:
-            self._check_budget(prompt)
-            for attempt in range(1, self.policy.max_attempts + 1):
-                try:
-                    result = self._llm.complete(
-                        [{"role": "user", "content": prompt}],
-                        max_tokens=self.policy.max_output_tokens,
-                        timeout=self.policy.timeout_seconds,
-                        purpose="mantle-cognitive-heartbeat",
-                    )
-                except Exception as exc:
-                    transient = self._is_transient(exc)
-                    exhausted = attempt >= self.policy.max_attempts
-                    if not transient or exhausted:
-                        outcome = "OUTAGE" if transient else "REFUSED"
-                        self.last_receipt = self._receipt(
-                            outcome, attempt, type(exc).__name__
-                        )
-                        raise CognitionUnavailable(
-                            "Hermes cognition is unavailable"
-                        ) from exc
-                    self._sleep(
-                        min(30.0, self.policy.backoff_seconds * (2 ** (attempt - 1)))
-                    )
-                    continue
+            reservation = self._check_budget(prompt)
+            prior_cost = self._cost_used
+            self._tokens_used += reservation
+            self._cost_used = self.policy.max_cost_usd_per_window
+            try:
+                result = self._llm.complete(
+                    [{"role": "user", "content": prompt}],
+                    max_tokens=self.policy.max_output_tokens,
+                    timeout=self.policy.timeout_seconds,
+                    purpose="mantle-cognitive-heartbeat",
+                )
+            except Exception as exc:
+                outcome = "OUTAGE" if self._is_transient(exc) else "REFUSED"
+                self.last_receipt = self._receipt(outcome, 1, type(exc).__name__)
+                raise CognitionUnavailable("Hermes cognition is unavailable") from exc
 
-                usage = self._usage(result)
-                self._tokens_used += usage["total_tokens"]
-                self._cost_used += float(usage["cost_usd"] or 0.0)
-                self.last_usage = usage
-                self.last_receipt = self._receipt("SUCCESS", attempt, usage=usage)
-                return str(getattr(result, "text", ""))
-        raise AssertionError("unreachable cognition loop")
+            usage = self._usage(result)
+            if usage["total_tokens"]:
+                self._tokens_used += usage["total_tokens"] - reservation
+            if usage["cost_usd"] is not None:
+                self._cost_used = prior_cost + float(usage["cost_usd"])
+            self.last_usage = usage
+            self.last_receipt = self._receipt("SUCCESS", 1, usage=usage)
+            return str(getattr(result, "text", ""))
 
 
 def build_model(llm: Any, policy: CognitionPolicy | None = None) -> HermesModel:

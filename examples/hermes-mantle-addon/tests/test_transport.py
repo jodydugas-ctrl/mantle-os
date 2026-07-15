@@ -55,7 +55,7 @@ def _result(text="reflection", *, tokens=5, cost=0.01):
 class HermesModelTests(unittest.TestCase):
     def test_uses_active_host_route_without_provider_or_secret_inputs(self):
         llm = _Llm([_result()])
-        model = HermesModel(llm, CognitionPolicy(max_attempts=1))
+        model = HermesModel(llm)
 
         self.assertEqual("reflection", model("private prompt"))
 
@@ -69,41 +69,33 @@ class HermesModelTests(unittest.TestCase):
         self.assertEqual("active-provider", model.last_usage["provider"])
         self.assertEqual("active-model", model.last_usage["model"])
 
-    def test_transient_failures_retry_with_bounded_backoff(self):
-        llm = _Llm([TimeoutError("secret one"), ConnectionError("secret two"), _result()])
-        sleeps = []
-        model = HermesModel(
-            llm,
-            CognitionPolicy(max_attempts=3, backoff_seconds=1.0),
-            sleep=sleeps.append,
-        )
+    def test_host_failure_is_not_wrapped_in_addon_retries(self):
+        llm = _Llm([TimeoutError("secret one")])
+        model = HermesModel(llm)
 
-        self.assertEqual("reflection", model("private prompt"))
-        self.assertEqual([1.0, 2.0], sleeps)
-        self.assertEqual(3, len(llm.calls))
-        self.assertEqual("SUCCESS", model.last_receipt["outcome"])
-        self.assertEqual(3, model.last_receipt["attempts"])
+        with self.assertRaises(CognitionUnavailable):
+            model("private prompt")
+
+        self.assertEqual(1, len(llm.calls))
+        self.assertEqual("OUTAGE", model.last_receipt["outcome"])
+        self.assertEqual(1, model.last_receipt["attempts"])
 
     def test_exhausted_outage_is_redacted_and_bounded(self):
-        llm = _Llm([TimeoutError("secret one"), TimeoutError("secret two")])
-        model = HermesModel(
-            llm,
-            CognitionPolicy(max_attempts=2),
-            sleep=lambda _delay: None,
-        )
+        llm = _Llm([TimeoutError("secret one")])
+        model = HermesModel(llm)
 
         with self.assertRaises(CognitionUnavailable):
             model("private prompt")
 
         serialized = json.dumps(model.last_receipt, sort_keys=True)
-        self.assertEqual(2, len(llm.calls))
+        self.assertEqual(1, len(llm.calls))
         self.assertEqual("OUTAGE", model.last_receipt["outcome"])
         self.assertNotIn("secret", serialized)
         self.assertNotIn("private prompt", serialized)
 
     def test_permanent_failure_is_not_retried(self):
         llm = _Llm([ValueError("secret invalid request")])
-        model = HermesModel(llm, CognitionPolicy(max_attempts=3))
+        model = HermesModel(llm)
 
         with self.assertRaises(CognitionUnavailable):
             model("private prompt")
@@ -116,7 +108,6 @@ class HermesModelTests(unittest.TestCase):
         model = HermesModel(
             llm,
             CognitionPolicy(
-                max_attempts=1,
                 max_output_tokens=2,
                 max_tokens_per_window=7,
                 max_cost_usd_per_window=0.02,
@@ -129,6 +120,23 @@ class HermesModelTests(unittest.TestCase):
 
         self.assertEqual(1, len(llm.calls))
         self.assertEqual("BUDGET_BLOCKED", model.last_receipt["outcome"])
+
+    def test_unknown_usage_is_conservatively_charged(self):
+        llm = _Llm([_result(tokens=0, cost=None), _result(tokens=0, cost=None)])
+        model = HermesModel(
+            llm,
+            CognitionPolicy(
+                max_output_tokens=1,
+                max_tokens_per_window=2,
+                max_cost_usd_per_window=0.01,
+            ),
+        )
+
+        self.assertEqual("reflection", model("x"))
+        with self.assertRaises(CognitionBudgetExceeded):
+            model("x")
+
+        self.assertEqual(1, len(llm.calls))
 
 
 if __name__ == "__main__":

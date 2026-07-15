@@ -29,7 +29,7 @@ resident must independently satisfy the runtime authority protocol.
 - Owner-only, symlink-safe atomic persistence.
 - Exactly one fixed 600-second scheduler per fused resident.
 - Hermes-owned provider/model/auth routing through `PluginContext.llm`.
-- Bounded retries, backoff, timeouts, rolling token/cost budgets, and redacted receipts.
+- One bounded addon dispatch, host-owned fallback/retries, timeout, rolling token/cost budgets, and redacted receipts.
 - Authenticated offline attach → heartbeat → defuse → post-defusion Stage-1 PASS.
 
 ## Operator decision
@@ -45,7 +45,8 @@ resident identity and Body fingerprint.
 **Software release: APPROVED. Production MIND fusion: DEFERRED.**
 
 Publishing dormant, fail-closed capability is acceptable because absent, shared, malformed, or
-tampered authority credentials cannot attach cognition. Defusion remains authority-free.
+tampered authority public keys/signatures cannot attach cognition, and the verifier has no private
+signing material. Defusion remains authority-free.
 
 Before production fusion, the guardian requires:
 
