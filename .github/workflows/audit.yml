@@ -18,10 +18,16 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: "3.x"
+          python-version: "3.11"
+      - name: Checkout tested Hermes plugin API
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: NousResearch/hermes-agent
+          ref: 78e844d4465c4d9f6a2cb2f44e5076d31e1c68db
+          path: .ci/hermes-agent
 
       - name: Install Mantle (editable, src-layout, with the spore extra)
-        run: pip install -e ".[spore]"
+        run: pip install -e ".[spore]" pyyaml==6.0.3
 
       - name: The whole certification, one command
         run: python -m mantle check
@@ -32,6 +38,8 @@ jobs:
 
       - name: Hermes addon behavior contracts
         working-directory: examples/hermes-mantle-addon
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.ci/hermes-agent
         run: python -W error::ResourceWarning -m unittest discover -s tests
 
       - name: Hermes addon adversarial containment

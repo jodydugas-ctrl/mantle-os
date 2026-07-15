@@ -15,8 +15,8 @@
       "category": "workflow",
       "path": ".github/workflows/audit.yml",
       "review_method": "UTF-8/YAML inspection + command-reference audit",
-      "sha256": "d55de27838ed3aed905a272d1279e8393a1189b4a7b18bdeccd3d70952bbf93b",
-      "size_bytes": 1585,
+      "sha256": "3d364c30f9e9d48feb9cd432d500865bbefbc7199a9f713b9de399a7905e0792",
+      "size_bytes": 1956,
       "valid": true,
       "validation": "yaml"
     },
@@ -610,7 +610,7 @@
       "path": "examples/hermes-mantle-addon/docs/REPOSITORY_ALIGNMENT.json",
       "review_method": "format parse + schema/contract tests",
       "sha256": null,
-      "size_bytes": 126307,
+      "size_bytes": 125924,
       "valid": true,
       "validation": "self-validating-generated-report"
     },
@@ -978,8 +978,8 @@
       "category": "vendor",
       "path": "examples/hermes-mantle-addon/vendor/mantle-os/.github/workflows/audit.yml",
       "review_method": "SHA-256 snapshot parity + private-namespace execution",
-      "sha256": "d55de27838ed3aed905a272d1279e8393a1189b4a7b18bdeccd3d70952bbf93b",
-      "size_bytes": 1585,
+      "sha256": "3d364c30f9e9d48feb9cd432d500865bbefbc7199a9f713b9de399a7905e0792",
+      "size_bytes": 1956,
       "valid": true,
       "validation": "yaml"
     },
@@ -3145,7 +3145,7 @@
     }
   ],
   "files_total": 348,
-  "generated_at": "2026-07-15T18:23:50.270171+00:00",
+  "generated_at": "2026-07-15T18:50:42.266039+00:00",
   "mind_fusion_authorized": false,
   "parse_errors": [],
   "remaining_readiness_blockers": [],
