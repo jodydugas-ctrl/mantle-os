@@ -1,11 +1,14 @@
-"""Read-only Mantle OS tool handlers for the Hermes plugin."""
+"""Mantle OS tool handlers for the Hermes plugin."""
 
 from __future__ import annotations
 
 import ast
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .mantle_addon.runtime import ResidentRuntime
 
 
 _PLUGIN_ROOT = Path(__file__).resolve().parent
@@ -53,3 +56,43 @@ def mantle_status(args: dict, **kwargs) -> str:
         )
     except Exception as exc:
         return json.dumps({"success": False, "error": str(exc)})
+
+
+def mantle_record_discovery(
+    args: dict[str, Any],
+    *,
+    runtime: "ResidentRuntime" | None = None,
+    runtime_provider: Callable[[], "ResidentRuntime"] | None = None,
+    **kwargs: Any,
+) -> str:
+    """Persist one unverified idea through the resident's Limbs control."""
+    del kwargs
+    idea = args.get("idea") if isinstance(args, dict) else None
+    try:
+        if runtime is None:
+            if runtime_provider is None:
+                raise RuntimeError("resident runtime provider is unavailable")
+            runtime = runtime_provider()
+        outcome = runtime.record_discovery(idea)
+        proof = outcome["proof"]
+        success = bool(proof.get("ok")) and bool(outcome["durable"])
+        return json.dumps(
+            {
+                "success": success,
+                "control": proof.get("control"),
+                "attempted": bool(proof.get("attempted")),
+                "durable": bool(outcome["durable"]),
+                "reason": proof.get("reason"),
+                "classification": "inferred",
+                "verified": False,
+            }
+        )
+    except Exception as exc:
+        return json.dumps(
+            {
+                "success": False,
+                "attempted": False,
+                "durable": False,
+                "error": type(exc).__name__,
+            }
+        )

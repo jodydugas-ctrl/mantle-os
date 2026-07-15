@@ -1,9 +1,10 @@
 name: mantle-os
-version: 0.2.0
-description: Deterministic observer Body and read-only Mantle diagnostics for Hermes Agent
+version: 0.4.0
+description: Deterministic resident Body with bounded Mantle tools for Hermes Agent
 author: jodydugas-ctrl
 provides_tools:
   - mantle_status
+  - mantle_record_discovery
 provides_hooks:
   - on_session_start
   - on_session_end
@@ -12,3 +13,8 @@ provides_hooks:
   - post_llm_call
   - pre_tool_call
   - post_tool_call
+  - pre_approval_request
+  - post_approval_response
+  - subagent_start
+  - subagent_stop
+  - pre_gateway_dispatch

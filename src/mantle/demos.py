@@ -136,8 +136,14 @@ def mind_demo(argv):
     if not passed:
         print("  fusion refused."); return 1
 
-    print("\n[FUSE] the Brain socket accepts a bounded MIND (stub transport)")
-    mind = fuse(org, stub_mind)
+    audit_authority = {
+        "target": {"resident_identity": org.body.identity_name()},
+        "operator": {"fusion_decision": "APPROVED"},
+        "guardian": {"fusion_decision": "APPROVED"},
+        "effective_decision": {"mind_fusion_authorized": True},
+    }
+    print("\n[FUSE] offline demo supplies separate operator + guardian audit approval")
+    mind = fuse(org, stub_mind, authorization=audit_authority)
     print("  fused=%s  write surface=%s" % (org.brain.fused, ["thoughts", "brain"]))
 
     print("\n[PULSE] the SAME heartbeat now also thinks (extension, never replacement)")

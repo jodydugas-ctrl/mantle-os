@@ -6,10 +6,10 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 110 security invariants, the
+*The organism re-certifies on every commit: the Stage-1 gate, 111 security invariants, the
 Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
-**Current certification count:** 110 security invariants (`python -m mantle prove`).
+**Current certification count:** 111 security invariants (`python -m mantle prove`).
 
 > **New here, or skeptical of the biology metaphor?** Start with
 > [`documents/Mantle_Positioning.md`](documents/Mantle_Positioning.md) — a plain-language summary and an honest
@@ -79,11 +79,14 @@ tamper-evident fingerprint.
 
 Beyond the certified Body, an AppAI carries reproductive, symbiotic, and self-evolving tissue:
 a whole AppAI declared as one **egg**, **residency** in a host codebase with a metered energy
-economy, **self/other** cryptographic identity, event-gated **nociception**, graded memory,
+economy, **self/other** cryptographic identity, baseline ten-minute cognition plus additional
+**nociceptive interrupts**, graded memory,
 keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, a
 self-reconstruction **seed vault**, and **wearable app-faces** (one organism expresses many
 SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **full
-invariant suite**. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md) walks every one.
+invariant suite** and, where an operation creates a new resident or activates cognition,
+separate target-bound authority. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md)
+walks every one.
 
 ---
 
@@ -112,9 +115,9 @@ does not care which combination you choose — that is the point.
 
 This versatility is exactly why **assimilation** (the **NECROMANCY** spell; `python -m mantle
 assimilate`) is so powerful: it can turn *most existing applications* into an AppAI —
-**including applications that already contain agents.** The Compiler, for example, runs both its
-AppAI agent **and** its own pre-existing **Hermes** agent side by side; the nervous system is
-grown *around* what already lives in the host, without demanding the host be rewritten.
+**including applications that already contain agents.** The Compiler, for example, wraps its
+pre-existing **Hermes** agent with an additive Mantle autonomic nervous system. Hermes remains
+the cognitive host; Mantle grows *around* what already lives there without demanding a rewrite.
 
 > The Python below is the reference body. Read it as "here is one way to grow an organism," not
 > "here is the only language an organism can be grown in."
@@ -133,7 +136,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 110 security invariants, red/green
+python -m mantle prove         # 111 security invariants, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash
@@ -155,8 +158,9 @@ python examples/vcw/interop.py                # standalone <-> engine: identical
 ### Reproduction — two methods, everything else is a facet
 
 An AppAI reproduces in exactly **two** ways (doctrine:
-[`documents/Mantle_Reproduction.md`](documents/Mantle_Reproduction.md)); both are gated the same
-way (the full invariant suite, no standing law weakened) and both end at the same certified Body:
+[`documents/Mantle_Reproduction.md`](documents/Mantle_Reproduction.md)); both require the same technical evidence (the full invariant suite, no standing law weakened),
+but evidence is not authority: birth, reconstruction, or activation also requires the applicable
+fresh operator/guardian decision. Both methods end at the same certified Body:
 
 - **SEED** — *independent.* The organism condenses itself into a dormant, self-describing package of
   **data** that grows into a certified Body with **no host**. Three sizes of one act: the **spore**
@@ -294,7 +298,7 @@ caught, secret boundary held) in `python -m mantle prove`.
 | Phase | Name | LLM? | Produces |
 |-------|------|------|----------|
 | **1** | **Body** | **No** | A certified **Zombie Body** — runs, persists, reacts, provably alive. |
-| **2** | **MIND** | Yes | The same Body, now with cognition — fusion is *refused* without a passed Stage-1 gate. |
+| **2** | **MIND** | Yes | The same Body, now with cognition — fusion requires Stage-1 evidence **and** explicit operator + guardian approval. |
 
 A Body that passes Stage 1 must keep passing it after fusion; the Stage-2 gate re-runs
 every Stage-1 row to prove it.

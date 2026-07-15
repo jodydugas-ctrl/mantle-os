@@ -8,7 +8,7 @@
 - Target storage: browser memory, localStorage append-only ledger, operator-selected text files
 - Body mode: standard Phase-1 Body
 - Budget policy: sleep; no model calls, no hidden network, no API key requirement
-- DNR policy: operator-defined; no reconstruction or MIND fusion without explicit authorization
+- DNR policy: operator-defined; no reconstruction or MIND fusion without fresh, target-bound operator and guardian approvals
 - MIND state: dormant readiness surface only
 
 ## Organ Map
@@ -77,7 +77,7 @@ Covered actions: open, failed open, save, save-as.
 
 The Body is ready to be considered for a separate `Vocare` cast. Phase 2 is not authorized here.
 
-Potential future Brain intentions, after explicit operator authorization only:
+Potential future Brain intentions, after fresh technical evidence and explicit target-bound operator and guardian approvals:
 
 - summarize note
 - suggest title
@@ -121,4 +121,4 @@ CONFIDENCE:
 - Medium for exact native-desktop parity because browser security limits file and clipboard surfaces.
 
 NEXT:
-- Stop after Stage-1 certification. Do not fuse MIND without explicit operator authorization.
+- Stop after Stage-1 certification. Do not fuse MIND without fresh technical evidence and explicit target-bound operator and guardian approvals.

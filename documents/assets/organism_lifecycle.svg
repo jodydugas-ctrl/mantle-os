@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 300" font-family="Segoe UI, Helvetica, Arial, sans-serif">
   <title>Mantle OS — the organism lifecycle</title>
-  <desc>Primer seals into the Body; the Body lives and is certified with no LLM; only then
-is a bounded MIND fused; skills calcify; capacity metabolizes; rebirth is chosen and the
+  <desc>Primer seals into the Body; the Body lives and is certified with no LLM; fresh Stage-1
+evidence plus dual authority precede bounded MIND fusion; skills calcify; capacity metabolizes; rebirth is chosen and the
 ancestor seals with a fingerprint.</desc>
   <rect width="980" height="300" fill="#f8fafc"/>
-  <text x="490" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">The v3 Lifecycle — Body first, audit first, mind later</text>
+  <text x="490" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">Current lifecycle — Body first, evidence + authority, mind later</text>
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
@@ -24,12 +24,12 @@ ancestor seals with a fingerprint.</desc>
     <rect x="334" y="70" width="130" height="74" rx="10" fill="#fef9c3" stroke="#a16207"/>
     <text x="399" y="96" font-weight="bold" fill="#713f12">STAGE-1 GATE</text>
     <text x="399" y="114" fill="#713f12">deterministic audit:</text>
-    <text x="399" y="128" fill="#713f12">the Zombie Body certified</text>
+    <text x="399" y="128" fill="#713f12">evidence; not authority</text>
     <line x1="464" y1="107" x2="494" y2="107" stroke="#334155" stroke-width="2" marker-end="url(#a)"/>
     <rect x="496" y="70" width="130" height="74" rx="10" fill="#e2e8f0" stroke="#475569"/>
     <text x="561" y="96" font-weight="bold" fill="#1e293b">MIND FUSES</text>
-    <text x="561" y="114" fill="#1e293b">bounded: thoughts+brain;</text>
-    <text x="561" y="128" fill="#1e293b">proposes, Body applies</text>
+    <text x="561" y="114" fill="#1e293b">after dual approval;</text>
+    <text x="561" y="128" fill="#1e293b">bounded: thoughts+brain</text>
     <line x1="626" y1="107" x2="656" y2="107" stroke="#334155" stroke-width="2" marker-end="url(#a)"/>
     <rect x="658" y="70" width="130" height="74" rx="10" fill="#ffedd5" stroke="#c2410c"/>
     <text x="723" y="96" font-weight="bold" fill="#7c2d12">STAGE-2 GATE</text>

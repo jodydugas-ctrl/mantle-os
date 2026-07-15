@@ -15,6 +15,7 @@ Proves the phenotype feature with real surfaces and no model call anywhere:
 """
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(  # the mantle package (src-layout)
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
@@ -47,7 +48,7 @@ def main():
     assert ph.open_face(org, "origin")["kind"] == "html"
 
     # 2. save a second face -- the real spreadsheet surface
-    src = open(os.path.join(HERE, "Mantle_Spreadsheet_Agent.html"), encoding="utf-8").read()
+    src = Path(HERE, "Mantle_Spreadsheet_Agent.html").read_text(encoding="utf-8")
     ph.express(org, "spreadsheet", "html", src, entry="index.html")
     _say("\n2. sealed a SECOND face 'spreadsheet' (%d chars) into the VCW (append-only)" % len(src))
 

@@ -20,8 +20,8 @@ Two kinds of visuals live here, deliberately:
 Nine contracted organs on one deterministic, fail-open SignalBus. The three absolute
 boundaries: inbound only through **Senses**, outbound only through **Limbs**, every fault
 through **Immune**. The Heart's fixed pulse order. The **Genome lives in the Body**, never
-in a cube. The **Brain is a dormant socket** until a bounded MIND fuses — which requires a
-passed Stage-1 gate.
+in a cube. The **Brain is a dormant socket** until a bounded MIND fuses — which requires fresh
+Stage-1 evidence plus independent, target-bound operator and guardian approvals.
 
 ### The VCW cube, as it really is
 ![VCW cube anatomy](../assets/vcw_cube_anatomy.svg)
@@ -35,7 +35,7 @@ companion is [`examples/vcw/vcw_cube.py`](../../examples/vcw/vcw_cube.py).
 ### The lifecycle
 ![Organism lifecycle](../assets/organism_lifecycle.svg)
 
-Born → lives with no LLM → Stage-1 gate → bounded MIND → Stage-2 gate → grows skills —
+Born → lives with no LLM → Stage-1 evidence → dual authority → bounded MIND → Stage-2 gate → grows skills —
 with the homeostatic loop (metabolism) and chosen rebirth underneath. Every arrow is
 enforced by a gate row or invariant, not convention.
 
@@ -59,7 +59,7 @@ the "how Mantle differs" comparison; the one-sentence summary.
 - The current code added things the poster predates: the **SignalBus** with enforced **organ
   contracts**, executable **capacity thresholds** (0.75 overflow / 0.90 emergency →
   metabolism, never rebirth), **seal fingerprints** on ancestors, **audit-before-fusion**
-  (fusion is *refused* without a certified Stage-1 gate), and the **AppAIRuntime** for
+  (fusion is *refused* without fresh Stage-1 evidence and dual authority), and the **AppAIRuntime** for
   agents.
 - "Immunization / memory reweighting" on the poster is doctrine-level; in the current code the
   immune toolkit is concretely: redaction at the boundary, scan, tombstone, quarantine,

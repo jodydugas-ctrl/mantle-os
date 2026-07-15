@@ -205,7 +205,8 @@ def _answer_from_map(question: str, amap: Dict[str, Any]) -> str:
 
 
 def ask(host: str, question: str, use_mind: bool = False,
-        model=None, cost_per_call: float = 1.0) -> Dict[str, Any]:
+        model=None, cost_per_call: float = 1.0,
+        fusion_authorization: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Ask the resident. The question enters through Senses (the only way in); the
     structural answer is a free Body reflex from the observed map; `use_mind` adds a
     metered reflection (energy is SPENT first -- the symbiosis is real). Every answer
@@ -228,17 +229,19 @@ def ask(host: str, question: str, use_mind: bool = False,
                 thought = "(the MIND is asleep: Stage-1 gate refused fusion: %s)" % (
                     ", ".join(ev.get("fails", [])) or "uncertified")
         if org.stage1_certified:
-            mind = fuse(org, sym.metered(model or stub_mind, org, cost_per_call))
             try:
+                mind = fuse(org, sym.metered(model or stub_mind, org, cost_per_call),
+                            authorization=fusion_authorization)
                 thought = mind.think(org.nervous.assemble(),
                                      question="You are the resident AppAI of the host "
                                               "application at %s. The user asks: %s\n"
                                               "Context (your observed map and memory) is "
                                               "attached." % (host, question))
-            except sym.StarvationError as e:
+            except (PermissionError, sym.StarvationError) as e:
                 thought = "(the MIND is asleep: %s)" % e
             finally:
-                org.brain.defuse()
+                if org.brain.fused:
+                    org.brain.defuse()
     org.limbs.complete({"answered": question[:80]})
     sym.record_value(org, "answered: %s" % question[:80],
                      evidence={"mind": bool(use_mind and thought)})

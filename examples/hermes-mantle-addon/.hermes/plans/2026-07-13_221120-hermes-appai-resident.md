@@ -1,10 +1,14 @@
 # Hermes AppAI Resident Implementation Plan
 
+> **Historical plan:** retained as implementation provenance. Current architecture, status,
+> authority, temporary-directory, and verification requirements live in `README.md`,
+> `docs/MIND_READINESS.*`, and the executable tests; they override stale task wording below.
+
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
 **Goal:** Turn the standalone Hermes Mantle Addon into an additive, fail-open MantleOS resident that gives Hermes a deterministic nine-organ Body, durable VCW memory, SELF/OTHER boundaries, action proofs, immunity, metabolism, lineage, and Stage-1 certification before any explicit MIND fusion.
 
-**Architecture:** Use Mantle Path B (`@BG:h` / Hospitari) rather than rewriting Hermes. Hermes remains the independent host; the addon registers native Hermes plugin hooks and tools, while a vendored Mantle Body lives beside it. Each Hermes profile/session maps to an organism residency record. Phase 1 must run deterministically without an LLM; Hermes's existing model is treated as an optional bounded MIND only after the Body passes Stage 1 and the operator separately enables fusion.
+**Architecture:** Use Mantle Path B (`@BG:h` / Hospitari) rather than rewriting Hermes. Hermes remains the cognitive host; the addon registers native Hermes plugin hooks and tools while a vendored Mantle autonomic Body wraps it. Each Hermes profile maps to a resident resolved at invocation time. Phase 1 runs deterministically without an LLM; a bounded MIND requires fresh Stage-1 evidence plus separate, target-bound operator and guardian approvals.
 
 **Tech Stack:** Python 3.11+ standard library, Hermes plugin APIs (`register_tool`, `register_hook`, `register_command`), vendored Mantle OS 1.2.0, `unittest`, JSON receipts, VCW PNG cube persistence.
 
@@ -25,8 +29,8 @@ This is not merely a collection of Mantle CLI wrappers. The plugin is intended t
 ### AppAI laws
 
 - Body before brain.
-- Stage 1 before MIND readiness; readiness is not fusion.
-- A separate operator decision enables MIND fusion.
+- Stage 1 before MIND readiness; readiness is not fusion authority.
+- Separate target-bound operator and guardian decisions are both required for MIND fusion.
 - All inbound signals observable through Hermes plugin hooks enter through Senses.
 - All model-requested tool effects observable through Hermes plugin hooks pass through Limbs.
 - Every captured failure or refused action becomes an Immune event.
@@ -429,7 +433,7 @@ Readiness requires a fresh Stage-1 PASS and no open hard-fails. The output is a 
 - Create: `tests/mind/test_containment.py`
 - Modify: `mantle_addon/hooks.py`
 
-Only after explicit operator configuration and a fresh Stage-1 receipt:
+Only after fresh Stage-1 evidence and explicit target-bound operator and guardian approvals:
 
 - register/use `post_llm_call` as a Brain/thoughts writer;
 - classify model output as inferred and unverified;
@@ -440,7 +444,7 @@ Only after explicit operator configuration and a fresh Stage-1 receipt:
 
 Fusion must be reversible by setting `mind_enabled=false`; disabling cognition must not damage the Body.
 
-### Task 16: Add Reproduction only after the resident is certified
+### Task 16: Add Reproduction only after certification and separate reproduction authority
 
 **Objective:** Support sealed seed/vault/egg workflows without leaking Hermes secrets or treating provider caches as storage.
 
@@ -472,7 +476,7 @@ python3 -m unittest discover -s tests -v
 
 ### Real Hermes plugin discovery
 
-For each registration change, create an isolated Hermes home and project-plugin sandbox under `.runtime/`, enable project plugins explicitly, load with Hermes's actual `PluginManager`, and assert registered tools/hooks. Do not install the development plugin into the user's active profile.
+For each registration change, create an OS-generated temporary Hermes home and project-plugin sandbox with a `hermes-verify-` prefix, enable project plugins explicitly, load with Hermes's actual `PluginManager`, and assert registered tools/hooks. Do not install the development plugin into the user's active profile.
 
 ### Stage-1 certification
 

@@ -15,8 +15,8 @@ The MIND is a fused LLM, sharply bounded by the BODY -- and the boundary is exec
   * its reflections are INFERRED (verified=False) -- never laundered into facts;
   * a waste budget caps thinking ("failure is not the end; waste is").
 
-Fusion is performed by `fuse(organism, model)`, which refuses without a certified Stage-1
-gate (audit before fusion).
+Fusion is performed by `fuse(organism, model, authorization=...)`, which refuses without
+both a certified Stage-1 gate and explicit operator and guardian approval.
 """
 from __future__ import annotations
 
@@ -25,7 +25,6 @@ import json
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..vcw.entry import make_entry
-from ..vcw.drivers import trial
 from ..core.redact import redact
 from .containment import guarded_write
 from .transport import stub_mind
@@ -97,18 +96,9 @@ class Mind:
         """Learning -> instinct, under containment. The MIND cannot self-promote: the
         candidate must pass the static sandbox gate + `trial`; then the BODY calcifies
         (hash + signature + capability + provenance gates enforced by the substrate)."""
-        try:
-            result = trial(code, entry, cases)
-        except Exception as e:  # noqa: BLE001 -- a refused candidate is not calcified
-            self.org.immune_event("skill_refused", {"entry": entry, "reason": str(e)})
-            return None
-        if not result["ok"]:
-            self.org.immune_event("skill_trial_failed", {"entry": entry, "detail": result})
-            return None
-        self.org.prime.calcify(
-            band, code, entry=entry, signature=signature, capabilities=capabilities,
-            provenance={"author": "MIND", "born_gen": self.org.prime.generation})
-        return result
+        return self.org.limbs.cultivate_mind_skill(
+            band, code, entry, cases, signature, capabilities
+        )
 
     # ---- cognition: the Phase-2 heartbeat extension ----------------------
     def cognize(self, snapshot: Optional[Dict[str, Any]] = None) -> Optional[str]:
@@ -120,9 +110,12 @@ class Mind:
 
 
 def fuse(organism: Any, model: Callable[[str], str] = stub_mind, *,
-         max_thoughts: int = 64) -> Mind:
-    """Fuse a MIND into a certified Body (Phase 2). Refused without a passed Stage-1
-    gate (`organism.stage1_certified`) -- audit before fusion, always."""
+         authorization: Any = None, max_thoughts: int = 64) -> Mind:
+    """Fuse only after Stage-1 evidence and target-bound dual authorization."""
     mind = Mind(organism, model, max_thoughts=max_thoughts)
-    organism.brain.fuse(mind, stage1_certified=organism.stage1_certified)
+    organism.brain.fuse(
+        mind,
+        stage1_certified=organism.stage1_certified,
+        authorization=authorization,
+    )
     return mind

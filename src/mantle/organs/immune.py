@@ -15,8 +15,8 @@ Reflexes (all deterministic, no LLM):
   redact      strip secrets from anything crossing a secret boundary
   is_self     SELF/OTHER recognition (M2): an artifact this Body can verify is SELF
   nociception (M1): a severe event emits a `distress` signal carrying the pain
-              coordinates {reason, band, ref} -- the Heart turns it into an unscheduled
-              pulse that wakes the MIND only when something actually hurts
+              coordinates {reason, band, ref} -- the Heart turns it into an additional
+              unscheduled pulse without replacing the natural cognitive baseline
 """
 from __future__ import annotations
 
@@ -56,10 +56,9 @@ CONTRACT = OrganContract(
     ],
 )
 
-# Events severe enough to wake the MIND: nociception fires a `distress` signal for these
-# (a localized pain the Heart turns into an unscheduled pulse). Routine/economic events
-# (e.g. `starvation`, capacity pressure) are NOT autonomic -- a calm, hungry organism does
-# not thrash its cognition; it sleeps.
+# Events severe enough to add an unscheduled MIND pulse: nociception fires a `distress`
+# signal for these. Routine/economic events (e.g. `starvation`, capacity pressure) are not
+# autonomic interrupts; they do not add pulses or suppress the natural fused baseline.
 AUTONOMIC_KINDS = frozenset({
     "integrity", "organ_overreach", "mind_write_refused", "foreign_rejected",
     "autoimmune_risk", "unresolved_ref", "ancestor_tamper", "flush_failed",

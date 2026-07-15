@@ -17,14 +17,18 @@ and testable with no MIND. INTENTION/DELEGATED await the Brain; the Body never a
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .contract import Organ, OrganContract
+from ..vcw.drivers import trial
 from ..vcw.entry import make_entry
 
 DISPATCH_PHASES = ("INTENTION", "DELEGATED", "NOTIFIED", "COMPLETED")
 _MIND_PHASES = ("INTENTION", "DELEGATED")     # authored only by a fused MIND (Phase 2)
 _BODY_PHASES = ("NOTIFIED", "COMPLETED")      # authored by the Body (Phase 1, permanently)
+MIND_SPECIAL_CONTROL = "mind.special_instruction"
+MIND_DISCOVERY_CONTROL = "mind.discovery"
+MIND_CULTIVATE_CONTROL = "mind.cultivate"
 
 CONTRACT = OrganContract(
     "limbs", "action & surface actuation (efferent I/O) -- the only outbound boundary",
@@ -124,6 +128,102 @@ class Limbs(Organ):
         self.append("brain", make_entry({"action_proof": rec}, opcode="PROOF",
                                         author="BODY", authorship="BODY"))
         return rec
+
+    # ---- model-caused mutation ceremonies ---------------------------------------
+    def _require_fused_mind(self, control_id: str) -> None:
+        if self.org.brain.fused:
+            return
+        self.org.immune_event(
+            "mind_mutation_refused",
+            {"control_id": control_id, "reason": "no MIND fused"},
+        )
+        raise PermissionError("%s requires a fused MIND" % control_id)
+
+    def apply_mind_special(self, intent: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate a MIND steering proposal, apply it as Body, and prove the mutation."""
+        self._require_fused_mind(MIND_SPECIAL_CONTROL)
+        text = intent.get("text") if isinstance(intent, dict) else None
+        valid = (
+            isinstance(intent, dict)
+            and intent.get("intent") == "special_instruction"
+            and intent.get("author") == "MIND"
+            and isinstance(text, str)
+            and bool(text.strip())
+            and len(text) <= 4096
+            and not any(ord(character) < 32 and character not in "\n\t" for character in text)
+        )
+        if not valid:
+            self._prove(
+                MIND_SPECIAL_CONTROL, attempted=False, ok=False,
+                method="BodyMutationBridge", ref="body.special", reason="invalid proposal",
+            )
+            raise ValueError("invalid MIND special-instruction proposal")
+        applied = self.org.body.apply_special(text, source="MIND")
+        proof = self._prove(
+            MIND_SPECIAL_CONTROL, attempted=True, ok=True,
+            method="BodyMutationBridge", ref="body.special", reason="ok",
+        )
+        return {"intent": intent, "applied": applied, "proof": proof}
+
+    def record_mind_discovery(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        """Persist one inferred inner-voice result through Limbs, never as a fact."""
+        self._require_fused_mind(MIND_DISCOVERY_CONTROL)
+        valid = (
+            isinstance(record, dict)
+            and record.get("author") == "MIND"
+            and record.get("verified") is False
+            and record.get("confidence") == "inferred"
+            and record.get("opcode") == "INNER_VOICE"
+        )
+        if not valid:
+            self._prove(
+                MIND_DISCOVERY_CONTROL, attempted=False, ok=False,
+                method="BodyMutationBridge", ref="discoveries", reason="invalid proposal",
+            )
+            raise ValueError("invalid inferred-discovery proposal")
+        self.org.memory.append("discoveries", record)
+        return self._prove(
+            MIND_DISCOVERY_CONTROL, attempted=True, ok=True,
+            method="BodyMutationBridge", ref="discoveries", reason="ok",
+        )
+
+    def cultivate_mind_skill(
+        self,
+        band: str,
+        code: str,
+        entry: str,
+        cases: List[Tuple[Dict[str, Any], Any]],
+        signature: Dict[str, Any],
+        capabilities: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Trial and calcify one MIND proposal as a proven Body mutation."""
+        self._require_fused_mind(MIND_CULTIVATE_CONTROL)
+        try:
+            result = trial(code, entry, cases)
+            if not result["ok"]:
+                raise ValueError("skill trial failed")
+            self.org.prime.calcify(
+                band,
+                code,
+                entry=entry,
+                signature=signature,
+                capabilities=capabilities,
+                provenance={"author": "MIND", "born_gen": self.org.prime.generation},
+            )
+        except Exception as exc:  # noqa: BLE001 -- refusal is a proved, fail-open outcome
+            self.org.immune_event(
+                "skill_refused", {"entry": entry, "reason": type(exc).__name__}
+            )
+            self._prove(
+                MIND_CULTIVATE_CONTROL, attempted=True, ok=False,
+                method="BodyMutationBridge", ref=band, reason=type(exc).__name__,
+            )
+            return None
+        self._prove(
+            MIND_CULTIVATE_CONTROL, attempted=True, ok=True,
+            method="BodyMutationBridge", ref=band, reason="ok",
+        )
+        return result
 
     # ---- calcified reflex invocation (zombie-state capability) -----------------
     def invoke_reflex(self, band: str, args: Dict[str, Any],

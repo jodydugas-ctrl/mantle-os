@@ -1,4 +1,5 @@
 from dataclasses import FrozenInstanceError
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import sys
@@ -11,9 +12,55 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from mantle_addon.config import ConfigError, ResidentConfig
 from mantle_addon.primer import build_primer
+from mantle_addon.stage1_gate import GateRow, Stage1Receipt
 
 
 class ResidentConfigTests(unittest.TestCase):
+    now = datetime(2026, 7, 15, 12, 0, tzinfo=timezone.utc)
+
+    def _complete_receipt(self) -> Stage1Receipt:
+        issued_at = (self.now - timedelta(seconds=60)).isoformat()
+        rows = [GateRow(f"A-{index:02d}", "test", "PASS", "") for index in range(1, 15)]
+        return Stage1Receipt(
+            passed=True,
+            rows=rows,
+            fails=[],
+            framework_passed=True,
+            framework_rows=20,
+            framework_invariants=111,
+            framework_failures=[],
+            summary="complete test receipt",
+            issued_at=issued_at,
+            resident_identity="Hermes.Mantle.AppAI",
+            body_fingerprint="body-fingerprint-1",
+        )
+
+    def _approval(self) -> dict:
+        return {
+            "recorded_at": (self.now - timedelta(seconds=30)).isoformat(),
+            "target": {
+                "resident_identity": "Hermes.Mantle.AppAI",
+                "body_fingerprint": "body-fingerprint-1",
+            },
+            "operator": {"fusion_decision": "APPROVED"},
+            "guardian": {"fusion_decision": "APPROVED"},
+            "effective_decision": {
+                "mind_fusion_authorized": True,
+                "reproduction_activation_authorized": False,
+            },
+        }
+
+    def _readiness(self) -> dict:
+        return {
+            "verdict": "READY",
+            "target": {
+                "resident_identity": "Hermes.Mantle.AppAI",
+                "body_fingerprint": "body-fingerprint-1",
+            },
+            "mind_fusion_authorized": False,
+            "reproduction_activation_authorized": False,
+        }
+
     def test_defaults_are_body_first_and_observer_only(self):
         config = ResidentConfig.from_mapping({})
 
@@ -35,7 +82,7 @@ class ResidentConfigTests(unittest.TestCase):
             ResidentConfig.from_mapping({"surprise": True})
 
     def test_direct_constructor_cannot_bypass_phase1_gates(self):
-        with self.assertRaisesRegex(ConfigError, "MIND fusion"):
+        with self.assertRaisesRegex(ConfigError, "authorize_phase2"):
             ResidentConfig(mind_enabled=True)
         with self.assertRaisesRegex(ConfigError, "raw payload retention"):
             ResidentConfig(record_raw_prompts=True)
@@ -62,11 +109,89 @@ class ResidentConfigTests(unittest.TestCase):
                 {"mind_enabled": True}, stage1_passed=True
             )
 
-        with self.assertRaisesRegex(ConfigError, "fusion is not implemented"):
+        with self.assertRaisesRegex(ConfigError, "authorize_phase2"):
             ResidentConfig.from_mapping(
                 {"mind_enabled": True},
                 stage1_passed=True,
                 fusion_authorized=True,
+            )
+
+    def test_phase2_transition_requires_complete_fresh_target_bound_authority(self):
+        base = ResidentConfig.from_mapping({})
+        phase2 = ResidentConfig.authorize_phase2(
+            base,
+            stage1_receipt=self._complete_receipt(),
+            readiness_report=self._readiness(),
+            authorization=self._approval(),
+            now=self.now,
+        )
+
+        self.assertFalse(base.mind_enabled)
+        self.assertTrue(phase2.mind_enabled)
+        self.assertTrue(phase2.body_enabled)
+        self.assertNotIn("_phase2_grant", phase2.to_dict())
+
+    def test_phase2_transition_rejects_incomplete_stale_or_mismatched_evidence(self):
+        base = ResidentConfig.from_mapping({})
+        receipt = self._complete_receipt()
+
+        cases = []
+        cases.append((
+            receipt._replace(framework_passed=False),
+            self._readiness(),
+            self._approval(),
+            "complete",
+        ))
+        cases.append((
+            receipt._replace(issued_at=(self.now - timedelta(seconds=301)).isoformat()),
+            self._readiness(),
+            self._approval(),
+            "fresh",
+        ))
+        not_ready = self._readiness()
+        not_ready["verdict"] = "NOT_READY"
+        cases.append((receipt, not_ready, self._approval(), "READY"))
+        wrong_target = self._approval()
+        wrong_target["target"]["body_fingerprint"] = "different-body"
+        cases.append((receipt, self._readiness(), wrong_target, "target"))
+        deferred = self._approval()
+        deferred["guardian"]["fusion_decision"] = "DEFERRED"
+        cases.append((receipt, self._readiness(), deferred, "guardian"))
+        early = self._approval()
+        early["recorded_at"] = (self.now - timedelta(seconds=90)).isoformat()
+        cases.append((receipt, self._readiness(), early, "follow"))
+        reproduction = self._approval()
+        reproduction["effective_decision"]["reproduction_activation_authorized"] = True
+        cases.append((receipt, self._readiness(), reproduction, "reproduction"))
+
+        for candidate_receipt, candidate_readiness, candidate_authority, message in cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ConfigError, message):
+                    ResidentConfig.authorize_phase2(
+                        base,
+                        stage1_receipt=candidate_receipt,
+                        readiness_report=candidate_readiness,
+                        authorization=candidate_authority,
+                        now=self.now,
+                    )
+
+    def test_live_deferred_decisions_cannot_enable_phase2(self):
+        decisions = json.loads(
+            (PROJECT_ROOT / "docs" / "FUSION_DECISIONS.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with self.assertRaises(ConfigError):
+            ResidentConfig.authorize_phase2(
+                ResidentConfig.from_mapping({}),
+                stage1_receipt=self._complete_receipt(),
+                readiness_report=json.loads(
+                    (PROJECT_ROOT / "docs" / "MIND_READINESS.json").read_text(
+                        encoding="utf-8"
+                    )
+                ),
+                authorization=decisions,
+                now=self.now,
             )
 
     def test_raw_payload_retention_flags_are_present_but_not_authorized(self):

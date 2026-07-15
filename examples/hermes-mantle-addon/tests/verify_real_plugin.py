@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 
 
 OBSERVER_HOOKS = {
@@ -23,13 +24,24 @@ OBSERVER_HOOKS = {
     "post_llm_call",
     "pre_tool_call",
     "post_tool_call",
+    "pre_approval_request",
+    "post_approval_response",
+    "subagent_start",
+    "subagent_stop",
+    "pre_gateway_dispatch",
 }
 
 
 def _worker(mode: str) -> dict[str, object]:
-    from hermes_cli.plugins import PluginManager  # pyright: ignore[reportMissingImports]
+    import hermes_cli.plugins as plugins_module  # pyright: ignore[reportMissingImports]
+    from hermes_cli.plugins import (  # pyright: ignore[reportMissingImports]
+        PluginManager,
+        VALID_HOOKS,
+    )
+    from model_tools import handle_function_call  # pyright: ignore[reportMissingImports]
     from tools.registry import registry  # pyright: ignore[reportMissingImports]
 
+    assert OBSERVER_HOOKS <= VALID_HOOKS
     manager = PluginManager()
     manager.discover_and_load()
     row = next(
@@ -39,15 +51,38 @@ def _worker(mode: str) -> dict[str, object]:
         assert row["enabled"] is False
         assert "not enabled" in str(row["error"])
         assert registry.get_entry("mantle_status") is None
+        assert registry.get_entry("mantle_record_discovery") is None
         assert not (OBSERVER_HOOKS & set(manager._hooks))
         return {"mode": mode, "enabled": False, "hooks": 0}
 
     assert row["enabled"] is True and row["error"] is None, row
+    plugins_module._plugin_manager = manager
     assert OBSERVER_HOOKS <= set(manager._hooks)
     status_entry = registry.get_entry("mantle_status")
     assert status_entry is not None
-    status = json.loads(status_entry.handler({}))
-    assert status["mantle_version"] == "1.2.0"
+    status = json.loads(
+        handle_function_call(
+            "mantle_status",
+            {},
+            tool_call_id="status-integration",
+            session_id="session-integration",
+        )
+    )
+    assert status["mantle_version"] == "1.3.0"
+    discovery_entry = registry.get_entry("mantle_record_discovery")
+    assert discovery_entry is not None
+    discovery_text = "bounded integration discovery"
+    discovery_result = json.loads(
+        handle_function_call(
+            "mantle_record_discovery",
+            {"idea": discovery_text},
+            tool_call_id="discovery-integration",
+            session_id="session-integration",
+        )
+    )
+    assert discovery_result["success"] is True
+    assert discovery_result["verified"] is False
+    assert discovery_result["classification"] == "inferred"
 
     sensitive = [
         "sk-integration-user",
@@ -57,8 +92,17 @@ def _worker(mode: str) -> dict[str, object]:
         "sk-integration-result",
         "call-integration-ok",
         "call-integration-blocked",
+        "approval-secret-command",
+        "subagent-secret-goal",
+        "gateway-secret-message",
     ]
-    invoke = manager.invoke_hook
+    dispatched: list[str] = []
+
+    def invoke(hook_name: str, **kwargs: object) -> None:
+        results = manager.invoke_hook(hook_name, **kwargs)
+        assert results == [], (hook_name, results)
+        dispatched.append(hook_name)
+
     invoke("on_session_start", session_id="session-integration")
     invoke(
         "pre_llm_call",
@@ -105,18 +149,68 @@ def _worker(mode: str) -> dict[str, object]:
         status="blocked",
         error_type="plugin_block",
     )
+    invoke(
+        "pre_approval_request",
+        command=sensitive[7],
+        description="dangerous command",
+        surface="cli",
+    )
+    invoke(
+        "post_approval_response",
+        command=sensitive[7],
+        description="dangerous command",
+        surface="cli",
+        choice="deny",
+    )
+    invoke(
+        "subagent_start",
+        child_goal=sensitive[8],
+        child_role="leaf",
+        parent_session_id="parent-secret-id",
+        child_session_id="child-secret-id",
+    )
+    invoke(
+        "subagent_stop",
+        child_summary=sensitive[8],
+        child_status="completed",
+        duration_ms=7,
+        parent_session_id="parent-secret-id",
+        child_session_id="child-secret-id",
+    )
+    invoke(
+        "pre_gateway_dispatch",
+        event=SimpleNamespace(
+            text=sensitive[9],
+            message_type=SimpleNamespace(value="text"),
+            media_urls=[],
+            source=SimpleNamespace(platform=SimpleNamespace(value="telegram")),
+        ),
+        gateway=object(),
+        session_store=object(),
+    )
+    invoke("on_session_finalize", session_id="session-integration")
     invoke("on_session_end", session_id="session-integration")
 
-    runtime = manager._hooks["pre_llm_call"][0].__self__
+    callback = manager._hooks["pre_llm_call"][0]
+    registry_runtime = callback.func.__self__
+    runtime = registry_runtime.current()
     organism = runtime.organism
     senses = organism.prime.read("senses")
     brain = organism.prime.read("brain")
+    discoveries = organism.memory.recall("discoveries")
+    assert discoveries[-1]["content"]["idea"] == discovery_text
+    assert discoveries[-1]["verified"] is False
+    assert discoveries[-1]["confidence"] == "inferred"
     serialized = json.dumps(
         {"senses": senses, "brain": brain, "immune": organism.immune.log},
         sort_keys=True,
     )
     for value in sensitive:
         assert value not in serialized, value
+    assert "parent-secret-id" not in serialized
+    assert "child-secret-id" not in serialized
+    assert len(dispatched) == 13
+    assert set(dispatched) == OBSERVER_HOOKS
 
     signals = [
         item["content"]["signal"]
@@ -134,6 +228,13 @@ def _worker(mode: str) -> dict[str, object]:
         for item in brain
         if isinstance(item.get("content", {}).get("action_proof"), dict)
     ]
+    assert any(
+        proof["control"] == "hermes.mantle.record_discovery"
+        and proof["attempted"] is True
+        and proof["ok"] is True
+        and proof["method"] == "ControlBridge"
+        for proof in proofs
+    )
     assert any(
         proof["attempted"] is True
         and proof["ok"] is False
@@ -162,6 +263,9 @@ def _worker(mode: str) -> dict[str, object]:
         "stage1_certified": False,
         "raw_exclusion": True,
         "owner_only": True,
+        "dispatched": len(dispatched),
+        "distinct_hooks_dispatched": len(set(dispatched)),
+        "tools_dispatched": 2,
     }
 
 

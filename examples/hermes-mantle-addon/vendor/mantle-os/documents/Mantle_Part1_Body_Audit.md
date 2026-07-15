@@ -35,7 +35,7 @@ breakage axis (B-rows + hard-fails HF-Bxx), the self-regulating tissue (SELF / N
 
 | #    | Requirement | HF | Pass? | Notes |
 |------|-------------|----|-------|-------|
-| B-04 | Heartbeat loop runs with **no LLM** in any path | HF-B08 | | |
+| B-04 | Phase-1 heartbeat loop runs with **no LLM**; a fused Phase-2 MIND receives each natural ten-minute cognitive pulse | HF-B08 | | |
 | B-05 | Dual-flush: persists on explicit checkpoint **and** `atexit` | HF-B33 | | |
 | B-06 | A missed/stalled pulse appends an `immune` event (not swallowed) | — | | |
 
@@ -130,9 +130,9 @@ breakage axis (B-rows + hard-fails HF-Bxx), the self-regulating tissue (SELF / N
 | SELF-2 | Data the Body signs verifies as SELF; a forged artifact is rejected (`foreign_rejected`) | | |
 | SELF-3 | A seal signed by Body A does not verify under Body B (anti-clone) | | |
 | SELF-4 | A clean reload preserves the key; a tampered key is refused loudly (`autoimmune_risk`) on load | | |
-| NOC-1  | Cognition is event-gated: a calm fused organism wakes the MIND **zero** times (zero MODEL calls) | | |
+| NOC-1  | Natural heartbeat: a calm fused organism calls the MIND on every ten-minute baseline pulse | | |
 | NOC-2  | A severe immune event fires exactly one unscheduled pulse whose reason/ref points at the faulting band | | |
-| NOC-3  | The woken MIND's snapshot is pre-anchored to the stressor (`_stressor`) — no full-cube scan | | |
+| NOC-3  | An additional pain pulse pre-anchors the MIND snapshot to `_stressor` — no full-cube scan | | |
 | MEMW-1 | A deweighted entry is hidden from `recall` yet recoverable via `recall_ghosts`; the original is never mutated | | |
 | MEMW-2 | Live reads are ordered by descending weight; a fully-suppressed entry does not surface | | |
 | MEMW-3 | Deweighting is not a backdoor overwrite — belief history preserved; dedupe/compaction stay coherent | | |
@@ -198,5 +198,6 @@ ZOMBIE BODY CERTIFICATION
   Certified by      : ____________________________
   Date              : ____________________________
 
-  >>> Phase 2 (MIND fusion) is authorized ONLY when Open hard-fails = 0. <<<
+  >>> Open hard-fails = 0 establishes technical eligibility only. Fusion also requires
+      separate target-bound APPROVED decisions from operator and guardian. <<<
 ```

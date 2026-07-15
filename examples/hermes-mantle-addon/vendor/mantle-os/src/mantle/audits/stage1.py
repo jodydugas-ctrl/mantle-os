@@ -4,8 +4,9 @@ mantle.audits.stage1  --  the Stage-1 (Zombie Body) gate (Mantle OS)
 
 Deterministic and LLM-free: every check reads the cube, runs Body reflexes, and runs
 verify(). No human judgment, no model, no network. The gate exits non-zero if ANY row
-fails or any security invariant is red; a passing run certifies the Zombie Body and
-authorizes Phase 2 (`organism.stage1_certified = True`).
+fails or any security invariant is red. A passing run records technical Body evidence
+(`organism.stage1_certified = True`); it does not grant fusion authority. Phase 2 remains
+eligible only for separate readiness and dual authorization.
 
 Tamper proofs (the harness must CATCH violations):
     python -m mantle audit --break-hash     # a tampered entry   -> must FAIL
@@ -117,15 +118,17 @@ def audit_mesh(org):
         # The Phase-1 guarantee: the heartbeat NEVER needs the MIND. If a MIND is fused
         # (the Stage-2 regression re-runs this row), detach it, beat, and re-attach --
         # the loop must run whole with the cognition slot empty.
-        was_fused = org.brain.fused
         mind_obj = org.brain.mind
+        was_fused = org.brain.fused
+        fusion_authorization = org.brain.fusion_authorization
         if was_fused:
             org.brain.defuse()
         before = org.heart.beats
         org.heart.run(3)                                 # cognition slot empty: no LLM
         ok = org.heart.beats == before + 3 and not org.brain.fused
         if was_fused:
-            org.brain.fuse(mind_obj, stage1_certified=org.stage1_certified)
+            org.brain.fuse(mind_obj, stage1_certified=org.stage1_certified,
+                           authorization=fusion_authorization)
         return (ok, "3 beats with the cognition slot empty (no LLM in the loop)%s"
                 % ("; MIND re-fused" if was_fused else ""))
     safe("B-04", "Heartbeat loop runs with no LLM", "HF-B08", b04)
@@ -298,7 +301,7 @@ def run(org=None, *, include_invariants=True):
     inv_ok = all(r["ok"] for r in inv)
     passed = not fails and inv_ok
     if passed:
-        org.stage1_certified = True              # the gate itself authorizes Phase 2
+        org.stage1_certified = True              # technical evidence, never authority
     return passed, {"substrate_rows": substrate_rows, "mesh_rows": mesh_rows,
                     "invariants": inv, "fails": [r["code"] for r in fails],
                     "organism": org}
@@ -349,7 +352,7 @@ def main(argv):
     print("  Gate rows         : %d / %d passed" % (rows_pass, rows_all))
     if inv:
         print("  Security invariants: %d / %d green" % (inv_pass, len(inv)))
-    print("  Open hard-fails   : %d   (MUST be 0 to authorize Phase 2)" % len(ev["fails"]))
+    print("  Open hard-fails   : %d   (MUST be 0 for technical certification)" % len(ev["fails"]))
     if ev["fails"]:
         print("  FAILs             : %s" % ", ".join(ev["fails"]))
     print("  Organs            : " + "  ".join("%s[%s]" % (k, v) for k, v in organs.items()))
@@ -368,8 +371,8 @@ def main(argv):
             reasons.append("security-invariants")
         print("\nRESULT: GATE BLOCKED — %s" % ", ".join(reasons))
         return 1
-    print("\nRESULT: STAGE-1 ZOMBIE BODY GATE PASSED (substrate + organ mesh certified; "
-          "Phase 2 authorized).")
+    print("\nRESULT: STAGE-1 ZOMBIE BODY GATE PASSED (technical evidence only; "
+          "eligible for separate readiness and dual authorization).")
     return 0
 
 

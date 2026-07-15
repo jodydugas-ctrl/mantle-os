@@ -4,7 +4,7 @@ Everything is provable, so prove it. Three harnesses, all pure stdlib, all offli
 
 ```bash
 python -m mantle audit         # Stage 1: the Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # the 110 security invariants (red/green)
+python -m mantle prove         # the 111 security invariants (red/green)
 python -m mantle audit-mind    # Stage 2: MIND containment + FULL Stage-1 regression
 ```
 
@@ -28,7 +28,8 @@ the brain band (B-16/HF-B09) · Human Surface Map coverage (B-25) + ControlBridg
 with enforced contracts, Brain dormant (B-60) · the SignalBus fail-open (B-61/HF-B32) ·
 organ overreach refused (B-62) · capacity pressure measurable and wired (B-63).
 
-A pass sets `organism.stage1_certified = True` — the only key that unlocks fusion.
+A pass sets `organism.stage1_certified = True` as technical evidence. Fusion still requires
+separate target-bound `APPROVED` decisions from both operator and guardian.
 
 ## Tamper proofs (the harness must CATCH violations)
 
@@ -51,12 +52,12 @@ Stage-1 row set re-runs against the fused organism: Stage 2 may never break Stag
 
 ## The invariants (`src/mantle/audits/invariants.py`)
 
-109 red/green guards, each proving a hard-fail fires (and, where relevant, that the
+111 red/green guards, each proving a hard-fail fires (and, where relevant, that the
 permitted path still works). Highlights beyond the v2 set: **no-Phase-1-LLM-path** proven
 in a clean subprocess that lives a full Phase-1 life and then inspects `sys.modules`,
 plus an AST import scan of every Phase-1 source · **capacity → metabolism, never
 rebirth** · **seal-tamper detection** · **lazy-load equivalence** · **calcify requires
-hash/signature/capability/provenance** · **fusion requires Stage-1** · **self-inquiry
+hash/signature/capability/provenance** · **fusion requires Stage-1 + dual authority** · **self-inquiry
 never becomes a fact** (and evidence-free promotion is refused while cited promotion
 works) · **organ overreach refused** · **staged save rejects a corrupt cube**.
 

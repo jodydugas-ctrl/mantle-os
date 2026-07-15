@@ -4,12 +4,22 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
+from threading import RLock
 import time
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from .aep import record_action_execution_proof
 from .body import ResidentBodyFactory, save_resident
 from .config import ResidentConfig
+
+
+def _safe_save(organism: Any, path: Any) -> None:
+    """Fail-open save for the atexit handler — never raises on the way down."""
+    try:
+        save_resident(organism, path)
+    except Exception:
+        pass
 
 
 OBSERVER_HOOKS = (
@@ -20,7 +30,31 @@ OBSERVER_HOOKS = (
     "post_llm_call",
     "pre_tool_call",
     "post_tool_call",
+    "pre_approval_request",
+    "post_approval_response",
+    "subagent_start",
+    "subagent_stop",
+    "pre_gateway_dispatch",
 )
+
+DISCOVERY_CONTROL_ID = "hermes.mantle.record_discovery"
+MAX_DISCOVERY_CHARS = 2_000
+
+
+def _validated_discovery(value: Any) -> str:
+    """Validate the only model-facing mutation before it reaches Memory."""
+    if not isinstance(value, str):
+        raise TypeError("discovery must be a string")
+    text = value.strip()
+    if not text:
+        raise ValueError("discovery must not be empty")
+    if len(text) > MAX_DISCOVERY_CHARS:
+        raise ValueError(
+            f"discovery must be at most {MAX_DISCOVERY_CHARS} characters"
+        )
+    if any(ord(char) < 32 and char not in "\n\t" for char in text):
+        raise ValueError("discovery contains unsupported control characters")
+    return text
 
 
 class ResidentRuntime:
@@ -31,13 +65,15 @@ class ResidentRuntime:
         config: ResidentConfig,
         *,
         profile_id: str,
+        hermes_home: str | Path | None = None,
         factory: Any | None = None,
     ) -> None:
         self.config = config
         self.profile_id = profile_id
-        self.factory = factory or ResidentBodyFactory(config)
+        self.factory = factory or ResidentBodyFactory(config, hermes_home=hermes_home)
         self._handle: Any | None = None
         self._sequence = 0
+        self._lock = RLock()
         self.diagnostics: list[dict[str, str]] = []
 
     @property
@@ -55,9 +91,64 @@ class ResidentRuntime:
                 )
             else:
                 organism.heart.set_circulate(None)
+            # Dual-flush: persist on BOTH explicit checkpoint AND atexit, so a
+            # cube is never lost to an ungraceful shutdown. The atexit handler
+            # calls circulate(), which is a no-op when the circulate callback is
+            # None (deferred mode) — but in deferred mode we install our own
+            # atexit handler below that performs the full save.
+            organism.heart.install_dual_flush()
+            if not self.config.checkpoint_each_turn:
+                import atexit as _atexit
+                _atexit.register(
+                    lambda organism=organism, path=path: _safe_save(organism, path)
+                )
+            self._wire_controls(organism)
             self._handle = handle
             return handle
         return self._handle
+
+    @staticmethod
+    def _wire_controls(organism: Any) -> None:
+        """Expose the bounded model-facing mutation through Senses + Limbs."""
+        def record_discovery(value: Any) -> None:
+            text = _validated_discovery(value)
+            organism.memory.remember(
+                "discoveries",
+                {"idea": text},
+                opcode="INGESTED",
+                source="Hermes mantle_record_discovery",
+                verified=False,
+                confidence="inferred",
+            )
+
+        organism.limbs.register_control(
+            DISCOVERY_CONTROL_ID,
+            {
+                "label": "Record inferred discovery",
+                "kind": "bounded_text",
+                "band": "discoveries",
+                "max_chars": MAX_DISCOVERY_CHARS,
+                "verified": False,
+            },
+            record_discovery,
+        )
+
+    def record_discovery(self, text: Any) -> dict[str, Any]:
+        """Record one inferred discovery through Limbs and persist its proof."""
+        with self._lock:
+            handle = self._ensure_handle()
+            organism = handle.organism
+            proof = organism.limbs.operate(DISCOVERY_CONTROL_ID, text)
+            try:
+                save_resident(organism, handle.path)
+                durable = True
+            except Exception as exc:
+                durable = False
+                organism.immune_event(
+                    "checkpoint_failed",
+                    {"event_type": "mantle_record_discovery", "error": type(exc).__name__},
+                )
+            return {"proof": proof, "durable": durable}
 
     @staticmethod
     def _hash_text(value: str) -> str:
@@ -116,6 +207,48 @@ class ResidentRuntime:
             duration = data.get("duration_ms")
             if isinstance(duration, (int, float)) and not isinstance(duration, bool):
                 metadata["duration_ms"] = max(0, int(duration))
+        if event_type in {"pre_approval_request", "post_approval_response"}:
+            metadata["command"] = self._content_summary(data.get("command"))
+            metadata["description"] = self._content_summary(data.get("description"))
+            for field in ("surface", "choice", "decided_by"):
+                value = data.get(field)
+                if isinstance(value, str) and value:
+                    metadata[field] = value[:64]
+        if event_type in {"subagent_start", "subagent_stop"}:
+            if event_type == "subagent_start":
+                metadata["goal"] = self._content_summary(data.get("child_goal"))
+            else:
+                metadata["summary"] = self._content_summary(data.get("child_summary"))
+                child_status = data.get("child_status")
+                if isinstance(child_status, str) and child_status:
+                    metadata["child_status"] = child_status[:64]
+                duration = data.get("duration_ms")
+                if isinstance(duration, (int, float)) and not isinstance(duration, bool):
+                    metadata["duration_ms"] = max(0, int(duration))
+            child_role = data.get("child_role")
+            if isinstance(child_role, str) and child_role:
+                metadata["child_role"] = child_role[:64]
+            for field in ("parent_session_id", "child_session_id"):
+                value = data.get(field)
+                if isinstance(value, str) and value:
+                    metadata[field] = self._hash_text(value)[:23]
+        if event_type == "pre_gateway_dispatch":
+            event = data.get("event")
+            metadata["text"] = self._content_summary(getattr(event, "text", None))
+            message_type = getattr(event, "message_type", None)
+            if message_type is not None:
+                metadata["message_type"] = str(
+                    getattr(message_type, "value", message_type)
+                )[:64]
+            media_urls = getattr(event, "media_urls", None)
+            if isinstance(media_urls, list):
+                metadata["media_count"] = len(media_urls)
+            source = getattr(event, "source", None)
+            platform = getattr(source, "platform", None)
+            if platform is not None:
+                metadata["platform"] = str(
+                    getattr(platform, "value", platform)
+                )[:64]
         encoded = json.dumps(metadata, sort_keys=True, separators=(",", ":"))
         if len(encoded) > self.config.max_event_chars:
             return {
@@ -197,19 +330,20 @@ class ResidentRuntime:
             save_resident(organism, self._handle.path)
 
     def _safe_observe(self, event_type: str, data: Mapping[str, Any]) -> None:
-        try:
-            self._observe(event_type, data)
-        except Exception as exc:
-            detail = {"event_type": event_type, "error_type": type(exc).__name__}
-            if self._handle is not None:
-                try:
-                    organism = self._handle.organism
-                    organism.immune.event("hook_failure", detail)
-                    save_resident(organism, self._handle.path)
-                except Exception:
-                    pass
-            self.diagnostics.append(detail)
-            del self.diagnostics[:-100]
+        with self._lock:
+            try:
+                self._observe(event_type, data)
+            except Exception as exc:
+                detail = {"event_type": event_type, "error_type": type(exc).__name__}
+                if self._handle is not None:
+                    try:
+                        organism = self._handle.organism
+                        organism.immune.event("hook_failure", detail)
+                        save_resident(organism, self._handle.path)
+                    except Exception:
+                        pass
+                self.diagnostics.append(detail)
+                del self.diagnostics[:-100]
 
     def on_session_start(self, **kwargs: Any) -> None:
         self._safe_observe("on_session_start", kwargs)
@@ -231,3 +365,70 @@ class ResidentRuntime:
 
     def post_tool_call(self, **kwargs: Any) -> None:
         self._safe_observe("post_tool_call", kwargs)
+
+    def pre_approval_request(self, **kwargs: Any) -> None:
+        self._safe_observe("pre_approval_request", kwargs)
+
+    def post_approval_response(self, **kwargs: Any) -> None:
+        self._safe_observe("post_approval_response", kwargs)
+
+    def subagent_start(self, **kwargs: Any) -> None:
+        self._safe_observe("subagent_start", kwargs)
+
+    def subagent_stop(self, **kwargs: Any) -> None:
+        self._safe_observe("subagent_stop", kwargs)
+
+    def pre_gateway_dispatch(self, **kwargs: Any) -> None:
+        """Observe gateway ingress without rewriting, skipping, or authorizing it."""
+        self._safe_observe("pre_gateway_dispatch", kwargs)
+
+
+class RuntimeRegistry:
+    """Resolve one locked resident per active Hermes home/profile at invocation time."""
+
+    def __init__(
+        self,
+        config: ResidentConfig | None = None,
+        *,
+        profile_resolver: Callable[[], str],
+        home_resolver: Callable[[], str | Path] | None = None,
+        config_resolver: Callable[[], ResidentConfig] | None = None,
+    ) -> None:
+        if config is None and config_resolver is None:
+            raise ValueError("config or config_resolver is required")
+        self.config = config
+        self._config_resolver = config_resolver or (lambda: config)  # type: ignore[return-value]
+        self._profile_resolver = profile_resolver
+        self._home_resolver = home_resolver or self._active_hermes_home
+        self._lock = RLock()
+        self._runtimes: dict[
+            tuple[str, str, tuple[tuple[str, Any], ...]], ResidentRuntime
+        ] = {}
+
+    @staticmethod
+    def _active_hermes_home() -> Path:
+        from hermes_constants import get_hermes_home
+
+        return get_hermes_home()
+
+    def current(self) -> ResidentRuntime:
+        home = Path(self._home_resolver()).expanduser().resolve()
+        profile = self._profile_resolver()
+        config = self._config_resolver()
+        if not isinstance(config, ResidentConfig):
+            raise TypeError("config_resolver must return ResidentConfig")
+        config_key = tuple(sorted(config.to_dict().items()))
+        key = (str(home), profile, config_key)
+        with self._lock:
+            runtime = self._runtimes.get(key)
+            if runtime is None:
+                runtime = ResidentRuntime(
+                    config,
+                    profile_id=profile,
+                    hermes_home=home,
+                )
+                self._runtimes[key] = runtime
+            return runtime
+
+    def invoke(self, hook_name: str, **kwargs: Any) -> None:
+        getattr(self.current(), hook_name)(**kwargs)

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import shutil
 import sys
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -269,12 +270,112 @@ class ResidentRuntimeTests(unittest.TestCase):
                 "post_llm_call",
                 "pre_tool_call",
                 "post_tool_call",
+                "pre_approval_request",
+                "post_approval_response",
+                "subagent_start",
+                "subagent_stop",
+                "pre_gateway_dispatch",
             },
             set(OBSERVER_HOOKS),
         )
         for hook_name in OBSERVER_HOOKS:
             with self.subTest(hook=hook_name):
                 self.assertIsNone(getattr(self.runtime, hook_name)())
+
+    def test_runtime_installs_dual_flush_on_handle_creation(self):
+        """The runtime should install dual-flush (atexit) when the handle is created."""
+        _ = self.runtime.organism  # triggers _ensure_handle
+        self.assertTrue(self.runtime.organism.heart._atexit_installed)
+
+    def test_runtime_deferred_mode_installs_atexit_save_handler(self):
+        """In deferred checkpoint mode, an atexit save handler should be registered."""
+        deferred_root = self.runtime_root / "deferred-atexit"
+        config = ResidentConfig.from_mapping(
+            {"storage_root": str(deferred_root), "checkpoint_each_turn": False}
+        )
+        runtime = ResidentRuntime(config, profile_id="default")
+        _ = runtime.organism  # triggers _ensure_handle
+
+        # The heart should have dual-flush installed
+        self.assertTrue(runtime.organism.heart._atexit_installed)
+        # The circulate callback should be None (deferred mode)
+        self.assertIsNone(runtime.organism.heart._circulate_cb)
+
+    def test_participant_hooks_route_redacted_signals_through_senses(self):
+        """The five host-surface hooks should record derived, non-raw metadata."""
+        secret_command = "rm -rf /"
+        secret_goal = "analyze customer secret"
+        secret_message = "gateway secret payload"
+        event = SimpleNamespace(
+            text=secret_message,
+            message_type=SimpleNamespace(value="text"),
+            media_urls=["/tmp/image.png"],
+            source=SimpleNamespace(platform=SimpleNamespace(value="telegram")),
+        )
+
+        self.runtime.pre_approval_request(
+            command=secret_command,
+            description="dangerous",
+            pattern_key="destructive",
+            surface="cli",
+        )
+        self.runtime.post_approval_response(
+            command=secret_command,
+            description="dangerous",
+            choice="deny",
+            pattern_key="destructive",
+            surface="cli",
+        )
+        self.runtime.subagent_start(
+            child_goal=secret_goal,
+            child_role="leaf",
+            parent_session_id="parent-1",
+            child_session_id="child-1",
+        )
+        self.runtime.subagent_stop(
+            child_summary=secret_goal,
+            child_status="completed",
+            child_role="leaf",
+            parent_session_id="parent-1",
+            child_session_id="child-1",
+        )
+        self.runtime.pre_gateway_dispatch(event=event)
+
+        entries = self.runtime.organism.prime.read("senses")
+        serialized = json.dumps(entries, sort_keys=True)
+        event_types = {
+            e["content"]["signal"]["event_type"]
+            for e in entries
+            if isinstance(e.get("content"), dict)
+            and isinstance(e["content"].get("signal"), dict)
+        }
+        self.assertTrue(
+            {
+                "pre_approval_request",
+                "post_approval_response",
+                "subagent_start",
+                "subagent_stop",
+                "pre_gateway_dispatch",
+            }.issubset(event_types)
+        )
+        self.assertIn('"choice": "deny"', serialized)
+        self.assertIn('"child_status": "completed"', serialized)
+        self.assertIn('"summary": {"chars": 23', serialized)
+        self.assertIn('"platform": "telegram"', serialized)
+        self.assertIn('"media_count": 1', serialized)
+        self.assertNotIn(secret_command, serialized)
+        self.assertNotIn(secret_goal, serialized)
+        self.assertNotIn(secret_message, serialized)
+        self.assertNotIn("parent-1", serialized)
+        self.assertNotIn("child-1", serialized)
+
+    def test_participant_hooks_return_none(self):
+        """All five callbacks are observer-only and cannot alter host behavior."""
+        self.assertIsNone(self.runtime.pre_approval_request())
+        self.assertIsNone(self.runtime.post_approval_response())
+        self.assertIsNone(self.runtime.subagent_start())
+        self.assertIsNone(self.runtime.subagent_stop())
+        self.assertIsNone(self.runtime.pre_gateway_dispatch())
 
 
 if __name__ == "__main__":

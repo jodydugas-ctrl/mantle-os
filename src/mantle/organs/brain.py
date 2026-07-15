@@ -13,12 +13,13 @@ Fusion contract (what `fuse()` accepts): any object with
 The reference implementation is `mantle.mind.Mind`, which is bounded by the Body: it may
 write only `thoughts` + `brain`, it proposes while the Body applies, and it cannot
 self-promote a skill. Fusion is REFUSED unless the organism's Stage-1 gate has been
-certified (audit before fusion).
+certified and separate operator and guardian approvals target this resident.
 """
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from ..core.authority import validate_fusion_authorization
 from .contract import Organ, OrganContract
 
 CONTRACT = OrganContract(
@@ -31,7 +32,7 @@ CONTRACT = OrganContract(
                      "authors INTENTION/DELEGATED dispatches, proposes to the Body",
     audit=[
         "Phase 1: the brain/thoughts bands exist and nothing cognitive writes them",
-        "fusion requires a passed Stage-1 gate (audit before fusion)",
+        "fusion requires Stage-1 evidence plus explicit operator and guardian approval",
         "the fused MIND writes nowhere except thoughts + brain",
         "the fused MIND cannot touch the Genome or self-promote a skill",
     ],
@@ -44,6 +45,7 @@ class Brain(Organ):
     def __init__(self, organism) -> None:
         super().__init__(organism)
         self._mind: Optional[Any] = None
+        self._fusion_authorization: Optional[Dict[str, Any]] = None
 
     @property
     def fused(self) -> bool:
@@ -53,22 +55,48 @@ class Brain(Organ):
     def mind(self) -> Optional[Any]:
         return self._mind
 
-    def fuse(self, mind: Any, stage1_certified: bool = False) -> None:
-        """Attach a cognition object (Phase 2). Audit before fusion: the caller must
-        attest a passed Stage-1 gate; an unattested fusion is refused + immune-logged."""
+    @property
+    def fusion_authorization(self) -> Optional[Dict[str, Any]]:
+        """Return the minimized receipt in the validator's external schema."""
+        if not self._fusion_authorization:
+            return None
+        receipt = self._fusion_authorization
+        return {
+            "target": {"resident_identity": receipt["resident_identity"]},
+            "operator": {"fusion_decision": receipt["operator"]},
+            "guardian": {"fusion_decision": receipt["guardian"]},
+            "effective_decision": {
+                "mind_fusion_authorized": receipt["mind_fusion_authorized"]
+            },
+        }
+
+    def fuse(self, mind: Any, stage1_certified: bool = False,
+             authorization: Any = None) -> None:
+        """Attach cognition only after technical certification and dual authorization."""
         if not stage1_certified:
             self.org.immune_event("fusion_refused",
                                   {"reason": "Stage-1 gate not certified"})
             raise PermissionError("audit before fusion: certify the Zombie Body "
                                   "(Stage 1) before fusing a MIND")
+        try:
+            authority = validate_fusion_authorization(self.org, authorization)
+        except PermissionError as exc:
+            self.org.immune_event("fusion_refused", {"reason": str(exc)})
+            raise
         if not callable(getattr(mind, "cognize", None)):
             raise TypeError("a fused MIND must provide cognize(snapshot)")
         self._mind = mind
-        self.org.immune_event("fusion", {"mind": type(mind).__name__})
+        self._fusion_authorization = authority
+        self.org.immune_event("fusion", {
+            "mind": type(mind).__name__,
+            "operator": authority["operator"],
+            "guardian": authority["guardian"],
+        })
 
     def defuse(self) -> None:
         """Detach cognition. The Body keeps running -- Phase 1 never depended on it."""
         self._mind = None
+        self._fusion_authorization = None
 
     def cognize(self, snapshot: Dict[str, Any]) -> Optional[Any]:
         """The Phase-2 heartbeat extension: offer the assembled snapshot to the fused

@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional
 from .body import Body
 from .events import SignalBus
 from . import refs as _refs
+from .persist import atomic_write_json, ensure_owner_directory, harden_owner_file
 from ..vcw.cube import Cube
 from ..vcw.bands import standard_genome
 from ..organs.heart import Heart
@@ -160,26 +161,30 @@ class Organism:
 
     # ---- persistence (hot Prime; cold, write-once ancestors) ------------------------
     def save(self, directory: str) -> None:
-        os.makedirs(directory, exist_ok=True)
-        self.prime.save(os.path.join(directory, "gen%03d.vcw" % self.prime.generation))
+        ensure_owner_directory(directory)
+        prime_path = os.path.join(directory, "gen%03d.vcw" % self.prime.generation)
+        self.prime.save(prime_path)
+        harden_owner_file(prime_path)
         for c in self.ancestral:
             target = os.path.join(directory, "gen%03d.vcw" % c.generation)
             if c.sealed and os.path.exists(target):
+                harden_owner_file(target)
                 continue                          # sealed = immutable = written once
             c.save(target)
-        with open(os.path.join(directory, "body.json"), "w") as f:
-            json.dump(self.body.to_dict(), f, indent=2)
-        with open(os.path.join(directory, "organism.json"), "w") as f:
-            json.dump({"prime_generation": self.prime.generation,
-                       "ancestral_generations": [c.generation for c in self.ancestral],
-                       "stage1_certified": self.stage1_certified}, f, indent=2)
+            harden_owner_file(target)
+        atomic_write_json(os.path.join(directory, "body.json"), self.body.to_dict())
+        atomic_write_json(
+            os.path.join(directory, "organism.json"),
+            {"prime_generation": self.prime.generation,
+             "ancestral_generations": [c.generation for c in self.ancestral],
+             "stage1_certified": self.stage1_certified},
+        )
         # the SELF seal: sign the nest as this Body's own (M2). Skipped only for a
         # legacy Body with no genesis key.
         if self.body.has_key:
             seal = {"fingerprint": self.body.key_fingerprint,
                     "mac": self.body.sign(self._self_seal_payload())}
-            with open(os.path.join(directory, "self_seal.json"), "w") as f:
-                json.dump(seal, f, indent=2)
+            atomic_write_json(os.path.join(directory, "self_seal.json"), seal)
 
     @classmethod
     def load(cls, directory: str, verify_seals: bool = False) -> "Organism":
@@ -190,7 +195,10 @@ class Organism:
         prime = Cube.load(os.path.join(directory,
                                        "gen%03d.vcw" % org_meta["prime_generation"]))
         o = cls(body, prime)
-        o.stage1_certified = org_meta.get("stage1_certified", False)
+        # A saved value is historical evidence only. Certification is deliberately
+        # process-local and must be reproduced against the loaded bytes before fusion.
+        # Never restore a bare boolean as a fresh capability.
+        o.stage1_certified = False
         # ancestors load LAZY (the cold tier): no layer decodes until referenced
         o.ancestral = [Cube.load(os.path.join(directory, "gen%03d.vcw" % g), lazy=True)
                        for g in org_meta["ancestral_generations"]]

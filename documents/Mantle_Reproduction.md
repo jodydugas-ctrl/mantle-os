@@ -6,10 +6,10 @@
 Mantle OS grew a lot of propagation verbs — **egg**, **hatchery**, **vault**, **anchor**,
 **symbiosis**, **graft**, and now the **spore**. That reads like six ideas. It is two.
 
-An organism either **reproduces on its own** — condensing itself into a dormant, self-describing
-package that grows into a new certified Body with no host — or it **reproduces into a host** it
-does not own, growing its nervous system around what already lives there. Everything else is a
-size or a facet of one of those two acts.
+An authorized reproduction ceremony either creates a **seed** — a dormant, self-describing
+package that can grow into a new certified Body with no host — or creates a **graft** inside a
+specifically approved host. No organism has standing authority to reproduce on its own, and the
+Hermes addon keeps reproduction inactive. Everything else is a size or facet of those two acts.
 
 | Method | Biology | Independent of a host? | The old verbs it absorbs |
 | --- | --- | --- | --- |
@@ -17,8 +17,11 @@ size or a facet of one of those two acts.
 | **GRAFT** | grafting / symbiosis | **No** — lives inside a host | `anchor`, `symbiosis`, `graft` |
 
 The old split of *"grow from scratch (Path A)"* vs *"assimilate an existing app (Path B)"* is the
-**same axis**: a seed answers to no host; a graft lives in one. Both methods are gated identically —
-the full invariant suite, no standing law weakened — and both end at the same certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ** (`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
+**same axis**: a seed has no host; a graft lives in one. Both require the full invariant suite as
+technical evidence, but that evidence never grants permission. A fresh, target-bound reproduction
+decision and applicable DNR policy must independently authorize the act. Both end at the same
+certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ**
+(`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
 
 ```bash
 python -m mantle reproduce      # the whole map on one screen
@@ -32,7 +35,8 @@ A **seed** is the organism condensed to **data, never programs**, that can grow 
 certified Body on its own. The only code a seed may carry is an instinct's source, and it travels
 the same gauntlet as any skill (sandbox gate → trial → calcify). **Hatching a seed is a BIRTH**:
 it faces the same Stage-1 gate every Body faces, so a tampered seed cannot smuggle an uncertified
-Body into the world. One substrate, three castings that differ only in **size**:
+Body into the world. The gate is evidence, not permission to hatch or activate. One substrate,
+three castings that differ only in **size**:
 
 ### spore — the smallest seed (`mantle.spore`)
 

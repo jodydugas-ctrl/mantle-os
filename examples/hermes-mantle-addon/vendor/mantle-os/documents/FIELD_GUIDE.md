@@ -191,26 +191,25 @@ org.immune.is_self(data, mac)               # True for SELF; False (rejected) fo
 **Proven live:** the key is minted once and absent from boot order, snapshot, and every
 cube band; SELF verifies; a stranger's body sees the same artifact as OTHER.
 
-## Chapter 11 · PAIN & THE UNSCHEDULED HEARTBEAT — the mind sleeps until needed
+## Chapter 11 · PAIN & THE UNSCHEDULED HEARTBEAT — interrupts add to the baseline
 
-Cognition is **event-gated**. The fused MIND is not offered the snapshot every pulse — a
-calm organism beats with the mind asleep and spends **zero** energy (this is what makes the
-metered economy honest). The MIND wakes only on a *reason*: an unrecognized **SIGNIFICANT**
-signal, or **distress** — a severe immune event the Body could not resolve with its own
-reflexes.
+Cognition has an unconditional ten-minute baseline when the MIND is fused. A calm natural
+pulse still offers one bounded snapshot and charges actual usage. An unrecognized
+**SIGNIFICANT** signal or **distress** — a severe immune event the Body could not resolve
+with its own reflexes — may trigger an *additional* unscheduled pulse.
 
 When something hurts, the Immune System emits the pain's **coordinates** `{reason, band,
-ref}`, and the Heart turns them into an **unscheduled pulse** that wakes the mind
-pre-anchored to the wound — it does not scan the whole cube to find what hurts. Nociception:
-a localized pain signal, an interrupt vector, a mind that sleeps until it is needed.
+ref}`, and the Heart turns them into an **additional unscheduled pulse** that wakes the mind
+pre-anchored to the wound — it does not scan the whole cube to find what hurts. Nociception is
+a localized pain signal and interrupt vector layered on top of natural baseline cognition.
 
 ```python
 org.heart.pain("integrity", band="facts", ref="<facts.3>")   # an unscheduled wake
 # the woken MIND's snapshot carries snapshot["_stressor"] = {reason, band, ref}
 ```
 
-**Proven live:** a calm fused organism wakes the mind zero times across many beats; an
-injected fault fires exactly one unscheduled pulse, anchored to the faulting band.
+**Proven live:** a calm fused organism receives one bounded cognition call on every natural
+heartbeat; an injected fault adds exactly one unscheduled pulse anchored to the faulting band.
 
 ## Chapter 12 · GRADED MEMORY — deweight, never delete
 
@@ -383,12 +382,12 @@ doctor passes a healthy, docs-coherent deployment and catches a tampered cube.
 
 ## Chapter 18 · PLANNING AHEAD — the scheduled heartbeat
 
-Cognition is event-gated (Chapter 11): a calm organism sleeps and spends nothing, and a *severe*
-event wakes it NOW (`pain`). But an organism can also **plan**: `heart.schedule_pulse(reason,
-after=N)` schedules a wake for a **future beat** — a countdown (`after=N`) or a scheduled beat
+Cognition has a ten-minute natural baseline (Chapter 11), and a *severe* event adds a pulse
+NOW (`pain`). An organism can also **plan**: `heart.schedule_pulse(reason,
+after=N)` marks a **future baseline beat** — a countdown (`after=N`) or a scheduled beat
 (`at=K`). This is how an AppAI **chains thoughts**: if, mid-thought, it knows it must process
-something later, it schedules the continuation instead of thinking on every pulse — so it plans
-*how often it really needs to run a task* and stays asleep until the due beat. The scheduled wake
+something later, it schedules the continuation rather than executing the task on every pulse —
+baseline cognition continues, while the task stressor appears only on the due beat. The scheduled marker
 fires once, through the same path as nociception (the woken snapshot carries `scheduled: True`);
 the MIND can also call it from `AppAIRuntime.schedule_pulse`.
 
@@ -397,12 +396,12 @@ the wall clock; a host maps seconds → beats). `pain` is the *now* version of t
 `schedule_pulse` is the *later* version, and `cancel_pulse` changes the plan.
 
 ```python
-org.heart.schedule_pulse("continue-the-plan", after=3)   # wake me in 3 beats to continue
-# beats 1-2: the MIND sleeps (event-gated); beat 3: it wakes once, scheduled=True
+org.heart.schedule_pulse("continue-the-plan", after=3)   # annotate beat 3 with this plan
+# beats 1-2: baseline cognition; beat 3: baseline cognition with scheduled=True
 ```
 
-**Proven live:** an organism plans a wake 3 beats out, sleeps until then (zero MODEL calls), and
-wakes exactly once on the due beat to continue its thought.
+**Proven live:** an organism plans three beats out, keeps its baseline cognition on earlier
+beats, and receives the scheduled stressor exactly on the due beat.
 
 ## Chapter 19 · WEARING A FACE — one organism, many front-ends
 

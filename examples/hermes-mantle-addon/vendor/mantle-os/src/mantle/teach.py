@@ -47,6 +47,16 @@ def _fresh() -> Organism:
                           genome=genome)
 
 
+def _training_fusion_authorization(org: Organism) -> Dict[str, Any]:
+    """Explicit authority fixture used only by this executable training guide."""
+    return {
+        "target": {"resident_identity": org.body.identity_name()},
+        "operator": {"fusion_decision": "APPROVED"},
+        "guardian": {"fusion_decision": "APPROVED"},
+        "effective_decision": {"mind_fusion_authorized": True},
+    }
+
+
 # ============================================================================
 def ch1_birth(org: Organism) -> bool:
     _say("\n— Chapter 1 · BIRTH —")
@@ -170,7 +180,7 @@ def ch7_lineage(org: Organism) -> bool:
 
 def ch8_mind(org: Organism) -> bool:
     _say("\n— Chapter 8 · THE GATE, THEN THE MIND (audit before fusion) —")
-    _say("Fusion is REFUSED until the Stage-1 gate passes. The fused MIND writes only")
+    _say("Fusion is REFUSED until Stage-1 passes AND operator+guardian approve. The MIND writes only")
     _say("thoughts+brain; it proposes, the Body applies; its reflections stay inferred.")
     from .mind import fuse, stub_mind
     try:
@@ -179,7 +189,7 @@ def ch8_mind(org: Organism) -> bool:
     except PermissionError:
         early = True
     passed, _ev = stage1.run(org, include_invariants=False)
-    mind = fuse(org, stub_mind)
+    mind = fuse(org, stub_mind, authorization=_training_fusion_authorization(org))
     org.heart.beat()
     try:
         mind._guarded_write("facts", {"k": "sneak"})
@@ -206,12 +216,16 @@ def ch9_symbiosis(org: Organism) -> bool:
     host = os.path.join(tempfile.mkdtemp(prefix="mantle-teach-host-"), "app")
     shutil.copytree(os.path.join(root, "examples", "sample_app"), host)
     result = anchor(host, starter_credits=2)
+    fusion_authorization = _training_fusion_authorization(result["organism"])
     unchanged = result["report"]["host_unchanged"]
     a1 = ask(host, "how do I create a note")
     structural = "handle_create_note" in a1["answer"]
-    a2 = ask(host, "reflect on your purpose", use_mind=True)      # 1 credit
-    ask(host, "reflect again", use_mind=True)                 # 1 credit
-    a4 = ask(host, "and again", use_mind=True)                     # starved -> asleep
+    a2 = ask(host, "reflect on your purpose", use_mind=True,
+             fusion_authorization=fusion_authorization)            # 1 credit
+    ask(host, "reflect again", use_mind=True,
+        fusion_authorization=fusion_authorization)                  # 1 credit
+    a4 = ask(host, "and again", use_mind=True,
+             fusion_authorization=fusion_authorization)            # starved -> asleep
     slept = a4["thought"] and "asleep" in a4["thought"]
     fed = feed(host, 10, key_name="openrouter")
     return _prove("anchored without touching the host; free structural answers; "
@@ -243,11 +257,10 @@ def ch_self_other(org: Organism) -> bool:
 
 
 def ch_nociception(org: Organism) -> bool:
-    _say("\n— Chapter 10 · PAIN & THE UNSCHEDULED HEARTBEAT (the MIND sleeps until needed) —")
-    _say("Cognition is EVENT-GATED. A calm organism beats with the MIND asleep and spends")
-    _say("nothing. When something hurts — a severe immune event — the Body fires an")
-    _say("UNSCHEDULED pulse carrying the pain's coordinates, and only that pulse wakes the")
-    _say("mind, pre-anchored to where it hurts (no full-cube scan to find the wound).")
+    _say("\n— Chapter 10 · NATURAL HEARTBEAT + PAIN —")
+    _say("A fused MIND runs on every ten-minute natural heartbeat. Pain adds an")
+    _say("UNSCHEDULED pulse carrying the wound's coordinates; it never gates or replaces")
+    _say("the natural baseline.")
     seen: Dict[str, Any] = {}
 
     class _Probe:
@@ -258,16 +271,18 @@ def ch_nociception(org: Organism) -> bool:
 
     if org.brain.fused:
         org.brain.defuse()
-    org.brain.fuse(_Probe(), stage1_certified=True)
+    org.brain.fuse(_Probe(), stage1_certified=True,
+                   authorization=_training_fusion_authorization(org))
     org.heart.beat()                # absorb any pain still pending from earlier chapters
     seen.clear()                    # open a clean observation window
-    org.heart.run(3)                                       # calm beats wake nobody
-    calm = "woke" not in seen
+    org.heart.run(3)                                       # natural baseline still cognizes
+    calm_baseline = bool(seen.get("woke")) and not seen.get("stressor")
+    seen.clear()
     org.heart.pain("integrity", band="facts", ref="<facts.0>")   # the unscheduled pulse
     anchored = bool(seen.get("woke")) and (seen.get("stressor") or {}).get("band") == "facts"
     org.brain.defuse()
-    return _prove("calm organism slept; pain woke the mind at the right coordinates",
-                  calm and anchored, "stressor=%s" % (seen.get("stressor"),))
+    return _prove("calm heartbeats cognized; pain added a correctly anchored pulse",
+                  calm_baseline and anchored, "stressor=%s" % (seen.get("stressor"),))
 
 
 def ch_graded_memory(org: Organism) -> bool:
@@ -447,8 +462,8 @@ def ch_resilience(org: Organism) -> bool:
 def ch_scheduling(org: Organism) -> bool:
     _say("\n— Chapter 17 · PLANNING AHEAD — the scheduled heartbeat —")
     _say("Besides waking NOW (pain), an organism can SCHEDULE a wake for a future beat — a")
-    _say("countdown. It CHAINS a thought to later and stays asleep (spending nothing) until then,")
-    _say("planning how often it really needs to run a task instead of thinking on every pulse.")
+    _say("countdown. It CHAINS a stressor marker to a later natural heartbeat while baseline")
+    _say("cognition continues on every pulse.")
     woke = {"n": 0, "stressors": []}
 
     class _Probe:
@@ -459,18 +474,19 @@ def ch_scheduling(org: Organism) -> bool:
 
     if org.brain.fused:
         org.brain.defuse()
-    org.brain.fuse(_Probe(), stage1_certified=True)
+    org.brain.fuse(_Probe(), stage1_certified=True,
+                   authorization=_training_fusion_authorization(org))
     org.heart.beat()                 # absorb any pain still pending from earlier chapters
     woke["n"], woke["stressors"] = 0, []
     due = org.heart.schedule_pulse("continue-the-plan", after=3)   # plan a wake 3 beats out
-    org.heart.run(2)                 # calm: the MIND sleeps
-    asleep = woke["n"] == 0
-    org.heart.beat()                 # the scheduled beat arrives — the MIND wakes to continue
-    fired = (woke["n"] == 1 and woke["stressors"][0].get("scheduled") is True
+    org.heart.run(2)                 # baseline cognition, no scheduled stressor yet
+    baseline = woke["n"] == 2 and not any(woke["stressors"])
+    org.heart.beat()                 # the scheduled beat arrives with its marker
+    fired = (woke["n"] == 3 and woke["stressors"][2].get("scheduled") is True
              and org.heart.beats == due)
     org.brain.defuse()
-    return _prove("the organism planned a wake 3 beats out, slept until then, and woke exactly "
-                  "once to continue its thought", asleep and fired,
+    return _prove("baseline cognition continued; the planned beat alone carried its marker",
+                  baseline and fired,
                   "due beat=%d; woke=%d" % (due, woke["n"]))
 
 

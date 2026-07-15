@@ -10,6 +10,7 @@ import os
 import sys
 import unittest
 from collections import Counter
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(  # the mantle package (src-layout)
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))
@@ -44,9 +45,9 @@ class MultiLangParityTest(unittest.TestCase):
     @unittest.skipUnless(scanner_ts.available(), "tree-sitter stack not installed")
     def test_read_only(self):
         path = os.path.join(SAMPLE_DIR, "notes_app.js")
-        before = open(path, "rb").read()
+        before = Path(path).read_bytes()
         scanner_ts.scan_file(path, "notes_app.js")
-        after = open(path, "rb").read()
+        after = Path(path).read_bytes()
         self.assertEqual(before, after)
 
     def test_scan_project_without_treesitter_is_unchanged(self):

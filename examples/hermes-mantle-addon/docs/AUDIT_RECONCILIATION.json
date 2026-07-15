@@ -1,0 +1,163 @@
+{
+  "schema_version": "1.0",
+  "recorded_at": "2026-07-14T23:04:35-03:00",
+  "scope": "Step-10 reconciliation of the three delegated repository audits against the current tree",
+  "sources": [
+    "subagent-summary-0-20260714_203114_927161.txt",
+    "subagent-summary-1-20260714_203114_931696.txt",
+    "subagent-summary-2-20260714_203114_932891.txt"
+  ],
+  "status_definitions": {
+    "RESOLVED": "The current tree contains a focused regression or executable evidence for the repair.",
+    "PARTIAL": "A bounded target path is repaired, but a broader limitation remains documented.",
+    "OPEN": "The report identified a real gap that remains unimplemented or unverified.",
+    "NOT_APPLICABLE": "The finding targeted a generated mirror; the authoritative root fix and deterministic synchronization govern it."
+  },
+  "findings": [
+    {
+      "id": "CORE-01",
+      "finding": "APPLET-5 used an absolute mantle.compiler import and failed in the private vendor namespace.",
+      "status": "RESOLVED",
+      "evidence": "Package-relative imports plus test_private_vendor_namespace_runs_applet5; framework 111/111."
+    },
+    {
+      "id": "CORE-02",
+      "finding": "Persisted Stage-1 state and a single operator token could be treated as fusion authority.",
+      "status": "RESOLVED",
+      "evidence": "HF-M15 now refuses persisted-stale evidence, one-role approval, and wrong-target approval; fusion requires fresh evidence and target-bound operator plus guardian approval."
+    },
+    {
+      "id": "CORE-03",
+      "finding": "Standalone core persistence was not owner-only or crash-safe as a complete multi-file snapshot.",
+      "status": "PARTIAL",
+      "evidence": "PERSIST-1 proves same-directory atomic replacement, prior-byte preservation, cleanup, and 0700/0600 modes per artifact. The Hermes addon independently stages, verifies, and atomically publishes the complete resident directory. Standalone Organism.save still does not atomically publish its entire multi-file tree as one generation."
+    },
+    {
+      "id": "CORE-04",
+      "finding": "Heartbeat semantics inverted the natural baseline and event wakeups.",
+      "status": "PARTIAL",
+      "evidence": "NOC-1..3 and SCHED-1 prove unconditional fused baseline cognition plus additional interrupts. The Phase-1 addon remains unfused and has no ten-minute runtime scheduler; readiness blocker B-04 remains."
+    },
+    {
+      "id": "CORE-05",
+      "finding": "MIND containment was opt-in at call sites.",
+      "status": "RESOLVED",
+      "evidence": "HF-M10, HF-M12, HF-M16, and Stage-2 M-2/M-3 require fused state and route steering, inferred discovery, and cultivation through Limbs. Python in-process containment remains a capability contract, not an OS sandbox."
+    },
+    {
+      "id": "CORE-06",
+      "finding": "Model-caused mutations bypassed Limbs and Action Execution Proofs.",
+      "status": "RESOLVED",
+      "evidence": "Special instructions, inferred discoveries, and cultivated skills now use Limbs ceremonies with BODY-authored proofs."
+    },
+    {
+      "id": "CORE-07",
+      "finding": "Audit/resource paths leaked files, sockets, or temporary trees.",
+      "status": "RESOLVED",
+      "evidence": "Core Stage-1, Stage-2, and the 96-test addon suite pass with ResourceWarning promoted to error; temporary verifiers use OS-generated directories and self-clean."
+    },
+    {
+      "id": "ADDON-01",
+      "finding": "Plugin registration captured one runtime for all profiles and homes.",
+      "status": "RESOLVED",
+      "evidence": "RuntimeRegistry resolves active Hermes home, profile, and validated config at invocation time; test_profile_isolation proves two residents in one process."
+    },
+    {
+      "id": "ADDON-02",
+      "finding": "The HTTP transport was presented as if it were a reachable Hermes provider path.",
+      "status": "OPEN",
+      "evidence": "Synthetic object.__new__ bypass tests were removed. A boundary regression proves every valid Phase-1 config refuses the bespoke transport. Readiness blocker B-05 remains."
+    },
+    {
+      "id": "ADDON-03",
+      "finding": "The combined Stage-1 test could pass without requiring framework PASS.",
+      "status": "RESOLVED",
+      "evidence": "test_framework_stage1_integration now requires addon, framework, and combined PASS unconditionally; reproduced 14 addon rows, 20 framework rows, and 111 invariants."
+    },
+    {
+      "id": "ADDON-04",
+      "finding": "The real-plugin verifier registered hooks without proving live PluginManager dispatch.",
+      "status": "RESOLVED",
+      "evidence": "verify_real_plugin dispatches both addon tools through model_tools.handle_function_call and all 12 distinct hooks through PluginManager.invoke_hook, validates observer returns, and exercises enabled and disabled modes."
+    },
+    {
+      "id": "ADDON-05",
+      "finding": "subagent_stop consumed obsolete status fields.",
+      "status": "RESOLVED",
+      "evidence": "Runtime and real-plugin fixtures consume child_summary, child_status, and duration_ms while persisting only bounded summaries."
+    },
+    {
+      "id": "ADDON-06",
+      "finding": "register() ignored active-profile plugin configuration.",
+      "status": "RESOLVED",
+      "evidence": "ResidentConfig.from_hermes_config reads only plugins.entries.mantle-os.config; RuntimeRegistry fingerprints active config; focused registration test passes."
+    },
+    {
+      "id": "ADDON-07",
+      "finding": "Proof formatting could label blocked dispatch inconsistently.",
+      "status": "RESOLVED",
+      "evidence": "Runtime regressions distinguish attempted failure from pre-dispatch blocking and malformed statuses."
+    },
+    {
+      "id": "ADDON-08",
+      "finding": "Evidence tests relied heavily on static text.",
+      "status": "RESOLVED",
+      "evidence": "Runtime PluginManager dispatch, private-vendor execution, profile isolation, adversarial containment, full Stage-1, Stage-2, and digest-bound 339-file alignment now supplement static authority checks."
+    },
+    {
+      "id": "DOC-01",
+      "finding": "Documents and diagrams treated Stage-1 as fusion authority.",
+      "status": "RESOLVED",
+      "evidence": "Primer, Part-1/Part-2, lifecycle, field guide, Grimoire, notepad example, diagrams, plan archive, and audit guide distinguish evidence, readiness, and dual authority."
+    },
+    {
+      "id": "DOC-02",
+      "finding": "Documents and browser prompts described cognition as event-gated.",
+      "status": "RESOLVED",
+      "evidence": "Root docs and reference/spreadsheet prompts state a natural 600-second fused baseline plus additional pain/significant/scheduled wakeups."
+    },
+    {
+      "id": "DOC-03",
+      "finding": "Mantle and Hermes were described as sibling or competing systems.",
+      "status": "RESOLVED",
+      "evidence": "Primary docs now state that Mantle wraps Hermes as the autonomic layer while Hermes supplies cognition, routing, tools, and interaction."
+    },
+    {
+      "id": "DOC-04",
+      "finding": "Version and invariant counts were stale.",
+      "status": "RESOLVED",
+      "evidence": "Mantle 1.3.0 and 111 invariants are aligned across package, CLI, audit guide, optimization records, addon status, and vendor."
+    },
+    {
+      "id": "DOC-05",
+      "finding": "Reproduction prose omitted separate authorization.",
+      "status": "RESOLVED",
+      "evidence": "Reproduction documentation and examples require distinct target-bound operator and guardian authority and state that activation remains unauthorized."
+    },
+    {
+      "id": "DOC-06",
+      "finding": "Vendored copies repeated root documentation findings.",
+      "status": "NOT_APPLICABLE",
+      "evidence": "Root is authoritative; sync_vendor.py deterministically reproduces the 146-file non-addon snapshot and --check reports exact parity."
+    },
+    {
+      "id": "DOC-07",
+      "finding": "MacroDroid YAML validity was conflated with semantic correctness.",
+      "status": "OPEN",
+      "evidence": "The 288 KB schema parses successfully, but no MacroDroid semantic importer/runtime verification has been performed."
+    }
+  ],
+  "summary": {
+    "RESOLVED": 17,
+    "PARTIAL": 2,
+    "OPEN": 2,
+    "NOT_APPLICABLE": 1
+  },
+  "readiness_blockers_preserved": ["B-03", "B-04", "B-05", "B-06", "B-07"],
+  "authority": {
+    "operator_fusion_decision": "DEFERRED",
+    "guardian_fusion_decision": "DEFERRED",
+    "mind_fusion_authorized": false,
+    "reproduction_activation_authorized": false
+  }
+}

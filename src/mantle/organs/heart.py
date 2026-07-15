@@ -13,16 +13,14 @@ deterministic order (the organism's native tempo):
     5. immune scan          the Immune System verifies the cube (every scan_every beats)
     6. checkpoint           circulate: flush dirty state durably (staged atomic commit)
 
-Phase 2 extension: the SAME pulse offers the assembled snapshot to the fused Brain
-(cognition) -- an extension of the reflex, never a replacement. In Phase 1 the Brain slot
-is empty and the identical loop runs whole. Nothing here imports a model.
+Phase 2 extension: every natural pulse offers the assembled snapshot to the fused Brain
+(cognition) -- an extension of the reflex, never a replacement. The natural cadence is
+ten minutes (600 seconds). In Phase 1 the Brain slot is empty and the identical loop runs
+whole. Nothing here imports a model.
 
-NOCICEPTION (M1): cognition is EVENT-GATED. The MIND is not offered every pulse -- it is
-woken only when something needs it: an unscheduled pulse (`pain`), a SIGNIFICANT signal,
-or a `distress` signal from the Immune System. A calm organism completes every beat with
-the MIND asleep and spends zero energy. When the MIND does wake, the snapshot is
-pre-anchored to the stressor's coordinates {reason, band, ref} so it does not scan the
-whole cube to find what hurts.
+NOCICEPTION (M1): pain, SIGNIFICANT input, distress, and scheduled work add stressor-
+anchored wakeups; they never suppress or replace the unconditional natural baseline.
+The snapshot is pre-anchored to {reason, band, ref} when a stressor exists.
 """
 from __future__ import annotations
 
@@ -30,6 +28,8 @@ import atexit
 from typing import Any, Callable, Dict, List, Optional
 
 from .contract import Organ, OrganContract
+
+NATURAL_HEARTBEAT_SECONDS = 600
 
 CONTRACT = OrganContract(
     "heart", "circulation & pulse -- the clock that drives every periodic Body reflex",
@@ -44,19 +44,17 @@ CONTRACT = OrganContract(
         {"name": "dual-flush", "trigger": "install",
          "effect": "persist on BOTH explicit checkpoint AND an atexit handler"},
         {"name": "schedule-pulse", "trigger": "the organism plans ahead",
-         "effect": "wake cognition on a FUTURE beat (countdown/at) -- chain thoughts; "
-                   "stay asleep until then (event-gated)"},
+         "effect": "annotate a FUTURE cognition beat (countdown/at); baseline continues"},
     ],
     phase1="active",
-    phase2_extension="the same pulse offers the snapshot to cognition ONLY on a wake "
-                     "(unscheduled pulse / SIGNIFICANT / distress / a SCHEDULED future wake); "
-                     "a calm organism sleeps",
+    phase2_extension="every ten-minute natural pulse offers the snapshot to cognition; "
+                     "pain / SIGNIFICANT / distress add stressor-anchored wakeups",
     audit=[
         "heartbeat runs without an LLM (cognition slot empty in Phase 1)",
         "pulse order is fixed: tick, intake, assembly, reflexes, scan, checkpoint",
         "dual-flush persists on checkpoint and atexit",
         "a missed pulse is logged, never swallowed",
-        "cognition is event-gated: a calm fused organism wakes the MIND zero times",
+        "a calm fused organism calls the MIND on every natural heartbeat",
         "a severe event fires exactly one unscheduled pulse anchored to the stressor",
         "a scheduled pulse wakes cognition on the due beat and not before (one-shot)",
     ],
@@ -67,10 +65,12 @@ class Heart(Organ):
     contract = CONTRACT
 
     def __init__(self, organism, circulate: Optional[Callable[[], None]] = None,
-                 scan_every: int = 4) -> None:
+                 scan_every: int = 4,
+                 natural_interval_seconds: int = NATURAL_HEARTBEAT_SECONDS) -> None:
         super().__init__(organism)
         self._circulate_cb = circulate          # the durable sink (e.g. Organism.save)
         self.scan_every = max(1, int(scan_every))
+        self.natural_interval_seconds = max(1, int(natural_interval_seconds))
         self.beats = 0
         self.last_beat = 0
         self.flushes = 0
@@ -109,12 +109,9 @@ class Heart(Organ):
                        ref: Optional[str] = None) -> int:
         """Plan ahead. Ask the Body to WAKE cognition on a FUTURE beat -- a COUNTDOWN
         (`after=N` beats from now) or a scheduled beat (`at=K`). This is how an AppAI
-        CHAINS THOUGHTS: if, during a thought batch, it knows it must process something
-        later, it schedules the continuation instead of polling every pulse. Because
-        cognition is event-gated (NOC), a calm organism then stays ASLEEP and spends
-        nothing until the scheduled beat -- so the organism plans how often it really needs
-        to run a task rather than thinking on every heartbeat. The due beat fires through
-        the same wake path as nociception (the woken snapshot carries `scheduled: True`).
+        CHAINS THOUGHTS: if it must process something later, it schedules a stressor marker
+        for that beat. Baseline cognition continues meanwhile. The due beat carries
+        `scheduled: True` through the same anchored path as nociception.
         Returns the beat the pulse will fire on. `pain` is the NOW version of this; this is
         the LATER version."""
         if after is not None:
@@ -184,10 +181,8 @@ class Heart(Organ):
              wake: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """One complete pulse in the fixed order. Returns a beat report. `assemble`
         forces context assembly even with no fused Brain (deterministic, LLM-free either
-        way). `wake` marks this pulse as unscheduled (a `pain` escalation). Cognition is
-        EVENT-GATED: the fused MIND is offered the snapshot ONLY when a wake is pending
-        this pulse (an unscheduled `wake`, a SIGNIFICANT signal raised during intake, or
-        a `distress` signal raised during the scan)."""
+        way). `wake` marks this pulse as unscheduled (a `pain` escalation). A fused MIND is
+        offered every pulse; a pending wake adds localized stressor coordinates."""
         report: Dict[str, Any] = {"beat": self.tick()}
         if wake is not None:
             self._wake = dict(wake)
@@ -210,12 +205,12 @@ class Heart(Organ):
             report["scan_problems"] = len(self.org.immune.scan())       # 5 immune scan
             #                                  (integrity etc. -> distress -> on_distress)
         report["flushes"] = self.circulate()                            # 6 checkpoint
-        if self._wake is not None:                            # nociception result (M1)
+        if self._wake is not None:                            # additional wake metadata
             report["wake"] = self._wake          # observable even with no fused Brain
-            if fused:                                         # Phase-2, EVENT-GATED
-                if snapshot is not None:
-                    snapshot["_stressor"] = self._wake  # pre-anchor to the pain coordinates
-                report["cognition"] = self.org.brain.cognize(snapshot)
+            if snapshot is not None:
+                snapshot["_stressor"] = self._wake  # pre-anchor to the pain coordinates
+        if fused:                                             # unconditional P2 baseline
+            report["cognition"] = self.org.brain.cognize(snapshot)
         self._wake = None                              # the pulse consumed the wake
         self.bus.emit("checkpoint", {"beat": self.beats})
         return report

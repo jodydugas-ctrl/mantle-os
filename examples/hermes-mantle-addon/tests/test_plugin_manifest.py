@@ -74,13 +74,12 @@ class PluginManifestTests(unittest.TestCase):
             {hook_name for hook_name, _callback in context.hooks},
         )
 
-    def test_manifest_does_not_claim_unauthorized_phase2_capabilities(self):
+    def test_manifest_does_not_claim_unearned_phase2_state(self):
         manifest_text = MANIFEST_PATH.read_text(encoding="utf-8").lower()
 
         self.assertNotIn("stage-1 certified", manifest_text)
         self.assertNotIn("mind fused", manifest_text)
         self.assertNotIn("reproduction active", manifest_text)
-        self.assertNotIn("mutating mantle", manifest_text)
 
 
 if __name__ == "__main__":

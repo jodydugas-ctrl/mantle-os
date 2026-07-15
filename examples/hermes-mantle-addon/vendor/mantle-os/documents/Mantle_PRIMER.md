@@ -37,7 +37,8 @@ way (build it, then *prove* it; nothing is "probably right"):
 - **how does it earn its keep?** — **anchoring** makes it the resident of a real codebase;
   **symbiosis** meters cognition against an energy budget (API credits) and ledgers value.
 - **how does it know itself?** — a **genesis key** gives each Body a cryptographic SELF; what
-  it cannot sign is OTHER. Pain (**nociception**) wakes the MIND only when something hurts.
+  it cannot sign is OTHER. A fused MIND receives the natural ten-minute heartbeat; pain
+  (**nociception**) adds an immediate, stressor-anchored wakeup when something hurts.
 - **how does it share, evolve, and survive?** — keyless **MEM VCWs** carry knowledge between
   organisms; a **Compiler-class** organism re-fits its own VCW at rebirth; **ganglia** are
   parallel limbs; the **seed vault** reconstructs a corrupted body.
@@ -142,7 +143,7 @@ Read the Doctrine and the Organism Lens, then this Primer, then **run `python -m
 | **Anchoring / Resident** | An AppAI that has taken residence in a host codebase (a `.mantle/` nest), do-no-harm census-verified. |
 | **Symbiosis** | The energy economy: API keys are *resources*, credits are *energy*; cognition is metered, value is ledgered. |
 | **Genesis key / SELF·OTHER** | A one-time key sealed into the Body (never in a cube, never to the MIND). What it can sign is SELF; all else is OTHER. |
-| **Nociception** | Cognition is *event-gated*: a severe immune event fires an unscheduled "pain" pulse that wakes the MIND at the stressor; a calm organism sleeps. |
+| **Nociception** | The ten-minute cognitive heartbeat is unconditional when fused; severe events add unscheduled, stressor-anchored "pain" pulses without replacing the baseline. |
 | **Graded memory / ghost** | A contradicted value is *deweighted* (append-only), not deleted — hidden from default reads, recoverable as a behavioral ghost. |
 | **MEM VCW** | A keyless, lineage-free cube — bare knowledge + microcode shared between organisms (always OTHER; digested, never run raw). |
 | **Ganglion** | A bounded parallel limb that writes progress into a VCW band — zero-token telemetry the parent reads as memory. |
@@ -236,8 +237,9 @@ source code is provided.
      grow each organ, bind its bands, give it reflexes; author the Body (Primer/identity); genesis
      the cube.
 4. Certify with **`Mantle_Part1_Body_Audit.md`** / `python -m mantle audit`. Fix every hard-fail.
-   Do not proceed until the Zombie Body is **certified**.
-5. Only then follow **`Mantle_Part2_Mind.md`** to fuse the MIND, and certify with
+   Do not proceed until the Zombie Body is **certified**. Certification is technical evidence,
+   not fusion authority; obtain separate target-bound operator and guardian approvals.
+5. Only after certification and both approvals follow **`Mantle_Part2_Mind.md`** to fuse the MIND, and certify with
    **`Mantle_Part2_Mind_Audit.md`** / `python -m mantle audit-mind` (which *re-runs* Stage 1 first).
 
 ### Path B — Take residence in existing code (brownfield organism)
@@ -252,7 +254,8 @@ source code is provided.
    - **the graft egg** (`python -m mantle graft <graft-egg> <host>`) — a non-destructive patch
      applied in a workspace copy; `graft.weave(...)` threads the host's live callables through
      fail-open organ wrappers (residency that *feels the host run*, zero LLM).
-3. Residency still finishes at the **Stage 1 Gate**, then proceeds to Phase 2 identically.
+3. Residency still finishes at the **Stage 1 Gate**. Phase 2 additionally requires separate
+   target-bound operator and guardian approvals before any fusion ceremony.
 
 Both paths converge on the same certified Body, then the same MIND fusion.
 

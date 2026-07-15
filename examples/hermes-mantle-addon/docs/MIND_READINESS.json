@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.1",
+  "recorded_at": "2026-07-15T00:02:34-03:00",
+  "target": {
+    "plugin": "mantle-os",
+    "version": "0.4.0",
+    "resident_identity": "Hermes.Mantle.AppAI",
+    "framework_version": "1.3.0"
+  },
+  "verdict": "NOT_READY",
+  "mind_fusion_authorized": false,
+  "reproduction_activation_authorized": false,
+  "evidence": {
+    "addon_stage1": {
+      "passed_rows": 14,
+      "total_rows": 14,
+      "failed_rows": [],
+      "passed": true
+    },
+    "framework_stage1": {
+      "gate_rows": 20,
+      "security_invariants_passed": 111,
+      "security_invariants_total": 111,
+      "passed": true,
+      "failed_invariant": null,
+      "root_cause": "APPLET-5 now uses its vendored-relative compiler symbol and passes under _hermes_mantle_vendor. The authoritative core and complete 146-file non-addon vendor snapshot are byte-aligned."
+    },
+    "addon_unit_tests": 96,
+    "containment_rows_passed": 11,
+    "real_plugin_hooks": 12,
+    "real_plugin_stage1_certified": false,
+    "owner_only_storage": true,
+    "raw_payload_exclusion": true,
+    "operator_fusion_decision": "DEFERRED",
+    "guardian_fusion_decision": "DEFERRED",
+    "verification_warnings": [
+      "MacroDroid YAML parses successfully; MacroDroid semantic import/runtime correctness remains unverified."
+    ]
+  },
+  "satisfied_requirements": [
+    {
+      "id": "R-01",
+      "requirement": "Deterministic resident Phase-1 Body",
+      "evidence": "All fourteen addon Stage-1 rows passed on an isolated resident."
+    },
+    {
+      "id": "R-02",
+      "requirement": "Durability and reconstruction",
+      "evidence": "Dual flush, addon whole-resident atomic publication, verified reload, SELF continuity, and nine-organ reconstruction passed. Core Organism.save publishes each owner-only artifact through same-directory atomic replacement; whole-tree publication remains a documented standalone limitation."
+    },
+    {
+      "id": "R-03",
+      "requirement": "Host-preserving observer integration",
+      "evidence": "Both addon tools dispatch through model_tools.handle_function_call and twelve real Hermes hooks dispatch through PluginManager as fail-open observers; profile/home/config isolation and raw host payload exclusion passed."
+    },
+    {
+      "id": "R-04",
+      "requirement": "Bounded model-facing mutation",
+      "evidence": "mantle_record_discovery is confined to one unverified discovery plus a BODY-authored proof."
+    },
+    {
+      "id": "R-05",
+      "requirement": "MIND containment",
+      "evidence": "C-01 through C-11 passed; steering, inferred discovery, and cultivation route through Limbs with BODY-authored proofs. Core fusion requires fresh Stage-1 evidence and target-bound APPROVED operator and guardian decisions."
+    },
+    {
+      "id": "R-06",
+      "requirement": "Explicit decision authority",
+      "evidence": "Machine-readable operator and guardian records exist and fail closed with fusion DEFERRED."
+    },
+    {
+      "id": "R-07",
+      "requirement": "Repository and vendor alignment",
+      "evidence": "Mantle 1.3.0 carries 111 invariants, parseable MacroDroid YAML, a 146-file reproducible non-addon vendor snapshot, a 339-file repository receipt, and strict optimization-audit bounded closure with no failing audits."
+    }
+  ],
+  "resolved_requirements": [
+    {
+      "id": "B-01",
+      "status": "RESOLVED",
+      "resolution": "APPLET-5 is namespace-safe; the complete framework receipt is 20/20 rows and 111/111 invariants."
+    },
+    {
+      "id": "B-02",
+      "status": "RESOLVED",
+      "resolution": "ResidentConfig.authorize_phase2 is the sole supported transition: it requires a complete fresh Stage-1 receipt and READY engineering verdict bound to resident identity and Body fingerprint, post-receipt target-bound APPROVED operator and guardian decisions, explicit effective MIND authorization, and explicit reproduction denial. Direct construction and Hermes config remain fail-closed; the live NOT_READY/DEFERRED records cannot enable Phase 2."
+    },
+    {
+      "id": "B-08",
+      "status": "RESOLVED",
+      "resolution": "Core, vendor, addon, tests, and doctrine now state that Stage-1 is technical evidence and never fusion authority."
+    }
+  ],
+  "blocking_requirements": [
+    {
+      "id": "B-03",
+      "severity": "HARD",
+      "requirement": "Runtime fusion lifecycle",
+      "status": "MISSING",
+      "evidence": "ResidentRuntime never builds the model transport, calls fuse(), owns a MIND lifecycle, or restores/defuses a fused state safely.",
+      "required_resolution": "Implement an explicit, reversible fusion and defusion lifecycle without weakening the independently operable Body."
+    },
+    {
+      "id": "B-04",
+      "severity": "HARD",
+      "requirement": "Natural ten-minute cognitive heartbeat",
+      "status": "PARTIAL",
+      "evidence": "Core Heart now defines a 600-second natural interval and calls the fused MIND on every pulse; NOC-1..3 and SCHED-1 prove baseline plus additional interrupts. The addon has no legal fused lifecycle or runtime scheduler yet.",
+      "required_resolution": "Add the addon/runtime ten-minute scheduler only after the legal Phase-2 lifecycle exists; preserve the autonomous Body and treat nociception only as additional wakeups."
+    },
+    {
+      "id": "B-05",
+      "severity": "HARD",
+      "requirement": "Hermes-native provider routing",
+      "status": "INCOMPLETE",
+      "evidence": "The bounded OpenAI-compatible HTTP prototype still reads HERMES_MANTLE_API_KEY, HERMES_MANTLE_MODEL, and HERMES_MANTLE_URL directly; it is not Hermes-native routing.",
+      "required_resolution": "Route MIND calls through Hermes's supported active provider/model abstraction without duplicating or persisting provider credentials."
+    },
+    {
+      "id": "B-06",
+      "severity": "HARD",
+      "requirement": "Heartbeat budget and failure policy",
+      "status": "MISSING",
+      "evidence": "The prototype caps one response and records sidecar usage but defines no ten-minute aggregate budget, retry/backoff policy, outage behavior, or durable bounded usage policy.",
+      "required_resolution": "Define and verify cadence, token/cost budget, retries, backoff, outage behavior, and bounded usage receipts."
+    },
+    {
+      "id": "B-07",
+      "severity": "HARD",
+      "requirement": "Dual explicit fusion authorization",
+      "status": "DEFERRED",
+      "evidence": "Both operator and guardian fusion decisions remain DEFERRED; Step-10 continuation was engineering authority only.",
+      "required_resolution": "After every technical blocker is closed and readiness is reissued as READY, obtain separate new target-bound APPROVED fusion decisions from operator and guardian."
+    }
+  ],
+  "next_action": {
+    "roadmap_step": null,
+    "action": "B-02 configuration transition is complete. Next separately scoped engineering step: B-03 reversible runtime fusion lifecycle. MIND fusion and reproduction remain prohibited under the live DEFERRED decisions."
+  },
+  "decision_rule": "This NOT_READY report authorizes no fusion action. A later READY report will still require separate explicit target-bound APPROVED decisions from operator and guardian."
+}

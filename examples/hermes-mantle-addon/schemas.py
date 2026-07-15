@@ -12,3 +12,25 @@ MANTLE_STATUS = {
         "additionalProperties": False,
     },
 }
+
+MANTLE_RECORD_DISCOVERY = {
+    "name": "mantle_record_discovery",
+    "description": (
+        "Record one bounded, inferred idea in the resident Mantle Body. The entry "
+        "is explicitly unverified, is written only to the discoveries band through "
+        "Limbs, and cannot modify facts, Primer, Genome, or host files."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "idea": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000,
+                "description": "The inferred idea to preserve; never include secrets.",
+            }
+        },
+        "required": ["idea"],
+        "additionalProperties": False,
+    },
+}

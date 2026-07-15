@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "recorded_at": "2026-07-14T21:18:41-03:00",
+  "target": {
+    "plugin": "mantle-os",
+    "version": "0.4.0",
+    "resident_identity": "Hermes.Mantle.AppAI"
+  },
+  "evidence_basis": {
+    "completed_roadmap_steps": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "addon_unit_tests": 96,
+    "fast_addon_stage1_tests": 18,
+    "addon_stage1_rows": 14,
+    "framework_gate_rows": 20,
+    "framework_invariants": "111/111",
+    "containment_rows": 11,
+    "real_plugin_hooks": 12,
+    "vendor_snapshot_files": 146,
+    "owner_only_storage": true,
+    "raw_payload_exclusion": true,
+    "known_open_gates": [
+      "The reissued readiness report remains NOT_READY with five blocking requirements.",
+      "The complete framework gate now passes 111 of 111 invariants; this is technical evidence, not fusion authority.",
+      "A fail-closed Phase-2 configuration transition exists, but no addon fusion lifecycle, addon ten-minute scheduler, or Hermes-native provider route exists.",
+      "No complete heartbeat budget, retry/backoff, or outage policy exists.",
+      "Neither role has issued an explicit APPROVED fusion decision."
+    ]
+  },
+  "operator": {
+    "role": "human operator",
+    "authority_basis": "Explicit instructions authorized roadmap continuation through Step 10; no instruction authorized MIND fusion.",
+    "runtime_decision": "APPROVED",
+    "fusion_decision": "DEFERRED",
+    "approved_scope": [
+      "deterministic resident Phase-1 Body",
+      "twelve fail-open observer hooks",
+      "read-only mantle_status tool",
+      "bounded mantle_record_discovery tool",
+      "isolated containment and repository-alignment verification"
+    ],
+    "excluded_scope": [
+      "MIND fusion",
+      "reproduction activation",
+      "arbitrary Body or host mutation",
+      "fact, Primer, Special Instruction, Genome, immune, identity, or policy writes from model-facing tools",
+      "treating discoveries as verified knowledge"
+    ],
+    "reason": "B-02 engineering is complete, but five Phase-2 readiness blockers remain and no explicit operator fusion approval exists."
+  },
+  "guardian": {
+    "role": "safety guardian",
+    "decision_basis": "Body-before-MIND, host-preservation, containment, authorship, technical readiness, and independent explicit-authority invariants.",
+    "runtime_decision": "APPROVED",
+    "fusion_decision": "DEFERRED",
+    "approved_scope": [
+      "current v0.4.0 observer Body",
+      "single bounded unverified-discovery mutation",
+      "continued separately scoped Phase-2 engineering without fusion"
+    ],
+    "required_before_reconsideration": [
+      "Resolve B-03 through B-07 in MIND_READINESS.json.",
+      "Preserve the complete 111/111 framework and 14/14 addon Stage-1 receipts.",
+      "Implement and verify Hermes-native transport, addon ten-minute heartbeat, budget/outage policy, and reversible fusion lifecycle.",
+      "Reissue the MIND-readiness report with a READY verdict.",
+      "Obtain a new target-bound APPROVED fusion decision from the operator.",
+      "Issue a separate target-bound APPROVED fusion decision from the guardian."
+    ],
+    "reason": "Framework and governance alignment passed, but readiness is NOT_READY and explicit dual authorization is absent."
+  },
+  "effective_decision": {
+    "current_runtime_authorized": true,
+    "mind_fusion_authorized": false,
+    "reproduction_activation_authorized": false,
+    "next_permitted_roadmap_step": null,
+    "next_permitted_action": "Separately scope B-03 reversible runtime lifecycle engineering; do not fuse MIND or activate reproduction.",
+    "fusion_rule": "Fusion requires completed readiness evidence plus separate explicit target-bound fusion_decision=APPROVED decisions from both operator and guardian. Silence, continuation, runtime approval, technical certification, or a readiness PASS cannot substitute for either approval."
+  }
+}

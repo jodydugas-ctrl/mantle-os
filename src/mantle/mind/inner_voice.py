@@ -74,9 +74,8 @@ class InnerVoice:
             guarded_write(self.org, "thoughts", record)       # private reflection
             band = "thoughts"
         else:
-            # inferred knowledge belongs in discoveries, NOT facts. discoveries is outside
-            # the MIND write surface, so the BODY's Memory organ performs the write -- the
-            # MIND requested, the Body acted, the provenance stays inferred.
-            self.org.memory.append("discoveries", record)
+            # Discoveries are outside the direct MIND write surface. Limbs validates the
+            # inferred proposal, asks Memory to append it as Body, and records a proof.
+            self.org.limbs.record_mind_discovery(record)
             band = "discoveries"
         return answer, band

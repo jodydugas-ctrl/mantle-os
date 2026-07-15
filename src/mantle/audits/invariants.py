@@ -43,6 +43,16 @@ def _born(genome=None):
                           genome=genome)
 
 
+def _fusion_approval(org):
+    """Explicit dual-authority fixture; technical readiness never mints authority."""
+    return {
+        "target": {"resident_identity": org.body.identity_name()},
+        "operator": {"fusion_decision": "APPROVED"},
+        "guardian": {"fusion_decision": "APPROVED"},
+        "effective_decision": {"mind_fusion_authorized": True},
+    }
+
+
 def _exec_content(provenance, runner="python", caps=None, bad_hash=False):
     return {"code": _CODE, "code_hash": ("sha256:deadbeef" if bad_hash else code_hash(_CODE)),
             "entry": "f", "runner": runner, "capabilities": caps if caps is not None else {},
@@ -382,7 +392,7 @@ def t_authorship_in_hash():
 def t_mind_write_surface():
     """HF-M10: a fused MIND writes ONLY thoughts/brain; anything else is refused +
     immune-logged. (Imported lazily: this test alone touches mantle.mind.)"""
-    from ..mind import Mind, stub_mind, WRITE_SURFACE
+    from ..mind import AppAIRuntime, Mind, stub_mind, WRITE_SURFACE
     org = _born()
     m = Mind(org, stub_mind)
     before = len(org.immune.log)
@@ -391,35 +401,95 @@ def t_mind_write_surface():
         return False, "non-surface write was ALLOWED (containment breached)"
     except PermissionError:
         pass
-    return (len(org.immune.log) == before + 1,
-            "write to 'facts' refused + immune-logged; surface=%s" % list(WRITE_SURFACE))
+    special_before = list(org.body.category("special"))
+    steering_refused = _expect_raise(
+        lambda: AppAIRuntime(org).propose_special_instruction("model-requested"),
+        PermissionError,
+    )[0]
+    return (len(org.immune.log) == before + 1 and steering_refused
+            and org.body.category("special") == special_before,
+            "write to 'facts' refused + immune-logged; pre-fusion steering refused; "
+            "surface=%s" % list(WRITE_SURFACE))
 
 
 def t_mind_no_self_promote():
-    """HF-M12: a sandbox-escape candidate is refused at trial and never calcified."""
-    from ..mind import Mind, stub_mind
+    """HF-M12: skill proposals are trialed and calcified only through proven Limbs."""
+    from ..mind import fuse, stub_mind
     genome = standard_genome() + [make_band_boot("reflex_probe", 600, "exec",
                                                  purpose="probe")]
     org = _born(genome=genome)
-    m = Mind(org, stub_mind)
-    res = m.cultivate("reflex_probe", "def f(x):\n    return ().__class__\n", "f",
-                      [({"x": 1}, None)], {"by": "t"}, {})
-    empty = not org.prime.layer_content(org.prime.primary_layer("reflex_probe"))
-    return (res is None and empty, "escape skill refused at trial; band stays un-calcified")
+    org.stage1_certified = True
+    m = fuse(org, stub_mind, authorization=_fusion_approval(org))
+    refused = m.cultivate(
+        "reflex_probe", "def f(x):\n    return ().__class__\n", "f",
+        [({"x": 1}, None)], {"by": "t"}, {},
+    )
+    empty_after_refusal = not org.prime.layer_content(
+        org.prime.primary_layer("reflex_probe")
+    )
+    accepted = m.cultivate(
+        "reflex_probe", _CODE, "f", [({"x": 1}, 2)], {"by": "t"}, {},
+    )
+    proofs = [
+        entry["content"]["action_proof"]
+        for entry in org.prime.read("brain", reveal_private=True)
+        if isinstance(entry.get("content"), dict)
+        and isinstance(entry["content"].get("action_proof"), dict)
+        and entry["content"]["action_proof"].get("control") == "mind.cultivate"
+    ]
+    return (
+        refused is None
+        and empty_after_refusal
+        and accepted is not None
+        and len(proofs) == 2
+        and proofs[0].get("ok") is False
+        and proofs[1].get("ok") is True,
+        "escape refused and valid candidate calcified through two BODY-authored Limbs proofs",
+    )
 
 
 def t_fusion_requires_stage1():
-    """(audit before fusion): fuse() is refused unless the Stage-1 gate was certified."""
+    """HF-M15: fusion requires technical certification AND two explicit authorities."""
     from ..mind import fuse, stub_mind
     org = _born()
-    refused, note = _expect_raise(lambda: fuse(org, stub_mind), PermissionError)
+    before_stage1 = _expect_raise(
+        lambda: fuse(org, stub_mind, authorization=_fusion_approval(org)),
+        PermissionError,
+    )[0]
     org.stage1_certified = True
+    no_authority = _expect_raise(lambda: fuse(org, stub_mind), PermissionError)[0]
+    one_authority = _fusion_approval(org)
+    one_authority["guardian"]["fusion_decision"] = "DEFERRED"
+    guardian_deferred = _expect_raise(
+        lambda: fuse(org, stub_mind, authorization=one_authority), PermissionError
+    )[0]
+    wrong_target = _fusion_approval(org)
+    wrong_target["target"]["resident_identity"] = "Other.AppAI"
+    target_refused = _expect_raise(
+        lambda: fuse(org, stub_mind, authorization=wrong_target), PermissionError
+    )[0]
+    with tempfile.TemporaryDirectory(prefix="hermes-verify-stage1-freshness-") as td:
+        org.save(td)
+        reloaded = Organism.load(td)
+        persisted_is_not_fresh = (
+            not reloaded.stage1_certified
+            and _expect_raise(
+                lambda: fuse(
+                    reloaded,
+                    stub_mind,
+                    authorization=_fusion_approval(reloaded),
+                ),
+                PermissionError,
+            )[0]
+        )
     try:
-        fuse(org, stub_mind)
+        fuse(org, stub_mind, authorization=_fusion_approval(org))
     except Exception as e:  # noqa: BLE001
-        return False, "certified fusion wrongly refused: %s" % e
-    return (refused and org.brain.fused,
-            "uncertified fusion refused; certified fusion fused")
+        return False, "certified, dual-approved fusion wrongly refused: %s" % e
+    return (before_stage1 and no_authority and guardian_deferred and target_refused
+            and persisted_is_not_fresh and org.brain.fused,
+            "uncertified, persisted-stale, unapproved, one-role, and wrong-target fusion "
+            "refused; freshly certified dual-approved fusion fused")
 
 
 def t_bugfix_runtime_boundaries():
@@ -500,7 +570,7 @@ def t_bugfix_runtime_boundaries():
     phase = _born()
     refused_intent = _expect_raise(lambda: phase.limbs.intend({"x": 1}), PermissionError)[0]
     phase.stage1_certified = True
-    fuse(phase, stub_mind)
+    fuse(phase, stub_mind, authorization=_fusion_approval(phase))
     e = phase.limbs.delegate({"x": 2})
     checks.append(("mind-dispatch", refused_intent and e.get("authorship") == "MIND"
                    and e.get("content", {}).get("phase") == "DELEGATED"))
@@ -548,10 +618,14 @@ def t_bugfix_runtime_boundaries():
 def t_self_inquiry_never_facts():
     """self-inquiry answers are INFERRED and land in discoveries/thoughts -- the
     facts band stays untouched, and promotion without evidence is refused."""
-    from ..mind import AppAIRuntime
+    from ..mind import AppAIRuntime, fuse, stub_mind
     org = _born()
-    org.stage1_certified = True
     rt = AppAIRuntime(org)
+    pre_fusion_refused = _expect_raise(
+        lambda: rt.self_inquire("too early"), PermissionError
+    )[0]
+    org.stage1_certified = True
+    fuse(org, stub_mind, authorization=_fusion_approval(org))
     facts_before = len(org.prime.read("facts"))
     ans, band = rt.self_inquire("what is my purpose?")
     _, band2 = rt.self_inquire("argue against my plan", mode="oppose")
@@ -567,10 +641,18 @@ def t_self_inquiry_never_facts():
     # with cited, verified evidence it MAY become a fact (the honest path works)
     org.memory.promote_to_fact(rec, evidence={"source": "https://example.org/cite",
                                               "verified": True})
-    return (band == "discoveries" and band2 == "thoughts" and inferred and facts_same
-            and not promoted_wrongly,
-            "inferred stayed out of facts; evidence-free promotion refused; cited "
-            "promotion worked")
+    proofs = [
+        entry["content"]["action_proof"]
+        for entry in org.prime.read("brain", reveal_private=True)
+        if isinstance(entry.get("content"), dict)
+        and isinstance(entry["content"].get("action_proof"), dict)
+        and entry["content"]["action_proof"].get("control") == "mind.discovery"
+    ]
+    return (pre_fusion_refused and band == "discoveries" and band2 == "thoughts"
+            and inferred and facts_same and not promoted_wrongly
+            and len(proofs) == 1 and proofs[0].get("ok") is True,
+            "pre-fusion inquiry refused; inferred discovery routed through Limbs; "
+            "evidence-free promotion refused; cited promotion worked")
 
 
 # ============================================================================
@@ -665,6 +747,34 @@ def t_staged_save_rejects_corrupt():
             "corrupt save refused; on-disk cube still healthy; stage cleaned up")
 
 
+def t_organism_save_atomic_owner_only():
+    """PERSIST-1: every nest artifact is owner-only and failed JSON staging leaves the
+    previous checkpoint intact with no temporary debris."""
+    import stat
+    from pathlib import Path
+    from ..core.persist import atomic_write_json
+
+    org = _born()
+    org.memory.remember("facts", {"k": "durable"})
+    with tempfile.TemporaryDirectory() as td:
+        nest = os.path.join(td, "nest")
+        org.save(nest)
+        paths_ = [os.path.join(nest, name) for name in os.listdir(nest)]
+        owner_only = (stat.S_IMODE(os.stat(nest).st_mode) == 0o700
+                      and all(stat.S_IMODE(os.stat(path).st_mode) == 0o600
+                              for path in paths_ if os.path.isfile(path)))
+        body_path = os.path.join(nest, "body.json")
+        before = Path(body_path).read_bytes()
+        refused = _expect_raise(
+            lambda: atomic_write_json(body_path, {"not_json": {1, 2}}), TypeError
+        )[0]
+        intact = Path(body_path).read_bytes() == before
+        debris = [name for name in os.listdir(nest) if name.startswith(".mantle-stage-")]
+        return (owner_only and refused and intact and not debris,
+                "nest=0700; artifacts=0600; failed staged JSON preserved prior bytes; "
+                "temporary file removed")
+
+
 
 # ============================================================================
 # 11. Symbiosis & anchoring (the self-regulating tissue)
@@ -684,14 +794,14 @@ def t_energy_never_negative():
 def t_starvation_failopen():
     """SYM-2 (the starvation law): a fused, METERED mind with no energy never crashes
     the organism -- the MIND sleeps, every pulse completes, the fault is immune-logged.
-    Under event-gated cognition (M1) the MIND only wakes on a reason, so each pulse is an
-    unscheduled `pain` escalation -- the strongest case (the MIND is actually reached, and
-    still starves gracefully)."""
+    Every fused natural pulse reaches the metered MIND. Explicit `pain` pulses additionally
+    prove that an unscheduled escalation still starves gracefully."""
     from ..symbiosis import symbiosis_band, metered
     from ..mind import fuse, stub_mind
     org = _born(genome=standard_genome() + [symbiosis_band()])
     org.stage1_certified = True
-    fuse(org, metered(stub_mind, org, cost_per_call=1))     # zero energy granted
+    fuse(org, metered(stub_mind, org, cost_per_call=1),
+         authorization=_fusion_approval(org))               # zero energy granted
     r1 = org.heart.pain("probe", band="facts")    # an unscheduled pulse wakes the MIND
     r2 = org.heart.pain("probe", band="facts")
     kinds = {e["kind"] for e in org.immune.log}
@@ -732,7 +842,8 @@ def t_anchor_never_modifies_host():
             dns[:] = [d for d in dns if d != NEST and d != "__pycache__"]
             for fn in sorted(fns):
                 p = os.path.join(dp, fn)
-                out[p] = _hl.sha256(open(p, "rb").read()).hexdigest()
+                with open(p, "rb") as stream:
+                    out[p] = _hl.sha256(stream.read()).hexdigest()
         return out
 
     before = fingerprint()
@@ -813,11 +924,10 @@ def t_self_key_survives_or_fails_loud():
 
 
 # ============================================================================
-# 13. Nociception & event-gated cognition (M1)
+# 13. Natural cognition heartbeat + additional nociception (M1)
 # ============================================================================
 def t_noc_calm_spends_nothing():
-    """NOC-1: cognition is EVENT-GATED. A fused organism with a metered transport beats
-    with no stimulus and wakes the MIND ZERO times -- zero MODEL calls, zero energy."""
+    """NOC-1: every natural fused heartbeat calls the MIND, even when the Body is calm."""
     from ..symbiosis import symbiosis_band, grant, metered, balance
     from ..mind import fuse
     calls = {"n": 0}
@@ -829,10 +939,11 @@ def t_noc_calm_spends_nothing():
     org = _born(genome=standard_genome() + [symbiosis_band()])
     org.stage1_certified = True
     grant(org, 10)
-    fuse(org, metered(counting, org, cost_per_call=1))
+    fuse(org, metered(counting, org, cost_per_call=1),
+         authorization=_fusion_approval(org))
     org.heart.run(5)                       # five calm beats: no senses, no faults
-    return (calls["n"] == 0 and balance(org) == 10,
-            "5 calm beats -> 0 MODEL calls; energy unspent (balance 10.0)")
+    return (calls["n"] == 5 and balance(org) == 5,
+            "5 calm natural beats -> 5 MODEL calls; baseline cognition is unconditional")
 
 
 def t_noc_fault_fires_unscheduled_pulse():
@@ -861,7 +972,8 @@ def t_noc_wake_anchored_to_stressor():
             return None
 
     org = _born()
-    org.brain.fuse(Probe(), stage1_certified=True)          # bypass the mind wrapper
+    org.brain.fuse(Probe(), stage1_certified=True,
+                   authorization=_fusion_approval(org))     # bypass the mind wrapper
     org.heart.pain("integrity", band="facts", ref="<facts.3>")
     s = seen.get("stressor") or {}
     return (s.get("reason") == "integrity" and s.get("band") == "facts"
@@ -870,9 +982,8 @@ def t_noc_wake_anchored_to_stressor():
 
 
 def t_sched_scheduled_pulse():
-    """SCHED-1: planning ahead. A scheduled pulse wakes cognition on the DUE beat and not
-    before -- the organism chains a thought to a future beat, stays asleep (event-gated)
-    until then, and the scheduled wake is one-shot (fires once)."""
+    """SCHED-1: a scheduled stressor annotates only its due heartbeat and is one-shot;
+    baseline cognition continues on every natural heartbeat before and after it."""
     woke = {"beats": []}
 
     class Probe:
@@ -881,18 +992,22 @@ def t_sched_scheduled_pulse():
             return None
 
     org = _born()
-    org.brain.fuse(Probe(), stage1_certified=True)
+    org.stage1_certified = True
+    org.brain.fuse(Probe(), stage1_certified=True,
+                   authorization=_fusion_approval(org))
     due = org.heart.schedule_pulse("continue-the-plan", after=3)   # plan a wake 3 beats out
-    org.heart.run(2)                                # beats 1,2: calm -> asleep
-    asleep_until_due = (not woke["beats"]) and due == 3 and len(org.heart.scheduled()) == 1
-    org.heart.beat()                               # beat 3: the scheduled wake fires
-    fired_on_due = (len(woke["beats"]) == 1 and woke["beats"][0].get("scheduled") is True
-                    and woke["beats"][0].get("reason") == "continue-the-plan")
-    org.heart.run(3)                               # beats 4,5,6: one-shot -> calm again
-    one_shot = len(woke["beats"]) == 1 and org.heart.scheduled() == []
-    return (asleep_until_due and fired_on_due and one_shot,
-            "scheduled at beat 3: asleep beats 1-2, woke once on beat 3 (scheduled flag), "
-            "calm after")
+    org.heart.run(2)
+    baseline_before_due = (len(woke["beats"]) == 2 and not any(woke["beats"])
+                           and due == 3 and len(org.heart.scheduled()) == 1)
+    org.heart.beat()
+    fired_on_due = (len(woke["beats"]) == 3 and woke["beats"][2].get("scheduled") is True
+                    and woke["beats"][2].get("reason") == "continue-the-plan")
+    org.heart.run(3)
+    one_shot = (len(woke["beats"]) == 6 and not any(woke["beats"][3:])
+                and org.heart.scheduled() == [])
+    return (baseline_before_due and fired_on_due and one_shot,
+            "baseline cognition ran on all 6 beats; only beat 3 carried the one-shot "
+            "scheduled stressor")
 
 
 # ============================================================================
@@ -993,7 +1108,8 @@ def t_graft_apply_non_destructive():
             dns[:] = [d for d in dns if d not in (NEST, "__pycache__")]
             for fn in sorted(fns):
                 p = os.path.join(dp, fn)
-                out[p] = _hl.sha256(open(p, "rb").read()).hexdigest()
+                with open(p, "rb") as stream:
+                    out[p] = _hl.sha256(stream.read()).hexdigest()
         return out
 
     g = {"graft_format": _graft.GRAFT_FORMAT, "identity": {"name": "G.Resident"},
@@ -1783,7 +1899,7 @@ def t_applet_secret_boundary_and_bands():
     event; and the applet bands pass the SAME validate_genome gate as any app band (a
     colliding or out-of-range applet genome is refused)."""
     from .. import applet_body as ab
-    from ..compiler import GenomeError
+    from ..compiler import GenomeError, validate_genome
     with tempfile.TemporaryDirectory() as td:
         proj = os.path.join(td, "proj")
         os.makedirs(proj)
@@ -1801,8 +1917,7 @@ def t_applet_secret_boundary_and_bands():
         flagged = (len(org.immune.log) > before
                    and "config.py" in r["secret_suspects"])
         gate_holds = _expect_raise(
-            lambda: __import__("mantle.compiler", fromlist=["validate_genome"])
-            .validate_genome([{"band": "bad", "head": 100}]), GenomeError)[0]
+            lambda: validate_genome([{"band": "bad", "head": 100}]), GenomeError)[0]
         return (redacted and flagged and gate_holds,
                 "state redacted before append; suspect source flagged to immune; "
                 "the validate_genome gate still refuses out-of-range heads")
@@ -1987,12 +2102,13 @@ def t_sporeagent_lifecycle_receipt():
         and missing["certified"] is False
         and missing["sealed"] is False
     )
-    purity = (
-        "SPOREAGENT" not in open(_spore.__file__, encoding="utf-8").read()
-        and "source_receipt" not in open(_spore.__file__, encoding="utf-8").read()
-        and "SPOREAGENT" not in open(_spore_min.__file__, encoding="utf-8").read()
-        and "source_receipt" not in open(_spore_min.__file__, encoding="utf-8").read()
-    )
+    from pathlib import Path as _Path
+    spore_source = _Path(_spore.__file__).read_text(encoding="utf-8")
+    spore_min_source = _Path(_spore_min.__file__).read_text(encoding="utf-8")
+    purity = ("SPOREAGENT" not in spore_source
+              and "source_receipt" not in spore_source
+              and "SPOREAGENT" not in spore_min_source
+              and "source_receipt" not in spore_min_source)
     return (declared_and_receipted and boundary and no_leak and missing_explicit and purity,
             "source lifecycle receipt is explicit, redacted, OTHER-until-proven, "
             "and absent from pure spore.py/spore_min.py")
@@ -2980,7 +3096,8 @@ def t_grimoire_single_tomb():
             if not name.lower().endswith((".md", ".py", ".txt", ".yaml", ".yml", ".json")):
                 continue
             try:
-                text = open(path, encoding="utf-8").read()
+                with open(path, encoding="utf-8") as stream:
+                    text = stream.read()
             except UnicodeDecodeError:
                 continue
             if old_name in text or old_encoded in text:
@@ -3066,6 +3183,7 @@ TESTS = [
     ("B-W2  waste/reclaim-reuse",              t_waste_reclaim_reuse),
     ("B-W4  waste/on-demand+purpose",          t_on_demand_and_purpose),
     ("B-SC  staged-save-rejects-corrupt",      t_staged_save_rejects_corrupt),
+    ("PERSIST-1 atomic-owner-only-save",        t_organism_save_atomic_owner_only),
     ("SYM-1 energy-never-negative",            t_energy_never_negative),
     ("SYM-2 starvation-fail-open",             t_starvation_failopen),
     ("SYM-3 keys-never-raw",                   t_keys_never_raw),
@@ -3074,7 +3192,7 @@ TESTS = [
     ("SELF-2 self-verify/reject-foreign",      t_self_verify_and_reject_foreign),
     ("SELF-3 anti-clone",                      t_self_anti_clone),
     ("SELF-4 key-survives-or-fails-loud",      t_self_key_survives_or_fails_loud),
-    ("NOC-1 calm-organism-spends-nothing",     t_noc_calm_spends_nothing),
+    ("NOC-1 natural-heartbeat-cognizes",        t_noc_calm_spends_nothing),
     ("NOC-2 fault-fires-unscheduled-pulse",    t_noc_fault_fires_unscheduled_pulse),
     ("NOC-3 wake-anchored-to-stressor",        t_noc_wake_anchored_to_stressor),
     ("SCHED-1 scheduled-pulse-plans-ahead",    t_sched_scheduled_pulse),

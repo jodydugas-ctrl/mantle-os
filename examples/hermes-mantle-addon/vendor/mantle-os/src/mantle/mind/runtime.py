@@ -88,10 +88,10 @@ class AppAIRuntime:
     def schedule_pulse(self, reason: str = "scheduled", after: Optional[int] = None,
                        at: Optional[int] = None, band: Optional[str] = None,
                        ref: Optional[str] = None) -> int:
-        """Plan ahead: ask the Body to WAKE cognition on a future beat -- a countdown
-        (`after=N`) or a scheduled beat (`at=K`). Chain a thought to a later pulse instead
-        of polling every beat; the organism then stays asleep (event-gated) until due, so it
-        spends cognition only when it planned to. Returns the beat it will fire on."""
+        """Plan ahead: annotate a future baseline cognition beat -- a countdown
+        (`after=N`) or a scheduled beat (`at=K`). The natural ten-minute MIND call remains
+        unconditional; scheduling adds the bounded continuation stressor on the due beat.
+        Returns the beat it will fire on."""
         return self.org.heart.schedule_pulse(reason, after=after, at=at, band=band, ref=ref)
 
     def scheduled_pulses(self) -> list:
@@ -102,9 +102,9 @@ class AppAIRuntime:
     def propose_special_instruction(self, text: str) -> Dict[str, Any]:
         """Returns the intent AND the Body's application of it -- the two-step made
         visible: the proposal is authored MIND, the applied entry is authored BODY."""
-        intent = self.org.body.mind_propose_special(text)
-        applied = self.org.body.apply_special(intent["text"])
-        return {"intent": intent, "applied": applied}
+        mind = self._require_mind()
+        intent = mind.propose_special(text)
+        return self.org.limbs.apply_mind_special(intent)
 
     # ================= learn: request cultivation; the Body gates ==============
     def request_skill(self, band: str, code: str, entry: str,
@@ -124,6 +124,7 @@ class AppAIRuntime:
     def self_inquire(self, question: str, mode: str = "neutral"):
         """Ask the Inner Voice. The answer is tagged inferred and lands in discoveries
         (or private thoughts for `oppose`) -- NEVER in facts."""
+        self._require_mind()
         if self._inner is None:
             self._inner = InnerVoice(self.org, self.model)
         return self._inner.ask(question, mode)
@@ -135,7 +136,8 @@ class AppAIRuntime:
                                   "(audit before fusion)")
         return self.org.brain.mind
 
-    def fuse_mind(self, model: Optional[Callable[[str], str]] = None,
-                  max_thoughts: int = 64) -> Mind:
-        """Fuse a MIND (Phase 2). Refused unless the Stage-1 gate has been certified."""
-        return fuse(self.org, model or self.model, max_thoughts=max_thoughts)
+    def fuse_mind(self, model: Optional[Callable[[str], str]] = None, *,
+                  authorization: Any = None, max_thoughts: int = 64) -> Mind:
+        """Fuse only with Stage-1 evidence and explicit operator + guardian approval."""
+        return fuse(self.org, model or self.model, authorization=authorization,
+                    max_thoughts=max_thoughts)

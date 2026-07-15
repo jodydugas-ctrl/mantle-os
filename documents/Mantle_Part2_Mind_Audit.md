@@ -54,7 +54,7 @@ families in §B-G4). This checklist is the human mirror. Any open hard-fail bloc
 
 | #    | Requirement | HF | Pass? | Notes |
 |------|-------------|----|-------|-------|
-| M-11 | Cognition is event-gated (no SIGNIFICANT/INTENTION ⇒ no model call) | HF-M11 | | |
+| M-11 | Every fused natural heartbeat calls the MIND; SIGNIFICANT/distress may add pulses | HF-M11 | | |
 | M-12 | Heartbeat keeps beating regardless of model availability | HF-M12 | | |
 | M-13 | Context handed to the model is fully resolved (zero danglers) | HF-M24 | | re-checks Stage 1 B-11 |
 | M-14 | Every model call records a MODEL.REQUEST trace (secrets redacted) | HF-M14 | | |
@@ -91,7 +91,7 @@ families in §B-G4). This checklist is the human mirror. Any open hard-fail bloc
 | HF-M16   | Self-inquiry answers stay inferred — never laundered into `facts` without cited evidence | | |
 | SYM-1/2  | Energy never goes negative; a starved metered MIND sleeps, the Body keeps beating | | `src/mantle/symbiosis.py` |
 | SYM-3/4  | Keys ledgered by name (material redacted); anchoring never modifies a host file | | |
-| NOC-1..3 | Cognition event-gated (calm ⇒ zero MODEL calls); a fault wakes one anchored pulse | | |
+| NOC-1..3 | Calm fused beats call the MIND; a fault adds one anchored unscheduled pulse | | |
 | BOOT-1..3| MIND-proposed genome adopted at rebirth (oracle preserved); unsafe genome refused; inherited microcode re-trials | | `src/mantle/compiler.py` |
 | BRIDGE-1/2| Host store ↔ VCW band round-trips through the memory bridge; no secret crosses | | |
 | MEM-1..3 | A MEM VCW is keyless/OTHER; foreign code only via sandbox trial; shared knowledge stays inferred | | `src/mantle/mem.py` |

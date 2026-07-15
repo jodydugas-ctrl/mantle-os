@@ -21,7 +21,7 @@ The mesh rules (absolute):
 | **Immune** | defense & repair — the failure boundary | immune | active | event, scan, quarantine, tombstone, redact | heartbeat scan; secrets never stored; marks hidden from reads; no silent failure |
 | **Limbs** | action (efferent) — the outbound boundary | brain | dormant→active | notify, complete, operate, prove, invoke-reflex | authorship immutable (in hash); Body never authors INTENTION; every effector use proven |
 | **Memory** | recall & metabolism | identity, facts, events, discoveries | active | remember, recall, allocate, compact, dedupe, overflow, promote | immutable+hashed; veil honored; capacity→metabolism at 0.75/0.90, never rebirth; inference never auto-promoted |
-| **Brain** | cognition socket (Phase 2) | thoughts, brain | **dormant** | none — it reasons | fusion only after Stage-1; writes only thoughts+brain; cannot touch Genome or self-promote |
+| **Brain** | cognition socket (Phase 2) | thoughts, brain | **dormant** | none — it reasons | fusion only after Stage-1 evidence plus operator+guardian approval; writes only thoughts+brain; cannot touch Genome or self-promote |
 
 ## The pulse (where the contracts meet)
 

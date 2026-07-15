@@ -94,9 +94,13 @@ referenced.
 from mantle.audits import stage1
 passed, ev = stage1.run(org)        # the deterministic Zombie Body gate
 from mantle.mind import fuse, stub_mind
-mind = fuse(org, stub_mind)         # refused unless the gate passed
+# `authorization` is a fresh, independently issued, target-bound record whose
+# operator and guardian decisions are both APPROVED.
+mind = fuse(org, stub_mind, authorization=authorization)
+# Refused unless the gate passed AND dual authority validates for this resident.
 ```
-The SAME heartbeat now also thinks: the assembled, resolved, veiled snapshot is offered
+Stage-1 evidence alone never authorizes this transition. The SAME heartbeat now also thinks:
+the assembled, resolved, veiled snapshot is offered
 to the MIND each pulse. The MIND writes only `thoughts` + `brain`, proposes while the
 Body applies, cultivates skills the Body gates, and reflects with inferred provenance.
 Re-run Stage 1 after fusion (Stage 2 does this) — the Body must still pass everything.

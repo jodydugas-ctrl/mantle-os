@@ -46,8 +46,11 @@ wakes it. Its powers are deliberately narrow:
    (`python -m mantle audit` + `python -m mantle prove` -> all green).
 2. Confirm the live cube `verify()` is healthy.
 3. Confirm the §0 Declaration Block now carries `KEYFILE_PATH` and `DEFAULT_MODEL`.
+4. Confirm fresh, independent operator and guardian records both say `APPROVED`, target
+   this resident identity, and yield an effective `mind_fusion_authorized=true` decision.
 
-If any fails, return to Phase 1. Do not continue.
+If any fails, return to Phase 1. Do not continue. Stage-1 is technical evidence, never
+fusion authority.
 
 ---
 
@@ -67,13 +70,14 @@ If any fails, return to Phase 1. Do not continue.
 A deterministic Body procedure that brings the MIND online for the first time (and
 after every rebirth):
 
-1. Run the boot verifier (fail-open) and `verify()`.
-2. Load the Genome in order; assemble the initial context snapshot (Nervous System).
-3. Bind the model from the keyfile (secret boundary).
-4. Issue the **first MODEL.REQUEST** with the assembled context and the Primer's
+1. Run the boot verifier (fail-open), `verify()`, and a fresh Stage-1 gate.
+2. Validate both independent authority records against the effective resident target.
+3. Load the Genome in order; assemble the initial context snapshot (Nervous System).
+4. Bind the model from the keyfile (secret boundary).
+5. Issue the **first MODEL.REQUEST** with the assembled context and the Primer's
    identity. Record the trace (§2.7).
-5. The MIND's first output is written **only** to `thoughts` (its waking reflection).
-6. Append an `events` entry: `AWAKENED` (Body-authored). The organism is now a fused
+6. The MIND's first output is written **only** to `thoughts` (its waking reflection).
+7. Append an `events` entry: `AWAKENED` (Body-authored). The organism is now a fused
    AppAI.
 
 The ceremony itself contains no improvisation — it is a fixed Body reflex sequence.
@@ -113,18 +117,19 @@ The veil (Stage 1) is now also the MIND's privacy boundary:
 The Heart's existing Phase-1 heartbeat (Stage 1 B-04) now *additionally* drives
 cognition — without changing any Phase-1 reflex:
 
-1. Heart pulses; Body reflexes run as before (unchanged).
-2. The MIND is offered the snapshot **only on a wake reason**: a **SIGNIFICANT** senses signal,
-   or **distress** — a severe immune event the Body could not resolve by reflex
-   (nociception, Part 1 §1.7). The Immune System emits the pain coordinates `{reason, band, ref}`
+1. Heart pulses on the natural ten-minute cadence; Body reflexes run as before (unchanged).
+2. When fused, the MIND is offered a bounded snapshot on **every natural pulse**. A
+   **SIGNIFICANT** senses signal or **distress** — a severe immune event the Body could not
+   resolve by reflex (nociception, Part 1 §1.7) — may add an unscheduled pulse. The Immune
+   System emits the pain coordinates `{reason, band, ref}`
    and the Heart fires an **unscheduled pulse**; the snapshot is pre-anchored to the stressor
    (`snapshot["_stressor"]`) so the MIND does not scan the whole cube.
 3. The MIND thinks (writes `thoughts`) and may author INTENTIONs.
 4. The Body dispatches those INTENTIONs through the Limbs (§2.8).
 
-Cognition is **event-gated**: no wake reason → no model call. A calm fused organism completes
-every beat with the MIND asleep and spends **zero** energy (Part 2 §2.9). Proven by `NOC-1..3`;
-`org.heart.pain(reason, band, ref)` is the explicit interrupt vector. The Body keeps beating
+Cognition has an **unconditional natural baseline** when fused. Nociception gates only
+additional unscheduled wakeups; it never suppresses or replaces the ten-minute call. Proven
+by `NOC-1..3`; `org.heart.pain(reason, band, ref)` is the explicit interrupt vector. The Body keeps beating
 regardless.
 
 **Planning ahead — `schedule_pulse` (the scheduling command).** Besides waking NOW (`pain`),
@@ -132,8 +137,8 @@ the organism can schedule a wake for a FUTURE beat — a countdown (`after=N` be
 scheduled beat (`at=K`): `org.heart.schedule_pulse(reason, after=N)` (also on the MIND's
 runtime, `AppAIRuntime.schedule_pulse`). This is how an AppAI **chains thoughts**: if, during a
 thought batch, it knows it must process something later, it schedules the continuation instead of
-thinking on every pulse — so it plans *how often it really needs to run a task* and stays asleep
-(spending nothing) until the due beat. The scheduled wake fires once, through the same path as
+running that task on every pulse. Baseline cognition continues; the scheduled stressor appears
+only on the due beat. The scheduled wake fires once, through the same path as
 nociception (the woken snapshot carries `scheduled: True`). Planning is measured in **beats** —
 the organism's native unit of time (it has no innate sense of wall-clock; a host maps seconds →
 beats). Proven by `SCHED-1`.
@@ -294,7 +299,7 @@ The fused AppAI is complete when:
 
 - the entire Stage 1 audit **still passes** (re-run by the Stage 2 audit);
 - the MIND writes nowhere but `thoughts` + `brain`;
-- cognition is event-gated and every model call has a redacted trace;
+- cognition has an unconditional natural baseline plus bounded extra pain pulses, and every model call has a redacted trace;
 - dispatch authorship is correct and permanent;
 - starvation degrades to a living Zombie Body, never a crash;
 - `Mantle_Part2_Mind_Audit.md` is filled in with zero open hard-fails and signed off.
