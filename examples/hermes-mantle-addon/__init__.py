@@ -41,5 +41,27 @@ def register(ctx):
             "resident Body's Limbs control."
         ),
     )
+
+    def mind_command(raw_args: str) -> str:
+        prompt = raw_args.strip()
+        if not prompt:
+            return "Usage: /mind <prompt>"
+        try:
+            answer = runtimes.current().ask_mind(prompt)
+        except (TypeError, ValueError) as exc:
+            return f"AppAI MIND refused the prompt: {exc}"
+        except Exception:
+            return (
+                "AppAI MIND is unavailable. Verify the active Hermes model and "
+                "plugin configuration."
+            )
+        return f"AppAI MIND › {answer}"
+
+    ctx.register_command(
+        name="mind",
+        handler=mind_command,
+        description="Send one prompt to the resident AppAI MIND through Hermes.",
+        args_hint="<prompt>",
+    )
     for hook_name in OBSERVER_HOOKS:
         ctx.register_hook(hook_name, partial(runtimes.invoke, hook_name))

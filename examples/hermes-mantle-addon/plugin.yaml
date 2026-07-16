@@ -1,6 +1,6 @@
 name: mantle-os
-version: 0.4.0
-description: Deterministic resident Body with bounded Mantle tools for Hermes Agent
+version: 0.5.0
+description: Resident AppAI Body, VCW, and interactive host-LLM MIND for Hermes Agent
 author: jodydugas-ctrl
 provides_tools:
   - mantle_status

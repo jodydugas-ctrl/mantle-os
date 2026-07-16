@@ -4,8 +4,9 @@ A standalone Hermes Agent plugin that wraps Hermes with a deterministic Mantle a
 
 ## Current vertical slice
 
-Version `0.4.0` provides:
+Version `0.5.0` provides:
 
+- the interactive `/mind <prompt>` command on Hermes slash-command surfaces;
 - the read-only `mantle_status` tool;
 - the bounded `mantle_record_discovery` mutation, which writes only an explicitly unverified idea to `discoveries` through a Limbs `ControlBridge`;
 - one persistent Mantle Body per active Hermes profile and Hermes home, resolved at each invocation;
@@ -22,7 +23,47 @@ Version `0.4.0` provides:
 - Hermes-native provider/model/auth routing through `PluginContext.llm`; and
 - one bounded addon dispatch per heartbeat, host-owned fallback/retries, timeout, rolling token/cost budgets, serialized calls, and redacted usage receipts.
 
-The software engineering verdict is `READY`, while the Brain remains dormant and unfused by default. Complete Stage-1 fails closed on missing framework evidence. Positive attachment requires a fresh resident-bound `READY` report plus independently authenticated operator and guardian signatures; caller-authored JSON alone has no authority. Missing, shared, malformed, or tampered credentials fail closed. The controlled offline acceptance proves attach → cognitive heartbeat → authority-free defusion → 14/14 addon and 90/90 framework Stage-1 PASS. No production fusion approval or credential is bundled, and reproduction remains unauthorized. The sole model-facing mutation is confined to unverified discoveries; it cannot write facts, Primer, Genome, immune state, or host files.
+The software engineering verdict is `READY`, while the Brain remains dormant and unfused by default. Complete Stage-1 fails closed on missing framework evidence. Positive attachment requires a fresh resident-bound `READY` report plus independently authenticated operator and guardian signatures; caller-authored JSON alone has no authority. Missing, shared, malformed, or tampered credentials fail closed. The controlled offline acceptance proves attach → cognitive heartbeat → authority-free defusion → 14/14 addon and 90/90 framework Stage-1 PASS. No production fusion approval or credential is bundled, and reproduction remains unauthorized. The sole model-facing tool mutation is confined to unverified discoveries; it cannot write facts, Primer, Genome, immune state, or host files.
+
+## Plug-and-play quick start
+
+From this addon directory:
+
+```bash
+python3 scripts/install.py
+hermes
+```
+
+Then contact the resident AppAI directly in the same terminal:
+
+```text
+/mind What is your current purpose?
+```
+
+The installer copies the addon to the active `HERMES_HOME`, enables `mantle-os` without privileged
+built-in tool overrides, excludes runtime debris, and refuses to overwrite an existing installation
+unless `--force` is explicit. From the Mantle OS repository root, run
+`python3 examples/hermes-mantle-addon/scripts/install.py`.
+
+The addon has no separate model key or provider setting. `/mind` uses the provider, model,
+credentials, fallback, and retry policy already owned by Hermes through `PluginContext.llm`.
+
+## Interactive AppAI MIND
+
+`/mind <prompt>` runs one explicit, bounded, unscheduled cognition pulse. It:
+
+1. advances one Body pulse without changing the resident's natural 600-second cadence;
+2. assembles the privacy-veiled VCW context;
+3. sends that context and the user's message through Hermes's active host LLM;
+4. returns the AppAI answer directly to the same terminal, TUI, desktop, or gateway surface; and
+5. persists a private content-withheld reflection marker, hash-only request/response traces, and a
+   redacted model-usage receipt in the VCW.
+
+Neither the raw user prompt nor the model's answer is persisted in the VCW; this remains true even
+if the model echoes the prompt. The answer is returned only to the requesting Hermes surface.
+Interactive contact does **not** attach the Brain, start the autonomous scheduler, fabricate
+operator/guardian approval, or grant production fusion authority. It is a transient user-directed
+MIND consultation; production fusion remains governed by the independent Ed25519 authority gate.
 
 ## Bounded mutation
 
@@ -81,6 +122,7 @@ The immutable defaults are recorded in `config/defaults.json`. Raw prompts, raw 
 - `schemas.py` — model-facing tool schemas
 - `tools.py` — read-only diagnostics plus the bounded discovery mutation handler
 - `config/defaults.json` — deterministic resident defaults
+- `scripts/install.py` — safe local installer and Hermes enablement command
 - `tests/` — standard-library behavior and boundary tests
 - `vendor/mantle-os/` — complete 146-file non-addon Mantle OS 1.3.0 snapshot, reproducibly checked by `scripts/sync_vendor.py --check`
 - `docs/assimilation/` — reviewed Phase-0 inventory, nine-organ map, and host census

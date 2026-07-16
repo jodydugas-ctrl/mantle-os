@@ -3,10 +3,10 @@
     "asset": 8,
     "core-source": 72,
     "documentation": 47,
-    "example-or-addon-source": 25,
+    "example-or-addon-source": 26,
     "machine-data": 15,
     "metadata-or-other": 9,
-    "test": 24,
+    "test": 26,
     "vendor": 146,
     "workflow": 2
   },
@@ -42,8 +42,8 @@
       "category": "documentation",
       "path": "CHANGELOG.md",
       "review_method": "UTF-8 decode + architecture claim scan + authority reconciliation",
-      "sha256": "fd2080234e46c4070a384012f08f9c2f0b5c24b6d0dfb51ffe75c741f7c888c6",
-      "size_bytes": 2304,
+      "sha256": "aef0be253cebdd9e808e732fa31a6ab723c0197da4bab39dc787fd01b260aeac",
+      "size_bytes": 2976,
       "valid": true,
       "validation": "utf-8"
     },
@@ -519,8 +519,8 @@
       "category": "documentation",
       "path": "examples/hermes-mantle-addon/README.md",
       "review_method": "UTF-8 decode + architecture claim scan + authority reconciliation",
-      "sha256": "a17a02c41d621de67f976a712d35977fa2e00ff3b39a311cf9667d9b1b940748",
-      "size_bytes": 10356,
+      "sha256": "a4997d3dbb8e8bc1e0bc2d9eee3b341ee0771f89b1faa02485f57a6e2211aa02",
+      "size_bytes": 12288,
       "valid": true,
       "validation": "utf-8"
     },
@@ -537,8 +537,8 @@
       "category": "example-or-addon-source",
       "path": "examples/hermes-mantle-addon/__init__.py",
       "review_method": "AST parse + unittest/integration gates + architecture claim scan",
-      "sha256": "551099815d1c714e61400172dc6e70ad539a5556a3265c756be3397541dd8447",
-      "size_bytes": 1656,
+      "sha256": "47eb57bff2408d69c3b8ba8c115cab8841abead59d422c8e94af142ec2e503b9",
+      "size_bytes": 2397,
       "valid": true,
       "validation": "python-ast"
     },
@@ -610,7 +610,7 @@
       "path": "examples/hermes-mantle-addon/docs/REPOSITORY_ALIGNMENT.json",
       "review_method": "format parse + schema/contract tests",
       "sha256": null,
-      "size_bytes": 125925,
+      "size_bytes": 126973,
       "valid": true,
       "validation": "self-validating-generated-report"
     },
@@ -717,8 +717,8 @@
       "category": "example-or-addon-source",
       "path": "examples/hermes-mantle-addon/mantle_addon/runtime.py",
       "review_method": "AST parse + unittest/integration gates + architecture claim scan",
-      "sha256": "2ab70a7c38c153feaa0d56598a00ecc57fe9b344d5d6a2480df6c713dbf16c1d",
-      "size_bytes": 31011,
+      "sha256": "060bca9e640664aeab7a4ab0f3d9a2585f9072857bfac2827ea894aac6735987",
+      "size_bytes": 35244,
       "valid": true,
       "validation": "python-ast"
     },
@@ -771,8 +771,8 @@
       "category": "machine-data",
       "path": "examples/hermes-mantle-addon/plugin.yaml",
       "review_method": "format parse + schema/contract tests",
-      "sha256": "6b8057f697ee1994bd4e4b87bbccf652e2960afdef8a53c26b82f8df21ff1411",
-      "size_bytes": 466,
+      "sha256": "8330b4c7eb2c118ce2bb6a5b3ac6726b46da5bb384121d981f3d332d70917455",
+      "size_bytes": 468,
       "valid": true,
       "validation": "yaml"
     },
@@ -782,6 +782,15 @@
       "review_method": "AST parse + unittest/integration gates + architecture claim scan",
       "sha256": "787dc3b5eabe4480acd81b701a07dfe5da1e6ff067f3b27b86afd3dbeb78db10",
       "size_bytes": 1126,
+      "valid": true,
+      "validation": "python-ast"
+    },
+    {
+      "category": "example-or-addon-source",
+      "path": "examples/hermes-mantle-addon/scripts/install.py",
+      "review_method": "AST parse + unittest/integration gates + architecture claim scan",
+      "sha256": "83e892ca9e47c495beb94acccd6552acbc2da088358caa26eba09bc3096945a9",
+      "size_bytes": 3411,
       "valid": true,
       "validation": "python-ast"
     },
@@ -859,6 +868,15 @@
     },
     {
       "category": "test",
+      "path": "examples/hermes-mantle-addon/tests/test_install.py",
+      "review_method": "AST parse + executed proof surface",
+      "sha256": "b33069d5691eda8700fd8b1b50320573360cf1cdced9c8b25144f4fc32b24797",
+      "size_bytes": 2938,
+      "valid": true,
+      "validation": "python-ast"
+    },
+    {
+      "category": "test",
       "path": "examples/hermes-mantle-addon/tests/test_inventory.py",
       "review_method": "AST parse + executed proof surface",
       "sha256": "a145c2ee806534ec86e9ad94ffbe154b47d9ca2f32221345e68843e8eaf2c662",
@@ -868,10 +886,19 @@
     },
     {
       "category": "test",
+      "path": "examples/hermes-mantle-addon/tests/test_mind_command.py",
+      "review_method": "AST parse + executed proof surface",
+      "sha256": "025fac4931e71de1316c16413d3d94f7963dfa97595f3b2db4f5421133bd7eaf",
+      "size_bytes": 7510,
+      "valid": true,
+      "validation": "python-ast"
+    },
+    {
+      "category": "test",
       "path": "examples/hermes-mantle-addon/tests/test_plugin_manifest.py",
       "review_method": "AST parse + executed proof surface",
-      "sha256": "d048b7a57787877ed7c4ffcaa585ed227d2d9a05f47505872a940b3b8c6b1d84",
-      "size_bytes": 2743,
+      "sha256": "7cccf0a92e4d6a87357156f2359c14b189d105e739252ba7895a9d56e151c836",
+      "size_bytes": 2936,
       "valid": true,
       "validation": "python-ast"
     },
@@ -879,8 +906,8 @@
       "category": "test",
       "path": "examples/hermes-mantle-addon/tests/test_profile_isolation.py",
       "review_method": "AST parse + executed proof surface",
-      "sha256": "cb5690ce4285c9e91bc17588d5b40e62b61aeb4667b91668ca6ca0f8fdbad44e",
-      "size_bytes": 3989,
+      "sha256": "c3aa69c47ad70813207551534f57d9065d219521824575c6dcc230a475fa88e1",
+      "size_bytes": 4140,
       "valid": true,
       "validation": "python-ast"
     },
@@ -924,8 +951,8 @@
       "category": "test",
       "path": "examples/hermes-mantle-addon/tests/test_tools.py",
       "review_method": "AST parse + executed proof surface",
-      "sha256": "b1ad6fd81c6054c8c1d487dad3130ab410060712c09e3387b8a40c0f2278905f",
-      "size_bytes": 9805,
+      "sha256": "bd62a61fd535f113d730b3f8ae85eef9c7be4a0b9726eb850cb21782b04cd2c2",
+      "size_bytes": 11320,
       "valid": true,
       "validation": "python-ast"
     },
@@ -960,8 +987,8 @@
       "category": "test",
       "path": "examples/hermes-mantle-addon/tests/verify_real_plugin.py",
       "review_method": "AST parse + executed proof surface",
-      "sha256": "5d2dc98c9333e0900c7c2daf270f96bf06f36dbb0b50e1ce7ee8190622c7491d",
-      "size_bytes": 10716,
+      "sha256": "c9b0994cf269e00b80b4b8b90d0d23bde35c815279e01fad8df5fe5a4a6a5007",
+      "size_bytes": 11745,
       "valid": true,
       "validation": "python-ast"
     },
@@ -1743,8 +1770,8 @@
       "category": "vendor",
       "path": "examples/hermes-mantle-addon/vendor/mantle-os/src/mantle/audits/invariants.py",
       "review_method": "SHA-256 snapshot parity + private-namespace execution",
-      "sha256": "dce26df43145107a14262dcee3857b81527b48d225707f6941d207a28b182d91",
-      "size_bytes": 161780,
+      "sha256": "d6a431eb9998461f90252a28936e556f45656fd2d2908a53bfabbdd2df6b832e",
+      "size_bytes": 165617,
       "valid": true,
       "validation": "python-ast"
     },
@@ -1851,8 +1878,8 @@
       "category": "vendor",
       "path": "examples/hermes-mantle-addon/vendor/mantle-os/src/mantle/core/persist.py",
       "review_method": "SHA-256 snapshot parity + private-namespace execution",
-      "sha256": "add569a48c244430cda04b38bd843924396a104e55f1865905d277cee232eb5b",
-      "size_bytes": 3416,
+      "sha256": "568f109b3a181e4505e0afe41ab8851f2188a329238b952e99baee2c62e68b9c",
+      "size_bytes": 9696,
       "valid": true,
       "validation": "python-ast"
     },
@@ -2598,8 +2625,8 @@
       "category": "core-source",
       "path": "src/mantle/audits/invariants.py",
       "review_method": "AST parse + invariants + framework gates + architecture claim scan",
-      "sha256": "dce26df43145107a14262dcee3857b81527b48d225707f6941d207a28b182d91",
-      "size_bytes": 161780,
+      "sha256": "d6a431eb9998461f90252a28936e556f45656fd2d2908a53bfabbdd2df6b832e",
+      "size_bytes": 165617,
       "valid": true,
       "validation": "python-ast"
     },
@@ -2706,8 +2733,8 @@
       "category": "core-source",
       "path": "src/mantle/core/persist.py",
       "review_method": "AST parse + invariants + framework gates + architecture claim scan",
-      "sha256": "add569a48c244430cda04b38bd843924396a104e55f1865905d277cee232eb5b",
-      "size_bytes": 3416,
+      "sha256": "568f109b3a181e4505e0afe41ab8851f2188a329238b952e99baee2c62e68b9c",
+      "size_bytes": 9696,
       "valid": true,
       "validation": "python-ast"
     },
@@ -3144,8 +3171,8 @@
       "validation": "python-ast"
     }
   ],
-  "files_total": 348,
-  "generated_at": "2026-07-15T19:52:12.575411+00:00",
+  "files_total": 351,
+  "generated_at": "2026-07-16T01:50:55.368211+00:00",
   "mind_fusion_authorized": false,
   "parse_errors": [],
   "remaining_readiness_blockers": [],

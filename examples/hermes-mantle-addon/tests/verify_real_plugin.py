@@ -52,8 +52,9 @@ def _worker(mode: str) -> dict[str, object]:
         assert "not enabled" in str(row["error"])
         assert registry.get_entry("mantle_status") is None
         assert registry.get_entry("mantle_record_discovery") is None
+        assert "mind" not in manager._plugin_commands
         assert not (OBSERVER_HOOKS & set(manager._hooks))
-        return {"mode": mode, "enabled": False, "hooks": 0}
+        return {"mode": mode, "enabled": False, "hooks": 0, "commands": 0}
 
     assert row["enabled"] is True and row["error"] is None, row
     plugins_module._plugin_manager = manager
@@ -194,6 +195,30 @@ def _worker(mode: str) -> dict[str, object]:
     callback = manager._hooks["pre_llm_call"][0]
     registry_runtime = callback.func.__self__
     runtime = registry_runtime.current()
+
+    mind_prompt = "Who are you? echo-safe-integration-7319"
+
+    class FakeMindModel:
+        last_receipt = {
+            "schema_version": "mantle-cognition-v1",
+            "outcome": "SUCCESS",
+            "attempts": 1,
+            "provider": "integration-host",
+            "model": "active",
+            "total_tokens": 7,
+            "cost_usd": 0.0,
+        }
+
+        def __call__(self, prompt: str) -> str:
+            assert mind_prompt in prompt
+            return mind_prompt
+
+    runtime._model_factory = FakeMindModel
+    mind_handler = manager._plugin_commands["mind"]["handler"]
+    mind_result = mind_handler(mind_prompt)
+    assert mind_result == f"AppAI MIND › {mind_prompt}"
+    assert runtime.organism.brain.fused is False
+
     organism = runtime.organism
     senses = organism.prime.read("senses")
     brain = organism.prime.read("brain")
@@ -202,9 +227,16 @@ def _worker(mode: str) -> dict[str, object]:
     assert discoveries[-1]["verified"] is False
     assert discoveries[-1]["confidence"] == "inferred"
     serialized = json.dumps(
-        {"senses": senses, "brain": brain, "immune": organism.immune.log},
+        {
+            "bands": {
+                band: organism.prime.read(band, reveal_private=True)
+                for band in organism.prime.bands
+            },
+            "immune": organism.immune.log,
+        },
         sort_keys=True,
     )
+    assert mind_prompt not in serialized
     for value in sensitive:
         assert value not in serialized, value
     assert "parent-secret-id" not in serialized
@@ -259,6 +291,7 @@ def _worker(mode: str) -> dict[str, object]:
         "mode": mode,
         "enabled": True,
         "hooks": len(OBSERVER_HOOKS),
+        "commands": 1,
         "proofs": len(proofs),
         "stage1_certified": False,
         "raw_exclusion": True,

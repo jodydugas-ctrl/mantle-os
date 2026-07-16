@@ -31,6 +31,7 @@ class RecordingContext:
     def __init__(self):
         self.tools = []
         self.hooks = []
+        self.commands = []
         self.profile_name = "default"
 
     def register_tool(self, **registration):
@@ -38,6 +39,16 @@ class RecordingContext:
 
     def register_hook(self, hook_name, callback):
         self.hooks.append((hook_name, callback))
+
+    def register_command(self, name, handler, description="", args_hint=""):
+        self.commands.append(
+            {
+                "name": name,
+                "handler": handler,
+                "description": description,
+                "args_hint": args_hint,
+            }
+        )
 
 
 class MantleStatusTests(unittest.TestCase):
@@ -229,6 +240,34 @@ class PluginRegistrationTests(unittest.TestCase):
             id(discovery["handler"].keywords["runtime_provider"].__self__),
             registry_ids,
         )
+
+    def test_register_exposes_interactive_mind_command(self):
+        plugin = self._load_plugin()
+        context = RecordingContext()
+
+        plugin.register(context)
+
+        self.assertEqual(1, len(context.commands))
+        command = context.commands[0]
+        self.assertEqual("mind", command["name"])
+        self.assertEqual("<prompt>", command["args_hint"])
+        self.assertIn("AppAI", command["description"])
+        registry = context.hooks[0][1].func.__self__
+        runtime = registry.current()
+        with patch.object(runtime, "ask_mind", return_value="resident answer") as ask:
+            result = command["handler"]("  user question  ")
+
+        self.assertEqual("AppAI MIND › resident answer", result)
+        ask.assert_called_once_with("user question")
+        self.assertEqual("Usage: /mind <prompt>", command["handler"]("   "))
+        with patch.object(
+            runtime,
+            "ask_mind",
+            side_effect=RuntimeError("private provider detail"),
+        ):
+            unavailable = command["handler"]("hello")
+        self.assertIn("AppAI MIND is unavailable", unavailable)
+        self.assertNotIn("private provider detail", unavailable)
 
     def test_register_loads_active_profile_resident_config(self):
         plugin = self._load_plugin()

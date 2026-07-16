@@ -46,6 +46,7 @@ class RecordingContext:
     def __init__(self):
         self.tools = []
         self.hooks = []
+        self.commands = []
         self.profile_name = "default"
 
     def register_tool(self, **registration):
@@ -53,6 +54,9 @@ class RecordingContext:
 
     def register_hook(self, hook_name, callback):
         self.hooks.append((hook_name, callback))
+
+    def register_command(self, name, handler, description="", args_hint=""):
+        self.commands.append(name)
 
 
 class PluginManifestTests(unittest.TestCase):
@@ -73,6 +77,7 @@ class PluginManifestTests(unittest.TestCase):
             set(manifest["provides_hooks"]),
             {hook_name for hook_name, _callback in context.hooks},
         )
+        self.assertEqual(["mind"], context.commands)
 
     def test_manifest_does_not_claim_unearned_phase2_state(self):
         manifest_text = MANIFEST_PATH.read_text(encoding="utf-8").lower()

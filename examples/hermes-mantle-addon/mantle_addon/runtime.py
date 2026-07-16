@@ -43,6 +43,11 @@ OBSERVER_HOOKS = (
 
 DISCOVERY_CONTROL_ID = "hermes.mantle.record_discovery"
 MAX_DISCOVERY_CHARS = 2_000
+MAX_MIND_PROMPT_CHARS = 4_000
+MAX_MIND_CONTEXT_CHARS = 4_000
+INTERACTIVE_MIND_REFLECTION = (
+    "Interactive MIND response delivered to the user; content withheld by privacy policy."
+)
 _DEFUSION_REASONS = {"operator", "guardian", "shutdown", "recovery", "fault", "rollback"}
 
 
@@ -97,6 +102,37 @@ def _validated_discovery(value: Any) -> str:
     if any(ord(char) < 32 and char not in "\n\t" for char in text):
         raise ValueError("discovery contains unsupported control characters")
     return text
+
+
+def _validated_mind_prompt(value: Any) -> str:
+    """Validate one explicit user-to-AppAI prompt before host dispatch."""
+    if not isinstance(value, str):
+        raise TypeError("MIND prompt must be a string")
+    text = value.strip()
+    if not text:
+        raise ValueError("MIND prompt must not be empty")
+    if len(text) > MAX_MIND_PROMPT_CHARS:
+        raise ValueError(
+            f"MIND prompt must be at most {MAX_MIND_PROMPT_CHARS} characters"
+        )
+    if any(ord(char) < 32 and char not in "\n\t" for char in text):
+        raise ValueError("MIND prompt contains unsupported control characters")
+    return text
+
+
+class _PrivateMindModel:
+    """Persist a privacy marker through MIND while retaining the live answer."""
+
+    def __init__(self, delegate: Callable[[str], str]):
+        self._delegate = delegate
+        self.answer: str | None = None
+
+    def __call__(self, prompt: str) -> str:
+        answer = self._delegate(prompt)
+        if not isinstance(answer, str) or not answer.strip():
+            raise RuntimeError("AppAI MIND produced no response")
+        self.answer = answer.strip()
+        return INTERACTIVE_MIND_REFLECTION
 
 
 class ResidentRuntime:
@@ -396,19 +432,90 @@ class ResidentRuntime:
                 return
             organism = self._handle.organism
             organism.heart.beat(assemble=True, wake=stressor)
-            receipt = getattr(self._model, "last_receipt", None)
-            if isinstance(receipt, Mapping):
-                make_entry = vendored_symbol("vcw.entry", "make_entry")
-                organism.limbs.append(
-                    "brain",
-                    make_entry(
-                        {"cognition_receipt": dict(receipt)},
-                        opcode="MODEL.RECEIPT",
-                        author="BODY",
-                        authorship="BODY",
-                    ),
-                )
+            self._append_cognition_receipt(organism)
             save_resident(organism, self._handle.path)
+
+    def _append_cognition_receipt(self, organism: Any) -> None:
+        receipt = getattr(self._model, "last_receipt", None)
+        if not isinstance(receipt, Mapping):
+            return
+        make_entry = vendored_symbol("vcw.entry", "make_entry")
+        organism.limbs.append(
+            "brain",
+            make_entry(
+                {"cognition_receipt": dict(receipt)},
+                opcode="MODEL.RECEIPT",
+                author="BODY",
+                authorship="BODY",
+            ),
+        )
+
+    def _append_interactive_response_digest(
+        self,
+        organism: Any,
+        answer: str,
+    ) -> None:
+        make_entry = vendored_symbol("vcw.entry", "make_entry")
+        organism.limbs.append(
+            "brain",
+            make_entry(
+                {
+                    "interactive_response": {
+                        "sha256": hashlib.sha256(answer.encode("utf-8")).hexdigest(),
+                        "chars": len(answer),
+                        "content_persisted": False,
+                    }
+                },
+                opcode="INTERACTIVE.RESPONSE",
+                author="BODY",
+                authorship="BODY",
+            ),
+        )
+
+    def ask_mind(self, prompt: Any) -> str:
+        """Run one explicit, additive AppAI cognition pulse and persist its VCW trace.
+
+        Interactive contact does not attach the Brain, start a scheduler, or grant
+        production fusion authority. It is a bounded user-directed MIND consultation
+        through Hermes's active host model.
+        """
+        question = _validated_mind_prompt(prompt)
+        with self._lock:
+            handle = self._ensure_handle()
+            organism = handle.organism
+            if self._model is None:
+                if self._model_factory is None:
+                    raise RuntimeError("Hermes host LLM is unavailable")
+                self._model = self._model_factory()
+
+            organism.heart.body_pulse(assemble=False)
+            snapshot = organism.nervous.assemble()
+            context = json.dumps(snapshot, default=str, sort_keys=True)[
+                :MAX_MIND_CONTEXT_CHARS
+            ]
+            framed = (
+                "You are the interactive MIND of the AppAI named "
+                f"{organism.body.identity_name()}. The Body assembled the following "
+                "resolved, privacy-veiled VCW context. Answer the user's message "
+                "directly and concisely; you may propose changes but cannot apply them."
+                f"\n\nCONTEXT:\n{context}\n\nUSER MESSAGE:\n{question}"
+            )
+            private_model = _PrivateMindModel(self._model)
+            Mind = vendored_symbol("mind.mind", "Mind")
+            mind = Mind(organism, private_model, max_thoughts=1)
+            try:
+                mind.think(snapshot, question=framed)
+            except Exception:
+                self._append_cognition_receipt(organism)
+                _safe_save(organism, handle.path)
+                raise
+            answer = private_model.answer
+            if answer is None:
+                raise RuntimeError("AppAI MIND produced no response")
+            self._append_interactive_response_digest(organism, answer)
+            self._append_cognition_receipt(organism)
+            save_resident(organism, handle.path)
+            return answer
 
     def defuse(
         self,

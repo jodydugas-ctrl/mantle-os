@@ -2,6 +2,22 @@
 
 All notable release-level changes are documented here.
 
+## [Unreleased]
+
+### Added
+
+- Plug-and-play Hermes addon installer and `/mind <prompt>` command for one explicit, unscheduled
+  AppAI cognition pulse through Hermes's active host LLM.
+- VCW persistence for content-withheld interactive MIND markers, hash-only request/response traces,
+  and redacted usage receipts without storing the raw user prompt or model answer.
+
+### Security
+
+- Interactive MIND contact remains transient and user-directed; it does not attach the Brain, start
+  autonomous cognition, or bypass independent production-fusion authority.
+- Echoed prompts are returned to the requesting surface but never written to any VCW band or
+  resident artifact.
+
 ## [1.3.0] — 2026-07-15
 
 ### Added

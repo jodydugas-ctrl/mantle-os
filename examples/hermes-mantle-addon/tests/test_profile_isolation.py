@@ -28,12 +28,16 @@ class DynamicContext:
         self.profile_name = "bootstrap"
         self.tools = []
         self.hooks = []
+        self.commands = []
 
     def register_tool(self, **registration):
         self.tools.append(registration)
 
     def register_hook(self, name, callback):
         self.hooks.append((name, callback))
+
+    def register_command(self, name, handler, description="", args_hint=""):
+        self.commands.append((name, handler))
 
 
 class ProfileIsolationTests(unittest.TestCase):
