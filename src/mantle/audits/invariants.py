@@ -782,10 +782,104 @@ def t_organism_save_atomic_owner_only():
         symlink_artifact_refused = _expect_raise(
             lambda: atomic_write_json(linked_artifact, {"safe": True}), OSError
         )[0]
-        return (owner_only and refused and intact and not debris
-                and symlink_root_refused and symlink_artifact_refused,
-                "nest=0700; artifacts=0600; failed staged JSON preserved prior bytes; "
-                "temporary file removed; symlink root/artifact refused")
+
+        nested_target = os.path.join(td, "nested-target")
+        os.mkdir(nested_target, 0o700)
+        nested_link = os.path.join(nest, "nested-link")
+        os.symlink(nested_target, nested_link)
+        nested_parent_refused = _expect_raise(
+            lambda: atomic_write_json(
+                os.path.join(nested_link, "escaped.json"), {"safe": True}
+            ),
+            OSError,
+        )[0]
+        nested_parent_contained = not os.path.exists(
+            os.path.join(nested_target, "escaped.json")
+        )
+
+        descriptor_root = os.path.join(td, "descriptor-root")
+        descriptor_sibling = os.path.join(td, "descriptor-sibling")
+        os.mkdir(descriptor_root, 0o700)
+        os.mkdir(descriptor_sibling, 0o700)
+        descriptor_fd = os.open(
+            descriptor_root,
+            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
+        )
+        try:
+            descriptor_escape = (
+                f"/proc/self/fd/{descriptor_fd}/../descriptor-sibling/escaped.json"
+            )
+            descriptor_escape_refused = _expect_raise(
+                lambda: atomic_write_json(descriptor_escape, {"safe": True}),
+                OSError,
+            )[0]
+            descriptor_escape_contained = not os.path.exists(
+                os.path.join(descriptor_sibling, "escaped.json")
+            )
+            descriptor_valid = f"/proc/self/fd/{descriptor_fd}/nested/valid.json"
+            atomic_write_json(descriptor_valid, {"safe": True})
+            descriptor_positive = json.loads(
+                Path(descriptor_root, "nested", "valid.json").read_text(
+                    encoding="utf-8"
+                )
+            ) == {"safe": True}
+        finally:
+            os.close(descriptor_fd)
+
+        from unittest.mock import patch
+        from ..core import persist as persist_module
+
+        race_parent = os.path.join(td, "race-parent")
+        race_outside = os.path.join(td, "race-outside")
+        race_moved = os.path.join(td, "race-parent-moved")
+        os.mkdir(race_parent, 0o700)
+        os.mkdir(race_outside, 0o700)
+        real_replace = os.replace
+        swapped = False
+
+        def swap_before_replace(src, dst, *args, **kwargs):
+            nonlocal swapped
+            if not swapped:
+                swapped = True
+                os.rename(race_parent, race_moved)
+                os.symlink(race_outside, race_parent)
+                outside_stage = os.path.join(race_outside, os.path.basename(src))
+                Path(outside_stage).write_text("attacker", encoding="utf-8")
+            return real_replace(src, dst, *args, **kwargs)
+
+        with patch.object(persist_module.os, "replace", swap_before_replace):
+            _expect_raise(
+                lambda: atomic_write_json(
+                    os.path.join(race_parent, "checkpoint.json"), {"safe": True}
+                ),
+                OSError,
+            )
+        race_contained = not os.path.exists(
+            os.path.join(race_outside, "checkpoint.json")
+        )
+
+        checks = {
+            "owner_only": owner_only,
+            "serialization_refused": refused,
+            "prior_bytes_intact": intact,
+            "no_stage_debris": not debris,
+            "symlink_root_refused": symlink_root_refused,
+            "symlink_artifact_refused": symlink_artifact_refused,
+            "nested_parent_refused": nested_parent_refused,
+            "nested_parent_contained": nested_parent_contained,
+            "descriptor_escape_refused": descriptor_escape_refused,
+            "descriptor_escape_contained": descriptor_escape_contained,
+            "descriptor_positive": descriptor_positive,
+            "parent_swap_contained": race_contained,
+        }
+        failed_checks = [name for name, ok in checks.items() if not ok]
+        return (
+            not failed_checks,
+            "nest=0700; artifacts=0600; failed staging preserves prior bytes; "
+            "root/artifact/nested symlinks and descriptor '..' escape refused; "
+            "descriptor-backed write passed; parent-swap remained descriptor-contained; "
+            f"failed_checks={failed_checks}",
+        )
 
 
 
