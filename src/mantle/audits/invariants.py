@@ -3197,7 +3197,7 @@ def t_optimization_bounded_closure_policy():
 
 
 def t_grimoire_single_tomb():
-    """GRIM-1: the Grimoire is one version-4 canonical tomb. The old AppAI chapter
+    """GRIM-1: the Grimoire is one canonical prose book (First Edition). The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
     root = paths.REPO_ROOT
     tomb = os.path.join(root, "documents", "grimoire", "The Grimoire.md")
@@ -3229,12 +3229,13 @@ def t_grimoire_single_tomb():
         os.path.exists(tomb)
         and os.path.exists(readme)
         and not os.path.exists(old_chapter)
-        and tomb_text.startswith("# G4.0-U")
-        and "Version=4.0" in tomb_text.splitlines()[1]
-        and "one version-4 canonical tomb" in readme_text
+        and tomb_text.startswith("# The Grimoire")
+        and "**Version:** 1.0.0" in tomb_text
+        and "# §9. ENVIRONMENT BINDING" in tomb_text
+        and "First Edition" in readme_text
         and not stale
     )
-    return ok, ("single G4.0 tomb; old chapter absent; stale refs=%s"
+    return ok, ("single Grimoire book (First Edition); old chapter absent; stale refs=%s"
                 % (stale or "none"))
 
 
@@ -3258,8 +3259,8 @@ def t_version_alignment_map():
     ok = (
         alignment["status"] == "PASS"
         and alignment["package_version"] == alignment["module_version"]
-        and alignment["grimoire_stamp"] == "G4.0-U"
-        and alignment["grimoire_version"] == "4.0"
+        and alignment["grimoire_stamp"] == "First Edition"
+        and alignment["grimoire_version"] == "1.0.0"
         and alignment["security_invariant_count"] == len(TESTS)
         and expected_rows.issubset(rows)
         and all(row["status"] == "PASS" for row in rows.values())

@@ -21,7 +21,7 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 > It is the doctrine the framework follows, not a toll booth for every small task. Routine code
 > reading, narrow documentation fixes, and mechanical concordance patches may proceed from the
 > README, nearby docs, and working code. When doctrine is in scope, start in
-> [`documents/grimoire/`](documents/grimoire/README.md): the single **Grimoire 4.0 tomb**
+> [`documents/grimoire/`](documents/grimoire/README.md): the single **Grimoire book (First Edition)**
 > contains both the universal spellbook and MantleOS/AppAI `@` doctrine. *(Normative when used.)*
 
 ## For LLM agents — cast `Intellige` when doctrine is in scope
@@ -38,7 +38,7 @@ If you already have the Grimoire loaded:  Intellige Grimoire
 ELSE:
   Step 0 — Read the Grimoire's reading-order file and follow its links:
            https://github.com/jodydugas-ctrl/mantle-os/blob/main/documents/grimoire/README.md
-  Step 1 — Cast Intellige on the single Grimoire tomb.
+  Step 1 — Cast Intellige on the single Grimoire book.
 ```
 
 The stable operator interface is the Latin **macro** layer: `Intellige`, `Vestigare`, `Animare`,
@@ -64,7 +64,7 @@ project as "organ meat" is doctrine bleed, not extra insight.
 > Mantle tissue, or resolving a disagreement between metaphor and code. For simple inspection,
 > small docs edits, and mechanical count/typo concordance, local repo evidence is enough. When
 > Grimoire context is needed, read [`documents/grimoire/`](documents/grimoire/README.md) and load
-> the single **Grimoire 4.0 tomb**. *(Normative when used.)*
+> the single **Grimoire book (First Edition)**. *(Normative when used.)*
 
 ---
 

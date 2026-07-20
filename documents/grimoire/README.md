@@ -4,16 +4,16 @@
 Mantle OS: the spellbook the framework follows before building, assimilating, operating, or
 mutating an AppAI.
 
-## Canonical Tomb
+## The Book
 
-The Grimoire is now **one version-4 canonical tomb**:
+The Grimoire is **one canonical prose book — Version 1.0.0, First Edition**:
 
 | Document | Scope |
 | --- | --- |
-| [The Grimoire.md](The%20Grimoire.md) | Universal engineering spells plus MantleOS/AppAI `@` doctrine, including Body/MIND, SELF/OTHER, VCW, residency, reproduction, cache, diagnostics, and lifecycle law. |
+| [The Grimoire.md](The%20Grimoire.md) | Universal engineering spells (§0–§6, §8) plus the AppAI extension (§7) — Body/MIND, SELF/OTHER, VCW, residency, reproduction, cache, diagnostics, lifecycle law — and the Mantle OS environment binding (§9) that makes each AppAI spell a runnable ritual. |
 
-The former separate AppAI chapter has been consolidated into this tomb. Do not load or
-maintain a separate AppAI chapter as canonical doctrine.
+The AppAI material is an extension chapter (§7) inside this one book, loaded by the domain
+scope gate in §7. Do not maintain a separate AppAI chapter as canonical doctrine.
 
 ## Bootstrapping `Intellige`
 
@@ -22,13 +22,13 @@ authority to edit, mutate, execute, spend, or persist. To cast it on the Grimoir
 
 1. If the Grimoire is already attached to the current context, use that document and proceed.
 2. Otherwise, read this README and load [The Grimoire.md](The%20Grimoire.md).
-3. If the tomb cannot be loaded, stop. Do not guess doctrine; return a blocked receipt naming the
+3. If the book cannot be loaded, stop. Do not guess doctrine; return a blocked receipt naming the
    missing required file.
 
-The tomb's `@scope` gate decides whether MantleOS/AppAI-only doctrine applies. If a task does not
-touch AppAI, MantleOS, `.mantle/`, VCW, zombie Bodies, organ maps, Body/MIND, SELF/OTHER,
-residency, assimilation, reproduction, or organism architecture, the `@` material is not authority
-for mutation.
+The §7 scope gate decides whether MantleOS/AppAI doctrine applies. If a task does not touch AppAI,
+MantleOS, `.mantle/`, VCW, zombie Bodies, organ maps, Body/MIND, SELF/OTHER, residency,
+assimilation, reproduction, or organism architecture, the extension is not authority for mutation.
+When the environment is a Mantle OS tree, §9 binds the AppAI spells to runnable commands and code.
 
 ## Command Surface
 
