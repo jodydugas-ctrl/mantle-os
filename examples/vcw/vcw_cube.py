@@ -106,7 +106,7 @@ THE FOUR RULES OF READING AND APPENDING (commit these to memory)
      band returns [] unless reveal_private=True; tombstoned/quarantined never surface.
   3. VERIFY before trusting. cube.verify() recomputes every entry hash and checks
      structural coherence; save() refuses to replace a healthy file with a sick one
-     (staged commit: write .stage -> verify -> atomic os.replace).
+     (durable staged commit: unique stage -> verify -> fsync -> replace -> dir fsync).
   4. SEALED means SEALED. A sealed (ancestral) cube refuses writes forever, and its
      seal fingerprint makes any rewritten history detectable.
 
@@ -119,6 +119,7 @@ import hashlib
 import json
 import os
 import struct
+import tempfile
 import time
 import zipfile
 import zlib
@@ -133,6 +134,12 @@ SIDE        = 800
 CHANNELS    = 4                          # RGBA
 LAYER_BYTES = SIDE * SIDE * CHANNELS     # 2,560,000 bytes per layer
 MAGIC       = b"VCWPNG2\n"               # 8 bytes; opens every non-spatial layer stream
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+MAX_PNG_BYTES = 8 * 1024 * 1024
+MAX_IDAT_BYTES = 4 * 1024 * 1024
+_SCANLINE_BYTES = (SIDE * CHANNELS + 1) * SIDE
+_MAX_META_BYTES = 1024 * 1024
+_STAGE_PREFIX = ".mantle-vcw-stage-"
 
 # Capacity doctrine (enforced by the engine; stated here because it is format doctrine):
 # allocation pressure >= 0.75 of a band's span triggers METABOLISM (compaction/dedupe);
@@ -209,27 +216,68 @@ def _paeth(a: int, b: int, c: int) -> int:
 
 
 def decode_png_rgba(png: bytes) -> bytes:
-    """PNG bytes -> flat RGBA bytes. Reads ALL five PNG filter types for robustness
-    (any conforming PNG encoder may have written the file)."""
-    if png[:8] != b"\x89PNG\r\n\x1a\n":
+    """Decode the fixed VCW PNG profile with CRC and decompression limits."""
+    if not isinstance(png, (bytes, bytearray)):
+        raise TypeError("decode_png_rgba: png must be bytes")
+    if len(png) > MAX_PNG_BYTES:
+        raise ValueError("decode_png_rgba: PNG exceeds the VCW layer size limit")
+    if png[:8] != PNG_SIGNATURE:
         raise ValueError("decode_png_rgba: not a PNG")
     pos = 8
-    width = height = 0
+    width = height = None
     idat = bytearray()
+    saw_iend = False
+    chunk_number = 0
     while pos < len(png):
+        if len(png) - pos < 12:
+            raise ValueError("decode_png_rgba: truncated chunk header")
         (length,) = struct.unpack(">I", png[pos:pos + 4])
         tag = png[pos + 4:pos + 8]
+        if any(not (65 <= octet <= 90 or 97 <= octet <= 122) for octet in tag):
+            raise ValueError("decode_png_rgba: invalid chunk type")
+        end = pos + 12 + length
+        if end > len(png):
+            raise ValueError("decode_png_rgba: truncated %r chunk" % tag)
         data = png[pos + 8:pos + 8 + length]
-        pos += 12 + length
+        (stored_crc,) = struct.unpack(">I", png[pos + 8 + length:end])
+        if stored_crc != (zlib.crc32(tag + data) & 0xFFFFFFFF):
+            raise ValueError("decode_png_rgba: CRC mismatch in %r" % tag)
+        pos = end
         if tag == b"IHDR":
-            width, height, depth, ctype = struct.unpack(">IIBB", data[:10])
-            if depth != 8 or ctype != 6:
-                raise ValueError("decode_png_rgba: expected 8-bit RGBA")
+            if chunk_number != 0 or width is not None or length != 13:
+                raise ValueError("decode_png_rgba: invalid IHDR")
+            width, height, depth, ctype, compression, filtering, interlace = \
+                struct.unpack(">IIBBBBB", data)
+            if (width, height) != (SIDE, SIDE):
+                raise ValueError("decode_png_rgba: expected %dx%d VCW layer" % (SIDE, SIDE))
+            if (depth, ctype, compression, filtering, interlace) != (8, 6, 0, 0, 0):
+                raise ValueError("decode_png_rgba: expected non-interlaced 8-bit RGBA")
         elif tag == b"IDAT":
+            if width is None:
+                raise ValueError("decode_png_rgba: IDAT before IHDR")
+            if len(idat) + length > MAX_IDAT_BYTES:
+                raise ValueError("decode_png_rgba: compressed image exceeds limit")
             idat += data
         elif tag == b"IEND":
+            if length != 0 or width is None or not idat:
+                raise ValueError("decode_png_rgba: invalid IEND")
+            saw_iend = True
             break
-    raw = zlib.decompress(bytes(idat))
+        elif not (tag[0] & 0x20):
+            raise ValueError("decode_png_rgba: unsupported critical chunk %r" % tag)
+        chunk_number += 1
+    if not saw_iend:
+        raise ValueError("decode_png_rgba: missing IEND")
+    if pos != len(png):
+        raise ValueError("decode_png_rgba: trailing bytes after IEND")
+    try:
+        inflater = zlib.decompressobj()
+        raw = inflater.decompress(bytes(idat), _SCANLINE_BYTES + 1)
+    except zlib.error as exc:
+        raise ValueError("decode_png_rgba: invalid compressed image") from exc
+    if (len(raw) != _SCANLINE_BYTES or not inflater.eof
+            or inflater.unconsumed_tail or inflater.unused_data):
+        raise ValueError("decode_png_rgba: decompressed image size mismatch")
     stride = width * CHANNELS
     out = bytearray(width * height * CHANNELS)
     prev = bytearray(stride)
@@ -275,14 +323,140 @@ def build_layer_rgba(boot: Dict[str, Any], payload: Dict[str, Any]) -> bytes:
 
 
 def parse_layer_rgba(raw: bytes) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    if not isinstance(raw, (bytes, bytearray)):
+        raise TypeError("parse_layer_rgba: layer must be bytes")
+    if len(raw) != LAYER_BYTES:
+        raise ValueError("parse_layer_rgba: layer size %d != %d" % (len(raw), LAYER_BYTES))
     if raw[:8] != MAGIC:
         return None, None                                  # a spatial canvas or empty layer
     pos = 8
-    (blen,) = struct.unpack(">I", raw[pos:pos + 4]); pos += 4
-    boot = json.loads(raw[pos:pos + blen].decode("utf-8")); pos += blen
-    (plen,) = struct.unpack(">I", raw[pos:pos + 4]); pos += 4
-    payload = json.loads(raw[pos:pos + plen].decode("utf-8"))
+
+    def field(label: str) -> bytes:
+        nonlocal pos
+        if pos + 4 > LAYER_BYTES:
+            raise ValueError("parse_layer_rgba: missing %s length" % label)
+        (length,) = struct.unpack(">I", raw[pos:pos + 4])
+        pos += 4
+        if length > LAYER_BYTES - pos:
+            raise ValueError("parse_layer_rgba: %s exceeds layer boundary" % label)
+        value = bytes(raw[pos:pos + length])
+        pos += length
+        return value
+
+    try:
+        boot = json.loads(field("boot").decode("utf-8"))
+        payload = json.loads(field("payload").decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("parse_layer_rgba: invalid JSON") from exc
+    if not isinstance(boot, dict) or not isinstance(payload, dict):
+        raise ValueError("parse_layer_rgba: boot and payload must be objects")
+    if any(raw[pos:]):
+        raise ValueError("parse_layer_rgba: non-zero bytes after payload")
     return boot, payload
+
+
+def _read_bounded_member(z: zipfile.ZipFile, name: str, limit: int) -> bytes:
+    matches = [info for info in z.infolist() if info.filename == name]
+    if len(matches) != 1:
+        raise ValueError("VCW container needs exactly one %r member" % name)
+    info = matches[0]
+    if info.file_size > limit:
+        raise ValueError("VCW member %r exceeds its size limit" % name)
+    with z.open(info, "r") as stream:
+        data = stream.read(limit + 1)
+    if len(data) != info.file_size or len(data) > limit:
+        raise ValueError("VCW member %r has an invalid expanded size" % name)
+    return data
+
+
+def _validate_container_meta(meta: Any) -> None:
+    if not isinstance(meta, dict) or meta.get("format") != VCW_FORMAT:
+        raise ValueError("not a %s container" % VCW_FORMAT)
+    bands = meta.get("bands")
+    band_layers = meta.get("band_layers")
+    band_free = meta.get("band_free", {})
+    next_ids = meta.get("next_entry_id", {})
+    if not all(isinstance(value, dict)
+               for value in (bands, band_layers, band_free, next_ids)):
+        raise ValueError("VCW metadata maps are malformed")
+    if not bands or set(bands) != set(band_layers) or len(bands) > LAYER_COUNT:
+        raise ValueError("VCW band topology is malformed")
+    if not set(band_free).issubset(bands) or not set(next_ids).issubset(bands):
+        raise ValueError("VCW metadata names an undeclared band")
+    generation = meta.get("generation")
+    if not isinstance(generation, int) or isinstance(generation, bool) or generation < 0:
+        raise ValueError("VCW generation is malformed")
+    active = set()
+    free = set()
+    ranges = []
+    for band, boot in bands.items():
+        if (not isinstance(band, str) or not band or len(band) > 128
+                or not isinstance(boot, dict) or boot.get("band") != band):
+            raise ValueError("VCW band metadata is malformed")
+        head, span = boot.get("head"), boot.get("span")
+        if (not isinstance(head, int) or isinstance(head, bool)
+                or not isinstance(span, int) or isinstance(span, bool)
+                or span < 1 or head < 0 or head + span > LAYER_COUNT):
+            raise ValueError("VCW band range is outside the layer atlas")
+        for other_head, other_end in ranges:
+            if head < other_end and other_head < head + span:
+                raise ValueError("VCW band ranges overlap")
+        ranges.append((head, head + span))
+        indices = band_layers[band]
+        freed = band_free.get(band, [])
+        if not isinstance(indices, list) or not indices or not isinstance(freed, list):
+            raise ValueError("VCW layer lists are malformed")
+        for idx, target in [(idx, active) for idx in indices] + [(idx, free) for idx in freed]:
+            if (not isinstance(idx, int) or isinstance(idx, bool)
+                    or idx < head or idx >= head + span or idx in active or idx in free):
+                raise ValueError("VCW layer index is invalid, duplicated, or out of band")
+            target.add(idx)
+        next_id = next_ids.get(band, 0)
+        if not isinstance(next_id, int) or isinstance(next_id, bool) or next_id < 0:
+            raise ValueError("VCW next-entry id is malformed")
+    if len(active) + len(free) > LAYER_COUNT:
+        raise ValueError("VCW metadata exceeds the layer atlas")
+
+
+def _decode_layer_payload(raw: bytes, band: str, idx: int,
+                          boot: Dict[str, Any]) -> Any:
+    layer_boot, payload = parse_layer_rgba(raw)
+    expected = {
+        "band": band,
+        "layer": idx,
+        "encoding": boot.get("encoding"),
+        "private": bool(boot.get("private")),
+        "v": 2,
+    }
+    if layer_boot is None or payload is None:
+        raise ValueError("VCW non-spatial layer is missing its boot sector")
+    if any(layer_boot.get(key) != value for key, value in expected.items()):
+        raise ValueError("VCW layer boot sector does not match container metadata")
+    if "content" not in payload:
+        raise ValueError("VCW layer payload has no content")
+    return payload["content"]
+
+
+def _sync_file(path: str) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _sync_directory(path: str) -> None:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError:
+        if os.name == "nt":
+            return
+        raise
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 # ============================================================================
@@ -546,27 +720,37 @@ class Cube:
         return encode_png_rgba(build_layer_rgba(lboot, {"content": content}))
 
     def save(self, path: str) -> None:
-        """RULE 3 made durable: write <path>.stage, re-load and verify the staged file,
-        and only on a clean verify atomically replace <path>. A corrupt or half-written
-        cube can never replace a healthy one."""
-        stage = path + ".stage"
-        with zipfile.ZipFile(stage, "w", zipfile.ZIP_DEFLATED) as z:
-            z.writestr("cube.json", json.dumps(self._meta(), indent=2))
-            for band in self.bands:
-                for idx in self.band_layers[band]:
-                    # PNG bytes are already zlib-compressed: store them verbatim
-                    z.writestr("layers/%03d.png" % idx, self._encode_layer(band, idx),
-                               compress_type=zipfile.ZIP_STORED)
-        problems = Cube.load(stage).verify()
-        if problems:
-            os.remove(stage)
-            raise RuntimeError("staged cube failed verify: %s" % problems)
-        os.replace(stage, path)
+        """RULE 3: verify and sync a unique stage, replace, then sync the parent."""
+        directory = os.path.dirname(os.path.abspath(path))
+        stage_fd, stage = tempfile.mkstemp(prefix=_STAGE_PREFIX, dir=directory)
+        os.close(stage_fd)
+        try:
+            with zipfile.ZipFile(stage, "w", zipfile.ZIP_DEFLATED) as z:
+                z.writestr("cube.json", json.dumps(self._meta(), indent=2))
+                for band in self.bands:
+                    for idx in self.band_layers[band]:
+                        z.writestr("layers/%03d.png" % idx, self._encode_layer(band, idx),
+                                   compress_type=zipfile.ZIP_STORED)
+            problems = Cube.load(stage).verify()
+            if problems:
+                raise RuntimeError("staged cube failed verify: %s" % problems)
+            _sync_file(stage)
+            os.replace(stage, path)
+            stage = ""
+            _sync_file(path)
+            _sync_directory(directory)
+        finally:
+            if stage:
+                try:
+                    os.remove(stage)
+                except FileNotFoundError:
+                    pass
 
     @classmethod
     def load(cls, path: str) -> "Cube":
         with zipfile.ZipFile(path, "r") as z:
-            meta = json.loads(z.read("cube.json"))
+            meta = json.loads(_read_bounded_member(z, "cube.json", _MAX_META_BYTES))
+            _validate_container_meta(meta)
             c = cls(generation=meta.get("generation", 0))
             c.identity_in_body = meta.get("identity_in_body", True)
             c.sealed = meta.get("sealed", False)
@@ -579,12 +763,12 @@ class Cube:
                 c.band_free.setdefault(band, [])
                 c.next_entry_id.setdefault(band, 0)
                 for idx in c.band_layers[band]:
-                    raw = decode_png_rgba(z.read("layers/%03d.png" % idx))
+                    raw = decode_png_rgba(_read_bounded_member(
+                        z, "layers/%03d.png" % idx, MAX_PNG_BYTES))
                     if boot["encoding"] == "calendar-spatial":
                         c.layers[idx] = bytearray(raw)
                     else:
-                        _, payload = parse_layer_rgba(raw)
-                        c.layers[idx] = payload["content"]
+                        c.layers[idx] = _decode_layer_payload(raw, band, idx, boot)
         return c
 
     # ---- inspection ------------------------------------------------------------------
@@ -612,6 +796,13 @@ def selftest() -> int:
         nonlocal ok
         ok = ok and bool(cond)
         print("  [%s] %-46s %s" % ("PASS" if cond else "FAIL", name, detail))
+
+    def refused(fn):
+        try:
+            fn()
+            return False
+        except ValueError:
+            return True
 
     print("VCW cube selftest (standalone, pure stdlib)")
     c = Cube.genesis()
@@ -655,6 +846,44 @@ def selftest() -> int:
     except RuntimeError:
         check("staged save: refuses a corrupt cube",
               Cube.load(p).verify() == [], "on-disk file still healthy")
+
+    layer = build_layer_rgba(
+        {"band": "facts", "layer": 150, "encoding": "log-json", "private": False},
+        {"content": []},
+    )
+    valid_png = encode_png_rgba(layer)
+    bad_crc = bytearray(valid_png)
+    bad_crc[29] ^= 1
+    ihdr = struct.pack(">IIBBBBB", SIDE, SIDE, 8, 6, 0, 0, 0)
+    expanded = b"\0" * (_SCANLINE_BYTES + 1)
+    bomb = (PNG_SIGNATURE + _png_chunk(b"IHDR", ihdr)
+            + _png_chunk(b"IDAT", zlib.compress(expanded, 9))
+            + _png_chunk(b"IEND", b""))
+    bad_layer = bytearray(layer)
+    bad_layer[8:12] = struct.pack(">I", LAYER_BYTES)
+    check("hostile input: CRC mismatch refused",
+          refused(lambda: decode_png_rgba(bad_crc)))
+    check("hostile input: wrong dimensions refused",
+          refused(lambda: decode_png_rgba(encode_png_rgba(b"\0" * CHANNELS, 1, 1))))
+    check("hostile input: truncated PNG refused",
+          refused(lambda: decode_png_rgba(valid_png[:-1])))
+    check("hostile input: decompression bomb refused",
+          refused(lambda: decode_png_rgba(bomb)))
+    check("hostile input: layer length overflow refused",
+          refused(lambda: parse_layer_rgba(bad_layer)))
+    wrong_boot = build_layer_rgba(
+        {"band": "events", "layer": 150, "encoding": "log-json",
+         "private": False, "v": 2},
+        {"content": []},
+    )
+    check("hostile input: swapped layer boot refused",
+          refused(lambda: _decode_layer_payload(
+              wrong_boot, "facts", 150,
+              {"band": "facts", "encoding": "log-json", "private": False})))
+    hostile_meta = json.loads(json.dumps(c._meta()))
+    hostile_meta["bands"]["facts"]["span"] = 100
+    check("hostile input: overlapping band atlas refused",
+          refused(lambda: _validate_container_meta(hostile_meta)))
 
     # RULE 4: seal
     c2 = Cube.load(p)

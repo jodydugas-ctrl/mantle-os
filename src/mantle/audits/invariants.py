@@ -728,13 +728,70 @@ def t_on_demand_and_purpose():
 
 
 def t_staged_save_rejects_corrupt():
-    """HF-B33/B-01: the staged commit refuses to replace a healthy file with a cube that
-    fails verification (a tampered entry never reaches disk)."""
+    """HF-B33/B-01: hostile VCW inputs fail closed and a failed staged commit never
+    replaces a healthy cube or leaves a reusable shared-stage artifact."""
+    import struct
+    import zlib
+    from ..vcw.cube import _decode_layer_payload, _validate_container_meta
+    from ..vcw.png import (CHANNELS, LAYER_BYTES, MAX_PNG_BYTES, PNG_SIGNATURE, SIDE,
+                           _png_chunk, build_layer_rgba, decode_png_rgba, encode_png_rgba,
+                           parse_layer_rgba)
+
+    layer = build_layer_rgba(
+        {"band": "facts", "layer": 150, "encoding": "log-json", "private": False},
+        {"content": []},
+    )
+    valid_png = encode_png_rgba(layer)
+    codec_round_trip = decode_png_rgba(valid_png) == layer
+
+    bad_crc = bytearray(valid_png)
+    bad_crc[29] ^= 1                              # first byte of the IHDR CRC
+    crc_refused = _expect_raise(lambda: decode_png_rgba(bad_crc), ValueError)[0]
+    dimensions_refused = _expect_raise(
+        lambda: decode_png_rgba(encode_png_rgba(b"\0" * CHANNELS, 1, 1)), ValueError
+    )[0]
+    truncated_refused = _expect_raise(
+        lambda: decode_png_rgba(valid_png[:-1]), ValueError
+    )[0]
+    oversized_refused = _expect_raise(
+        lambda: decode_png_rgba(PNG_SIGNATURE + b"x" * MAX_PNG_BYTES), ValueError
+    )[0]
+
+    ihdr = struct.pack(">IIBBBBB", SIDE, SIDE, 8, 6, 0, 0, 0)
+    expanded = b"\0" * (((SIDE * CHANNELS + 1) * SIDE) + 1)
+    bomb = (PNG_SIGNATURE + _png_chunk(b"IHDR", ihdr)
+            + _png_chunk(b"IDAT", zlib.compress(expanded, 9))
+            + _png_chunk(b"IEND", b""))
+    bomb_refused = _expect_raise(lambda: decode_png_rgba(bomb), ValueError)[0]
+
+    bad_layer = bytearray(layer)
+    bad_layer[8:12] = struct.pack(">I", LAYER_BYTES)
+    layer_bounds_refused = _expect_raise(
+        lambda: parse_layer_rgba(bad_layer), ValueError
+    )[0]
+    binding_refused = _expect_raise(
+        lambda: _decode_layer_payload(
+            build_layer_rgba(
+                {"band": "events", "layer": 150, "encoding": "log-json",
+                 "private": False, "v": 2},
+                {"content": []},
+            ),
+            "facts", 150,
+            {"band": "facts", "encoding": "log-json", "private": False},
+        ),
+        ValueError,
+    )[0]
+
     org = _born()
     org.memory.remember("facts", {"k": "good"})
     d = tempfile.mkdtemp()
     p = os.path.join(d, "gen000.vcw")
     org.prime.save(p)
+    hostile_meta = json.loads(json.dumps(org.prime._meta()))
+    hostile_meta["bands"]["facts"]["span"] = 100
+    topology_refused = _expect_raise(
+        lambda: _validate_container_meta(hostile_meta), ValueError
+    )[0]
     idx = org.prime.band_layers["facts"][0]
     org.prime.layer_content(idx)[0]["content"] = {"k": "EVIL"}   # break the hash
     try:
@@ -743,8 +800,13 @@ def t_staged_save_rejects_corrupt():
     except RuntimeError:
         pass
     healthy = Cube.load(p)
-    return (healthy.verify() == [] and not os.path.exists(p + ".stage"),
-            "corrupt save refused; on-disk cube still healthy; stage cleaned up")
+    debris = [name for name in os.listdir(d) if name.startswith(".mantle-vcw-stage-")]
+    png_guards = all((codec_round_trip, crc_refused, dimensions_refused,
+                      truncated_refused, oversized_refused, bomb_refused,
+                      layer_bounds_refused, binding_refused, topology_refused))
+    return (healthy.verify() == [] and not debris and png_guards,
+            "hostile PNG/layer inputs refused; corrupt save refused; healthy cube intact; "
+            "unique stage cleaned up")
 
 
 def t_organism_save_atomic_owner_only():

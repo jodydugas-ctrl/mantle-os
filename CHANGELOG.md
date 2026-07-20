@@ -17,6 +17,12 @@ All notable release-level changes are documented here.
   autonomous cognition, or bypass independent production-fusion authority.
 - Echoed prompts are returned to the requesting surface but never written to any VCW band or
   resident artifact.
+- VCW layer decoding now verifies PNG chunk CRCs, enforces the fixed layer profile, bounds compressed
+  and expanded data, validates embedded layer identity, and rejects malformed or overlapping cube
+  topology before allocation.
+- Cube checkpoints now use collision-free same-directory stages and sync the staged file, published
+  file, and parent directory around atomic replacement; failed saves remove their private stage and
+  preserve the previous valid cube.
 
 ## [1.3.0] — 2026-07-15
 
