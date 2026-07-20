@@ -13,7 +13,7 @@ substrate properties (all invariant-preserving):
   hot/cold tiering         the Prime is hot (in memory, flushed on circulate); sealed
                            ancestors are cold (lazy, read-only, written once)
   changed-layer-only save  per-layer signatures; clean layers reuse cached PNG bytes
-  staged atomic commit     write <path>.stage -> verify the fresh bytes -> os.replace
+  staged durable commit    unique same-dir stage -> verify -> fsync -> replace -> dir fsync
   band-unique entry ids    the cube assigns monotonic per-band ids (stable references)
   compact read indexes     id/position lookups are O(1) after one lazy build
   capacity thresholds      allocation pressure >= 0.75 -> metabolism (overflow);
@@ -26,10 +26,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 import zipfile
 from typing import Any, Callable, Dict, List, Optional
 
-from .png import encode_png_rgba, decode_png_rgba, build_layer_rgba, parse_layer_rgba
+from .png import (LAYER_COUNT, MAX_PNG_BYTES, VCW_FORMAT, encode_png_rgba,
+                  decode_png_rgba, build_layer_rgba, parse_layer_rgba)
 from .bands import get_driver, code_hash
 from . import drivers as _drivers  # noqa: F401 -- registers the drivers on import
 from .drivers import ExecDriver, validate_skill_code, validate_calcify_payload
@@ -39,6 +41,117 @@ from . import metabolism
 
 _EXEC = ExecDriver()
 _LAZY = object()                  # sentinel: layer present in container, not yet decoded
+_MAX_META_BYTES = 1024 * 1024
+_STAGE_PREFIX = ".mantle-vcw-stage-"
+
+
+def _read_bounded_member(z: zipfile.ZipFile, name: str, limit: int) -> bytes:
+    """Read exactly one ZIP member without allowing duplicate-name or inflate bombs."""
+    matches = [info for info in z.infolist() if info.filename == name]
+    if len(matches) != 1:
+        raise ValueError("VCW container needs exactly one %r member" % name)
+    info = matches[0]
+    if info.file_size > limit:
+        raise ValueError("VCW member %r exceeds its size limit" % name)
+    with z.open(info, "r") as stream:
+        data = stream.read(limit + 1)
+    if len(data) != info.file_size or len(data) > limit:
+        raise ValueError("VCW member %r has an invalid expanded size" % name)
+    return data
+
+
+def _validate_container_meta(meta: Any) -> None:
+    """Reject hostile cube topology before it can allocate layers or lazy sentinels."""
+    if not isinstance(meta, dict) or meta.get("format") != VCW_FORMAT:
+        raise ValueError("not a %s container" % VCW_FORMAT)
+    bands = meta.get("bands")
+    band_layers = meta.get("band_layers")
+    band_free = meta.get("band_free", {})
+    next_ids = meta.get("next_entry_id", {})
+    if not all(isinstance(value, dict)
+               for value in (bands, band_layers, band_free, next_ids)):
+        raise ValueError("VCW metadata maps are malformed")
+    if not bands or set(bands) != set(band_layers) or len(bands) > LAYER_COUNT:
+        raise ValueError("VCW band topology is malformed")
+    if not set(band_free).issubset(bands) or not set(next_ids).issubset(bands):
+        raise ValueError("VCW metadata names an undeclared band")
+    generation = meta.get("generation")
+    if not isinstance(generation, int) or isinstance(generation, bool) or generation < 0:
+        raise ValueError("VCW generation is malformed")
+
+    active = set()
+    free = set()
+    ranges = []
+    for band, boot in bands.items():
+        if (not isinstance(band, str) or not band or len(band) > 128
+                or not isinstance(boot, dict) or boot.get("band") != band):
+            raise ValueError("VCW band metadata is malformed")
+        head, span = boot.get("head"), boot.get("span")
+        if (not isinstance(head, int) or isinstance(head, bool)
+                or not isinstance(span, int) or isinstance(span, bool)
+                or span < 1 or head < 0 or head + span > LAYER_COUNT):
+            raise ValueError("VCW band range is outside the layer atlas")
+        for other_head, other_end in ranges:
+            if head < other_end and other_head < head + span:
+                raise ValueError("VCW band ranges overlap")
+        ranges.append((head, head + span))
+        indices = band_layers[band]
+        freed = band_free.get(band, [])
+        if not isinstance(indices, list) or not indices or not isinstance(freed, list):
+            raise ValueError("VCW layer lists are malformed")
+        for idx, target in [(idx, active) for idx in indices] + [(idx, free) for idx in freed]:
+            if (not isinstance(idx, int) or isinstance(idx, bool)
+                    or idx < head or idx >= head + span or idx in active or idx in free):
+                raise ValueError("VCW layer index is invalid, duplicated, or out of band")
+            target.add(idx)
+        next_id = next_ids.get(band, 0)
+        if not isinstance(next_id, int) or isinstance(next_id, bool) or next_id < 0:
+            raise ValueError("VCW next-entry id is malformed")
+    if len(active) + len(free) > LAYER_COUNT:
+        raise ValueError("VCW metadata exceeds the layer atlas")
+
+
+def _decode_layer_payload(raw: bytes, band: str, idx: int,
+                          boot: Dict[str, Any]) -> Any:
+    """Bind the embedded layer boot sector to the container topology before use."""
+    layer_boot, payload = parse_layer_rgba(raw)
+    expected = {
+        "band": band,
+        "layer": idx,
+        "encoding": boot.get("encoding"),
+        "private": bool(boot.get("private")),
+        "v": 2,
+    }
+    if layer_boot is None or payload is None:
+        raise ValueError("VCW non-spatial layer is missing its boot sector")
+    if any(layer_boot.get(key) != value for key, value in expected.items()):
+        raise ValueError("VCW layer boot sector does not match container metadata")
+    if "content" not in payload:
+        raise ValueError("VCW layer payload has no content")
+    return payload["content"]
+
+
+def _sync_file(path: str) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _sync_directory(path: str) -> None:
+    """Commit a rename to its parent directory where the platform exposes dir fsync."""
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError:
+        if os.name == "nt":
+            return
+        raise
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 class CapacityError(Exception):
@@ -137,13 +250,12 @@ class Cube:
         band = self._band_of(idx)
         boot = self.bands[band]
         with zipfile.ZipFile(self._lazy_path, "r") as z:
-            png = z.read("layers/%03d.png" % idx)
+            png = _read_bounded_member(z, "layers/%03d.png" % idx, MAX_PNG_BYTES)
         raw = decode_png_rgba(png)
         if boot["encoding"] == "calendar-spatial":
             content = bytearray(raw)
         else:
-            _, payload = parse_layer_rgba(raw)
-            content = payload["content"]
+            content = _decode_layer_payload(raw, band, idx, boot)
         self.layers[idx] = content
         self._png_cache[idx] = png
         self._layer_sig[idx] = self._layer_signature(idx, boot)
@@ -442,7 +554,7 @@ class Cube:
         return encode_png_rgba(build_layer_rgba(lboot, {"content": content}))
 
     def _meta(self) -> Dict[str, Any]:
-        return {"format": "vcw-cube-png-v2", "generation": self.generation,
+        return {"format": VCW_FORMAT, "generation": self.generation,
                 "identity_in_body": self.identity_in_body, "sealed": self.sealed,
                 "seal_fingerprint": self.seal_fingerprint,
                 "bands": self.bands, "band_layers": self.band_layers,
@@ -492,11 +604,11 @@ class Cube:
         with zipfile.ZipFile(stage, "r") as z:
             for idx in changed:
                 boot = self.bands[idx_band[idx]]
-                raw = decode_png_rgba(z.read("layers/%03d.png" % idx))
+                raw = decode_png_rgba(_read_bounded_member(
+                    z, "layers/%03d.png" % idx, MAX_PNG_BYTES))
                 if boot["encoding"] == "calendar-spatial":
                     continue
-                _, payload = parse_layer_rgba(raw)
-                content = payload["content"]
+                content = _decode_layer_payload(raw, idx_band[idx], idx, boot)
                 if boot["encoding"] == "log-json":
                     for e in content:
                         if isinstance(e, dict) and "hash" in e and entry_hash(e) != e["hash"]:
@@ -505,16 +617,31 @@ class Cube:
         return problems
 
     def save(self, path: str) -> None:
-        """Staged commit (the Heart's `circulate` reflex): write <path>.stage, verify the
-        fresh bytes, atomically replace. A corrupt or half-written cube can never replace
-        a healthy one -- the Immune System's existential guarantee."""
-        stage = path + ".stage"
-        changed = self._write_container(stage)
-        problems = self._verify_staged(stage, changed)
-        if problems:
-            os.remove(stage)
-            raise RuntimeError("staged cube failed verify: %s" % problems)
-        os.replace(stage, path)
+        """Verify a unique same-directory stage, sync it, replace, then sync the parent.
+
+        A failed writer cannot collide with another save's stage, and after a reported
+        success a crash may expose the old valid cube or the new valid cube -- never an
+        acknowledged but directory-uncommitted rename on POSIX filesystems.
+        """
+        directory = os.path.dirname(os.path.abspath(path))
+        stage_fd, stage = tempfile.mkstemp(prefix=_STAGE_PREFIX, dir=directory)
+        os.close(stage_fd)
+        try:
+            changed = self._write_container(stage)
+            problems = self._verify_staged(stage, changed)
+            if problems:
+                raise RuntimeError("staged cube failed verify: %s" % problems)
+            _sync_file(stage)
+            os.replace(stage, path)
+            stage = ""
+            _sync_file(path)
+            _sync_directory(directory)
+        finally:
+            if stage:
+                try:
+                    os.remove(stage)
+                except FileNotFoundError:
+                    pass
         if self._lazy_path is None and self.sealed:
             self._lazy_path = path
 
@@ -523,7 +650,8 @@ class Cube:
         """Load a cube. With lazy=True (the cold tier -- default for sealed ancestors via
         Organism.load) layer payloads stay in the container until first touched."""
         with zipfile.ZipFile(path, "r") as z:
-            meta = json.loads(z.read("cube.json"))
+            meta = json.loads(_read_bounded_member(z, "cube.json", _MAX_META_BYTES))
+            _validate_container_meta(meta)
             c = cls(generation=meta["generation"],
                     identity_in_body=meta.get("identity_in_body", True))
             c.sealed = meta.get("sealed", False)
@@ -535,6 +663,7 @@ class Cube:
             for band in c.bands:
                 c.band_free.setdefault(band, [])
                 c._next_entry_id.setdefault(band, 0)
+                get_driver(c.bands[band].get("encoding"))
             if lazy:
                 c._lazy_path = path
                 for band, idxs in c.band_layers.items():
@@ -543,13 +672,12 @@ class Cube:
                 return c
             for band, boot in c.bands.items():
                 for idx in c.band_layers[band]:
-                    png = z.read("layers/%03d.png" % idx)
+                    png = _read_bounded_member(z, "layers/%03d.png" % idx, MAX_PNG_BYTES)
                     raw = decode_png_rgba(png)
                     if boot["encoding"] == "calendar-spatial":
                         c.layers[idx] = bytearray(raw)
                     else:
-                        _, payload = parse_layer_rgba(raw)
-                        c.layers[idx] = payload["content"]
+                        c.layers[idx] = _decode_layer_payload(raw, band, idx, boot)
                     c._png_cache[idx] = png
                     c._layer_sig[idx] = c._layer_signature(idx, boot)
         return c
