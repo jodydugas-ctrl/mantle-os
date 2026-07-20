@@ -670,6 +670,7 @@ Stage-1 certification is a cacheable verification (§2.3), fingerprinted on the 
 | **Immune** | defense, quarantine, tombstone, redaction, integrity | protection |
 | **Limbs** | effectors, tools, ControlBridge, App-Face Bridge, proofs | out |
 | **Memory** | append-only recall, metabolism, compaction | durable experience |
+| **Reproduction** | seed and graft ceremonies, seed vault, spore distillation, lineage carry | lineage |
 | **Brain** | optional MIND, thoughts, intentions | bounded cognition |
 
 ## 7.4 SELF/OTHER and MIND Containment

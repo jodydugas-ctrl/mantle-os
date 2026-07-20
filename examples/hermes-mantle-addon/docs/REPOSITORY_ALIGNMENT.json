@@ -330,8 +330,8 @@
       "category": "documentation",
       "path": "documents/grimoire/The Grimoire.md",
       "review_method": "UTF-8 decode + architecture claim scan + authority reconciliation",
-      "sha256": "5a7dc17996d46b1b4b817126368a3099af3af22b4f1362a5a422123bc5721bb4",
-      "size_bytes": 73896,
+      "sha256": "dbc37d6a30b8974b74521bbd634fb1a0b6221384e103e1b06959b134a34b4403",
+      "size_bytes": 74002,
       "valid": true,
       "validation": "utf-8"
     },
@@ -1302,8 +1302,8 @@
       "category": "vendor",
       "path": "examples/hermes-mantle-addon/vendor/mantle-os/documents/grimoire/The Grimoire.md",
       "review_method": "SHA-256 snapshot parity + private-namespace execution",
-      "sha256": "5a7dc17996d46b1b4b817126368a3099af3af22b4f1362a5a422123bc5721bb4",
-      "size_bytes": 73896,
+      "sha256": "dbc37d6a30b8974b74521bbd634fb1a0b6221384e103e1b06959b134a34b4403",
+      "size_bytes": 74002,
       "valid": true,
       "validation": "utf-8"
     },
@@ -3172,7 +3172,7 @@
     }
   ],
   "files_total": 351,
-  "generated_at": "2026-07-20T05:05:20.681803+00:00",
+  "generated_at": "2026-07-20T05:29:06.804030+00:00",
   "mind_fusion_authorized": false,
   "parse_errors": [],
   "remaining_readiness_blockers": [],
