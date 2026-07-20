@@ -6,7 +6,7 @@ Source: `https://github.com/jodydugas-ctrl/mantle-os`, commit `f1a9695ca2d22c224
 
 ## Boundary Map
 
-- **Mantle doctrine:** `documents/grimoire/` contains the single version-4 canonical Grimoire tomb. The `documents/Mantle_*.md` and `documents/guides/` files are implementation doctrine, guides, audits, and onboarding material; they explain and interpret the current reference body but are not additional Grimoire editions.
+- **Mantle doctrine:** `documents/grimoire/` contains the single canonical Grimoire — a prose book, First Edition, with a Mantle OS environment binding (§9). The `documents/Mantle_*.md` and `documents/guides/` files are implementation doctrine, guides, audits, and onboarding material; they explain and interpret the current reference body but are not additional Grimoire editions.
 - **Mantle implementation:** `src/mantle/core`, `vcw`, `organs`, `audits`, `mind`, and top-level capability modules implement the organism runtime, VCW substrate, certification gates, Phase-2 MIND containment, reproduction, cache-ghost, symbiosis, residency, and applet/face surfaces.
 - **Standard host/app code:** `examples/sample_app`, browser demos, JS smoke tests, standalone VCW examples, eggs, and notepad AppAI examples are examples or host/application artifacts. They remain ordinary code unless explicitly assimilated through Mantle seams.
 - **Essential surfaces:** `python -m mantle check`, Stage-1 and Stage-2 gates, the current invariant suite, no-LLM Phase-1 import boundary, SELF/OTHER proof, Body-owned key material, spore/vault lineage, CLI compatibility, and append-only VCW behavior.
