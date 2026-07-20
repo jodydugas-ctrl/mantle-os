@@ -328,7 +328,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     face.py teach.py     the PNG self-portrait + the running Field Guide
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
-  grimoire/              the single version-4 Grimoire tomb
+  grimoire/              the single Grimoire book (First Edition)
   FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   Mantle_Architecture.md · guides/ (VCW · lifecycle · contracts · audit · visual)
   Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
@@ -366,7 +366,7 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
 - **Path B — assimilate existing code** (any language, including apps that already have agents).
   Canonical doctrine:
   [`documents/grimoire/The Grimoire.md`](documents/grimoire/The%20Grimoire.md)
-  (`@BG`, `@RP`, residency, and assimilation law); runnable cheatsheet:
+  (`NECROMANCY` §7.5/§9.2, residency, and the assimilation hard fails §7.8); runnable cheatsheet:
   [`documents/guides/Assimilation_Guide.md`](documents/guides/Assimilation_Guide.md). Dissect read-only, map organs,
   sign the inventory, wrap fail-open. Both paths converge on the same certified Body and the same
   MIND fusion.

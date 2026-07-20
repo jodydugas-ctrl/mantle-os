@@ -1,6 +1,6 @@
 # VCW Applet Bodies — APPLET-BODY-CAPSULE
 
-*Doctrine note. The Grimoire is now one version-4 canonical tomb
+*Doctrine note. The Grimoire is one canonical prose book — First Edition
 ([`grimoire/`](grimoire/README.md)); per its Single Truth law this note lives beside the
 other app doctrine documents, not inside the Grimoire. It documents a lawful NECROMANCY
 subspell implemented in [`src/mantle/applet_body.py`](../src/mantle/applet_body.py).*

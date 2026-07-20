@@ -614,7 +614,7 @@ def _category(rel: str, text: bool) -> str:
         return "M lockfile"
     if not text:
         return "N binary/media"
-    if p.startswith(".github/") or p in {".gitignore", "pyproject.toml"}:
+    if p.startswith((".github/", ".claude/")) or p in {".gitignore", "pyproject.toml"}:
         return "E configuration"
     if p.startswith("src/mantle/audits/") or p.startswith("examples/tests/"):
         return "B test"
@@ -628,7 +628,7 @@ def _category(rel: str, text: bool) -> str:
         return "D human-facing documentation"
     if p.startswith("examples/"):
         return "H example or fixture"
-    if p in {"readme.md", "contributing.md", "license"}:
+    if p in {"readme.md", "contributing.md", "changelog.md", "security.md", "license"}:
         return "D human-facing documentation"
     return "Q unknown"
 

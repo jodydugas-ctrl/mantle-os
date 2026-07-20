@@ -7,7 +7,8 @@
 > hard-fail list, and the APP_INVENTORY template — now lives in **one canonical home**:
 >
 > 👉 **[`documents/grimoire/The Grimoire.md`](grimoire/The%20Grimoire.md)**,
-> especially the MantleOS `@` doctrine for `@BG`, `@RP`, residency, and assimilation law.
+> especially the AppAI extension (§7: `NECROMANCY`, `RESURGERE`, residency, the §7.8 hard
+> fails) and the Mantle OS environment binding (§9.2, the operator's assimilation ritual).
 >
 > This consolidation reflects that **the egg and assimilation are the same thing**: NECROMANCY
 > (assimilate/anchor/graft) and RESURGERE (reconstruct from an egg/seed) run on one shared
