@@ -21,7 +21,7 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 > It is the doctrine the framework follows, not a toll booth for every small task. Routine code
 > reading, narrow documentation fixes, and mechanical concordance patches may proceed from the
 > README, nearby docs, and working code. When doctrine is in scope, start in
-> [`documents/grimoire/`](documents/grimoire/README.md): the single **Grimoire book (First Edition)**
+> [`documents/grimoire/`](documents/grimoire/README.md): the single canonical **Grimoire 2.0** file
 > contains both the universal spellbook and MantleOS/AppAI `@` doctrine. *(Normative when used.)*
 
 ## For LLM agents — cast `Intellige` when doctrine is in scope
@@ -38,7 +38,7 @@ If you already have the Grimoire loaded:  Intellige Grimoire
 ELSE:
   Step 0 — Read the Grimoire's reading-order file and follow its links:
            https://github.com/jodydugas-ctrl/mantle-os/blob/main/documents/grimoire/README.md
-  Step 1 — Cast Intellige on the single Grimoire book.
+  Step 1 — Cast Intellige on the single Grimoire 2.0 file, loading by the file's task manifest.
 ```
 
 The stable operator interface is the Latin **macro** layer: `Intellige`, `Vestigare`, `Animare`,
@@ -64,7 +64,7 @@ project as "organ meat" is doctrine bleed, not extra insight.
 > Mantle tissue, or resolving a disagreement between metaphor and code. For simple inspection,
 > small docs edits, and mechanical count/typo concordance, local repo evidence is enough. When
 > Grimoire context is needed, read [`documents/grimoire/`](documents/grimoire/README.md) and load
-> the single **Grimoire book (First Edition)**. *(Normative when used.)*
+> the single canonical **Grimoire 2.0** file. *(Normative when used.)*
 
 ---
 
@@ -175,7 +175,7 @@ fresh operator/guardian decision. Both methods end at the same certified Body:
   energy economy that sustains it), and the **graft-egg** (a non-destructive patch against a named
   host). A graft never modifies a host file; the census proves it byte-for-byte.
 
-Since molt 3.7.0 these ceremonies have a Body-resident owner: the **Reproduction
+Under Grimoire 2.0 these ceremonies have a Body-resident owner: the **Reproduction
 organ** (the ninth organ, `organism.reproduction`) — it keeps the app-band atlas, vaults
 every organism's own seed at birth, carries the sealed seed across every rebirth (or
 raises an immune event), and performs **SPORE-DISTILLATION**: `hatch-spore` turns a spore
@@ -328,7 +328,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     face.py teach.py     the PNG self-portrait + the running Field Guide
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
-  grimoire/              the single Grimoire book (First Edition)
+  grimoire/              the single Grimoire 2.0 file
   FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   Mantle_Architecture.md · guides/ (VCW · lifecycle · contracts · audit · visual)
   Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed

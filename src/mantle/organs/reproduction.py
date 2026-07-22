@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 mantle.organs.reproduction  --  the Reproduction organ: how this creature makes another
-                                (Mantle OS · the ninth organ, operator-ratified molt 3.7.0)
+                                (Mantle OS · the ninth organ, Grimoire 2.0 binding)
 
 The framework grew many propagation verbs -- spore, egg, vault, anchor, symbiosis,
 graft -- and `mantle.reproduction` showed they are two methods (SEED and GRAFT) wearing

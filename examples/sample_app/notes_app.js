@@ -3,11 +3,24 @@
 // for an equivalent host, reusing the same classify_symbol unchanged.
 //
 // This file is a dissection FIXTURE only; it is not executed by the test suite.
+//
+// Expected organ surfaces:
+//   Heart:            onTimerTick, mainLoop
+//   Senses:           handleCreateNote
+//   Memory:           setNote, updateNote, saveNotes
+//   Immune:           validateNote, sanitizeNoteText, checkAuthToken
+//   Limbs:            sendNotification, renderNoteList
+//   Brain affordance: suggestTagsWithLlm
+//   External host:    summarizeNotes
 
 const NOTES = {};
 const CONFIG = { apiKey: "sk-EXAMPLEEXAMPLEEXAMPLE", store: "notes.json" };
 
 // --- immune-ish tissue -------------------------------------------------------
+function sanitizeNoteText(text) {
+  return String(text).trim().split(/\s+/).filter(Boolean).join(" ");
+}
+
 function validateNote(text) {
   return Boolean(text) && text.length < 10000;
 }
@@ -18,7 +31,16 @@ function checkAuthToken(token) {
 
 // --- memory tissue -----------------------------------------------------------
 function setNote(noteId, text) {
-  NOTES[noteId] = { text, ts: Date.now() };
+  NOTES[noteId] = { text: sanitizeNoteText(text), ts: Date.now() };
+}
+
+function updateNote(noteId, text) {
+  if (!Object.prototype.hasOwnProperty.call(NOTES, noteId)) {
+    return { ok: false, reason: "missing" };
+  }
+  NOTES[noteId].text = sanitizeNoteText(text);
+  NOTES[noteId].ts = Date.now();
+  return { ok: true };
 }
 
 function saveNotes() {
@@ -27,10 +49,11 @@ function saveNotes() {
 
 // --- senses tissue -----------------------------------------------------------
 function handleCreateNote(request) {
-  if (!validateNote(request.text || "")) {
+  const text = sanitizeNoteText(request.text || "");
+  if (!validateNote(text)) {
     return { ok: false };
   }
-  setNote(request.id, request.text);
+  setNote(request.id, text);
   return { ok: true };
 }
 
@@ -49,6 +72,10 @@ function renderNoteList() {
   }
 }
 
+function summarizeNotes() {
+  return { count: Object.keys(NOTES).length, ids: Object.keys(NOTES).sort() };
+}
+
 // --- a dormant brain affordance ---------------------------------------------------
 function suggestTagsWithLlm(text) {
   return ["todo"]; // placeholder; an LLM call would live here
@@ -62,6 +89,7 @@ function mainLoop() {
 }
 
 module.exports = {
-  validateNote, checkAuthToken, setNote, saveNotes, handleCreateNote,
-  onTimerTick, sendNotification, renderNoteList, suggestTagsWithLlm, mainLoop,
+  sanitizeNoteText, validateNote, checkAuthToken, setNote, updateNote, saveNotes,
+  handleCreateNote, onTimerTick, sendNotification, renderNoteList, summarizeNotes,
+  suggestTagsWithLlm, mainLoop,
 };

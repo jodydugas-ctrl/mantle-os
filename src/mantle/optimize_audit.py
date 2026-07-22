@@ -957,7 +957,7 @@ def _version_alignment(root: str, invariant_count: int) -> Dict[str, Any]:
 
     package_version = _first_match(r'^version\s*=\s*"([^"]+)"', pyproject)
     module_version = _first_match(r'^__version__\s*=\s*"([^"]+)"', init_py)
-    grimoire_stamp = "First Edition" if "First Edition" in grimoire else None
+    grimoire_stamp = "Grimoire 2.0" if "# The Grimoire 2.0" in grimoire else None
     grimoire_version = _first_match(r"\*\*Version:\*\*\s+([0-9]+(?:\.[0-9]+)*)", grimoire)
     readme_count = _first_match(r"Current certification count:\*\*\s+(\d+)\s+security invariants",
                                 readme)
@@ -971,15 +971,15 @@ def _version_alignment(root: str, invariant_count: int) -> Dict[str, Any]:
          "value": module_version, "expected": package_version,
          "status": "PASS" if module_version and module_version == package_version else "REVISE"},
         {"surface": "documents/grimoire/The Grimoire.md", "field": "stamp",
-         "value": grimoire_stamp, "expected": "First Edition",
-         "status": "PASS" if grimoire_stamp == "First Edition" else "REVISE"},
+         "value": grimoire_stamp, "expected": "Grimoire 2.0",
+         "status": "PASS" if grimoire_stamp == "Grimoire 2.0" else "REVISE"},
         {"surface": "documents/grimoire/The Grimoire.md", "field": "Version",
-         "value": grimoire_version, "expected": "1.0.0",
-         "status": "PASS" if grimoire_version == "1.0.0" else "REVISE"},
+         "value": grimoire_version, "expected": "2.0.0",
+         "status": "PASS" if grimoire_version == "2.0.0" else "REVISE"},
         {"surface": "documents/grimoire/README.md", "field": "canonical model",
-         "value": "First Edition" if "First Edition" in grimoire_readme else None,
-         "expected": "First Edition",
-         "status": "PASS" if "First Edition" in grimoire_readme else "REVISE"},
+         "value": "Grimoire 2.0" if "Grimoire 2.0" in grimoire_readme else None,
+         "expected": "Grimoire 2.0",
+         "status": "PASS" if "Grimoire 2.0" in grimoire_readme else "REVISE"},
         {"surface": "README.md", "field": "security invariant count",
          "value": int(readme_count) if readme_count else None, "expected": invariant_count,
          "status": "PASS" if readme_count and int(readme_count) == invariant_count else "REVISE"},

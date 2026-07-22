@@ -1,49 +1,46 @@
 # The Grimoire
 
-**Read this first when doctrine is in scope.** The Grimoire is the agent-facing doctrine behind
-Mantle OS: the spellbook the framework follows before building, assimilating, operating, or
-mutating an AppAI.
+**Read this first.** The Grimoire is the doctrine behind Mantle OS: the constitutional
+operating specification for bounded agent action and the source of truth for AppAI,
+Mantle OS, VCW, organs, SELF/OTHER, MIND containment, reproduction, and assimilation.
 
-## The Book
+## Canonical File
 
-The Grimoire is **one canonical prose book — Version 1.0.0, First Edition**:
+The Grimoire is exactly one canonical file:
 
-| Document | Scope |
-| --- | --- |
-| [The Grimoire.md](The%20Grimoire.md) | Universal engineering spells (§0–§6, §8) plus the AppAI extension (§7) — Body/MIND, SELF/OTHER, VCW, residency, reproduction, cache, diagnostics, lifecycle law — and the Mantle OS environment binding (§9) that makes each AppAI spell a runnable ritual. |
+| Read | Document | Scope |
+| --- | --- | --- |
+| **1st** | [The Grimoire.md](The%20Grimoire.md) | Grimoire 2.0: Core law, runtime, spells, AppAI extension, and Mantle OS environment binding. |
 
-The AppAI material is an extension chapter (§7) inside this one book, loaded by the domain
-scope gate in §7. Do not maintain a separate AppAI chapter as canonical doctrine.
+Do not treat old split editions, summaries, companion chapters, or copied excerpts as
+canonical. If a task touches Mantle OS, load the AppAI and environment-binding sections
+from the same file instead of looking for a separate chapter.
 
-## Bootstrapping `Intellige`
+## Loading
 
-`Intellige` is read-only comprehension: read, model, and explain before acting. It grants no
-authority to edit, mutate, execute, spend, or persist. To cast it on the Grimoire itself:
+Load by task class using the file's §0 manifest. §1 and §6 are always in force whether
+their text is loaded or not. For Mantle OS work, consult §7 and §9 in addition to the
+minimum cast loadout.
 
-1. If the Grimoire is already attached to the current context, use that document and proceed.
-2. Otherwise, read this README and load [The Grimoire.md](The%20Grimoire.md).
-3. If the book cannot be loaded, stop. Do not guess doctrine; return a blocked receipt naming the
-   missing required file.
-
-The §7 scope gate decides whether MantleOS/AppAI doctrine applies. If a task does not touch AppAI,
-MantleOS, `.mantle/`, VCW, zombie Bodies, organ maps, Body/MIND, SELF/OTHER, residency,
-assimilation, reproduction, or organism architecture, the extension is not authority for mutation.
-When the environment is a Mantle OS tree, §9 binds the AppAI spells to runnable commands and code.
-
-## Command Surface
-
-The stable operator interface is the Latin Title Case macro layer: examples include `Intellige`,
-`Vestigare`, `Animare`, and `Necromantia`. Lowercase power words are internal agent stances, and
-UPPERCASE spell identifiers are procedural implementation labels for agents, runtimes, ledgers, and
-receipts.
-
-Mantle vocabulary is scoped operator language. Terms such as Body, MIND, Senses, Limbs, Immune,
-VCW, SELF/OTHER, organs, and spell macros name MantleOS/AppAI tissue and lawful seams; they do not
-rename ordinary host/application code.
+`Intellige` remains read-only comprehension. It grants no authority to edit, mutate,
+spend, disclose, execute, or widen scope; authority still comes from the operator.
 
 ## Relationship To Code
 
-The Grimoire defines design intent. The Python package in
-[`src/mantle/`](../../src/mantle/) is the reference implementation, and working code remains
-authoritative for current behavior. When doctrine and implementation disagree, reconcile whichever
-surface is stale and prove the result with the Mantle gates.
+The Mantle OS binding lives in [The Grimoire.md](The%20Grimoire.md) §9. The reference
+implementation is under [`src/mantle/`](../../src/mantle/), with command bindings through
+`python -m mantle <command>`.
+
+Key doctrine-to-code anchors:
+
+| Grimoire area | Mantle OS surface |
+| --- | --- |
+| NECROMANCY / assimilation | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |
+| VITALS-CHECKUP / audit | [`src/mantle/doctor.py`](../../src/mantle/doctor.py), [`src/mantle/audits/`](../../src/mantle/audits/) |
+| Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`spore.py`](../../src/mantle/spore.py), [`egg.py`](../../src/mantle/egg.py), [`vault.py`](../../src/mantle/vault.py) |
+| CACHE-HAUNT | [`src/mantle/ghost.py`](../../src/mantle/ghost.py), [`src/mantle/ghost_http.py`](../../src/mantle/ghost_http.py) |
+| VCW band plan | [`src/mantle/vcw/bands.py`](../../src/mantle/vcw/bands.py) |
+
+When doctrine and runnable behavior disagree, treat the disagreement as an alignment
+task: verify the current code surface, then update whichever side is stale under the
+operator's authority.

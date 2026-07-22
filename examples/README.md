@@ -8,7 +8,8 @@ These are proven by the framework's own gate — read and run them:
   `python examples/vcw/vcw_cube.py selftest` proves every format rule; `examples/vcw/interop.py`
   proves the standalone and the `src/mantle/vcw` engine produce identical bytes
   (`bench.py` times the standalone codec).
-- **`sample_app/notes_app.py`** — a deliberately ordinary little app. It is the target for
+- **`sample_app/`** — the canonical Path-B teaching host: a deliberately ordinary notes app with
+  a README role map for Heart/Senses/Memory/Immune/Limbs/Brain affordance. It is the target for
   `python -m mantle assimilate examples/sample_app --dry-run`, `python -m mantle anchor`, and the
   graft egg (`python -m mantle graft examples/eggs/notes_graft.json examples/sample_app`).
 - **`../examples/eggs/greeter.json`** — the egg template; `python -m mantle hatch examples/eggs/greeter.json`.

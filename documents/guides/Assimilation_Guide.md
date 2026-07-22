@@ -2,7 +2,7 @@
 
 > **Canonical doctrine moved.** The full assimilation/scanning doctrine now lives in one place:
 > **[`documents/grimoire/The Grimoire.md`](../grimoire/The%20Grimoire.md)**,
-> section **NECROMANCY — operational detail (the assimilation manual)**. This file is now just the
+> section **NECROMANCY and Mantle OS binding (§§7/9)**. This file is now just the
 > runnable command cheatsheet. **The prime directive: do no harm** — the host runs exactly as
 > before, plus a nervous system and a memory.
 

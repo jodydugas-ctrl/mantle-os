@@ -245,7 +245,7 @@ source code is provided.
 ### Path B — Take residence in existing code (brownfield organism)
 1. Emit the §0 Declaration Block (declaring the host you are instrumenting).
 2. Follow the canonical doctrine in **`documents/grimoire/The Grimoire.md`**
-   (NECROMANCY — operational detail): the assimilator dissects the host read-only (AST for
+   (NECROMANCY + Mantle OS binding §§7/9): the assimilator dissects the host read-only (AST for
    Python, tree-sitter for `.js/.mjs/.go/.rs`; no host code runs) and classifies each symbol by
    organ role. Here this is the basis of:
    - **`python -m mantle anchor <host>`** — grow an anchored resident in a `.mantle/` nest,
