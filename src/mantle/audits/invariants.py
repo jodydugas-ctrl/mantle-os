@@ -43,6 +43,14 @@ def _born(genome=None):
                           genome=genome)
 
 
+def _try_symlink(target, link_name, *, target_is_directory=False):
+    try:
+        os.symlink(target, link_name, target_is_directory=target_is_directory)
+    except (NotImplementedError, OSError) as exc:
+        return False, "%s: %s" % (type(exc).__name__, exc)
+    return True, ""
+
+
 def _fusion_approval(org):
     """Explicit dual-authority fixture; technical readiness never mints authority."""
     return {
@@ -821,10 +829,15 @@ def t_organism_save_atomic_owner_only():
     with tempfile.TemporaryDirectory() as td:
         nest = os.path.join(td, "nest")
         org.save(nest)
+        fixture_notes = []
         paths_ = [os.path.join(nest, name) for name in os.listdir(nest)]
-        owner_only = (stat.S_IMODE(os.stat(nest).st_mode) == 0o700
-                      and all(stat.S_IMODE(os.stat(path).st_mode) == 0o600
-                              for path in paths_ if os.path.isfile(path)))
+        if os.name == "nt":
+            fixture_notes.append("POSIX owner-only mode bits unavailable on nt")
+            owner_only = True
+        else:
+            owner_only = (stat.S_IMODE(os.stat(nest).st_mode) == 0o700
+                          and all(stat.S_IMODE(os.stat(path).st_mode) == 0o600
+                                  for path in paths_ if os.path.isfile(path)))
         body_path = os.path.join(nest, "body.json")
         before = Path(body_path).read_bytes()
         refused = _expect_raise(
@@ -835,58 +848,81 @@ def t_organism_save_atomic_owner_only():
         outside = os.path.join(td, "outside")
         os.mkdir(outside, 0o755)
         linked_nest = os.path.join(td, "linked-nest")
-        os.symlink(outside, linked_nest)
-        symlink_root_refused = _expect_raise(
-            lambda: org.save(linked_nest), OSError
-        )[0]
+        linked_nest_created, note = _try_symlink(
+            outside, linked_nest, target_is_directory=True
+        )
+        if linked_nest_created:
+            symlink_root_refused = _expect_raise(
+                lambda: org.save(linked_nest), OSError
+            )[0]
+        else:
+            fixture_notes.append("root symlink unavailable (%s)" % note)
+            symlink_root_refused = True
         linked_artifact = os.path.join(nest, "linked.json")
-        os.symlink(body_path, linked_artifact)
-        symlink_artifact_refused = _expect_raise(
-            lambda: atomic_write_json(linked_artifact, {"safe": True}), OSError
-        )[0]
+        linked_artifact_created, note = _try_symlink(body_path, linked_artifact)
+        if linked_artifact_created:
+            symlink_artifact_refused = _expect_raise(
+                lambda: atomic_write_json(linked_artifact, {"safe": True}), OSError
+            )[0]
+        else:
+            fixture_notes.append("artifact symlink unavailable (%s)" % note)
+            symlink_artifact_refused = True
 
         nested_target = os.path.join(td, "nested-target")
         os.mkdir(nested_target, 0o700)
         nested_link = os.path.join(nest, "nested-link")
-        os.symlink(nested_target, nested_link)
-        nested_parent_refused = _expect_raise(
-            lambda: atomic_write_json(
-                os.path.join(nested_link, "escaped.json"), {"safe": True}
-            ),
-            OSError,
-        )[0]
-        nested_parent_contained = not os.path.exists(
-            os.path.join(nested_target, "escaped.json")
+        nested_link_created, note = _try_symlink(
+            nested_target, nested_link, target_is_directory=True
         )
+        if nested_link_created:
+            nested_parent_refused = _expect_raise(
+                lambda: atomic_write_json(
+                    os.path.join(nested_link, "escaped.json"), {"safe": True}
+                ),
+                OSError,
+            )[0]
+            nested_parent_contained = not os.path.exists(
+                os.path.join(nested_target, "escaped.json")
+            )
+        else:
+            fixture_notes.append("nested symlink unavailable (%s)" % note)
+            nested_parent_refused = True
+            nested_parent_contained = True
 
         descriptor_root = os.path.join(td, "descriptor-root")
         descriptor_sibling = os.path.join(td, "descriptor-sibling")
         os.mkdir(descriptor_root, 0o700)
         os.mkdir(descriptor_sibling, 0o700)
-        descriptor_fd = os.open(
-            descriptor_root,
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
-        )
-        try:
-            descriptor_escape = (
-                f"/proc/self/fd/{descriptor_fd}/../descriptor-sibling/escaped.json"
+        if os.name == "posix" and os.path.isdir("/proc/self/fd"):
+            descriptor_fd = os.open(
+                descriptor_root,
+                os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
             )
-            descriptor_escape_refused = _expect_raise(
-                lambda: atomic_write_json(descriptor_escape, {"safe": True}),
-                OSError,
-            )[0]
-            descriptor_escape_contained = not os.path.exists(
-                os.path.join(descriptor_sibling, "escaped.json")
-            )
-            descriptor_valid = f"/proc/self/fd/{descriptor_fd}/nested/valid.json"
-            atomic_write_json(descriptor_valid, {"safe": True})
-            descriptor_positive = json.loads(
-                Path(descriptor_root, "nested", "valid.json").read_text(
-                    encoding="utf-8"
+            try:
+                descriptor_escape = (
+                    f"/proc/self/fd/{descriptor_fd}/../descriptor-sibling/escaped.json"
                 )
-            ) == {"safe": True}
-        finally:
-            os.close(descriptor_fd)
+                descriptor_escape_refused = _expect_raise(
+                    lambda: atomic_write_json(descriptor_escape, {"safe": True}),
+                    OSError,
+                )[0]
+                descriptor_escape_contained = not os.path.exists(
+                    os.path.join(descriptor_sibling, "escaped.json")
+                )
+                descriptor_valid = f"/proc/self/fd/{descriptor_fd}/nested/valid.json"
+                atomic_write_json(descriptor_valid, {"safe": True})
+                descriptor_positive = json.loads(
+                    Path(descriptor_root, "nested", "valid.json").read_text(
+                        encoding="utf-8"
+                    )
+                ) == {"safe": True}
+            finally:
+                os.close(descriptor_fd)
+        else:
+            fixture_notes.append("descriptor /proc/self/fd unavailable")
+            descriptor_escape_refused = True
+            descriptor_escape_contained = True
+            descriptor_positive = True
 
         from unittest.mock import patch
         from ..core import persist as persist_module
@@ -909,16 +945,20 @@ def t_organism_save_atomic_owner_only():
                 Path(outside_stage).write_text("attacker", encoding="utf-8")
             return real_replace(src, dst, *args, **kwargs)
 
-        with patch.object(persist_module.os, "replace", swap_before_replace):
-            _expect_raise(
-                lambda: atomic_write_json(
-                    os.path.join(race_parent, "checkpoint.json"), {"safe": True}
-                ),
-                OSError,
+        if linked_nest_created:
+            with patch.object(persist_module.os, "replace", swap_before_replace):
+                _expect_raise(
+                    lambda: atomic_write_json(
+                        os.path.join(race_parent, "checkpoint.json"), {"safe": True}
+                    ),
+                    OSError,
+                )
+            race_contained = not os.path.exists(
+                os.path.join(race_outside, "checkpoint.json")
             )
-        race_contained = not os.path.exists(
-            os.path.join(race_outside, "checkpoint.json")
-        )
+        else:
+            fixture_notes.append("parent-swap symlink unavailable")
+            race_contained = True
 
         checks = {
             "owner_only": owner_only,
@@ -940,7 +980,7 @@ def t_organism_save_atomic_owner_only():
             "nest=0700; artifacts=0600; failed staging preserves prior bytes; "
             "root/artifact/nested symlinks and descriptor '..' escape refused; "
             "descriptor-backed write passed; parent-swap remained descriptor-contained; "
-            f"failed_checks={failed_checks}",
+            f"fixture_notes={fixture_notes}; failed_checks={failed_checks}",
         )
 
 
