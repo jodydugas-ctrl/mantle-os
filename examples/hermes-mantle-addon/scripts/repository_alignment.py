@@ -105,6 +105,18 @@ def validate(path: Path) -> tuple[bool, str]:
         return True, "binary"
 
 
+def content_digest(path: Path) -> str:
+    """Hash text files in a checkout-stable way across Windows and Linux."""
+    raw = path.read_bytes()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        normalized = raw
+    else:
+        normalized = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+    return hashlib.sha256(normalized).hexdigest()
+
+
 def build() -> dict[str, object]:
     records = []
     parse_errors = []
@@ -127,7 +139,7 @@ def build() -> dict[str, object]:
             valid, validation = False, "%s: %s" % (type(exc).__name__, exc)
             parse_errors.append(relative)
         size = path.stat().st_size if path.exists() else None
-        digest = None if generated or not path.exists() else hashlib.sha256(path.read_bytes()).hexdigest()
+        digest = None if generated or not path.exists() else content_digest(path)
         if (not generated and path.exists() and kind not in {"test", "vendor", "asset"}
                 and path.suffix.lower() in {".py", ".md", ".txt", ".json", ".yaml", ".yml", ".toml"}):
             try:
@@ -232,7 +244,7 @@ def check(report: dict[str, object]) -> list[str]:
         if not path.exists():
             failures.append("missing: %s" % relative)
             continue
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        digest = content_digest(path)
         if row.get("sha256") != digest:
             failures.append("digest drift: %s" % relative)
     if report.get("status") != "PASS":

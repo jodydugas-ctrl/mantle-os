@@ -109,7 +109,7 @@ class FusionLifecycleTests(unittest.TestCase):
             fails=[],
             framework_passed=True,
             framework_rows=20,
-            framework_invariants=90,
+            framework_invariants=93,
             framework_failures=[],
             summary="complete test receipt",
             issued_at=(now - timedelta(seconds=60)).isoformat(),
@@ -267,7 +267,7 @@ class FusionLifecycleTests(unittest.TestCase):
             post_defusion.passed,
             f"{post_defusion.summary}; failures={post_defusion.fails}",
         )
-        self.assertEqual(90, post_defusion.framework_invariants)
+        self.assertEqual(93, post_defusion.framework_invariants)
 
     def test_defusion_stops_scheduler_without_holding_runtime_lock(self):
         receipt, readiness, authorization = self._evidence()
