@@ -44,10 +44,15 @@ from ..core.redact import redact
 from ..vcw.bands import make_band_boot, APP_BAND_ATLAS
 from ..vcw.entry import make_entry
 
-VAULT_BAND = "vault"                 # sealed seed (shared format with mantle.vault)
+VAULT_BAND = "vault"                 # sealed seed (the germ this body grew from)
 SPORE_BAND = "spore_vault"           # sealed origin spore (SPORE-DISTILLATION)
 SPORE_OPCODE = "SPORE-SELF"
 SPORE_CHUNK_B64 = 900_000            # one chunk per layer, well under LAYER_BYTES
+
+# THE HEIRLOOMS -- the two halves of one inheritance, carried by one rule on every
+# rebirth: the germ in `vault` is what you rebuild from; the spore in `spore_vault`
+# is where you came from. Both are SELF-sealed ciphertext, carried verbatim.
+HEIRLOOM_BANDS = {VAULT_BAND: "VAULT", SPORE_BAND: SPORE_OPCODE}
 SOURCE_DESCRIPTOR_KEYS = {
     "kind", "url", "path", "ref", "branch", "tag", "commit", "sha256",
     "source_sha256", "instructions", "retrieval", "notes",
@@ -81,6 +86,53 @@ CONTRACT = OrganContract(
         "reserved app-band ranges never overlap (the atlas + the genesis gate)",
     ],
 )
+
+
+# ---------------------------------------------------------------------------
+# The seed vault (self-reconstruction; formerly mantle.vault -- one seam, ONE door)
+# ---------------------------------------------------------------------------
+
+class VaultError(Exception):
+    """The vault could not be opened or the seed was unusable (e.g. opened as OTHER)."""
+
+
+def vault_band(head: int = 638, span: int = 2) -> Dict[str, Any]:
+    """The reserved, PRIVATE (veiled) band that holds the SELF-encrypted seed."""
+    return make_band_boot(VAULT_BAND, head, "log-json", span=span, private=True,
+                          purpose="the SELF-encrypted seed vault (self-reconstruction)")
+
+
+def store_seed(org: Any, seed: Dict[str, Any]) -> Dict[str, Any]:
+    """Seal the organism's own seed (its germ) under the genesis key and append it to
+    the veiled vault band, self-describing (part/of) like every heirloom. Only this
+    body can ever open it."""
+    ciphertext = org.body.seal_bytes(json.dumps(seed, sort_keys=True,
+                                                default=str).encode("utf-8"))
+    return org.prime.append(VAULT_BAND, make_entry(
+        {"seed": ciphertext.hex(), "part": 0, "of": 1},
+        opcode="VAULT", author="BODY", source="seed-vault"))
+
+
+def open_seed(org: Any) -> Dict[str, Any]:
+    """Open the latest sealed seed with THIS body's key (SELF only). Raises VaultError if
+    there is no seed or it cannot be decrypted as this body's own."""
+    entries = org.prime.read(VAULT_BAND, reveal_private=True)
+    sealed = [e for e in entries if e.get("opcode") == "VAULT"]
+    if not sealed:
+        raise VaultError("the vault is empty")
+    try:
+        plaintext = org.body.open_bytes(bytes.fromhex(sealed[-1]["content"]["seed"]))
+        return json.loads(plaintext)
+    except (ValueError, json.JSONDecodeError) as e:
+        raise VaultError("cannot open the vault: not this body's SELF (%s)" % type(e).__name__)
+
+
+def reconstruct(seed: Dict[str, Any]) -> Dict[str, Any]:
+    """Rebuild a working body from a seed germ -- through the SAME hatchery gate every
+    body faces. A tampered seed that cannot certify does not reconstruct. Returns
+    {organism, report}."""
+    from ..hatchery import incubate
+    return incubate(seed)
 
 
 def spore_vault_band(head: int = None, span: int = None) -> Dict[str, Any]:
@@ -202,17 +254,16 @@ class Reproduction(Organ):
 
     # ---- the vault tissue (contract-checked writes) --------------------------
     def store_seed(self, seed: Dict[str, Any]) -> Dict[str, Any]:
-        """Seal the organism's own seed under the genesis key into the vault band --
-        the same entry format mantle.vault reads (one seam, two doors)."""
+        """Seal the organism's own seed under the genesis key into the vault band,
+        self-describing (part/of) like every heirloom."""
         ciphertext = self.org.body.seal_bytes(
             json.dumps(seed, sort_keys=True, default=str).encode("utf-8"))
         return self.append(VAULT_BAND, make_entry(
-            {"seed": ciphertext.hex()}, opcode="VAULT", author="BODY",
-            source="reproduction-organ"))
+            {"seed": ciphertext.hex(), "part": 0, "of": 1}, opcode="VAULT",
+            author="BODY", source="reproduction-organ"))
 
     def open_seed(self) -> Dict[str, Any]:
-        from .. import vault as _v
-        return _v.open_seed(self.org)
+        return open_seed(self.org)
 
     # ---- the sealed origin spore ---------------------------------------------
     def store_spore(self, blob: bytes, meta: Dict[str, Any]) -> Dict[str, Any]:
@@ -252,14 +303,17 @@ class Reproduction(Organ):
 
     # ---- the runtime duty: lineage continuity across rebirth ------------------
     def on_rebirth(self, payload: Dict[str, Any]) -> None:
-        """Carry the sealed seed (and sealed origin spore) from the newest ancestor into
-        the new Prime. The ciphertext is carried verbatim -- the genesis key persists
-        across rebirth, so the carried copy still opens as SELF. If the new genome
-        cannot hold it, that is an immune event, never a silent loss."""
+        """THE HEIRLOOM LAW: carried or immune-logged, never silent. On every rebirth
+        the heirlooms (the sealed germ in `vault`, the sealed origin spore in
+        `spore_vault`) are carried from the newest ancestor into the new Prime by ONE
+        rule -- the last complete heirloom per band, verbatim ciphertext. The genesis
+        key persists across rebirth, so the carried copy still opens as SELF. If the
+        new genome cannot hold a heirloom, that is an immune event, never a loss (the
+        sealed ancestor stays readable)."""
         anc = self.org.ancestral[-1] if self.org.ancestral else None
         if anc is None:
             return
-        for band, opcode in ((VAULT_BAND, "VAULT"), (SPORE_BAND, SPORE_OPCODE)):
+        for band, opcode in HEIRLOOM_BANDS.items():
             if band not in anc.bands:
                 continue
             sealed = [e for e in self._physical(band, cube=anc)
@@ -272,8 +326,9 @@ class Reproduction(Organ):
                     "note": "rebirth genome holds no %r band; the sealed material "
                             "remains readable in the sealed ancestor" % band})
                 continue
-            carry = sealed[-1:] if band == VAULT_BAND else \
-                sealed[-int((sealed[-1].get("content") or {}).get("of", 1)):]
+            # one rule for every heirloom: entries are self-describing (part/of;
+            # of defaults to 1 for legacy single-entry seeds)
+            carry = sealed[-int((sealed[-1].get("content") or {}).get("of", 1)):]
             for e in carry:
                 self.append(band, make_entry(dict(e.get("content") or {}),
                                              opcode=opcode, author="BODY",

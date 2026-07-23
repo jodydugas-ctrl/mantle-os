@@ -7,7 +7,7 @@ surfaces -- a spreadsheet, a CLI, a phone shell, a chat face -- while the nervou
 the VCW underneath never change. A PHENOTYPE (a "face") is a whole front-end, sealed under the
 genesis key into a private VCW band. The Compiler does not run apps; it WEARS them.
 
-Three laws hold it safe -- the same laws as the seed vault (mantle.vault), one band richer:
+Three laws hold it safe -- the same laws as the seed vault (the Reproduction organ), one band richer:
   * a face is SELF-encrypted (M2): the source is sealed under the genesis key, so it is
     unreadable -- and un-wearable -- as OTHER. A copied nest in a different body gets garbage.
   * a face is SOURCE, never executed here: wearing returns a boot manifest a HOST renders.

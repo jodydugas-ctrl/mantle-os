@@ -215,9 +215,9 @@ def incubate(germ: Dict[str, Any], *, warmup_beats: int = 3,
         if pb["head"] in used_heads:
             raise HatchError("germ app band collides with the reserved phenotype band head %d "
                              "(reserved: %d-655 and 660-661)" % (pb["head"], pb["head"]))
-    from . import vault as _vault
-    vault_boot = ([] if any(b["band"] == _vault.VAULT_BAND for b in app_bands)
-                  else [_vault.vault_band()])
+    from .organs.reproduction import VAULT_BAND, vault_band
+    vault_boot = ([] if any(b["band"] == VAULT_BAND for b in app_bands)
+                  else [vault_band()])
     genome = standard_genome() + app_bands + pheno_bands + vault_boot
     try:
         org = Organism.birth(identity=germ["identity"], truths=list(germ["truths"]),

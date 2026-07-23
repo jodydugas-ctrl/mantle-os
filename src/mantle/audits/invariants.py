@@ -1620,7 +1620,7 @@ def t_gang_crashed_fail_open():
 def t_vault_self_encrypted_other_cannot_read():
     """VAULT-1: the seed is sealed under the genesis key -- the owning body opens it, but a
     different body (different key) gets garbage (the vault is unreadable as OTHER)."""
-    from .. import vault as _v
+    from ..organs import reproduction as _v
     org = _born(genome=standard_genome() + [_v.vault_band()])
     seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Seed.AppAI"},
             "truths": ["t"], "commandments": ["protect your VCW"]}
@@ -1640,7 +1640,7 @@ def t_vault_self_encrypted_other_cannot_read():
 def t_vault_reconstruct_gates():
     """VAULT-2: a body reconstructs a working, CERTIFIED body from its vaulted seed -- the
     rebuild faces the same Stage-1 gate (a seed that cannot certify does not reconstruct)."""
-    from .. import vault as _v
+    from ..organs import reproduction as _v
     org = _born(genome=standard_genome() + [_v.vault_band()])
     seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Rebuilt.AppAI"},
             "truths": ["if it is not in the VCW it did not happen"],
@@ -2257,7 +2257,7 @@ def t_repro_atlas_overlap_gate():
     from ..compiler import validate_genome, GenomeError
     from ..assimilator.organ_map import propose_genome
     from ..symbiosis import symbiosis_band
-    from ..vault import vault_band
+    from ..organs.reproduction import vault_band
     from ..phenotype import phenotype_bands
     from ..applet_body import applet_bands
     from ..organs.reproduction import spore_vault_band
@@ -2281,7 +2281,7 @@ def t_repro_organ_and_seed_carry():
     """REPRO-2: the ninth organ is meshed with a fail-open contract, and its runtime duty
     holds: the sealed seed is CARRIED across a rebirth whose genome keeps the vault band,
     and its loss is immune-logged (never silent) when the genome drops it."""
-    from ..vault import vault_band, open_seed
+    from ..organs.reproduction import vault_band, open_seed
     org = _born(genome=standard_genome() + [vault_band()])
     m = org.manifests()
     organ_ok = ("reproduction" in m and m["reproduction"]["fail_mode"] == "fail-open"
@@ -2303,7 +2303,7 @@ def t_repro_every_hatch_vaults_its_egg():
     """REPRO-3: RESURGERE is a birthright -- every hatchery birth stores its own egg,
     SELF-sealed, in the vault band, without the egg asking for it."""
     from ..hatchery import incubate
-    from ..vault import open_seed
+    from ..organs.reproduction import open_seed
     egg = {"egg_format": "mantle-egg-v1", "identity": {"name": "Vaulted.AppAI"},
            "truths": ["if it is not in the VCW it did not happen"],
            "commandments": ["protect your VCW"]}
@@ -2318,7 +2318,7 @@ def t_repro_anchor_births_through_hatchery():
     the hatchery, so it carries the default origin face AND its own seed in the vault,
     exactly like an egg-hatched organism (and the host stays byte-identical, per SYM-4)."""
     from ..anchor import anchor
-    from ..vault import open_seed
+    from ..organs.reproduction import open_seed
     from .. import phenotype as _ph
     host = _sample_host_copy("mantle-repro-anchor-")
     org = anchor(host, starter_credits=2)["organism"]
@@ -2444,7 +2444,7 @@ def t_spore_germ_round_trip():
     vault equal to what went in -- and the spore itself returns from spore_vault. The
     state path is pure stdlib (no Pillow needed to prove the law)."""
     from ..hatchery import hatch_from_spore
-    from ..vault import open_seed
+    from ..organs.reproduction import open_seed
     germ = {"germ_format": "mantle-germ-v1",
             "identity": {"name": "GermCarried.AppAI", "purpose": "prove the round trip"},
             "truths": ["if it is not in the VCW it did not happen"],

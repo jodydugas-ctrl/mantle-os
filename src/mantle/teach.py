@@ -404,7 +404,8 @@ def ch_ganglia_vault(org: Organism) -> bool:
     _say("progress into a VCW band — so the parent reads the sub-task's work as MEMORY, with no")
     _say("model call. And the SEED VAULT lets an organism back itself up: its own seed, sealed")
     _say("under the genesis key (unreadable as OTHER), reconstructable through the same gate.")
-    from . import ganglia as _g, vault as _v
+    from . import ganglia as _g
+    from .organs import reproduction as _v
     worker = Organism.birth(
         identity={"name": "Worker.AppAI"},
         truths=["if it is not in the VCW it did not happen"],

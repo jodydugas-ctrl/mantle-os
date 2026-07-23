@@ -104,8 +104,8 @@ def seed(form: str = "spore", **kwargs) -> Dict[str, Any]:
         from .hatchery import hatch as _hatch
         return {"method": "seed", "form": "spore", "result": _hatch(**kwargs)}
     if form == "vault":
-        from . import vault
-        return {"method": "seed", "form": "vault", "result": vault.reconstruct(**kwargs)}
+        from .organs.reproduction import reconstruct
+        return {"method": "seed", "form": "vault", "result": reconstruct(**kwargs)}
     raise ReproductionError(
         f"unknown seed form {form!r}; expected one of {SEED_FORMS} "
         "(the historical 'egg' and 'vault' names still route)")
