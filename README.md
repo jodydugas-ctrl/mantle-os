@@ -97,6 +97,36 @@ invariant suite** and, where an operation creates a new resident or activates co
 separate target-bound authority. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md)
 walks every one.
 
+### Why Mantle began this way
+
+> **Creator's note.** I came to Mantle from two directions. In my youth I worked as an
+> Information Systems Engineer; after my father suffered a stroke, I moved into medicine
+> and eventually specialized in neurology. A few years later I built a custom agent for
+> him. The point of this history is not emotional impact — it explains the engineering
+> constraints that shaped the system.
+>
+> The intended home was a hearing aid: an intimate assistive device used where neither the
+> wearer nor their partner could be expected to troubleshoot software. The agent therefore
+> needed medical-context dependability, self-repair, strict privacy, and a low operating
+> cost that would not burn tokens merely by remaining available.
+>
+> At the time I had coding fundamentals but no background in AI engineering or established
+> agent-framework practice. I built from how I thought an agent ought to work: as an
+> organism, modeled particularly on the octopus — a creature with distributed intelligence,
+> capable local limbs, and a body that coordinates without making every reflex depend on a
+> central brain.
+>
+> Those constraints became Mantle's unusual choices. An AppAI rests in perfect stasis until
+> a heartbeat wakes it to perceive the world. A physical button connected to a sensory organ
+> can trigger an unscheduled heartbeat — a startle reflex — and tell the organism that its
+> partner wants to communicate. The deterministic Body remains capable when cognition is
+> absent; the MIND is added only where reasoning is actually needed. Privacy boundaries,
+> immune behavior, metabolism, and token discipline follow from the same original problem.
+>
+> This origin explains the architecture; it is not a claim that Mantle OS is a certified
+> medical device. The project remains a reference implementation of the containment model
+> that grew from those constraints.
+
 ### Why an organism? The biology does two jobs
 
 Mantle is modeled on the **octopus**, whose arms think on their own — and the organic
