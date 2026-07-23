@@ -94,6 +94,30 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
                  % (b["band"], b["head"], b["span"], b["encoding"],
                     " (private)" if b["private"] else "", b["purpose"]))
     L.append("")
+    evidence = amap.get("host_evidence_index") or {}
+    if evidence:
+        L.append("## A.8 Resident host evidence index")
+        L.append("")
+        L.append("The resident must consult this local evidence before generic MIND chat.")
+        L.append("Provider reasoning may interpret the evidence after authorization, but it")
+        L.append("must not replace the evidence index or hide missing evidence.")
+        L.append("")
+        L.append("- **Schema:** `%s`" % evidence.get("schema_version", "unknown"))
+        L.append("- **Local-first consultation:** `%s`" %
+                 str(evidence.get("local_first_consultation", False)).lower())
+        sources = evidence.get("evidence_sources", [])
+        L.append("- **Evidence sources:** %s" % (
+            ", ".join("`%s`" % s for s in sources) if sources else "none"))
+        controls = evidence.get("control_surfaces", [])
+        if controls:
+            L.append("- **Observed control surfaces:** %s" % ", ".join(
+                "`%s`" % c.get("control") for c in controls[:8]))
+        else:
+            L.append("- **Observed control surfaces:** none")
+        limitations = evidence.get("limitations", [])
+        if limitations:
+            L.append("- **Known limits:** %s" % " ".join(limitations[:2]))
+        L.append("")
     L.append("## A.9 Gap report")
     if amap["gap_report"]:
         for g in amap["gap_report"]:
@@ -158,6 +182,7 @@ def emit_spore(result: Dict[str, Any], out_png: str) -> Dict[str, Any]:
         "assimilation": {                      # observed facts, inert data
             "role_counts": amap["role_counts"],
             "organ_map": organ_summary,
+            "host_evidence_index": amap.get("host_evidence_index", {}),
             "missing_organs": amap["missing_organs"],
             "python_files": dissection["python_files"],
         },

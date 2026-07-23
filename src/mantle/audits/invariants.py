@@ -687,6 +687,40 @@ def t_reflex_fault_failopen():
             "reflex fault -> immune event; beat completed ok")
 
 
+def t_limb_structured_bridge_proof():
+    """LIMB-1: a ControlBridge can return the effector's own verified proof.
+    The Limbs organ must not promote an attempted-but-unverified UI action to ok=True
+    merely because the bridge returned normally."""
+    org = _born()
+
+    def unverified_bridge(_value):
+        return {
+            "attempted": True,
+            "ok": False,
+            "method": "HostEditorBridge",
+            "ref": "editor_surface",
+            "reason": "editor-text-not-verified",
+            "verification": "failed-editor-text-readback",
+        }
+
+    org.limbs.register_control("editor.display", {"kind": "editor"}, unverified_bridge)
+    proof = org.limbs.operate("editor.display", "story")
+    recorded = [
+        entry["content"]["action_proof"]
+        for entry in org.prime.read("brain", reveal_private=True)
+        if isinstance(entry.get("content"), dict)
+        and isinstance(entry["content"].get("action_proof"), dict)
+        and entry["content"]["action_proof"].get("control") == "editor.display"
+    ][-1]
+    ok = (
+        proof["attempted"] is True
+        and proof["ok"] is False
+        and proof["reason"] == "editor-text-not-verified"
+        and recorded["verification"] == "failed-editor-text-readback"
+    )
+    return ok, "attempted UI bridge remained failed until surface read-back verified it"
+
+
 def t_dedupe_tombstones_duplicates():
     """metabolism: dedupe tombstones repeated (opcode, content) entries -- history
     preserved, visible stream coherent."""
@@ -2210,9 +2244,9 @@ def t_app_band_allocator_reserves_atlas():
 
 def t_assimilator_substrate_gaps_and_outside_host_gate():
     """ASSIM-1: Phase-0 first discovers the host substrate, reports unsupported
-    native/Qt coverage explicitly, and refuses to write inventory artifacts inside the
-    host tree."""
-    from ..assimilator import dry_run, write_artifacts
+    native/Qt coverage explicitly, emits a resident evidence index, and refuses to
+    write inventory artifacts inside the host tree."""
+    from ..assimilator import answer_from_host_evidence, dry_run, write_artifacts
     with tempfile.TemporaryDirectory() as td:
         host = os.path.join(td, "NativeQt")
         os.makedirs(os.path.join(host, "src"))
@@ -2224,7 +2258,9 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             f.write("<ui version=\"4.0\"></ui>\n")
         result = dry_run(host)
         substrate = result["dissection"]["substrate"]
+        evidence = result["map"].get("host_evidence_index", {})
         inventory = result["inventory_md"]
+        answer = answer_from_host_evidence("what are your gaps?", result["map"])
         outside = os.path.join(td, "artifacts")
         paths = write_artifacts(result, outside)
         inside_refused = _expect_raise(lambda: write_artifacts(result, os.path.join(host, "mantle")),
@@ -2236,6 +2272,10 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and substrate["coverage"]["requires_adaptive_native_tools"] == 2
             and len(substrate["unsupported"]) == 2
             and "Substrate coverage" in inventory
+            and evidence.get("kind") == "HOST_EVIDENCE_INDEX"
+            and evidence.get("local_first_consultation") is True
+            and "Resident host evidence index" in inventory
+            and "adaptive parser/observer/verifier" in answer
             and os.path.exists(paths["inventory"])
             and inside_refused
         )
@@ -2501,6 +2541,7 @@ TESTS = [
     ("HF-M16 self-inquiry-never-facts",        t_self_inquiry_never_facts),
     ("B-OC  organ-overreach-refused",          t_organ_overreach_refused),
     ("HF-B32 reflex-fault-fail-open",          t_reflex_fault_failopen),
+    ("LIMB-1 structured-bridge-proof",         t_limb_structured_bridge_proof),
     ("B-DD  dedupe-tombstones-duplicates",     t_dedupe_tombstones_duplicates),
     ("B-W2  waste/reclaim-reuse",              t_waste_reclaim_reuse),
     ("B-W4  waste/on-demand+purpose",          t_on_demand_and_purpose),

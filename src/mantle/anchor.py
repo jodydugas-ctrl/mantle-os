@@ -37,7 +37,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from .core.organism import Organism
-from .assimilator import dry_run, write_artifacts
+from .assimilator import answer_from_host_evidence, dry_run, write_artifacts
 from .assimilator.organ_map import propose_genome
 from .hatchery import incubate, HatchError
 from . import symbiosis as sym
@@ -119,6 +119,12 @@ def anchor(host: str, name: Optional[str] = None,
         opcode="OBSERVED", source="assimilation-scan", verified=True)
     org.memory.remember("facts", {"missing_organs": amap["missing_organs"]},
                         opcode="OBSERVED", source="assimilation-scan", verified=True)
+    org.memory.remember("discoveries", {
+        "host_evidence_index": amap.get("host_evidence_index", {}),
+        "consultation_rule": (
+            "answer host questions from local Phase-0 evidence before generic MIND chat"
+        )},
+        opcode="OBSERVED", source="assimilation-scan", verified=True)
 
     # 4. FIRST MEAL: the user's starter grant opens the symbiosis
     sym.grant(org, starter_credits, source="anchor-ceremony",
@@ -172,6 +178,8 @@ _STOP = frozenset("how do i the a an to of in is what where which my this app us
 def _answer_from_map(question: str, amap: Dict[str, Any]) -> str:
     """The FREE answer: deterministic, from observed structure -- reflex before
     reasoning. Structural questions get structural answers; no model, no energy."""
+    if amap.get("host_evidence_index"):
+        return answer_from_host_evidence(question, amap)
     tokens = [t for t in re.findall(r"[a-z_]+", question.lower()) if t not in _STOP]
     scored: List[tuple] = []
     for organ, syms in amap["organs"].items():

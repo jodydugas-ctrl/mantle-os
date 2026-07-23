@@ -40,6 +40,7 @@
 | Go To line | Moves caret to line | line offset calculation | `notepad_appai_smoke.mjs` | PASS |
 | Time/Date | Inserts local time/date | F5/menu insertion at selection | manual inspection | PASS |
 | Word Wrap | Toggles wrapping | CSS/wrap toggle and status update | `notepad_appai_smoke.mjs` | PASS |
+| Resident host consultation | Software/body questions answered from resident evidence first | Embedded host evidence index and `consultHostEvidence()` API | `notepad_appai_smoke.mjs` | PASS |
 | Font selection | Basic font family/size | dialog applies editor font settings | manual inspection | PASS |
 | Status bar | Shows position/encoding/line endings/wrap/MIND | status bar with toggled visibility | manual inspection | PASS |
 | File errors | Missing/locked/bad path handled gracefully | failures become immune events and failed proof records | `notepad_appai_smoke.mjs` | PASS |
@@ -70,6 +71,7 @@ Covered actions: open, failed open, save, save-as.
 | Unsaved-change prompts work | rejected and accepted New flow tested | PASS |
 | AppAI declaration exists | JSON declaration parsed in test | PASS |
 | Organ map exists | JSON organ map parsed in test | PASS |
+| Host evidence index exists | JSON evidence index parsed; structure/control answers use it | PASS |
 | No hidden model/network call | Playwright observed zero external requests | PASS |
 | MIND dormant | `brainStatus()` reports dormant/no mutation authority | PASS |
 
@@ -99,8 +101,9 @@ WHY:
 
 EVIDENCE:
 - Embedded AppAI declaration, organ map, and parity matrix in `index.html`.
+- Embedded host evidence index and local-first consultation API for software/body questions.
 - Append-only ledger and Action Execution Proof records for effectful file actions.
-- Smoke test covers launch, edit, clean text commit-on-blur behavior, new/open/save/save-as, unsaved guard, find/replace, word wrap, file error handling, declaration, organ map, dormant Brain, and no external network.
+- Smoke test covers launch, edit, clean text commit-on-blur behavior, new/open/save/save-as, unsaved guard, find/replace, word wrap, file error handling, declaration, organ map, host evidence consultation, dormant Brain, and no external network.
 
 TESTS:
 - `python -m http.server 8765 --directory examples`

@@ -195,7 +195,7 @@ FIELD_GUIDE chapters 13–15.
 
 `src/mantle/assimilator/` implements Path B: a read-only AST **scanner** classifies every
 symbol of a host app into organ roles; **organ_map** folds the classification into an
-assimilation map; **report** emits the APP_INVENTORY artifact (the signed Phase 0 gate), a
+assimilation map and resident host evidence index; **report** emits the APP_INVENTORY artifact (the signed Phase 0 gate), a
 JSON map, and — with `--spore=out.png` — the host's **germ spore** (see
 [`REPRODUCTION.md`](REPRODUCTION.md)); **wrappers** is the fail-open hook runtime that
 threads host behavior through Senses/Limbs/Memory/Immune without changing it.
@@ -203,6 +203,11 @@ threads host behavior through Senses/Limbs/Memory/Immune without changing it.
 host. The scanner is Python-AST by default and multi-language (`.js/.mjs/.go/.rs`) via the
 optional tree-sitter extra. The doctrine is the canonical NECROMANCY section of
 [`grimoire/The Grimoire.md`](grimoire/The%20Grimoire.md).
+
+The host evidence index is the resident's local-first consultation substrate. A resident
+answers questions about its software from the inventory, organ map, control surfaces, gap
+report, and limitations before provider-backed reasoning is allowed to interpret that
+evidence.
 
 ## 8. The gates
 

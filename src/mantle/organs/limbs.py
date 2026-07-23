@@ -114,7 +114,21 @@ class Limbs(Organ):
             return self._prove(control_id, attempted=False, ok=False,
                                method=None, ref=None, reason="no ControlBridge")
         try:
-            self.bridges[control_id](value)
+            bridge_result = self.bridges[control_id](value)
+            if isinstance(bridge_result, dict):
+                attempted = bool(bridge_result.get("attempted", True))
+                ok = bool(bridge_result.get("ok", True))
+                method = bridge_result.get("method") or "ControlBridge"
+                ref = bridge_result.get("ref") or control_id
+                reason = bridge_result.get("reason") or ("ok" if ok else "not verified")
+                extra = {
+                    key: val for key, val in bridge_result.items()
+                    if key not in {"attempted", "ok", "method", "ref", "reason"}
+                }
+                return self._prove(
+                    control_id, attempted=attempted, ok=ok,
+                    method=method, ref=ref, reason=reason, **extra,
+                )
             return self._prove(control_id, attempted=True, ok=True,
                                method="ControlBridge", ref=control_id, reason="ok")
         except Exception as ex:                  # noqa: BLE001 -- fail-open at the effector

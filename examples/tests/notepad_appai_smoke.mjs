@@ -39,10 +39,21 @@ async function runChecks(page) {
     try {
       const declaration = body.readDeclaration();
       const organMap = body.readOrganMap();
+      const evidenceIndex = body.readHostEvidenceIndex();
       const parity = body.readParityMatrix();
       expect(declaration.default_model === "none in Phase 1", "AppAI declaration does not disable models");
       expect(organMap.organs && organMap.organs.Brain && /dormant/i.test(organMap.organs.Brain.join(" ")), "Organ map lacks dormant Brain");
-      expect(parity.length >= 10 && parity.every((row) => row.status === "PASS"), "Parity matrix is incomplete or not green");
+      expect(evidenceIndex.kind === "HOST_EVIDENCE_INDEX", "Resident host evidence index missing");
+      expect(evidenceIndex.local_first_consultation === true, "Resident consultation is not local-first");
+      expect(evidenceIndex.control_surfaces.some((control) => control.control === "saveFile"), "Body save control evidence missing");
+      const structureAnswer = body.consultHostEvidence("How is this software structured?");
+      expect(structureAnswer.includes("Substrate: browser-javascript"), "Structure answer did not use resident evidence");
+      expect(structureAnswer.includes("Limbs"), "Structure answer omitted organ map");
+      const controlAnswer = body.consultHostEvidence("What can your body do?");
+      expect(controlAnswer.includes("Observed Body controls"), "Control answer did not use resident evidence");
+      expect(controlAnswer.includes("Action Execution Proof"), "Control answer omitted proof requirement");
+      expect(body.getLedger().some((entry) => entry.type === "resident_consultation"), "Resident consultation was not logged");
+      expect(parity.length >= 11 && parity.every((row) => row.status === "PASS"), "Parity matrix is incomplete or not green");
       expect(body.phase1NoModelCalls() === true, "Phase-1 no-model policy missing");
       expect(body.brainStatus().mind === "dormant" && body.brainStatus().mayMutate === false, "Brain affordance is not dormant");
       expect(!body.getLedger().some((entry) => entry.type === "buffer_changed"), "Legacy buffer_changed rows survived ledger migration");

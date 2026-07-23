@@ -5,9 +5,10 @@
   "description": "Headless smoke tests for the Mantle OS reference HTML demos + the live agent (the Python substrate is certified separately by `python -m mantle check`).",
   "type": "module",
   "scripts": {
-    "test": "node demo_smoke.mjs && node live_agent_smoke.mjs && node calculator_appai_smoke.mjs",
+    "test": "node demo_smoke.mjs && node live_agent_smoke.mjs && node calculator_appai_smoke.mjs && node notepad_appai_smoke.mjs",
     "test:live": "node live_agent_smoke.mjs",
-    "test:calculator": "node calculator_appai_smoke.mjs"
+    "test:calculator": "node calculator_appai_smoke.mjs",
+    "test:notepad": "node notepad_appai_smoke.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.0",

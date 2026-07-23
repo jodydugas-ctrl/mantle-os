@@ -210,6 +210,12 @@ def assimilate(argv):
     if amap["missing_organs"]:
         print("\n  Missing organs: %s (information too -- fragile seams)"
               % ", ".join(amap["missing_organs"]))
+    evidence = amap.get("host_evidence_index") or {}
+    if evidence:
+        print("\n  Resident evidence  : %s, local-first=%s"
+              % (evidence.get("schema_version", "unknown"),
+                 evidence.get("local_first_consultation")))
+        print("  Consultation rule  : answer host questions from inventory/map/gaps before MIND")
     out_dir = flags.get("--out")
     if isinstance(out_dir, str):
         paths = write_artifacts(result, out_dir)

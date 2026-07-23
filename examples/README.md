@@ -20,6 +20,9 @@ These are proven by the framework's own gate. Read and run these first:
   and `calculator.json` (declares its own origin face, including the AppAI
   terminal surface and submit/blur text commit policy).
 - **`phenotype_demo.py`** - wearable app-faces end to end.
+- **`notepad_appai/`** - a browser Notepad-style Body with embedded declaration,
+  organ map, resident host evidence index, Body/Limb proofs, and a local-first
+  consultation API tested by `examples/tests/notepad_appai_smoke.mjs`.
 
 The single best example is the framework proving itself: `python -m mantle teach`
 (mirror: [`../FIELD_GUIDE.md`](../documents/FIELD_GUIDE.md)).
@@ -48,6 +51,7 @@ cd examples/tests
 npm install
 npm test
 npm run test:calculator
+npm run test:notepad
 ```
 
 Node lives only in `examples/tests`; the rest of the project stays dependency-light.

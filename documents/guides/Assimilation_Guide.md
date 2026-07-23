@@ -31,7 +31,9 @@ can parse:
   adaptive-tooling gaps
 
 Host code is never executed and never modified. With `--out=DIR`, Mantle writes
-`APP_INVENTORY.md` and `assimilation_map.json` beside the operator. The standalone
+`APP_INVENTORY.md` and `assimilation_map.json` beside the operator. The JSON map includes
+a `host_evidence_index` that future resident terminals and `mantle ask` use for
+local-first answers about the host's structure, controls, gaps, and limits. The standalone
 command refuses an output directory that is the host tree or inside the host tree.
 `anchor` is the explicit additive-resident exception: it may create `.mantle/` and then
 proves every non-nest host file unchanged. Hook insertion before the sign-off remains
@@ -77,6 +79,18 @@ open hard-fails leads to the same MIND fusion and Stage-2 gate.
 - Use `mantle.core.status.organism_status()` for lifecycle, terminal, and VCW receipts.
 - Use app-band atlas/allocator helpers for generated eggs and app faces.
 - Use Windows long-path-safe Git clone policy for GitHub ingestion.
+- Treat human-style UI input as an attempt, not success. A visible Body write or
+  control action needs target-surface read-back, dirty-state evidence, a host receipt,
+  or another body-owned verifier before its Limb proof may claim `ok=true`.
+- Route imperative operator requests through mapped Body controls before ordinary MIND
+  chat. If a prompt names a known host action or surface operation, the AppAI should
+  execute the Body sequence or return a failed proof, not merely produce a plan for the
+  operator to carry out.
+- Give every resident a host evidence index and consult it before generic MIND chat.
+  An AppAI should answer questions about its software from the Phase-0 inventory, organ
+  map, hook graph, certification receipts, controls, gaps, and limitations. Provider
+  reasoning may interpret that evidence, but it must not replace it or hide missing
+  evidence behind confident prose.
 
 ## 5. Assimilation emits a spore
 

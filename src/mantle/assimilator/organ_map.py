@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from ..vcw.bands import make_band_boot
+from .evidence import build_host_evidence_index
 
 ROLE_TO_ORGAN = {
     "REFLEX": "senses",
@@ -59,7 +60,7 @@ def build_map(dissection: Dict[str, Any]) -> Dict[str, Any]:
         })
 
     missing_organs = [o for o in ORGANS if not organ_symbols[o]]
-    return {
+    amap = {
         "host": dissection["root"],
         "substrate": substrate,
         "organs": organ_symbols,
@@ -69,6 +70,8 @@ def build_map(dissection: Dict[str, Any]) -> Dict[str, Any]:
         "missing_organs": missing_organs,    # information too: no immune = fragile, etc.
         "proposed_genome": [b["band"] for b in propose_genome(role_counts)],
     }
+    amap["host_evidence_index"] = build_host_evidence_index(amap, dissection)
+    return amap
 
 
 def propose_genome(role_counts: Dict[str, int]) -> List[Dict[str, Any]]:

@@ -668,6 +668,49 @@
 }
 </script>
 
+<script id="host-evidence-index" type="application/json">
+{
+  "kind": "HOST_EVIDENCE_INDEX",
+  "schema_version": "mantle-host-evidence-v1",
+  "local_first_consultation": true,
+  "host_identity": {
+    "name": "Mantle Notepad AppAI",
+    "host_path": "examples/notepad_appai/index.html",
+    "substrate_languages": ["browser-javascript", "html", "css"],
+    "purpose": "Plain-text editor Body with dormant Brain affordance"
+  },
+  "evidence_sources": ["appai-declaration", "organ-map", "parity-matrix", "stage1-certification"],
+  "consultation_contract": {
+    "answer_host_questions_from": ["host_identity", "organ_summary", "control_surfaces", "gaps", "limitations"],
+    "provider_mind_role": "Phase 2 only; may interpret resident evidence after authorization",
+    "missing_evidence_policy": "name the gap instead of guessing",
+    "effectful_action_policy": "route host-surface actions to Body/Limbs and require Action Execution Proof"
+  },
+  "organ_summary": {
+    "Heart": {"count": 3, "samples": ["boot", "beforeunload guard", "UI refresh pulse"]},
+    "Genome": {"count": 4, "samples": ["AppAI declaration", "settings", "budget policy", "DNR policy"]},
+    "Senses": {"count": 3, "samples": ["keyboard input", "menu actions", "file-open events"]},
+    "Memory": {"count": 4, "samples": ["current document state", "recent file name", "settings", "append-only audit ledger"]},
+    "Immune": {"count": 4, "samples": ["file error handling", "large-file guard", "secret redaction boundary", "network/model call policy"]},
+    "Limbs": {"count": 6, "samples": ["open", "save", "save as", "download fallback", "clipboard commands", "window close guard"]},
+    "Brain": {"count": 1, "samples": ["dormant MIND readiness surface only"]}
+  },
+  "control_surfaces": [
+    {"control": "newFile", "organ": "Limbs", "proof_requirement": "dirty-state guard and buffer verification"},
+    {"control": "loadTextFile", "organ": "Limbs", "proof_requirement": "File.text receipt or failed proof"},
+    {"control": "saveFile", "organ": "Limbs", "proof_requirement": "write adapter receipt with byte/hash evidence"},
+    {"control": "saveAsFile", "organ": "Limbs", "proof_requirement": "destination receipt with byte/hash evidence"},
+    {"control": "findNext/replace/goToLine", "organ": "Senses", "proof_requirement": "deterministic selection or buffer update"}
+  ],
+  "gaps": [],
+  "limitations": [
+    "Phase 1 only: Brain is dormant and no model calls are authorized.",
+    "Browser file and clipboard behavior depends on platform permission surfaces.",
+    "This is a browser AppAI demo, not the native NotepadNext hybrid."
+  ]
+}
+</script>
+
 <script id="parity-matrix" type="application/json">
 [
   {"feature": "New", "expected": "Clears current document after unsaved prompt", "implemented": "newFile guards dirty state then clears buffer", "evidence": "notepad_appai_smoke.mjs", "status": "PASS"},
@@ -679,6 +722,7 @@
   {"feature": "Find/replace", "expected": "Find next and replace text deterministically", "implemented": "case-sensitive optional string search", "evidence": "notepad_appai_smoke.mjs", "status": "PASS"},
   {"feature": "Go To line", "expected": "Moves caret to requested line", "implemented": "line offset calculation", "evidence": "notepad_appai_smoke.mjs", "status": "PASS"},
   {"feature": "Word Wrap", "expected": "Toggle wrapping", "implemented": "textarea CSS and wrap status toggle", "evidence": "notepad_appai_smoke.mjs", "status": "PASS"},
+  {"feature": "Resident host consultation", "expected": "Answers software/body questions from embedded evidence before any MIND", "implemented": "host-evidence-index plus consultHostEvidence API", "evidence": "notepad_appai_smoke.mjs", "status": "PASS"},
   {"feature": "Phase-1 no MIND", "expected": "No model/API call required", "implemented": "budget policy none; no fetch/XHR/WebSocket use", "evidence": "notepad_appai_smoke.mjs", "status": "PASS"}
 ]
 </script>
@@ -755,8 +799,47 @@
     return safeJsonParse($("organ-map").textContent, {});
   }
 
+  function readHostEvidenceIndex() {
+    return safeJsonParse($("host-evidence-index").textContent, {});
+  }
+
   function readParityMatrix() {
     return safeJsonParse($("parity-matrix").textContent, []);
+  }
+
+  function consultHostEvidence(question) {
+    const index = readHostEvidenceIndex();
+    const organMap = readOrganMap();
+    const prompt = String(question || "").toLowerCase();
+    const lines = [];
+    if (!index.local_first_consultation) {
+      return "Resident host evidence is not marked local-first.";
+    }
+    if (/\b(limit|cannot|gap|unknown|phase)\b/.test(prompt)) {
+      lines.push("Known resident limits:");
+      (index.limitations || []).forEach((item) => lines.push(`- ${item}`));
+      if (Array.isArray(index.gaps) && index.gaps.length) {
+        index.gaps.slice(0, 6).forEach((gap) => lines.push(`- ${gap.source || "gap"}: ${gap.why || "unknown"}`));
+      }
+    } else if (/\b(control|body|limb|action|do)\b/.test(prompt)) {
+      lines.push("Observed Body controls:");
+      (index.control_surfaces || []).forEach((control) => {
+        lines.push(`- ${control.control} [${control.organ}]: ${control.proof_requirement}`);
+      });
+      lines.push(index.consultation_contract.effectful_action_policy);
+    } else {
+      lines.push(`${index.host_identity.name}: ${index.host_identity.purpose}`);
+      lines.push(`Substrate: ${(index.host_identity.substrate_languages || []).join(", ")}`);
+      Object.entries(organMap.organs || {}).forEach(([organ, samples]) => {
+        lines.push(`- ${organ}: ${samples.join(", ")}`);
+      });
+    }
+    appendLedger("resident_consultation", {
+      source: "host-evidence-index",
+      question_chars: String(question || "").length,
+      answer_lines: lines.length
+    });
+    return lines.join("\n");
   }
 
   async function sha256Hex(text) {
@@ -1387,7 +1470,9 @@
     state,
     readDeclaration,
     readOrganMap,
+    readHostEvidenceIndex,
     readParityMatrix,
+    consultHostEvidence,
     newFile,
     openFile,
     loadTextFile,
