@@ -98,7 +98,7 @@ rotate among several model credentials (load-balancing, failover, multi-provider
 
 ## 5. Online skills (web lookup)
 
-The **Inner Voice / self-inquiry (ask-MIND)** skill is **core** (see `../Mantle_Part2_Mind.md` and
+The **Inner Voice / self-inquiry (ask-MIND)** skill is **core** (see `ARCHITECTURE.md` §6 and
 `src/mantle/mind/inner_voice.py`): provenance = inferred-until-verified, with a waste budget. What is *optional*
 here is the **web-lookup transport** (e.g. OpenRouter `web_search`) that feeds it external data.
 

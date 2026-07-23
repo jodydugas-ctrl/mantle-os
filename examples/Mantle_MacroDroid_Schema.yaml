@@ -13,16 +13,12 @@ mantle_alignment:
   framework: "Mantle OS"
   substrate: "VCW Cube (vcw-cube-png-v2) — named bands with reserved spans; this schema is referenced (<band.N>), not copied, into context"
   audit_bundle:
-    - "documents/Mantle_Doctrine.md"
-    - "documents/Mantle_Organism_Lens.md"
-    - "documents/Mantle_PRIMER.md"
+    - "documents/PRIMER.md"
     - "documents/FIELD_GUIDE.md"                 # the RUNNABLE manual (python -m mantle teach) — see the whole organism prove itself
     - "documents/Mantle_Organ_Atlas.md"
-    - "documents/Mantle_Assimilator.md"          # Path B — residency (anchor/graft); App Inventory gated first
-    - "documents/Mantle_Part1_Body.md"
-    - "documents/Mantle_Part1_Body_Audit.md"
-    - "documents/Mantle_Part2_Mind.md"
-    - "documents/Mantle_Part2_Mind_Audit.md"
+    - "documents/guides/Assimilation_Guide.md"   # Path B — residency (anchor/graft); App Inventory gated first
+    - "documents/ARCHITECTURE.md"
+    - "documents/guides/Audit_Guide.md"
     - "documents/Mantle_Extensions.md"
     - "documents/Mantle_LLM_Pitfalls.md"   # read BEFORE building — three LLM failure modes + how to avoid them
     - "documents/Mantle_Grooves.md"        # muscle memory / armory band (Extensions §6)
@@ -67,7 +63,7 @@ mantle_alignment:
     user_input: "macro request composer"
     app_face_output: "validated MacroDroid wrapper JSON (posted via the App-Face Bridge, not raw DOM)"
     system_log: "schema validation, provider diagnostics, and Body action proof (immune/brain bands)"
-  stage1_alignment:                     # Mantle_Part1_Body_Audit.md — Zombie Body gate (runs with NO LLM)
+  stage1_alignment:                     # the Stage-1 Zombie Body gate (runs with NO LLM)
     surface_parity: "Every macro request, validation status, generated JSON, and import-ready output the user can inspect has a Body ControlBridge path + recorded proof (HF-B44)."
     text_input_batching: "Composer stages locally while typing; log focus/touch only, then commit once on blur or explicit submit."
     body_owned_output: "Generated JSON is posted through the Body App-Face Bridge after validation, never by raw DOM mutation from the MIND (HF-B27)."
@@ -75,7 +71,7 @@ mantle_alignment:
     references_first: "Macros and schema snippets are stored/published by cube reference (<band.N>); the Body hydrates refs into context only when needed — no unresolved reference reaches a model (HF-B24)."
     fail_open_and_flush: "Every Body hook degrades + logs to the immune band; it never crashes the host (HF-B32). Persistence is dual-flush — checkpoint + atexit (HF-B33)."
     efficient_layers: "Cube layers are allocated on demand with a declared purpose and reclaimed/reused after compaction (waste axis B-W2/B-W4)."
-  stage2_alignment:                     # Mantle_Part2_Mind_Audit.md — MIND fusion gate
+  stage2_alignment:                     # the Stage-2 MIND fusion gate
     write_containment: "The MIND writes ONLY the thoughts + brain bands; it PROPOSES macro JSON, the Body validates and applies (HF-M07/M08)."
     action_proof: "Every generated macro update records attempted, ok, method, validation status, and a cube/reference coordinate."
     busy_release: "Once schema validation and app-face post proof exist, release busy without another Prime call."

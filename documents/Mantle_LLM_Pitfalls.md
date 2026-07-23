@@ -96,7 +96,7 @@ broken system that opens in one click.
 `VCW_BACKEND: schema-only` in §0. This tells the framework — and the user — that the
 organism is a blueprint requiring local Python execution, not a running system. It is
 not a failure. It is an honest, auditable organism declaration. See
-`documents/Mantle_VCW_Tiers.md` for the full tier model and what a correct Tier 3
+`documents/guides/VCW_Guide.md` (Compliance tiers) for the full tier model and what a correct Tier 3
 deliverable must include.
 
 ---
@@ -159,7 +159,7 @@ Answer these five questions before writing any code:
 
 6. **If I am in a web-only environment, have I declared `VCW_BACKEND: schema-only`
    in §0 and produced files for local execution rather than a running system?**
-   If not: do that now. This is the correct Tier 3 output. See `documents/Mantle_VCW_Tiers.md`.
+   If not: do that now. This is the correct Tier 3 output. See `documents/guides/VCW_Guide.md` (Compliance tiers).
 
 ---
 

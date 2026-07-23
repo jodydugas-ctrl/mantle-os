@@ -5,11 +5,20 @@ Runnable cheatsheet for Path B. The full doctrine lives in
 NECROMANCY and Mantle OS binding sections. Prime directive: do no harm. The host runs
 exactly as before, plus a nervous system and memory.
 
+**Assimilation in one breath:** you are given a living host codebase. You do not
+rewrite its behavior. You grow organs around the existing tissue with additive,
+fail-open, reversible instrumentation. Nothing touches host code until the read-only
+Phase-0 App Inventory and Organ Map is produced and signed (`HF-B42`). NECROMANCY
+(assimilate/anchor/graft) and RESURGERE (reconstruct from a germ) share one substrate
+model: discover the host first, then use or grow the scanner, adapter, verifier, and
+fail-open hook runtime that fits that host.
+
 ## 1. Dry Run
 
 ```bash
 python -m mantle assimilate <host-path> --dry-run
 python -m mantle assimilate <host-path> --out=./assimilation
+python -m mantle assimilate <host-path> --spore=out.png    # scan the app, emit its spore
 ```
 
 Phase 0 is read-only. It first records the substrate census: languages, build files,
@@ -68,3 +77,12 @@ open hard-fails leads to the same MIND fusion and Stage-2 gate.
 - Use `mantle.core.status.organism_status()` for lifecycle, terminal, and VCW receipts.
 - Use app-band atlas/allocator helpers for generated eggs and app faces.
 - Use Windows long-path-safe Git clone policy for GitHub ingestion.
+
+## 5. Assimilation emits a spore
+
+`--spore=out.png` condenses the dry-run dissection into a **germ spore** — the one
+artifact that births this host's resident AppAI anywhere: the resident's identity,
+do-no-harm truths, the proposed app bands, the observed organ map as inert data, and a
+census fingerprint as the source descriptor. Emitting is still Phase 0 (zero host
+writes); `python -m mantle hatch out.png` faces the Stage-1 gate like any birth, and
+host code stays OTHER until proven. See [`../REPRODUCTION.md`](../REPRODUCTION.md).

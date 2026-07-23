@@ -37,7 +37,7 @@ Key doctrine-to-code anchors:
 | --- | --- |
 | NECROMANCY / assimilation | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |
 | VITALS-CHECKUP / audit | [`src/mantle/doctor.py`](../../src/mantle/doctor.py), [`src/mantle/audits/`](../../src/mantle/audits/) |
-| Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`spore.py`](../../src/mantle/spore.py), [`egg.py`](../../src/mantle/egg.py), [`vault.py`](../../src/mantle/vault.py) |
+| Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`spore.py`](../../src/mantle/spore.py), [`hatchery.py`](../../src/mantle/hatchery.py) |
 | CACHE-HAUNT | [`src/mantle/ghost.py`](../../src/mantle/ghost.py), [`src/mantle/ghost_http.py`](../../src/mantle/ghost_http.py) |
 | VCW band plan | [`src/mantle/vcw/bands.py`](../../src/mantle/vcw/bands.py) |
 

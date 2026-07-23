@@ -559,7 +559,8 @@ def main(argv=None) -> int:
     print("\n— CLOSING — the organism painted its own portrait: %s" % portrait)
     print("\nAll chapters proven. You have grown, gated, and fused a complete AppAI, taught")
     print("it SELF from OTHER, felt its pain wake the mind, and watched it paint itself.")
-    print("Next: hatch your own egg (examples/eggs/greeter.json is the template), or give an app")
+    print("Next: hatch your own spore (examples/spores/greeter.png; the germ template is")
+    print("examples/eggs/greeter.json), or give an app")
     print("of yours a resident:")
     print("  python -m mantle anchor <your-app-dir>")
     return 0

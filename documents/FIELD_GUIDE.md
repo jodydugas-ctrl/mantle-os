@@ -17,17 +17,18 @@ own gates stop an uncertified Body. Read here, run there; they are the same book
 An **AppAI** is software grown as a living creature: a deterministic **Body** of nine
 organs around a durable picture-memory (the **VCW cube**), proven alive and correct
 with **no AI attached**, and only then given a bounded **MIND**. Beyond that comes the
-reproductive step: a whole AppAI declared as one **egg** file, incubated by the
-**hatchery** into a certified organism.
+reproductive step: a whole AppAI travelling as one **spore** file (its **germ** is the
+complete build document), incubated by the **hatchery** into a certified organism.
 
 The fastest possible start:
 
 ```bash
-python -m mantle hatch examples/eggs/greeter.json --out=nest/
+python -m mantle hatch examples/spores/greeter.png --out=nest/
 ```
 
 That one command performs every chapter of this guide. The rest of the manual is
-understanding what just happened — and how to write your own egg.
+understanding what just happened — and how to write your own germ (a bare germ JSON
+hatches too: `examples/eggs/greeter.json` is the template).
 
 ---
 
@@ -430,7 +431,7 @@ sibling of the seed vault (Chapter 16). Faces survive a chosen rebirth (the gene
 and the old generation keeps its own readable copy in the sealed ancestor.
 
 ```bash
-python -m mantle hatch examples/eggs/calculator.json --out=nest/   # born wearing its origin face
+python -m mantle hatch examples/spores/calculator.png --out=nest/  # born wearing its origin face
 python -m mantle face-save nest/ spreadsheet examples/Mantle_Spreadsheet_Agent.html --kind=html
 python -m mantle face-list nest/                          # origin (default, worn) + spreadsheet
 python -m mantle face-wear nest/ spreadsheet              # the boot manifest a host renders

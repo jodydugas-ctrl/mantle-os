@@ -5,10 +5,9 @@ stack of 800 real PNG layers (800×800 RGBA) in a ZIP container, addressable byt
 (`offset = (y*SIDE + x) * 4`), readable in any image viewer. *If it's not in the VCW, it
 didn't happen.* The on-disk format is unchanged from v2 (`vcw-cube-png-v2`).
 
-For the canonical measurement anatomy shared by cube layers, app-band ranges, spores,
-private tissue, and display surfaces, see
-[`VCW_Anatomical_Atlas.md`](VCW_Anatomical_Atlas.md). The atlas consolidates coordinate
-ownership and colour/visibility semantics; this guide explains substrate behaviour.
+The anatomical atlas (coordinate ownership, colour semantics) and the compliance
+tiers (what to do when a full VCW can't run) are the last two sections of this guide.
+The machine-readable atlas companion is `mantle.vcw.atlas`.
 
 ## The mental model
 
@@ -117,3 +116,75 @@ gate** (foreign/untrusted provenance is refused on the non-isolating Python runn
 selector a band or Body category; address an entry index, `XxY` coordinate, or omitted
 for the whole band. Every dangling reference becomes an immune event, never a silent
 drop. Resolution is deterministic.
+
+## The anatomical atlas (how VCW images are read as measurements)
+
+Live code remains the source of behavioural truth; this section names the anatomy in one
+place so diagrams, spores, faces, and audits use the same measurement vocabulary. The
+machine-readable companion is `mantle.vcw.atlas`.
+
+**Coordinate ownership.** The cube body plan is `vcw-cube-png-v2`: 800 layers, each an
+800x800 non-interlaced 8-bit RGBA PNG; a byte inside a layer is addressed as
+`offset = (y * SIDE + x) * CHANNELS`. Layer ownership is band ownership: a band owns the
+half-open layer range `[head, head + span)` declared by its boot sector. The standard
+genome owns identity, facts, events, discoveries, senses, immune, brain, and private
+thoughts bands. App bands live in 550-749, with framework-reserved ranges declared by
+`APP_BAND_ATLAS`; caller bands must be allocated only from gaps. Layers 750-799 are tail
+space. The spore body plan is `spore-png-v1`: a 2000x2000 RGBA PNG whose top half is the
+canonical VCW region and whose bottom half is display (the protected boot strip lives
+inside the display region); the regions must remain disjoint.
+
+**Colour and transparency semantics.** Content colour is payload: in a cube spatial
+layer, RGBA stores the spatial state directly (alpha 0 = free, 255 = occupied); in a
+spore, RGB stores payload bytes and alpha is the Hamming SECDED repair byte. Activity
+colour is status: the face/self-portrait uses colours for pressure, organ state,
+lineage, and immune ticks — diagnostic display signals, not canonical payload. A private
+band still owns coordinates; the veil controls what crosses the boundary.
+
+**Measurement rules.** Measurement views must be deterministic (same canonical state,
+same measurement image). Inspection scaling must use nearest-neighbor sampling —
+interpolation invents colours between pixels. Display regions and content regions are
+separate; a visible display explains the substrate but is not the canonical memory
+unless the body plan explicitly declares it as such.
+
+## Compliance tiers (when a full VCW can't run)
+
+The cube requires a Python runtime and a writable filesystem. Some environments provide
+neither. The solution is not to relax the invariants — it is to make the constraint
+**visible and declared**: an organism that honestly declares it cannot run a full cube is
+valid; one that silently fakes a cube is not.
+
+> **Rule:** an organism that cannot fully instantiate its VCW must declare
+> `VCW_BACKEND` in its §0 block. An undeclared fake VCW is a hard fail on first
+> heartbeat. A declared constraint is an honest, auditable state.
+
+| Tier | Name | Runtime | §0 declaration |
+|------|------|---------|----------------|
+| **1** | Full | Python + writable filesystem | `VCW_BACKEND: file` *(default; may be omitted)* |
+| **2** | Structural | Python, no persistent filesystem | `VCW_BACKEND: <adapter_name>` |
+| **3** | Schema-only | None — web-only environment | `VCW_BACKEND: schema-only` |
+
+**Tier 1 (default):** `Cube.genesis()` creates the real `.vcw` file; the audit runs
+against it. A missing cube with `file` declared is a hard error on the first heartbeat.
+
+**Tier 2 (structural):** substitute a conforming backend adapter implementing the same
+interface (`genesis / append / read_band / verify / seal / circulate`) backed by memory,
+a database, or object storage. The adapter must enforce append-only semantics, hash each
+entry at write time and verify on read, respect the veil, and refuse writes to sealed
+bands. All structural invariants hold; only the medium changes.
+
+**Tier 3 (schema-only):** a web-only canvas cannot produce a running organism — **and
+that is the correct honest state, not a failure**. The deliverable is a blueprint: the
+§0 block (with `VCW_BACKEND: schema-only`), the Body and organ modules, the entry point,
+and a human checklist replacing the audit (boot locally, run the Stage-1 gate, connect
+the surface). The agent must say explicitly that the organism requires local Python
+execution. NOT valid: a JavaScript-only VCW, a merged HTML file simulating the Body, or
+any output that would not pass the audit on a real filesystem (see
+`../Mantle_LLM_Pitfalls.md`).
+
+**Immune enforcement:** missing `VCW_BACKEND` with no cube at boot, a `file` backend
+that cannot write on heartbeat, or a `schema-only` declaration with a running cube each
+raise the corresponding immune event and halt rather than continue undeclared. Organisms
+move UP tiers as their environment matures (a booted Tier-3 blueprint becomes Tier 1);
+moving down mid-life is not valid — an organism that has a real cube does not lose it by
+declaration.

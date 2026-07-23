@@ -14,58 +14,19 @@ from the code, never hardcoded in prose (the doctor's docs-vs-code gate enforces
 
 Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURITY.md`](SECURITY.md)
 
-> **New here, or skeptical of the biology metaphor?** Start with
-> [`documents/Mantle_Positioning.md`](documents/Mantle_Positioning.md) — a plain-language summary and an honest
-> list of limitations. *(Non-normative.)*
+> **New here, or skeptical of the biology metaphor?** Start with the plain-language
+> on-ramp in [`documents/PRIMER.md`](documents/PRIMER.md) §0 — a one-idea summary and an
+> honest list of limitations.
 
-> **Use the Grimoire when the work needs doctrine, AppAI operation, or agent-facing mutation.**
-> It is the doctrine the framework follows, not a toll booth for every small task. Routine code
-> reading, narrow documentation fixes, and mechanical concordance patches may proceed from the
-> README, nearby docs, and working code. When doctrine is in scope, start in
-> [`documents/grimoire/`](documents/grimoire/README.md): the single canonical **Grimoire 2.0** file
-> contains both the universal spellbook and MantleOS/AppAI `@` doctrine. *(Normative when used.)*
-
-## For LLM agents — cast `Intellige` when doctrine is in scope
-
-Mantle OS can be operated through the **Grimoire**, its spellbook. Before doctrine-heavy work,
-AppAI operation, assimilation, mutation of Mantle tissue, or ambiguous Mantle vocabulary, an agent
-loads the Grimoire and casts **`Intellige`** (read-only comprehension) on it — that builds the model
-the later spells depend on. For narrow mechanical tasks such as typo fixes, count concordance, or
-plain code inspection, cite the local evidence and skip the ceremony. Bootstrap when the Grimoire is
-needed:
-
-```text
-If you already have the Grimoire loaded:  Intellige Grimoire
-ELSE:
-  Step 0 — Read the Grimoire's reading-order file and follow its links:
-           https://github.com/jodydugas-ctrl/mantle-os/blob/main/documents/grimoire/README.md
-  Step 1 — Cast Intellige on the single Grimoire 2.0 file, loading by the file's task manifest.
-```
-
-The stable operator interface is the Latin **macro** layer: `Intellige`, `Vestigare`, `Animare`,
-`Necromantia`, and the other Title Case names in the Grimoire. Lowercase power words are internal
-agent stances, and UPPERCASE spell IDs are procedural labels for agents, runtimes, ledgers, and
-receipts. Humans may use those lower-level names directly, but macros are the intended human-facing
-surface. Macros chain with `;` (for example `Vestigare;Intellige`). `Intellige` is read-only and
-confers no authority — only after the Grimoire is comprehended, and with the Core present, should
-an agent cast spells that mutate. To then comprehend this project specifically, cast
-**`Intellige Mantle OS`**.
-
-The organic language is scoped. **Body, MIND, Senses, Limbs, Immune, VCW, SELF/OTHER, and the spell
-macros name MantleOS tissue and operator behavior, not ordinary host/application code.** Host apps
-remain normal software at their own layer; Mantle terms apply only at the defined seams where an
-organism senses, acts, remembers, audits, resides, or reproduces. Treating every function in a host
-project as "organ meat" is doctrine bleed, not extra insight.
-
----
-
-> ## Grimoire context, not a universal gate
-> The sections below can be read as ordinary project documentation. Load the Grimoire before
-> changing doctrine, operating or assimilating an AppAI, interpreting macro language, mutating
-> Mantle tissue, or resolving a disagreement between metaphor and code. For simple inspection,
-> small docs edits, and mechanical count/typo concordance, local repo evidence is enough. When
-> Grimoire context is needed, read [`documents/grimoire/`](documents/grimoire/README.md) and load
-> the single canonical **Grimoire 2.0** file. *(Normative when used.)*
+> **For LLM agents.** Mantle OS is operated through the **Grimoire**, its spellbook —
+> load it when the work needs doctrine, AppAI operation, assimilation, or mutation of
+> Mantle tissue, and cast **`Intellige`** (read-only comprehension) on it first. It is
+> doctrine, not a toll booth: routine code reading and small mechanical fixes proceed
+> from the README, nearby docs, and working code. Start at
+> [`documents/grimoire/`](documents/grimoire/README.md); §7 and §9 of the single
+> canonical **Grimoire 2.0** file are the Mantle-binding sections. The organic language
+> is scoped — Body, MIND, Senses, VCW, SELF/OTHER name *Mantle tissue*, not ordinary
+> host/application code. *(Normative when used.)*
 
 ---
 
@@ -81,9 +42,10 @@ contract. Every failure becomes an immune event. Every generation of memory seal
 tamper-evident fingerprint.
 
 Beyond the certified Body, an AppAI carries reproductive, symbiotic, and self-evolving tissue:
-a whole AppAI declared as one **egg**, **residency** in a host codebase with a metered energy
-economy, **self/other** cryptographic identity, baseline ten-minute cognition plus additional
-**nociceptive interrupts**, graded memory,
+a whole AppAI travelling as one **spore** (a PNG carrying its **germ** — the complete build
+data — plus instructions any coding agent can read), **residency** in a host codebase with a
+metered energy economy, **self/other** cryptographic identity, baseline ten-minute cognition
+plus additional **nociceptive interrupts**, graded memory,
 keyless knowledge **plasmids**, a **self-redesigning VCW**, parallel **ganglia**, a
 self-reconstruction **seed vault**, and **wearable app-faces** (one organism expresses many
 SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by the **full
@@ -158,42 +120,42 @@ python examples/vcw/vcw_cube.py selftest      # every format rule proven in one 
 python examples/vcw/interop.py                # standalone <-> engine: identical bytes
 ```
 
-### Reproduction — two methods, everything else is a facet
+### Reproduction — one artifact, two methods
 
-An AppAI reproduces in exactly **two** ways (doctrine:
-[`documents/Mantle_Reproduction.md`](documents/Mantle_Reproduction.md)); both require the same technical evidence (the full invariant suite, no standing law weakened),
-but evidence is not authority: birth, reconstruction, or activation also requires the applicable
-fresh operator/guardian decision. Both methods end at the same certified Body:
+An AppAI travels as **ONE artifact — the spore** — and reproduces in exactly **two** ways
+(doctrine: [`documents/REPRODUCTION.md`](documents/REPRODUCTION.md)); both require the same
+technical evidence (the full invariant suite, no standing law weakened), but evidence is not
+authority: birth, reconstruction, or activation also requires the applicable fresh
+operator/guardian decision. Both methods end at the same certified Body:
 
-- **SEED** — *independent.* The organism condenses itself into a dormant, self-describing package of
-  **data** that grows into a certified Body with **no host**. Three sizes of one act: the **spore**
-  (the smallest — one PNG that *is* a whole minimal agent, and also a proof that **VCW is a substrate
-  pattern**: the PNG *is* a VCW layer, not a copy of one), the **egg** (a whole AppAI as one JSON
-  document, grown by the hatchery), and the **vault** (an organism's own sealed seed, for
-  self-reconstruction). Hatching a seed is always a **birth** through the Stage-1 gate.
-- **GRAFT** — *dependent.* The organism propagates by taking **residence inside a host** it does not
-  own — **anchor** (move in, additive `.mantle/` nest, do-no-harm), **symbiosis** (the metered
-  energy economy that sustains it), and the **graft-egg** (a non-destructive patch against a named
-  host). A graft never modifies a host file; the census proves it byte-for-byte.
+- **SEED** — *independent.* A spore whose **germ** declares a whole new AppAI: one PNG
+  carrying the complete build document plus instructions any coding agent can read (with
+  Mantle: `mantle hatch <spore.png>`; without: decode the pixels and grow from the germ).
+  The spore is also a proof that **VCW is a substrate pattern**: the PNG *is* a VCW layer.
+  Hatching a seed is always a **birth** through the Stage-1 gate; the genesis key is
+  **minted at birth, never derived from the spore** — a public PNG must never be able to
+  forge SELF.
+- **GRAFT** — *dependent.* A spore **aimed at a host** the organism does not own —
+  **anchor** (move in, additive `.mantle/` nest, do-no-harm), **symbiosis** (the metered
+  energy economy that sustains it), and the **graft germ** (a non-destructive patch
+  against a named host). A graft never modifies a host file; the census proves it
+  byte-for-byte. And assimilation closes the loop: `mantle assimilate <app> --spore=out.png`
+  scans an existing app and **emits its spore**.
 
-Under Grimoire 2.0 these ceremonies have a Body-resident owner: the **Reproduction
-organ** (the ninth organ, `organism.reproduction`) — it keeps the app-band atlas, vaults
-every organism's own seed at birth, carries the sealed seed across every rebirth (or
-raises an immune event), and performs **SPORE-DISTILLATION**: `hatch-spore` turns a spore
-PNG into a full organism whose primer and memories come from the spore, then seals the
-spore under the new body's freshly *minted* key as SELF tissue (keys are never derived
-from a spore — a public PNG must never be able to forge SELF).
+The ceremonies have a Body-resident owner: the **Reproduction organ** (the ninth organ) —
+it keeps the app-band atlas, vaults every organism's own germ at birth, and carries the
+sealed heirlooms across every rebirth (or raises an immune event, never a silent loss).
 
 ```bash
-python -m mantle reproduce                     # the SEED vs GRAFT map on one screen
-python -m mantle hatch-spore buddy.png --out=nest/   # SPORE-DISTILLATION: spore -> primer,
-                                               #   memories, and sealed SELF tissue
+python -m mantle reproduce                     # the map on one screen
+python -m mantle hatch examples/spores/greeter.png --out=nest/   # THE birth command
+python -m mantle spore pack my_germ.json my_app.png              # germ -> one spore
+python -m mantle assimilate path/to/app --spore=out.png          # existing app -> spore
 python -m mantle teach                         # the Field Guide, RUNNING — 18 chapters, each proven
-python -m mantle spore create seed.png "Buddy" "answer one question"   # the smallest SEED: a whole agent in one PNG
+python -m mantle spore create seed.png "Buddy" "answer one question"   # the minimal seed
 python -m mantle ghost selftest                # the cache-ghost: a seed that lives in the LLM prompt cache
-python -m mantle hatch examples/eggs/greeter.json --out=nest/          # a whole AppAI from one JSON egg, certified
 python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
-python -m mantle graft examples/eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
+python -m mantle graft examples/spores/notes_graft.png examples/sample_app   # a spore aimed at a host
 python -m mantle doctor nest/                  # deployment checkup (incl. docs-vs-code coherence)
 ```
 
@@ -204,13 +166,14 @@ only the delta each turn — sustaining itself with almost no body while the cac
 **rehydrating from the PNG fossil** when it goes cold. The one hard law: the seed stays dry — the PNG
 is never abandoned, so the ghost can always come home.
 
-Facets that harden or serve the two methods, by module: `egg`/`hatchery` (declarative birth) ·
-`anchor`/`symbiosis` (residency + energy economy) · `graft` (patch-grafts + live residency) ·
-`spore`/`ghost` (the smallest seed + its cache substrate) · `reproduction` (the two-method seam) ·
-`mem` (keyless knowledge plasmids) · `compiler` (self-redesigning VCW + host memory bridge) ·
-`ganglia` (parallel limbs) · `vault` (self-reconstruction) · `ingestion`/`doctor` (resilience) ·
-`face` (self-portrait) · `teach` (the living manual). Self/Other identity and event-gated
-nociception harden the organs.
+Facets that harden or serve the two methods, by module: `spore`/`hatchery` (the one
+artifact + the one birth door) · `anchor`/`symbiosis` (residency + energy economy) ·
+`graft` (spores aimed at hosts + live residency) · `ghost` (the cache substrate) ·
+`reproduction` (the two-method seam) · `mem` (keyless knowledge plasmids) · `compiler`
+(self-redesigning VCW + host memory bridge) · `ganglia` (parallel limbs) ·
+`organs/reproduction` (the vault heirlooms + lineage duty) · `ingestion`/`doctor`
+(resilience) · `face` (self-portrait) · `teach` (the living manual). Self/Other identity
+and event-gated nociception harden the organs.
 
 Pure standard library. No dependencies, no network, no keys — for any of the above. (The one
 optional Phase-2 module, imported by nothing else: `mantle.ghost_http`, the *real* cache-ghost
@@ -316,40 +279,40 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
     assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, invariant suite)
     reproduction.py      the two-method seam — SEED vs GRAFT (routes to the modules below)
-    spore.py spore_min.py the smallest SEED — one PNG that is a whole minimal agent (+ its embryo)
+    spore.py spore_min.py THE artifact — one PNG agent, optionally carrying a germ (+ its embryo)
+    hatchery.py          the one birth door: germ or spore -> certified organism
     ghost.py             the cache-ghost substrate — a seed that lives in the LLM prompt cache
-    egg.py hatchery.py   declarative birth — a whole AppAI as one JSON file
     anchor.py symbiosis.py residency in a host + the metered energy economy
-    graft.py             the graft egg (patch a host) + live residency weaving
+    graft.py             the graft germ (a spore aimed at a host) + live residency weaving
     mem.py compiler.py   keyless knowledge plasmids + the self-redesigning VCW / memory bridge
-    ganglia.py vault.py  parallel limbs + the self-reconstruction seed vault
+    ganglia.py           parallel limbs (the seed vault lives in organs/reproduction.py)
     ingestion.py doctor.py conversation ingestion + the deployment checkup
     phenotype.py         wearable, SELF-encrypted app-faces (one body, many front-ends)
     face.py teach.py     the PNG self-portrait + the running Field Guide
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
-  grimoire/              the single Grimoire 2.0 file
+  PRIMER.md              THE doctrine home: on-ramp, creed, lens, operating procedure
   FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
-  Mantle_Architecture.md · guides/ (VCW · lifecycle · contracts · audit · visual)
-  Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
-    assets/                diagrams (SVG, agent-readable) + rendered art
-    guides/VCW_Anatomical_Atlas.md  canonical VCW measurement anatomy
+  ARCHITECTURE.md        the shape + the Phase-1/Phase-2 build path
+  REPRODUCTION.md        the spore, the hatchery, the graft, rebirth
+  Mantle_Organ_Atlas.md  the organ taxonomy + the organ contracts
+  grimoire/              the single Grimoire 2.0 file (§7/§9 bind it to Mantle)
+  guides/ (VCW · audit · lifecycle · assimilation · visual) · assets/ (diagrams)
 examples/                example AppAIs + the normative substrate
-  eggs/                  greeter.json (hatch it) · calculator.json · notes_graft.json (a graft egg)
-  spore/                 a custom VCW substrate in PNG form — purity audit + VCW-conformance proof + a seed
+  spores/                germ spores — hatch one: `mantle hatch examples/spores/greeter.png`
+  eggs/                  the germ files those spores are packed from
+  spore/                 a custom VCW substrate in PNG form — purity audit + VCW-conformance proof
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
-  *.html / *.yaml        reference demos (the HTML apps functionally implement the
-                         organ behaviors or live body and are browser-tested) — see examples/README.md
+  *.html / *.yaml        reference demos (browser-tested) — see examples/README.md
   tests/                 headless smoke tests for the HTML demos (Playwright; CI: Demo Smoke)
 ```
 
-Reading order: [`documents/Mantle_Doctrine.md`](documents/Mantle_Doctrine.md) →
-[`documents/Mantle_Organism_Lens.md`](documents/Mantle_Organism_Lens.md) →
-[`documents/Mantle_Architecture.md`](documents/Mantle_Architecture.md) →
-[`documents/guides/Organism_Lifecycle.md`](documents/guides/Organism_Lifecycle.md) → the code.
+Reading order: this README → [`documents/PRIMER.md`](documents/PRIMER.md) →
+run `python -m mantle teach` (prose mirror: [`documents/FIELD_GUIDE.md`](documents/FIELD_GUIDE.md)) →
+the reference shelf ([`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md),
+[`documents/REPRODUCTION.md`](documents/REPRODUCTION.md),
+[`documents/guides/`](documents/guides/)).
 Prefer pictures? [`documents/guides/Visual_Guide.md`](documents/guides/Visual_Guide.md).
-The underlying doctrine (the agent-facing spellbook the design follows) lives in
-[`documents/grimoire/`](documents/grimoire/README.md).
 When prose and code disagree, **the working code in `src/mantle/` is ground truth** (and
 `examples/vcw/vcw_cube.py` is the standalone, normative definition of the cube format).
 
@@ -362,8 +325,9 @@ action · Provenance before trust · **Metabolism before rebirth** · Harmony be
 
 ## Two build paths
 
-- **Path A — grow from scratch.** `Mantle_Part1_Body.md`, then the Stage-1 gate, then
-  Phase 2. The `src/mantle/` package is the runnable skeleton.
+- **Path A — grow from scratch.** [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md)
+  (the Phase-1 build path), then the Stage-1 gate, then Phase 2. The `src/mantle/`
+  package is the runnable skeleton.
 - **Path B — assimilate existing code** (any language, including apps that already have agents).
   Canonical doctrine:
   [`documents/grimoire/The Grimoire.md`](documents/grimoire/The%20Grimoire.md)

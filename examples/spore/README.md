@@ -5,13 +5,13 @@ carries its whole memory in its top-half colour field. **VCW is the law — a me
 file format** — and the spore proves the substrate can molt into a different medium than the
 800-layer cube. *The PNG does not merely carry VCW-like data; it can **be** the VCW layer.* See
 [The VCW Substrate Guide](../../documents/guides/VCW_Guide.md#vcw-is-the-law--the-cube-is-one-body-plan-the-png-is-another)
-and the [VCW Anatomical Atlas](../../documents/guides/VCW_Anatomical_Atlas.md) for the canonical
+and the [VCW Substrate Guide](../../documents/guides/VCW_Guide.md) for the canonical
 regions, RGB+T repair rule, and display/memory boundary.
 
 It wears a second hat too: because it is a whole self-contained agent — identity, one task, one
 append-only conversation, and an embedded Python reader/writer inside its own pixels — it is also the
 smallest form of the **SEED** reproductive method
-([`documents/Mantle_Reproduction.md`](../../documents/Mantle_Reproduction.md)).
+([`documents/REPRODUCTION.md`](../../documents/REPRODUCTION.md)).
 
 The engine lives in the package at [`src/mantle/spore.py`](../../src/mantle/spore.py) (with its
 embryo `spore_min.py`). This directory carries its **purity gate**, a **VCW-conformance proof**, and

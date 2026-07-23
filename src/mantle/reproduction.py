@@ -2,7 +2,7 @@
 """
 mantle.reproduction  --  the TWO ways an AppAI makes another AppAI (Mantle OS)
 
-Doctrine of record: documents/Mantle_Reproduction.md.
+Doctrine of record: documents/REPRODUCTION.md.
 
 There is ONE travelling artifact -- the SPORE, a single PNG carrying the germ (the
 complete build data) and build instructions -- and two methods of reproduction. This

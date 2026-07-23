@@ -25,7 +25,7 @@ def dry_run(root: str) -> Dict[str, Any]:
 
 
 def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
-    """The APP_INVENTORY.md artifact (Appendix A of Mantle_Assimilator.md), pre-filled
+    """The APP_INVENTORY.md artifact (see guides/Assimilation_Guide.md), pre-filled
     from the dissection. The READ-ONLY sign-off line stays unsigned -- a human signs it;
     only then may Phase 5+ insert any hook (HF-B42)."""
     L = []

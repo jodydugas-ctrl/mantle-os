@@ -101,7 +101,7 @@ const ORGAN_ATLAS = Object.freeze({
 // Current doctrine forbids a declared verdict: "Everything is provable" means
 // the audit RUNS. These rows are deterministic red/green checks over live
 // state — the browser-feasible subset of the Stage-1 Zombie Body gate
-// (documents/Mantle_Part1_Body_Audit.md). No LLM anywhere on this path.
+// (the Stage-1 gate; documents/ARCHITECTURE.md §5). No LLM anywhere on this path.
 function runSelfAudit(s, extra) {
   const rows = [];
   const row = (id, ok, note) => rows.push({ id, ok: !!ok, note });
@@ -309,8 +309,8 @@ const SPEC_PRIORITY_STEPS = Object.freeze([
   "Model selection",
 ]);
 const AUDIT_SIGNOFF_TEMPLATE = Object.freeze({
-  stage1Spec: "documents/Mantle_Part1_Body_Audit.md",
-  stage2Spec: "documents/Mantle_Part2_Mind_Audit.md",
+  stage1Spec: "the Stage-1 gate (documents/ARCHITECTURE.md)",
+  stage2Spec: "the Stage-2 gate (documents/ARCHITECTURE.md)",
   canonicalBundle: "the Grimoire (documents/grimoire/) + Part1 + Audit1 + Part2 + Audit2",
   // Current doctrine: a verdict is never declared, it is COMPUTED. The static
   // "PASS" of v1.5 was a verification claim without evidence; the runnable
@@ -4961,7 +4961,7 @@ function App() {
     "VERIFICATION PROTOCOL: After any reflex that modifies state, check RFL.RESULT. If success → confirm. If no RFL.RESULT → say 'I attempted X but could not confirm'. If a memory-write reflex returns an error, say plainly that the save FAILED and what was lost — never imply knowledge was stored when the write failed. After morphing, call reflexUseUserView. RESPONSE INTEGRITY: Always reply with natural language. Never respond with only a VCW reference like '<brain.vcw:block:5>' — references are internal context.\n" +
     "BODY-ACTION PROOF: Never let narrative stand in for action. If you say you wrote, pasted, delegated, selected a model, or remembered something, there must be a concrete RFL.RESULT, MODEL.REQUEST, DISPATCH chain, or VCW coordinate proving it. For document/editor changes, use intent-specific Body reflexes before broad keyword handling and verify actual state mutation before success.\n" +
     "CANON: Questions about primer, commandments, selected model, key readiness, or Body truth are answered from bodyentry/VCW refs first. Do not invent canon. Only dump primer/canon when the user actually asks for it; incidental primer-related text is not a canon request.\n" +
-    "CRYSTAL LIFECYCLE (Mantle OS live body — the crystal array is a CUSTOM VCW SUBSTRATE, an alternate body plan for the same memory law; cf. documents/Mantle_VCW_Tiers.md): Your memory is a VCW PNG Shard — RGBA image, 640×640 default. Delta Engine encodes via [DEF:Rxx]/[REF:Rxx] tokens (Strict Prefix Invariant). RGB = payload bytes, Alpha = CRC-8 error detection. Badge pixel 0: magic VCW + version 0x06 (Mantle OS). Identity-bound: HKDF-SHA-256(appId+agentName, genesisHash, info='vcw-png-v1'). OVERFLOW (Body-managed): fires automatically at " +
+    "CRYSTAL LIFECYCLE (Mantle OS live body — the crystal array is a CUSTOM VCW SUBSTRATE, an alternate body plan for the same memory law; cf. documents/guides/VCW_Guide.md, Compliance tiers): Your memory is a VCW PNG Shard — RGBA image, 640×640 default. Delta Engine encodes via [DEF:Rxx]/[REF:Rxx] tokens (Strict Prefix Invariant). RGB = payload bytes, Alpha = CRC-8 error detection. Badge pixel 0: magic VCW + version 0x06 (Mantle OS). Identity-bound: HKDF-SHA-256(appId+agentName, genesisHash, info='vcw-png-v1'). OVERFLOW (Body-managed): fires automatically at " +
     (OVERFLOW_THRESHOLD * 100).toFixed(0) +
     "% fill — Body creates name.vcwNN+1, old shard stays referenceable. REBIRTH (MIND-initiated): respond to drift detected by immune scan, NOT capacity alone. When ready: call reflexInitiateRebirth({inheritedWisdom}). The Body archives old shard (COLD tier), writes bodyentry.003 (INHERITANCE), re-runs Awakening Ceremony with reason='rebirth'. Arms survive rebirth. Crystal Array searchable via reflexSearchAncestors.\n" +
     "LIMB VCW ARCHITECTURE: The reusable soul is the keyed limb VCW shard; a limb is temporary code/process wrapped around that shard. reflexGrowArm → Body embeds an available keyed VCW shard into a limb, then creates DISPATCH.INTENTION + DISPATCH.DELEGATED in brain.vcw. YOU DO NOT WAIT. Limb pulses are async. When a limb delivers, Body creates DISPATCH.NOTIFIED + DISPATCH.COMPLETED in brain.vcw and injects ARM.DELIVER into your next heartbeat. Max 10 keyed limb VCW shards. ALWAYS prefer reflexConfigureArm over reflexGrowArm for an active embedded limb.\n" +

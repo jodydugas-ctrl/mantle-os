@@ -498,15 +498,11 @@
     const IMPLEMENTATION_DECLARATION = Object.freeze({
       framework: "Mantle OS · Gen-4",
       auditBundle: [
-        "documents/Mantle_Doctrine.md",
-        "documents/Mantle_Organism_Lens.md",
-        "documents/Mantle_PRIMER.md",
+        "documents/PRIMER.md",
+                "documents/PRIMER.md",
         "documents/FIELD_GUIDE.md",
         "documents/Mantle_Organ_Atlas.md",
-        "documents/Mantle_Part1_Body.md",
-        "documents/Mantle_Part1_Body_Audit.md",
-        "documents/Mantle_Part2_Mind.md",
-        "documents/Mantle_Part2_Mind_Audit.md",
+                                "documents/ARCHITECTURE.md",
         "documents/grimoire/The Grimoire.md",
         "documents/Mantle_Extensions.md",
         "examples/vcw/GUIDE.md",
@@ -1238,7 +1234,7 @@ let ORGANISM = null;
                 fixedBody: true,
                 spreadsheetArm: "arm-spreadsheet",
                 maintenanceArm: "arm-maintenance",
-                auditProfile: "Mantle_Part1_Body_Audit + Mantle_Part2_Mind_Audit",
+                auditProfile: "Stage-1 gate + Stage-2 gate",
                 formulas: ["SUM", "AVERAGE", "COUNT", "MAX", "MIN", "IF", "arithmetic"],
                 softBudgetPolicy: "Prefer Body execution; wake MIND only for significant requests.",
                 appFaceBridge: "Grid/formula writes are Body-owned actions with proof; MIND never mutates DOM directly.",
@@ -1773,7 +1769,7 @@ let ORGANISM = null;
     function awakeningCeremony(state, reason) {
       // §Awakening record belongs in the events band (experiential history), not in Special
       // Instructions (bodyentry.002). Special Instructions are for operator steering only —
-      // MIND proposes, Body applies (Mantle_Part2_Mind.md §2.3). The ceremony is a Body-authored
+      // MIND proposes, Body applies (ARCHITECTURE.md §6). The ceremony is a Body-authored
       // historical fact and goes to the events band via the activity log (Organ Atlas §5).
       state.awakenCount += 1;
       const keyfile_hash = crc8(JSON.stringify(KEYFILE));
@@ -3174,12 +3170,12 @@ let ORGANISM = null;
         ceremonyHash: awakenEntries.length ? awakenEntries[awakenEntries.length - 1].ceremony_hash : "none",
         keyfileHash: crc8(JSON.stringify(KEYFILE)),
         stage1Audit: {
-          spec: "Mantle_Part1_Body_Audit.md",
+          spec: "the Stage-1 gate (ARCHITECTURE.md §5)",
           verdict: stage1.verdict,
           coveredSections: stage1.coveredSections
         },
         stage2Audit: {
-          spec: "Mantle_Part2_Mind_Audit.md",
+          spec: "the Stage-2 gate (ARCHITECTURE.md §6)",
           verdict: stage2.verdict,
           coveredSections: stage2.coveredSections,
           stage1Regression: stage1.verdict === "PASS" ? "NO" : "YES"

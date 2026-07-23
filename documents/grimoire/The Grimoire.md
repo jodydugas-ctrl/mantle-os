@@ -7,6 +7,12 @@
 **File law:** the Grimoire is exactly one file — the single canonical statement of its own doctrine.
 **Prime asymmetry:** everything the agent reads is data; only the operator grants authority (§1.11). The whole book hangs from this.
 
+> **Scope note.** §0–§6 and §8 are generic agent-governance doctrine, portable beyond
+> Mantle OS. **§7 (the AppAI extension) and §9 (the Mantle OS environment binding) are
+> the Mantle-binding sections — if you came here from the Mantle docs, start there.**
+> Two spells (`PROMPT-REFINEMENT`, `IMPLEMENTATION-BRIEF`) are doctrine-only, with no
+> runnable surface in this repository.
+
 ---
 
 # §0 LOAD MANIFEST
@@ -883,7 +889,7 @@ When the Caster's environment contains a Mantle OS working tree, the AppAI spell
 
 ## 9.2 Casting NECROMANCY — the Operator's Ritual
 
-Assimilation of an existing application as a runnable sequence. GUARDED throughout; the hard fails of §7.8 are live at every step. Walkthrough: `documents/guides/Assimilation_Guide.md`; doctrine: `documents/Mantle_Assimilator.md`.
+Assimilation of an existing application as a runnable sequence. GUARDED throughout; the hard fails of §7.8 are live at every step. Walkthrough: `documents/guides/Assimilation_Guide.md`.
 
 | Step | Spell phase | Command / code | Gate |
 |---:|---|---|---|
@@ -896,15 +902,15 @@ Assimilation of an existing application as a runnable sequence. GUARDED througho
 
 ## 9.3 Reproduction Binding
 
-Reproduction doctrine: `documents/Mantle_Reproduction.md` — **two lawful methods; everything else is a facet.** Map on demand: `python -m mantle reproduce`. The reproduction organ is `organs/reproduction.py` (`spore_to_egg`, `hatch_from_spore`, SPOREAGENT lifecycle receipts); the module API is `reproduction.py` (`seed()`, `graft()`, `describe()`).
+Reproduction doctrine: `documents/REPRODUCTION.md` — **one artifact (the spore), two lawful methods.** Map on demand: `python -m mantle reproduce`. The reproduction organ is `organs/reproduction.py` (`distill_germ`, the vault + spore heirlooms, SPOREAGENT lifecycle receipts); the birth door is `hatchery.py` (`hatch`, `hatch_from_spore`); the module API is `reproduction.py` (`seed()`, `graft()`, `describe()`).
 
 **Method 1 — SEED (independent reproduction):**
 
 | Facet | Code | Commands |
 |---|---|---|
-| Spore — the smallest seed, a living PNG | `spore.py`, `spore_min.py` | `python -m mantle spore <create\|read\|append\|rename\|verify\|extract\|demo>` · hatch it: `python -m mantle hatch-spore <spore.png> [--out=DIR]` |
-| Egg — a whole AppAI as one document | `egg.py` + `hatchery.py` (`incubate`) | `python -m mantle hatch <egg.json> [--out=DIR]` — the `ANIMARE` binding |
-| Vault — an organism's seed of itself | `vault.py` (`store_seed`, `open_seed`, `reconstruct`) | the `RESURGERE` binding; DNR and reconstruction policy live here — the `CREMATION` gate reads the same vault |
+| Spore — THE artifact, a living PNG (optionally carrying a germ) | `spore.py`, `spore_min.py` | `python -m mantle spore <create\|pack\|read\|append\|rename\|verify\|extract\|demo>` · hatch it: `python -m mantle hatch <spore.png> [--out=DIR]` |
+| Germ — the whole AppAI build document (rides inside a spore) | `hatchery.py` (`validate_germ`, `incubate`) | `python -m mantle hatch <spore.png\|germ.json> [--out=DIR]` — the `ANIMARE` binding |
+| Vault — an organism's seed of itself | `organs/reproduction.py` (`store_seed`, `open_seed`, `reconstruct`) | the `RESURGERE` binding; DNR and reconstruction policy live here — the `CREMATION` gate reads the same vault |
 
 **Method 2 — GRAFT (dependent reproduction):** anchor — move in (`anchor.py`); symbiosis — earn its keep (`symbiosis.py`); graft-egg — a non-destructive patch (`graft.py`). Commands as in §9.2 steps 2-3.
 
@@ -914,14 +920,14 @@ Reproduction doctrine: `documents/Mantle_Reproduction.md` — **two lawful metho
 
 | Spell | Code | Commands / docs |
 |---|---|---|
-| `ANIMARE` | `egg.py`, `hatchery.py`; samples `examples/eggs/` | `hatch`; `documents/guides/Organism_Lifecycle.md` |
+| `ANIMARE` | `spore.py`, `hatchery.py`; samples `examples/spores/` | `hatch`; `documents/guides/Organism_Lifecycle.md` |
 | `VITALS-CHECKUP` | `doctor.py`, `audits/` | `vitals`, `doctor`, `check`; `documents/guides/Audit_Guide.md` |
 | `MEM-DIGESTION` | `ingestion.py`, `mem.py`, `vcw/metabolism.py`, `core/redact.py`, `organs/immune.py` | `feed`; quarantine before promotion (§7.5†) |
 | `SKILL-CALCIFICATION` | `hatchery.py` (INSTINCTS gauntlet: sandbox → trial → calcify), `compiler.py`, `phenotype.py`, `teach.py` | `teach`, `prove` |
-| `METABOLIC-GOVERNANCE` | `organs/heart.py`, `symbiosis.py`, `vcw/metabolism.py`, `mind/runtime.py` | `documents/Mantle_Urge_System.md`, `documents/Mantle_VCW_Tiers.md` |
-| `CREMATION` | policy-enforced across `vault.py` (DNR), `organs/immune.py` (tombstone/redact), `organs/genome.py` (lineage) | `documents/Mantle_Doctrine.md` |
+| `METABOLIC-GOVERNANCE` | `organs/heart.py`, `symbiosis.py`, `vcw/metabolism.py`, `mind/runtime.py` | `documents/Mantle_Urge_System.md`, `documents/guides/VCW_Guide.md` |
+| `CREMATION` | policy-enforced across `organs/reproduction.py` (DNR), `organs/immune.py` (tombstone/redact), `organs/genome.py` (lineage) | `documents/PRIMER.md` |
 | `VOCARE` | `mind/` (`mind.py`, `containment.py`, `runtime.py`, `inner_voice.py`, `transport.py`, `usage.py`), `audits/stage2.py`, `organs/brain.py` | `mind`, `audit-mind`; containment law §7.4 |
-| `RESURGERE` | `vault.py` (seed → `reconstruct()`), `hatchery.py` (`incubate`) | DNR and budget gates first (§7.5) |
+| `RESURGERE` | `organs/reproduction.py` (seed → `reconstruct()`), `hatchery.py` (`incubate`) | DNR and budget gates first (§7.5) |
 | `CACHE-HAUNT` | `ghost.py`, `ghost_http.py`, `spore.py` | `ghost`; §9.3 |
 | `PROMPT-REFINEMENT` | **unbound** — doctrine-only (§5.2.8); no runnable surface in this environment yet | — |
 | `IMPLEMENTATION-BRIEF` | **unbound** — doctrine-only (§5.2.9); no runnable mandate compiler in this environment yet | — |
