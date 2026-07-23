@@ -306,6 +306,7 @@ documents/               the books and the living doctrine
   Mantle_Organ_Atlas.md  the organ taxonomy + the organ contracts
   grimoire/              the single Grimoire 2.0 file (§7/§9 bind it to Mantle)
   guides/ (VCW · audit · lifecycle · assimilation · visual) · assets/ (diagrams)
+docs/                    compatibility entry points for older external links
 examples/                example AppAIs + the normative substrate
   spores/                germ spores — hatch one: `mantle hatch examples/spores/greeter.png`
   eggs/                  the germ files those spores are packed from

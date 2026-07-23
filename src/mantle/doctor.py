@@ -31,14 +31,17 @@ def _docs_vs_code(repo_root: str) -> Dict[str, Any]:
     """The coherence gate, inverted: NO doc may hardcode an invariant count. The live
     count comes from the code (`python -m mantle prove` prints it); a number written
     into prose goes stale the moment an invariant is added, so its presence IS the
-    failure. Scans README.md and every markdown file under documents/."""
+    failure. Scans README.md and every markdown file under documents/ and docs/."""
     pattern = re.compile(r"\b\d+(?:/\d+)?\s+(?:security\s+|executable\s+)?invariants\b",
                          re.IGNORECASE)
     offenders: List[str] = []
     targets = [os.path.join(repo_root, "README.md")]
-    docs_dir = os.path.join(repo_root, "documents")
-    for base, _dirs, files in os.walk(docs_dir):
-        targets.extend(os.path.join(base, f) for f in files if f.endswith(".md"))
+    for docs_name in ("documents", "docs"):
+        docs_dir = os.path.join(repo_root, docs_name)
+        if not os.path.isdir(docs_dir):
+            continue
+        for base, _dirs, files in os.walk(docs_dir):
+            targets.extend(os.path.join(base, f) for f in files if f.endswith(".md"))
     if not os.path.isfile(targets[0]):
         return {"check": "docs-vs-code", "ok": False, "detail": "README.md not found"}
     for path in targets:
