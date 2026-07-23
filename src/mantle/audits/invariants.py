@@ -2278,6 +2278,8 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and "mapped SELF/body evidence" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
             and "host-specific anatomy" in evidence.get("consultation_contract", {}).get("working_surface_policy", "")
             and "not universal predefined slash commands" in evidence.get("consultation_contract", {}).get("working_surface_policy", "")
+            and "creative/generative content must be authored by the resident MIND" in evidence.get("consultation_contract", {}).get("creative_work_policy", "")
+            and "never by Body reflexes" in evidence.get("consultation_contract", {}).get("creative_work_policy", "")
             and "explicit maintenance commands" in evidence.get("consultation_contract", {}).get("reset_policy", "")
             and "Resident host evidence index" in inventory
             and "adaptive parser/observer/verifier" in answer

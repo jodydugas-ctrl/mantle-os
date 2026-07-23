@@ -97,6 +97,10 @@ open hard-fails leads to the same MIND fusion and Stage-2 gate.
   interpret plain-English host-action requests against mapped SELF/body evidence, call
   the matching Body nerve when the target and verifier are clear, and report a
   maintenance gap when they are not.
+- Treat creative or generative output as MIND-owned work, never as a Body reflex. Body
+  may place, open, save, render, or verify MIND-authored content after the MIND has
+  produced it, but if the MIND/provider path is unavailable the resident must fail
+  openly instead of substituting canned creative text.
 - Give every resident a host evidence index and consult it before generic MIND chat.
   An AppAI should answer questions about its software from the Phase-0 inventory, organ
   map, hook graph, certification receipts, controls, gaps, and limitations. Provider

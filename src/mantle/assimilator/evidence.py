@@ -174,6 +174,11 @@ def build_host_evidence_index(amap: Dict[str, Any],
                 "coverage or live Body evidence and recorded into the VCW; they are "
                 "not universal predefined slash commands"
             ),
+            "creative_work_policy": (
+                "creative/generative content must be authored by the resident MIND, "
+                "never by Body reflexes; Body may only place or verify MIND-authored "
+                "or user-literal content"
+            ),
             "reset_policy": (
                 "resident VCW resets must be explicit maintenance commands that "
                 "recreate Prime from current evidence and clear transient runtime "
@@ -227,6 +232,8 @@ def answer_from_host_evidence(question: str, amap: Dict[str, Any]) -> str:
             lines.append(contract["effectful_action_policy"])
         if contract.get("working_surface_policy"):
             lines.append(contract["working_surface_policy"])
+        if contract.get("creative_work_policy"):
+            lines.append(contract["creative_work_policy"])
         if contract.get("reset_policy"):
             lines.append(contract["reset_policy"])
         return "\n".join(lines)

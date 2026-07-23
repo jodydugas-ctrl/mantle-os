@@ -24,6 +24,7 @@ desktop.ini
 # Logs and temp
 *.log
 .cache/
+.codex-remote-attachments/
 tmp/
 work/
 

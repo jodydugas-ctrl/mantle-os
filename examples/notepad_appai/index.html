@@ -686,6 +686,7 @@
     "missing_evidence_policy": "name the gap instead of guessing",
     "effectful_action_policy": "plain-English host-surface requests are interpreted by the resident MIND against mapped SELF/body evidence; effectful operations require Body-owned Action Execution Proof",
     "working_surface_policy": "working surfaces are app-specific anatomy discovered from GUI coverage or live Body evidence and mirrored into VCW state; tabs are not universal slash commands and are not assumed for every app",
+    "creative_work_policy": "creative/generative content must be authored by the resident MIND, never by Body reflexes; Body may only place or verify MIND-authored or user-literal content",
     "reset_policy": "resident VCW resets must be explicit maintenance commands that recreate Prime from current evidence and clear transient runtime residue"
   },
   "organ_summary": {
@@ -897,6 +898,7 @@
       lines.push(`GUI surfaces: ${coverage.total_surfaces}; statuses: ${JSON.stringify(coverage.status_counts)}`);
       lines.push(index.consultation_contract.effectful_action_policy);
       lines.push(index.consultation_contract.working_surface_policy);
+      lines.push(index.consultation_contract.creative_work_policy);
       lines.push(index.consultation_contract.reset_policy);
     } else {
       lines.push(`${index.host_identity.name}: ${index.host_identity.purpose}`);
