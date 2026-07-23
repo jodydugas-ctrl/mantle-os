@@ -25,15 +25,14 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 > The organic model is the design language, not decoration — Mantle is built on the
 > octopus and the doctrine stays in that language. These files are the door, not the house.
 
-> **For LLM agents.** Mantle OS is operated through the **Grimoire**, its spellbook —
-> load it when the work needs doctrine, AppAI operation, assimilation, or mutation of
-> Mantle tissue, and cast **`Intellige`** (read-only comprehension) on it first. It is
-> doctrine, not a toll booth: routine code reading and small mechanical fixes proceed
-> from the README, nearby docs, and working code. Start at
-> [`documents/grimoire/`](documents/grimoire/README.md); §7 and §9 of the single
-> canonical **Grimoire 2.0** file are the Mantle-binding sections. The organic language
-> is scoped — Body, MIND, Senses, VCW, SELF/OTHER name *Mantle tissue*, not ordinary
-> host/application code. *(Normative when used.)*
+> **For AI agents.** Start at **[`AGENTS.md`](AGENTS.md)** — your orientation file. It
+> explains what the biological framework is *for* (the two jobs the organ names do), how to
+> use the **Grimoire** (Mantle's doctrine — cast **`Intellige`**, read-only comprehension,
+> first; §7 and §9 of the single canonical **Grimoire 2.0** file bind it to this codebase),
+> and where to go in engineering terms. The Grimoire is doctrine, not a toll booth: routine
+> code reading and small mechanical fixes proceed from the docs and working code. The
+> organic language is scoped — Body, MIND, Senses, VCW, SELF/OTHER name *Mantle tissue*, not
+> ordinary host/application code. *(Normative when used.)*
 
 ---
 
@@ -59,6 +58,20 @@ SELF-encrypted front-ends as interchangeable phenotypes) — every one gated by 
 invariant suite** and, where an operation creates a new resident or activates cognition,
 separate target-bound authority. The runnable [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md)
 walks every one.
+
+### Why an organism? The biology does two jobs
+
+Mantle is modeled on the **octopus**, whose arms think on their own — and the organic
+vocabulary earns its place by doing two concrete jobs, not by decoration. First, **it draws
+a boundary you can see**: because Mantle tissue wears organ names, the nervous system is
+never confused with the app it runs — a `Senses` intake, a `Limbs` proof, an `immune` event
+stand out at a glance as Mantle, not host code, so you always know which side of the line
+you are reading. Second, **the name is the job**: none of the naming is for show. Each organ
+does real work — the Heart is the runtime pulse and checkpoint, Senses is the only way in,
+Limbs is the only way out and proves every action, the Immune system is the real integrity
+boundary, Memory is the append-only store and its metabolism. The biological name tells you
+exactly what each part is responsible for, so the architecture reads itself. The full
+account — and how to operate it — is in [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -278,6 +291,7 @@ every Stage-1 row to prove it.
 ## Repository layout
 
 ```
+AGENTS.md                orientation for AI agents: the two jobs of the biology + the Grimoire how-to
 src/                     the framework package — `pip install -e .` (or PYTHONPATH=src) to run
   mantle/                (start here)
     core/                Body (+ the genesis key), SignalBus, references, redaction, the Organism
