@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 from pathlib import Path
 from typing import Any, Callable, TYPE_CHECKING
 
@@ -12,7 +13,20 @@ if TYPE_CHECKING:
 
 
 _PLUGIN_ROOT = Path(__file__).resolve().parent
-_MANTLE_PACKAGE = _PLUGIN_ROOT / "vendor" / "mantle-os" / "src" / "mantle"
+
+
+def _resolve_mantle_package() -> Path:
+    """Mirror mantle_addon.vendor's runtime-root resolution (loadable standalone)."""
+    override = os.environ.get("MANTLE_ADDON_RUNTIME_ROOT")
+    if override:
+        return Path(override).resolve()
+    bundled = _PLUGIN_ROOT / "runtime" / "mantle"
+    if bundled.is_dir():
+        return bundled.resolve()
+    return (_PLUGIN_ROOT.parents[1] / "src" / "mantle").resolve()
+
+
+_MANTLE_PACKAGE = _resolve_mantle_package()
 
 
 def _literal_assignment(path: Path, name: str) -> Any:

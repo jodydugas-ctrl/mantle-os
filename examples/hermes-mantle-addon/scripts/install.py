@@ -36,6 +36,15 @@ def install_addon(source: Path, hermes_home: Path, *, force: bool = False) -> Pa
     backup: Path | None = None
     try:
         shutil.copytree(source, staging, dirs_exist_ok=True, ignore=_ignore)
+        runtime = staging / "runtime" / "mantle"
+        if not runtime.is_dir():
+            repo_runtime = source.parents[1] / "src" / "mantle"
+            if not repo_runtime.is_dir():
+                raise FileNotFoundError(
+                    "cannot stage the Mantle runtime: neither "
+                    f"{runtime} nor {repo_runtime} exists"
+                )
+            shutil.copytree(repo_runtime, runtime, ignore=_ignore)
         if target.exists():
             backup = Path(
                 tempfile.mkdtemp(prefix=f".{PLUGIN_NAME}-backup-", dir=plugins)

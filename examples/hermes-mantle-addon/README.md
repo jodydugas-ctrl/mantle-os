@@ -118,17 +118,17 @@ The immutable defaults are recorded in `config/defaults.json`. Raw prompts, raw 
 
 - `plugin.yaml` — Hermes plugin manifest
 - `__init__.py` — tool and hook registration
-- `mantle_addon/` — immutable configuration, Primer, storage boundary, vendored-runtime loader, Body factory, hook adapter, and reproducible C-01..C-11 containment audit
+- `mantle_addon/` — immutable configuration, Primer, storage boundary, origin-checked runtime loader, Body factory, hook adapter, and reproducible C-01..C-11 containment audit
 - `schemas.py` — model-facing tool schemas
 - `tools.py` — read-only diagnostics plus the bounded discovery mutation handler
 - `config/defaults.json` — deterministic resident defaults
-- `scripts/install.py` — safe local installer and Hermes enablement command
+- `scripts/install.py` — safe local installer and Hermes enablement command (stages the Mantle runtime from `src/mantle` into the installed plugin's `runtime/`)
 - `tests/` — standard-library behavior and boundary tests
-- `vendor/mantle-os/` — complete 146-file non-addon Mantle OS 1.3.0 snapshot, reproducibly checked by `scripts/sync_vendor.py --check`
 - `docs/assimilation/` — reviewed Phase-0 inventory, nine-organ map, and host census
 - `docs/FUSION_DECISIONS.{md,json}` — human and machine-readable operator/guardian decisions
 - `docs/MIND_READINESS.{md,json}` — engineering evidence report; current software verdict `READY`
-- `VENDOR_PROVENANCE.md` — source commit, snapshot-integrity receipt, and certification result
+
+The addon loads the Mantle runtime through `mantle_addon/vendor.py`, which resolves — in order — `MANTLE_ADDON_RUNTIME_ROOT`, the plugin's staged `runtime/mantle` copy, or the repository's `src/mantle` when developing inside the mantle-os checkout.
 
 ## Test
 
@@ -137,7 +137,7 @@ cd examples/hermes-mantle-addon
 python3 -m unittest discover -s tests -v
 ~/.hermes/hermes-agent/venv/bin/python tests/verify_real_plugin.py
 ~/.hermes/hermes-agent/venv/bin/python tests/verify_containment.py
-PYTHONPATH=vendor/mantle-os/src python3 -m mantle check --fast
+PYTHONPATH=../../src python3 -m mantle check --fast
 ```
 
 `tests/verify_real_plugin.py` creates disposable enabled and disabled Hermes homes and exercises the real `PluginManager` without installing into the active profile.
@@ -161,17 +161,17 @@ Repository JSON records are evidence, not authenticated human authority. `Ed2551
 | 7 | Adversarial containment verification | ✅ Complete |
 | 8 | Operator and guardian decision updates | ✅ Complete — release approved; production fusion deferred |
 | 9 | Final MIND-readiness report | ✅ Complete — software verdict READY, activation separately gated |
-| 10 | Repository alignment and gate rationalization | ✅ Complete — mutable OPT/VERS ledgers are advisory, not runtime security gates |
+| 10 | Repository alignment and gate rationalization | ✅ Complete |
 
 ## Doctrine receipt
 
 - **WHAT:** built the deterministic profile-resident Body, twelve observer hooks, one bounded discovery mutation, and an eleven-row adversarial containment audit.
 - **WHY:** establish Body-before-MIND residency while permitting the smallest useful durable host-to-Body knowledge path without granting fact, instruction, Genome, immune, reproduction, or host-file writes.
-- **EVIDENCE:** 14/14 addon Stage-1 rows, 90/90 framework security invariants, 11/11 containment rows, vendor parity, and authenticated offline attach-heartbeat-defuse-post-Stage-1 acceptance.
+- **EVIDENCE:** 14/14 addon Stage-1 rows, the full framework security-invariant suite, 11/11 containment rows, and authenticated offline attach-heartbeat-defuse-post-Stage-1 acceptance.
 - **CONFIDENCE:** high for the bounded Phase-1 runtime and dormant Phase-2 implementation. Production activation remains separately fail-closed.
 - **NEXT:** publish the verified software release; do not fuse a production MIND without fresh target-bound signed approvals.
 - **RISKS:** authority private keys must remain with their independent signers; discovery text is intentionally durable and callers must not submit secrets; host activity outside registered hooks remains external; MacroDroid runtime semantics remain outside the Python release gate.
-- **FILES:** source, docs, tests, examples, workflows, package metadata, and the non-recursive vendor snapshot were aligned in Step 10.
+- **FILES:** source, docs, tests, examples, workflows, and package metadata were aligned in Step 10.
 - **OPEN GAPS:** no engineering blocker remains. Production activation still requires a fresh resident-bound READY report and two independently authenticated approvals; reproduction remains prohibited.
 - **OPERATOR DECISION:** software release APPROVED; production MIND fusion DEFERRED.
 - **GUARDIAN DECISION:** software release APPROVED; production MIND fusion DEFERRED until the deployment activation protocol is satisfied.

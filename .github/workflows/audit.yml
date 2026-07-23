@@ -32,10 +32,6 @@ jobs:
       - name: The whole certification, one command
         run: python -m mantle check
 
-      - name: Hermes addon vendor parity
-        working-directory: examples/hermes-mantle-addon
-        run: python scripts/sync_vendor.py --check
-
       - name: Hermes addon behavior contracts
         working-directory: examples/hermes-mantle-addon
         env:

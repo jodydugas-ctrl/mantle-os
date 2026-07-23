@@ -1,9 +1,18 @@
-"""Origin-checked loader for the bundled Mantle runtime."""
+"""Origin-checked loader for the Mantle runtime.
+
+The runtime root is resolved in priority order:
+
+1. ``MANTLE_ADDON_RUNTIME_ROOT`` — explicit override for deployments.
+2. ``<addon>/runtime/mantle`` — the copy staged by ``scripts/install.py``.
+3. ``<repo>/src/mantle`` — the authoritative source when the addon lives
+   inside the mantle-os repository checkout (dev and CI).
+"""
 
 from __future__ import annotations
 
 import importlib
 import importlib.util
+import os
 from pathlib import Path
 import sys
 from threading import RLock
@@ -12,13 +21,20 @@ from typing import Any
 
 
 _ALIAS = "_hermes_mantle_vendor"
-_PACKAGE_ROOT = (
-    Path(__file__).resolve().parents[1]
-    / "vendor"
-    / "mantle-os"
-    / "src"
-    / "mantle"
-).resolve()
+
+
+def _resolve_package_root() -> Path:
+    override = os.environ.get("MANTLE_ADDON_RUNTIME_ROOT")
+    if override:
+        return Path(override).resolve()
+    addon_root = Path(__file__).resolve().parents[1]
+    bundled = addon_root / "runtime" / "mantle"
+    if bundled.is_dir():
+        return bundled.resolve()
+    return (addon_root.parents[1] / "src" / "mantle").resolve()
+
+
+_PACKAGE_ROOT = _resolve_package_root()
 _LOCK = RLock()
 _TRUSTED_PACKAGE: ModuleType | None = None
 _TRUSTED_MODULES: dict[str, ModuleType] = {}
