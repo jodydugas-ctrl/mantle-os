@@ -99,7 +99,8 @@ walks every one.
 
 ### Why Mantle began this way
 
-> **Creator's note.** I came to Mantle from two directions. In my youth I worked as an
+> **Creator's note:  Story is true AI sucks at telling it.** 
+> I came to Mantle from two directions. In my youth I worked as an
 > Information Systems Engineer; after my father suffered a stroke, I moved into medicine
 > and eventually specialized in neurology. A few years later I built a custom agent for
 > him. The point of this history is not emotional impact — it explains the engineering
@@ -125,7 +126,7 @@ walks every one.
 >
 > This origin explains the architecture; it is not a claim that Mantle OS is a certified
 > medical device. The project remains a reference implementation of the containment model
-> that grew from those constraints.
+> that grew from those constraints.  
 
 ### Why an organism? The biology does two jobs
 
