@@ -671,7 +671,7 @@
 <script id="host-evidence-index" type="application/json">
 {
   "kind": "HOST_EVIDENCE_INDEX",
-  "schema_version": "mantle-host-evidence-v1",
+  "schema_version": "mantle-host-evidence-v2",
   "local_first_consultation": true,
   "host_identity": {
     "name": "Mantle Notepad AppAI",
@@ -681,7 +681,7 @@
   },
   "evidence_sources": ["appai-declaration", "organ-map", "parity-matrix", "stage1-certification"],
   "consultation_contract": {
-    "answer_host_questions_from": ["host_identity", "organ_summary", "control_surfaces", "gaps", "limitations"],
+    "answer_host_questions_from": ["host_identity", "organ_summary", "control_surfaces", "surface_coverage_summary", "gaps", "limitations"],
     "provider_mind_role": "Phase 2 only; may interpret resident evidence after authorization",
     "missing_evidence_policy": "name the gap instead of guessing",
     "effectful_action_policy": "route host-surface actions to Body/Limbs and require Action Execution Proof"
@@ -702,6 +702,11 @@
     {"control": "saveAsFile", "organ": "Limbs", "proof_requirement": "destination receipt with byte/hash evidence"},
     {"control": "findNext/replace/goToLine", "organ": "Senses", "proof_requirement": "deterministic selection or buffer update"}
   ],
+  "surface_coverage_summary": {
+    "kind": "GUI_NERVE_COVERAGE",
+    "schema_version": "mantle-gui-nerve-coverage-v1",
+    "policy": "runtime readGuiNerveCoverage() enumerates DOM controls and checks data-action handlers"
+  },
   "gaps": [],
   "limitations": [
     "Phase 1 only: Brain is dormant and no model calls are authorized.",
@@ -807,9 +812,70 @@
     return safeJsonParse($("parity-matrix").textContent, []);
   }
 
+  function readGuiNerveCoverage() {
+    const surfaces = [];
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      const id = button.dataset.action;
+      const handler = actions[id];
+      surfaces.push({
+        id,
+        surface_type: "action",
+        label: button.textContent.trim().replace(/\s+/g, " "),
+        vcw_status: typeof handler === "function" ? "verified_body_operation" : "maintenance_gap",
+        proof_requirement: "DOM data-action handler plus Action Execution Proof where effectful",
+        connection_evidence: typeof handler === "function" ? ["actions table"] : []
+      });
+    });
+    document.querySelectorAll("[data-menu]").forEach((button) => {
+      surfaces.push({
+        id: button.dataset.menu,
+        surface_type: "menu",
+        label: button.textContent.trim(),
+        vcw_status: "sense_only",
+        proof_requirement: "menu can be observed/opened; child actions carry effect proofs",
+        connection_evidence: ["data-menu handler"]
+      });
+    });
+    document.querySelectorAll("textarea, input, select, dialog button[id]").forEach((control) => {
+      const id = control.id || control.getAttribute("aria-label") || control.tagName.toLowerCase();
+      surfaces.push({
+        id,
+        surface_type: control.tagName.toLowerCase(),
+        label: control.getAttribute("aria-label") || control.textContent.trim() || id,
+        vcw_status: "sense_only",
+        proof_requirement: "input state is observable; effectful actions are routed through named controls",
+        connection_evidence: [control.tagName.toLowerCase()]
+      });
+    });
+    const status_counts = surfaces.reduce((acc, surface) => {
+      acc[surface.vcw_status] = (acc[surface.vcw_status] || 0) + 1;
+      return acc;
+    }, {});
+    const type_counts = surfaces.reduce((acc, surface) => {
+      acc[surface.surface_type] = (acc[surface.surface_type] || 0) + 1;
+      return acc;
+    }, {});
+    return {
+      kind: "GUI_NERVE_COVERAGE",
+      schema_version: "mantle-gui-nerve-coverage-v1",
+      total_surfaces: surfaces.length,
+      status_counts,
+      type_counts,
+      surfaces,
+      maintenance_findings: surfaces
+        .filter((surface) => surface.vcw_status === "maintenance_gap")
+        .map((surface) => ({ surface: surface.id, status: surface.vcw_status })),
+      contract: {
+        no_silent_gui_omission: true,
+        effectful_claim_policy: "ok=true requires Body-owned Action Execution Proof"
+      }
+    };
+  }
+
   function consultHostEvidence(question) {
     const index = readHostEvidenceIndex();
     const organMap = readOrganMap();
+    const coverage = readGuiNerveCoverage();
     const prompt = String(question || "").toLowerCase();
     const lines = [];
     if (!index.local_first_consultation) {
@@ -821,11 +887,12 @@
       if (Array.isArray(index.gaps) && index.gaps.length) {
         index.gaps.slice(0, 6).forEach((gap) => lines.push(`- ${gap.source || "gap"}: ${gap.why || "unknown"}`));
       }
-    } else if (/\b(control|body|limb|action|do)\b/.test(prompt)) {
+    } else if (/\b(control|body|limb|action|do|function|functions|gui|nerve|surface)\b/.test(prompt)) {
       lines.push("Observed Body controls:");
       (index.control_surfaces || []).forEach((control) => {
         lines.push(`- ${control.control} [${control.organ}]: ${control.proof_requirement}`);
       });
+      lines.push(`GUI surfaces: ${coverage.total_surfaces}; statuses: ${JSON.stringify(coverage.status_counts)}`);
       lines.push(index.consultation_contract.effectful_action_policy);
     } else {
       lines.push(`${index.host_identity.name}: ${index.host_identity.purpose}`);
@@ -1471,6 +1538,7 @@
     readDeclaration,
     readOrganMap,
     readHostEvidenceIndex,
+    readGuiNerveCoverage,
     readParityMatrix,
     consultHostEvidence,
     newFile,

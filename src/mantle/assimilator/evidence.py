@@ -13,6 +13,8 @@ import os
 import re
 from typing import Any, Dict, List
 
+from .surface_coverage import build_surface_coverage, flatten_dissection_symbols
+
 
 STOP_WORDS = frozenset(
     "how do i the a an to of in is what where which my this app use run does can "
@@ -24,6 +26,10 @@ def build_host_evidence_index(amap: Dict[str, Any],
                               dissection: Dict[str, Any]) -> Dict[str, Any]:
     """Build the resident's local-first consultation index from Phase-0 evidence."""
     substrate = dissection.get("substrate") or amap.get("substrate") or {}
+    surface_coverage = amap.get("surface_coverage")
+    if not isinstance(surface_coverage, dict):
+        symbols = flatten_dissection_symbols(dissection)
+        surface_coverage = build_surface_coverage(symbols)
     organ_summary: Dict[str, Any] = {}
     for organ, syms in (amap.get("organs") or {}).items():
         roles = sorted({s.get("role", "unknown") for s in syms})
@@ -53,6 +59,28 @@ def build_host_evidence_index(amap: Dict[str, Any],
         }
         for s in (amap.get("organs") or {}).get("limbs", [])[:12]
     ]
+    for surface in (surface_coverage.get("surfaces") or []):
+        if surface.get("surface_type") not in {"action", "dynamic_surface"}:
+            continue
+        control_surfaces.append({
+            "control": surface.get("id"),
+            "module": surface.get("module"),
+            "line": surface.get("line"),
+            "role": "GUI_SURFACE",
+            "vcw_status": surface.get("vcw_status"),
+            "risk": surface.get("risk"),
+            "proof_requirement": surface.get("proof_requirement"),
+        })
+
+    deduped_controls = []
+    seen_controls = set()
+    for control in control_surfaces:
+        cid = control.get("control")
+        if not cid or cid in seen_controls:
+            continue
+        seen_controls.add(cid)
+        deduped_controls.append(control)
+    control_surfaces = deduped_controls
 
     gaps = [
         {
@@ -78,10 +106,20 @@ def build_host_evidence_index(amap: Dict[str, Any],
             "No Limb control surface was observed; effectful actions need an explicit "
             "ControlBridge before use."
         )
+    missing_surfaces = [
+        item.get("surface")
+        for item in surface_coverage.get("maintenance_findings", [])
+        if item.get("status") == "maintenance_gap"
+    ]
+    if missing_surfaces:
+        limitations.append(
+            "GUI nerve maintenance gaps remain for %d surface(s); they must be proposed "
+            "to Body before any operability claim." % len(missing_surfaces)
+        )
 
     return {
         "kind": "HOST_EVIDENCE_INDEX",
-        "schema_version": "mantle-host-evidence-v1",
+        "schema_version": "mantle-host-evidence-v2",
         "local_first_consultation": True,
         "host": amap.get("host") or dissection.get("root"),
         "host_identity": {
@@ -101,6 +139,14 @@ def build_host_evidence_index(amap: Dict[str, Any],
         ],
         "organ_summary": organ_summary,
         "control_surfaces": control_surfaces,
+        "surface_coverage_summary": {
+            "kind": surface_coverage.get("kind"),
+            "schema_version": surface_coverage.get("schema_version"),
+            "total_surfaces": surface_coverage.get("total_surfaces", 0),
+            "status_counts": surface_coverage.get("status_counts", {}),
+            "type_counts": surface_coverage.get("type_counts", {}),
+            "maintenance_findings": len(surface_coverage.get("maintenance_findings", [])),
+        },
         "gaps": gaps,
         "limitations": limitations,
         "consultation_contract": {
@@ -108,6 +154,7 @@ def build_host_evidence_index(amap: Dict[str, Any],
                 "host_identity",
                 "organ_summary",
                 "control_surfaces",
+                "surface_coverage_summary",
                 "gaps",
                 "limitations",
             ],
@@ -151,10 +198,17 @@ def answer_from_host_evidence(question: str, amap: Dict[str, Any]) -> str:
                 "I have no verified Limb controls in my Phase-0 evidence yet. A Body "
                 "operation needs a ControlBridge and post-action proof before ok=true."
             )
+        surface_summary = index.get("surface_coverage_summary") or {}
         lines = ["Observed Body/Limb controls from local evidence:"]
+        if surface_summary:
+            lines.append("- GUI surfaces: %s; statuses: %s" % (
+                surface_summary.get("total_surfaces", 0),
+                surface_summary.get("status_counts", {}),
+            ))
         for c in controls[:8]:
+            status = c.get("vcw_status") or c.get("role")
             lines.append("- `%s` at %s:%s [%s]" % (
-                c.get("control"), c.get("module"), c.get("line"), c.get("role")))
+                c.get("control"), c.get("module"), c.get("line"), status))
         lines.append("Every control must produce Action Execution Proof before success.")
         return "\n".join(lines)
 

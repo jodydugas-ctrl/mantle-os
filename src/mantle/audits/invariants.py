@@ -2285,6 +2285,47 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
                        inside_refused))
 
 
+def t_assimilator_gui_surface_nerve_coverage():
+    """ASSIM-2: discovered GUI elements are never silently omitted. Each visible
+    surface becomes verified, observer-registered, sense-only, not implemented, or
+    an explicit maintenance gap, and helper-wired Qt actions count as nerve
+    evidence."""
+    from ..assimilator.surface_coverage import build_surface_coverage
+    symbols = [
+        {"kind": "ui-action", "symbol": "actionPaste", "module": "MainWindow.ui",
+         "line": 10, "label": "Paste", "shortcut": "Ctrl+V",
+         "placements": ["menuEdit:Edit"]},
+        {"kind": "ui-action", "symbol": "actionMystery", "module": "MainWindow.ui",
+         "line": 11, "label": "Mystery"},
+        {"kind": "ui-action", "symbol": "actionThis_is_not_currently_implemented",
+         "module": "MainWindow.ui", "line": 12, "label": "This is not currently implemented"},
+        {"kind": "ui-menu", "symbol": "menuEdit", "module": "MainWindow.ui",
+         "line": 13, "label": "Edit"},
+        {"kind": "ui-widget", "symbol": "pushExitFullScreen", "module": "MainWindow.ui",
+         "line": 14, "class": "QPushButton", "label": "Exit Full Screen"},
+    ]
+    edges = [
+        {"kind": "qt-helper-action", "sender": "ui->actionPaste",
+         "signal": "QAction::triggered", "slot": "&ScintillaNext::paste",
+         "module": "MainWindow.cpp", "line": 340},
+    ]
+    coverage = build_surface_coverage(symbols, edges,
+                                      verified_controls=["actionPaste"])
+    by_id = {surface["id"]: surface for surface in coverage["surfaces"]}
+    ok = (
+        coverage["total_surfaces"] == 5
+        and by_id["actionPaste"]["vcw_status"] == "verified_body_operation"
+        and by_id["actionPaste"]["connection_evidence"][0]["kind"] == "qt-helper-action"
+        and by_id["actionMystery"]["vcw_status"] == "maintenance_gap"
+        and by_id["actionThis_is_not_currently_implemented"]["vcw_status"] == "not_implemented"
+        and by_id["menuEdit"]["vcw_status"] == "sense_only"
+        and by_id["pushExitFullScreen"]["vcw_status"] == "sense_only"
+        and coverage["contract"]["no_silent_gui_omission"] is True
+    )
+    return ok, "surfaces=%d statuses=%s" % (
+        coverage["total_surfaces"], coverage["status_counts"])
+
+
 # ============================================================================
 # 22. The Reproduction organ (the ninth organ) + SPORE-DISTILLATION
 # ============================================================================
@@ -2599,6 +2640,7 @@ TESTS = [
     ("STATUS-1 organism-status-adapter",       t_core_status_adapter_current_vcw_api),
     ("APPBAND-1 safe-app-band-allocation",     t_app_band_allocator_reserves_atlas),
     ("ASSIM-1 substrate+artifact-boundary",    t_assimilator_substrate_gaps_and_outside_host_gate),
+    ("ASSIM-2 gui-surface-nerve-coverage",     t_assimilator_gui_surface_nerve_coverage),
     ("REPRO-1 atlas+span-overlap-gate",        t_repro_atlas_overlap_gate),
     ("REPRO-2 ninth-organ+seed-carry",         t_repro_organ_and_seed_carry),
     ("REPRO-3 every-hatch-vaults-its-egg",     t_repro_every_hatch_vaults_its_egg),

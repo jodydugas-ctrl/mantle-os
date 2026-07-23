@@ -14,6 +14,7 @@ from typing import Any, Dict
 
 from .scanner import scan_project
 from .organ_map import build_map, propose_genome, ORGANS
+from .surface_coverage import render_surface_coverage_markdown
 
 
 def dry_run(root: str) -> Dict[str, Any]:
@@ -117,6 +118,20 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
         limitations = evidence.get("limitations", [])
         if limitations:
             L.append("- **Known limits:** %s" % " ".join(limitations[:2]))
+        L.append("")
+    coverage = amap.get("surface_coverage") or {}
+    if coverage:
+        L.append("## A.8.1 GUI nerve coverage")
+        L.append("")
+        L.append("- **Total GUI/control surfaces:** %d" %
+                 coverage.get("total_surfaces", 0))
+        L.append("- **Status counts:** `%s`" %
+                 json.dumps(coverage.get("status_counts", {}), sort_keys=True))
+        L.append("- **Maintenance findings:** %d" %
+                 len(coverage.get("maintenance_findings", [])))
+        L.append("- **Contract:** every discovered GUI surface is either verified, "
+                 "observer-only, sense-only, not implemented, or an explicit "
+                 "maintenance gap.")
         L.append("")
     L.append("## A.9 Gap report")
     if amap["gap_report"]:
@@ -237,4 +252,15 @@ def write_artifacts(result: Dict[str, Any], out_dir: str, *,
         f.write(result["inventory_md"])
     with open(js, "w", encoding="utf-8") as f:
         json.dump(result["map"], f, indent=2)
-    return {"inventory": md, "map": js}
+    coverage = result["map"].get("surface_coverage") or {}
+    paths = {"inventory": md, "map": js}
+    if coverage:
+        cov = os.path.join(out_dir, "GUI_NERVE_COVERAGE.json")
+        with open(cov, "w", encoding="utf-8") as f:
+            json.dump(coverage, f, indent=2)
+        paths["surface_coverage"] = cov
+        cov_md = os.path.join(out_dir, "GUI_NERVE_COVERAGE.md")
+        with open(cov_md, "w", encoding="utf-8") as f:
+            f.write(render_surface_coverage_markdown(coverage))
+        paths["surface_coverage_md"] = cov_md
+    return paths

@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 from ..vcw.bands import make_band_boot
 from .evidence import build_host_evidence_index
+from .surface_coverage import build_surface_coverage, flatten_dissection_symbols
 
 ROLE_TO_ORGAN = {
     "REFLEX": "senses",
@@ -60,12 +61,14 @@ def build_map(dissection: Dict[str, Any]) -> Dict[str, Any]:
         })
 
     missing_organs = [o for o in ORGANS if not organ_symbols[o]]
+    surface_coverage = build_surface_coverage(flatten_dissection_symbols(dissection))
     amap = {
         "host": dissection["root"],
         "substrate": substrate,
         "organs": organ_symbols,
         "external_host_code": external,
         "gap_report": gaps,
+        "surface_coverage": surface_coverage,
         "role_counts": role_counts,
         "missing_organs": missing_organs,    # information too: no immune = fragile, etc.
         "proposed_genome": [b["band"] for b in propose_genome(role_counts)],

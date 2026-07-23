@@ -39,6 +39,16 @@ command refuses an output directory that is the host tree or inside the host tre
 proves every non-nest host file unchanged. Hook insertion before the sign-off remains
 `HF-B42`.
 
+Phase 0 must also build a GUI nerve coverage map when the substrate exposes a visible
+control surface. For Qt/native hosts this means parsing `.ui` files for actions, menus,
+toolbars, widgets, shortcuts, and placements, then merging direct signal connections and
+helper-wired edges such as `connectEditorAction(...)`. For web/app faces this means every
+declared button, input, menu item, or command surface appears in the Human Surface Map.
+Every discovered surface must have one VCW status: `verified_body_operation`,
+`observer_registered`, `sense_only`, `not_implemented`, or `maintenance_gap`. A resident
+may know about all of these, but it may claim operability only for controls with
+Body-owned Action Execution Proof.
+
 ## 2. Wrapping
 
 Only after the Phase-0 gate is signed:
@@ -91,6 +101,12 @@ open hard-fails leads to the same MIND fusion and Stage-2 gate.
   map, hook graph, certification receipts, controls, gaps, and limitations. Provider
   reasoning may interpret that evidence, but it must not replace it or hide missing
   evidence behind confident prose.
+- When a resident is asked what functions it has, answer from GUI nerve coverage and
+  Body proof status. Do not answer from a capped sample of controls, and do not collapse
+  observer-only knowledge into verified ability.
+- DREAM/MAINTENANCE may surface missing or unverified GUI nerves as proposed Body/tool
+  work. The MIND proposes those changes; Body implements and proves them after operator
+  review.
 
 ## 5. Assimilation emits a spore
 
