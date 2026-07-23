@@ -5,6 +5,11 @@ stack of 800 real PNG layers (800×800 RGBA) in a ZIP container, addressable byt
 (`offset = (y*SIDE + x) * 4`), readable in any image viewer. *If it's not in the VCW, it
 didn't happen.* The on-disk format is unchanged from v2 (`vcw-cube-png-v2`).
 
+For the canonical measurement anatomy shared by cube layers, app-band ranges, spores,
+private tissue, and display surfaces, see
+[`VCW_Anatomical_Atlas.md`](VCW_Anatomical_Atlas.md). The atlas consolidates coordinate
+ownership and colour/visibility semantics; this guide explains substrate behaviour.
+
 ## The mental model
 
 ```
@@ -16,9 +21,8 @@ veil   = private bands read as [] unless deliberately lifted; tombstoned/quarant
          entries never surface
 ```
 
-Standard genome (reserved bands): identity 100–149 · facts 150–199 · events 200–249 ·
-discoveries 250–299 · senses 300–399 · immune 400–449 · brain 450–499 · thoughts 500–549
-(private) · app bands 550–749 · tail 750–799.
+Standard genome ownership, app-band reservations, and tail space are defined in the
+anatomical atlas and exported from `mantle.vcw.atlas`.
 
 ## Boot sectors and drivers (two-level encoding)
 

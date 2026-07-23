@@ -15,6 +15,7 @@ from .drivers import (LogJsonDriver, KeyValueDriver, CalendarSpatialDriver, Exec
                       ProvenanceError, validate_skill_code, validate_calcify_payload,
                       provenance_is_trusted, trial, register_runner, get_runner)
 from .cube import Cube, CapacityError, SealError
+from .atlas import ATLAS_FORMAT, VCW_ATLAS, build_atlas, verify_atlas
 from . import metabolism
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "CapabilityError", "IntegrityError", "TrustError", "SandboxError", "ProvenanceError",
     "validate_skill_code", "validate_calcify_payload", "provenance_is_trusted", "trial",
     "register_runner", "get_runner", "Cube", "CapacityError", "SealError", "metabolism",
+    "ATLAS_FORMAT", "VCW_ATLAS", "build_atlas", "verify_atlas",
 ]

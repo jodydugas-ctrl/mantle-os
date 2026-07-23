@@ -2173,11 +2173,14 @@ def t_core_status_adapter_current_vcw_api():
 def t_app_band_allocator_reserves_atlas():
     """APPBAND-1: app-band generators allocate only from free caller gaps and the
     compiler refuses manually supplied spans that overlap reserved vault/phenotype/
-    spore/applet atlas ranges."""
+    spore/applet atlas ranges. The VCW anatomical atlas also matches live cube,
+    app-band, and spore constants."""
     from ..compiler import GenomeError, validate_genome
     from ..vcw.bands import allocate_app_band, app_band_conflicts
+    from ..vcw.atlas import build_atlas, verify_atlas
     existing = [allocate_app_band("terminal", 8)]
     second = allocate_app_band("tape", 20, existing=existing)
+    atlas = build_atlas()
     reserved_refused = _expect_raise(
         lambda: validate_genome([{"band": "bad_terminal", "head": 630, "span": 10}]),
         GenomeError,
@@ -2189,8 +2192,17 @@ def t_app_band_allocator_reserves_atlas():
         and second["head"] == 608
         and second["head"] + second["span"] <= 638
     )
-    return (reserved_refused and no_conflict and ordered_gaps,
-            "allocated %s[%d-%d], %s[%d-%d]; reserved overlap refused"
+    atlas_ok = (
+        verify_atlas() == []
+        and atlas["atlas_format"] == "vcw-anatomical-atlas-v1"
+        and atlas["cube"]["format"] == "vcw-cube-png-v2"
+        and atlas["spore"]["vcw_region"]["height"] == 1000
+        and atlas["spore"]["display_region"]["y"] == 1000
+        and atlas["measurement_rules"]["measurement_scaling"].startswith("inspectors")
+    )
+    return (reserved_refused and no_conflict and ordered_gaps and atlas_ok,
+            "allocated %s[%d-%d], %s[%d-%d]; reserved overlap refused; "
+            "VCW atlas verified"
             % (existing[0]["band"], existing[0]["head"],
                existing[0]["head"] + existing[0]["span"] - 1,
                second["band"], second["head"], second["head"] + second["span"] - 1))

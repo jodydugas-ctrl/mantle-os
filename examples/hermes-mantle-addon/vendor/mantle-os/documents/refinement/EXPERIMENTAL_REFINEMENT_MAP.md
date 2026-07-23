@@ -759,6 +759,27 @@ status, receipt, and certification checks.
 
 Proof path: `PYTHONPATH=src python -m mantle check`.
 
+## Pass 9 Receipt
+
+Function served: VCW visual facts were correct but scattered across the cube codec, band atlas,
+spore format, face renderer, and guides. Measurement views need one canonical anatomy surface so a
+graphic is reproducible evidence rather than interpretation.
+
+Changes:
+
+- Added `src/mantle/vcw/atlas.py`, a small machine-readable VCW anatomical atlas derived from live
+  cube, app-band, and spore constants.
+- Added `documents/guides/VCW_Anatomical_Atlas.md` for coordinate ownership, content-vs-activity
+  colour, private tissue, transparency, nearest-neighbor inspection, and deterministic rendering.
+- Updated VCW/spore documentation to point at the atlas instead of repeating ownership facts.
+- Extended the existing APPBAND invariant so the atlas is checked without increasing the public
+  invariant count.
+
+Deletion decision: no files were deleted. The change deliberately avoids a colour ontology,
+calibration grid, version-negotiation layer, or renderer rewrite.
+
+Proof path: `PYTHONPATH=src python -m mantle check`.
+
 ## Pass 6 Receipt
 
 Function served: the optimization audit's alignment matrix needed to separate real stale

@@ -332,7 +332,8 @@ documents/               the books and the living doctrine
   FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   Mantle_Architecture.md · guides/ (VCW · lifecycle · contracts · audit · visual)
   Mantle_Doctrine.md (+ the conceptual doc set)   the living doctrine — still the creed
-  assets/                diagrams (SVG, agent-readable) + rendered art
+    assets/                diagrams (SVG, agent-readable) + rendered art
+    guides/VCW_Anatomical_Atlas.md  canonical VCW measurement anatomy
 examples/                example AppAIs + the normative substrate
   eggs/                  greeter.json (hatch it) · calculator.json · notes_graft.json (a graft egg)
   spore/                 a custom VCW substrate in PNG form — purity audit + VCW-conformance proof + a seed
