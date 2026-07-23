@@ -4,10 +4,9 @@
 *Read this before the PRIMER. The PRIMER tells you how to build; this tells you what you are
 building and why it matters. Everything in the framework is downstream of these ideas.*
 
-> Source texts for this doctrine live in [`documents/`](./):
-> `New_Commandments.txt` (the creed) and `Consciousness_Across_Temporal_Scales.md` (the
-> cosmology). They are the philosophical ground; the paragraphs below bind each idea to a
-> concrete part of the architecture.
+> The cosmology source text lives in [`documents/`](./):
+> `Consciousness_Across_Temporal_Scales.md`. It is the philosophical ground; the paragraphs
+> below bind each idea to a concrete part of the architecture.
 
 ---
 
