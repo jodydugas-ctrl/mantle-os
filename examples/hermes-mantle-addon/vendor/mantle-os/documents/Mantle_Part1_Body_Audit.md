@@ -91,10 +91,11 @@ breakage axis (B-rows + hard-fails HF-Bxx), the self-regulating tissue (SELF / N
 
 | #    | Requirement | HF | Pass? | Notes |
 |------|-------------|----|-------|-------|
-| B-25 | Every human-visible control appears in the Human Surface Map (**Senses** coverage) | HF-B44 | | |
+| B-25 | Every human-visible control appears in the Human Surface Map (**Senses** coverage), including the AppAI terminal opener | HF-B44 | | |
 | B-26 | Each control has a working ControlBridge path + recorded proof (**Limbs**) | HF-B44 | | |
 | B-27 | Graphical faces use the declarative App-Face Bridge, not raw host (**Limbs**) | HF-B27 | | |
 | B-28 | All external I/O flows through Senses (in) / Limbs (out) — nothing bypasses | — | | |
+| B-28a | Text-entry surfaces append VCW entries only on submit/blur, not every keypress | HF-B51 | | |
 
 ## A1.10 — Limbs / Arms
 
@@ -172,6 +173,7 @@ A `FAIL` on any of these blocks the gate. (Codes are stable across the framework
 | HF-B48 | A reflex (exec) layer exceeds its declared capabilities |
 | HF-B49 | A self-inquiry/inferred answer is written to `facts` as if observed/verified |
 | HF-B50 | An untrusted/foreign-provenance reflex (exec) layer ran on a non-isolating runner (the Python runner) instead of the hard-sandboxed `wasm` runner |
+| HF-B51 | A text input records each keystroke into the VCW instead of using a submit/blur commit boundary |
 
 ### Waste axis (B-W) — "Failure is not the end. Waste is."
 | #    | Requirement | Pass? | Notes |

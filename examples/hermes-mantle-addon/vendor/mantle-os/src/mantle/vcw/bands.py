@@ -18,7 +18,7 @@ metabolism. Capacity NEVER triggers rebirth: rebirth stays a separate, chosen re
 from __future__ import annotations
 
 import hashlib
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 # ---- capacity thresholds (fractions of a band's reserved span) -------------
 OVERFLOW_THRESHOLD  = 0.75   # metabolize: compact, dedupe, reclaim
@@ -93,6 +93,85 @@ APP_BAND_ATLAS = {
     "applets_organs":   (736, 8),
     "applets_log":      (744, 4),
 }
+
+
+def _span_of(spec: Dict[str, Any]) -> Tuple[int, int, str]:
+    head = int(spec["head"])
+    span = max(1, int(spec.get("span", 1)))
+    return head, head + span, str(spec.get("band", "?"))
+
+
+def _ranges_overlap(a_head: int, a_end: int, b_head: int, b_end: int) -> bool:
+    return a_head < b_end and b_head < a_end
+
+
+def app_band_reserved_spans() -> List[Tuple[int, int, str]]:
+    """Framework-reserved app-layer spans as half-open ranges.
+
+    Returned shape is `(head, end, name)`, where `end` is exclusive. Caller bands
+    should be allocated only in the gaps, not by hand-picking heads that may later
+    collide with vault, phenotype, spore, or applet tissue.
+    """
+    spans = []
+    for name, (head, span) in APP_BAND_ATLAS.items():
+        spans.append((head, head + span, name))
+    return sorted(spans)
+
+
+def app_band_conflicts(specs: Iterable[Dict[str, Any]]) -> List[str]:
+    """Return collisions between proposed app bands and the reserved atlas.
+
+    Exact declarations of framework-owned atlas bands are allowed so built-in
+    helpers such as `phenotype_bands()` and `applet_bands()` can self-validate.
+    Any other overlap is refused: it would eventually stomp a physical VCW layer.
+    """
+    problems: List[str] = []
+    reserved = app_band_reserved_spans()
+    for spec in specs:
+        head, end, band = _span_of(spec)
+        if not (APP_BAND_RANGE[0] <= head <= APP_BAND_RANGE[1]):
+            continue
+        exact = APP_BAND_ATLAS.get(band)
+        if exact is not None and exact == (head, end - head):
+            continue
+        for r_head, r_end, r_name in reserved:
+            if _ranges_overlap(head, end, r_head, r_end):
+                problems.append(
+                    "band %r [%d-%d] overlaps reserved app band %r [%d-%d]"
+                    % (band, head, end - 1, r_name, r_head, r_end - 1))
+    return problems
+
+
+def allocate_app_band(band: str, span: int, *,
+                      encoding: str = "log-json",
+                      params: Optional[Dict[str, Any]] = None,
+                      private: bool = False,
+                      purpose: str = "",
+                      existing: Optional[Iterable[Dict[str, Any]]] = None
+                      ) -> Dict[str, Any]:
+    """Allocate the first free caller-owned app-band slice.
+
+    This avoids the NotepadNext/calculator failure mode where a hand-picked span
+    crossed the seed vault. The allocator treats APP_BAND_ATLAS plus any
+    caller-supplied existing bands as occupied and returns a normal boot sector.
+    """
+    width = max(1, int(span))
+    occupied = app_band_reserved_spans()
+    for spec in existing or []:
+        head, end, name = _span_of(spec)
+        occupied.append((head, end, name))
+    occupied.sort()
+
+    head = APP_BAND_RANGE[0]
+    for occ_head, occ_end, _name in occupied:
+        if head + width <= occ_head:
+            return make_band_boot(band, head, encoding, params=params,
+                                  private=private, span=width, purpose=purpose)
+        head = max(head, occ_end)
+    if head + width <= APP_BAND_RANGE[1] + 1:
+        return make_band_boot(band, head, encoding, params=params,
+                              private=private, span=width, purpose=purpose)
+    raise ValueError("no free app-band slice can fit band %r span %d" % (band, width))
 
 
 def genome_overlaps(genome) -> List[str]:

@@ -1,6 +1,6 @@
 # VCW Applet Bodies — APPLET-BODY-CAPSULE
 
-*Doctrine note. The Grimoire is one canonical prose book — First Edition
+*Doctrine note. The Grimoire is one canonical Grimoire 2.0 file
 ([`grimoire/`](grimoire/README.md)); per its Single Truth law this note lives beside the
 other app doctrine documents, not inside the Grimoire. It documents a lawful NECROMANCY
 subspell implemented in [`src/mantle/applet_body.py`](../src/mantle/applet_body.py).*
@@ -34,6 +34,20 @@ chunk hash-valid, bundle hash intact, no stored path escapes the applet root, or
 and state present, face SELF-openable, export dry-run verified, all bands inert data
 bands — and certifies **nothing alive**. A capsule is never falsely labeled a Body.
 
+## AppAI terminal and text-entry discipline
+
+Every wearable app face should declare an AppAI contact affordance. GUI faces expose an
+`AppAI` button, menu item, tab, or platform-native equivalent that opens a terminal-like
+chat surface with the prompt box at the bottom; command-line faces expose the same surface
+as `<appname> --appAI`. The terminal is Body-owned and MIND-facing: opening it is a Limb
+operation, prompt submission enters through Senses, and any MIND answer still obeys the
+normal `thoughts`/`brain` write surface.
+
+Faces must not append a VCW row for every character typed in a text field. Text entry is
+durable only at a commit boundary: submit, blur/focus-loss, or an explicitly declared
+low-volume host event. This keeps the VCW coherent and prevents user typing from becoming
+hundreds of meaningless memories.
+
 ## The spell shape
 
 **clone → dissect → capsule → audit → optional zombie body.** Never one gulp.
@@ -57,6 +71,12 @@ reconstructs the files from the VCW into a local directory, verifying every hash
 writing, refusing path traversal, and refusing overwrite unless asked.
 
 ## Commands
+
+GitHub applet ingestion uses `git -c core.longpaths=true clone` so Windows hosts can
+checkout deep native/vendor trees before Mantle performs its read-only census. Generated
+app bands should be assigned with `allocate_app_band()` or exact framework atlas entries;
+manual spans that overlap reserved vault, phenotype, spore, or applet tissue are refused
+by `validate_genome()`.
 
 ```bash
 python -m mantle applet-create <organism-dir> <source-dir> <name>   # raise a capsule

@@ -193,7 +193,12 @@ def assimilate(argv):
     print("=" * 74)
     result = dry_run(root)
     amap = result["map"]
+    substrate = result["dissection"].get("substrate") or {}
     print("\n  Python files scanned : %d" % result["dissection"]["python_files"])
+    if substrate:
+        print("  Detected substrate   : %s" % ", ".join(substrate.get("languages", [])))
+        print("  Adaptive native work : %d file(s)" %
+              substrate.get("coverage", {}).get("requires_adaptive_native_tools", 0))
     print("  Symbol roles         : %s" % dict(sorted(amap["role_counts"].items())))
     print("\n  THE ORGAN MAP (host tissue -> organs):")
     for organ, syms in amap["organs"].items():

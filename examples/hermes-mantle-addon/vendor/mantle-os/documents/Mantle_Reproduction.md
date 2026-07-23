@@ -20,7 +20,7 @@ The old split of *"grow from scratch (Path A)"* vs *"assimilate an existing app 
 **same axis**: a seed has no host; a graft lives in one. Both require the full invariant suite as
 technical evidence, but that evidence never grants permission. A fresh, target-bound reproduction
 decision and applicable DNR policy must independently authorize the act. Both end at the same
-certified Body. Since molt 3.7.0 the ceremonies live under the **Reproduction organ**
+certified Body. Under Grimoire 2.0 the ceremonies live under the **Reproduction organ**
 (`src/mantle/organs/reproduction.py`): the seed vault is a birthright, the sealed seed survives every rebirth, and SPORE-DISTILLATION lets a spore become the primer — never the key — of the body it births.
 
 ```bash

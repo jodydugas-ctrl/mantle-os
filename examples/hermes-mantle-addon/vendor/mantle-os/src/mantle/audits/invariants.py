@@ -2148,6 +2148,91 @@ def t_applet_secret_boundary_and_bands():
                 "the validate_genome gate still refuses out-of-range heads")
 
 
+def t_core_status_adapter_current_vcw_api():
+    """STATUS-1: generated lifecycle audits and AppAI terminals use one stable
+    organism-status adapter backed by current Prime/VCW APIs, not stale helpers such as
+    Cube.visible(), Body.generation(), or Organism.verify()."""
+    from ..core.status import organism_status
+    org = _born()
+    org.memory.remember("facts", {"k": "v"})
+    status = organism_status(org)
+    facts = next(row for row in status["bands"] if row["band"] == "facts")
+    ok = (
+        status["identity"] == "TestAppAI"
+        and status["generation"] == org.prime.generation
+        and status["band_count"] == len(org.prime.bands)
+        and facts["visible_entries"] == 1
+        and status["verify_ok"]
+        and status["verify_errors"] == []
+    )
+    return ok, ("identity=%s generation=%d bands=%d verify=%s facts_visible=%d"
+                % (status["identity"], status["generation"], status["band_count"],
+                   status["verify_ok"], facts["visible_entries"]))
+
+
+def t_app_band_allocator_reserves_atlas():
+    """APPBAND-1: app-band generators allocate only from free caller gaps and the
+    compiler refuses manually supplied spans that overlap reserved vault/phenotype/
+    spore/applet atlas ranges."""
+    from ..compiler import GenomeError, validate_genome
+    from ..vcw.bands import allocate_app_band, app_band_conflicts
+    existing = [allocate_app_band("terminal", 8)]
+    second = allocate_app_band("tape", 20, existing=existing)
+    reserved_refused = _expect_raise(
+        lambda: validate_genome([{"band": "bad_terminal", "head": 630, "span": 10}]),
+        GenomeError,
+    )[0]
+    no_conflict = app_band_conflicts(existing + [second]) == []
+    ordered_gaps = (
+        existing[0]["head"] == 600
+        and existing[0]["span"] == 8
+        and second["head"] == 608
+        and second["head"] + second["span"] <= 638
+    )
+    return (reserved_refused and no_conflict and ordered_gaps,
+            "allocated %s[%d-%d], %s[%d-%d]; reserved overlap refused"
+            % (existing[0]["band"], existing[0]["head"],
+               existing[0]["head"] + existing[0]["span"] - 1,
+               second["band"], second["head"], second["head"] + second["span"] - 1))
+
+
+def t_assimilator_substrate_gaps_and_outside_host_gate():
+    """ASSIM-1: Phase-0 first discovers the host substrate, reports unsupported
+    native/Qt coverage explicitly, and refuses to write inventory artifacts inside the
+    host tree."""
+    from ..assimilator import dry_run, write_artifacts
+    with tempfile.TemporaryDirectory() as td:
+        host = os.path.join(td, "NativeQt")
+        os.makedirs(os.path.join(host, "src"))
+        with open(os.path.join(host, "CMakeLists.txt"), "w", encoding="utf-8") as f:
+            f.write("project(NativeQt LANGUAGES CXX)\n")
+        with open(os.path.join(host, "src", "main.cpp"), "w", encoding="utf-8") as f:
+            f.write("int main(){return 0;}\n")
+        with open(os.path.join(host, "src", "MainWindow.ui"), "w", encoding="utf-8") as f:
+            f.write("<ui version=\"4.0\"></ui>\n")
+        result = dry_run(host)
+        substrate = result["dissection"]["substrate"]
+        inventory = result["inventory_md"]
+        outside = os.path.join(td, "artifacts")
+        paths = write_artifacts(result, outside)
+        inside_refused = _expect_raise(lambda: write_artifacts(result, os.path.join(host, "mantle")),
+                                       ValueError)[0]
+        ok = (
+            "native-c-family" in substrate["languages"]
+            and "qt-resource-ui" in substrate["languages"]
+            and "cmake" in substrate["languages"]
+            and substrate["coverage"]["requires_adaptive_native_tools"] == 2
+            and len(substrate["unsupported"]) == 2
+            and "Substrate coverage" in inventory
+            and os.path.exists(paths["inventory"])
+            and inside_refused
+        )
+        return ok, ("languages=%s adaptive=%d inside_write_refused=%s"
+                    % (substrate["languages"],
+                       substrate["coverage"]["requires_adaptive_native_tools"],
+                       inside_refused))
+
+
 # ============================================================================
 # 22. The Reproduction organ (the ninth organ) + SPORE-DISTILLATION
 # ============================================================================
@@ -3299,7 +3384,7 @@ def t_optimization_bounded_closure_policy():
 
 
 def t_grimoire_single_tomb():
-    """GRIM-1: the Grimoire is one canonical prose book (First Edition). The old AppAI chapter
+    """GRIM-1: the Grimoire is one canonical Grimoire 2.0 file. The old AppAI chapter
     surface must not remain as a competing source of authority or stale path reference."""
     root = paths.REPO_ROOT
     tomb = os.path.join(root, "documents", "grimoire", "The Grimoire.md")
@@ -3332,12 +3417,12 @@ def t_grimoire_single_tomb():
         and os.path.exists(readme)
         and not os.path.exists(old_chapter)
         and tomb_text.startswith("# The Grimoire")
-        and "**Version:** 1.0.0" in tomb_text
-        and "# §9. ENVIRONMENT BINDING" in tomb_text
-        and "First Edition" in readme_text
+        and "**Version:** 2.0.0" in tomb_text
+        and "ENVIRONMENT BINDING" in tomb_text
+        and "Grimoire 2.0" in readme_text
         and not stale
     )
-    return ok, ("single Grimoire book (First Edition); old chapter absent; stale refs=%s"
+    return ok, ("single Grimoire 2.0 file; old chapter absent; stale refs=%s"
                 % (stale or "none"))
 
 
@@ -3361,8 +3446,8 @@ def t_version_alignment_map():
     ok = (
         alignment["status"] == "PASS"
         and alignment["package_version"] == alignment["module_version"]
-        and alignment["grimoire_stamp"] == "First Edition"
-        and alignment["grimoire_version"] == "1.0.0"
+        and alignment["grimoire_stamp"] == "Grimoire 2.0"
+        and alignment["grimoire_version"] == "2.0.0"
         and alignment["security_invariant_count"] == len(TESTS)
         and expected_rows.issubset(rows)
         and all(row["status"] == "PASS" for row in rows.values())
@@ -3459,6 +3544,9 @@ TESTS = [
     ("APPLET-3 audit-catches-tamper",          t_applet_audit_catches_tamper),
     ("APPLET-4 html-face+wear",                t_applet_html_face_and_wear),
     ("APPLET-5 secret-boundary+band-gate",     t_applet_secret_boundary_and_bands),
+    ("STATUS-1 organism-status-adapter",       t_core_status_adapter_current_vcw_api),
+    ("APPBAND-1 safe-app-band-allocation",     t_app_band_allocator_reserves_atlas),
+    ("ASSIM-1 substrate+artifact-boundary",    t_assimilator_substrate_gaps_and_outside_host_gate),
     ("REPRO-1 atlas+span-overlap-gate",        t_repro_atlas_overlap_gate),
     ("REPRO-2 ninth-organ+seed-carry",         t_repro_organ_and_seed_carry),
     ("REPRO-3 every-hatch-vaults-its-egg",     t_repro_every_hatch_vaults_its_egg),

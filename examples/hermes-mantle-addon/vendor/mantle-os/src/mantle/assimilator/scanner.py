@@ -25,14 +25,16 @@ writes anything; its output feeds organ_map + report.
 
 This module is the single canonical scanner/classifier for the whole framework: anchor,
 graft, and the egg/RESURGERE reconstruct path all reuse it (no second copy exists). The
-doctrine of record is documents/grimoire/The Grimoire.md, MantleOS @ assimilation law --
-operational detail".
+doctrine of record is documents/grimoire/The Grimoire.md, sections §§7/9
+(NECROMANCY + Mantle OS binding).
 """
 from __future__ import annotations
 
 import ast
 import os
 from typing import Any, Dict, List
+
+from .substrate import discover as discover_substrate
 
 ROLES = ("REFLEX", "SENSOR_EVENT", "ARM_ACTION", "DISPLAY_RENDER", "STATE_TRANSITION",
          "PERSISTENCE_WRITE", "HEARTBEAT", "MIND_AFFORDANCE", "SECRET_BOUNDARY",
@@ -139,6 +141,7 @@ def scan_project(root: str) -> Dict[str, Any]:
         scanner_ts = None
         multilang = False
 
+    substrate = discover_substrate(root)
     files: List[Dict[str, Any]] = []
     py_count = 0
     for dirpath, dirnames, filenames in os.walk(root):
@@ -152,4 +155,4 @@ def scan_project(root: str) -> Dict[str, Any]:
             elif multilang and os.path.splitext(fn)[1].lower() in scanner_ts.LANGS:
                 files.append(scanner_ts.scan_file(full, os.path.relpath(full, root)))
     return {"root": os.path.abspath(root), "python_files": py_count, "files": files,
-            "read_only": True, "multilang": multilang}
+            "read_only": True, "multilang": multilang, "substrate": substrate}

@@ -35,7 +35,7 @@ def _included_source_files() -> dict[str, Path]:
                 continue
             if rel.parts[:2] == ("examples", "hermes-mantle-addon"):
                 continue
-            files[str(rel)] = path
+            files[rel.as_posix()] = path
     return files
 
 
@@ -44,7 +44,7 @@ def _digest(path: Path) -> str:
 
 
 def _tracked_vendor_files() -> set[str]:
-    prefix = str(VENDOR_ROOT.relative_to(REPOSITORY_ROOT)) + "/"
+    prefix = VENDOR_ROOT.relative_to(REPOSITORY_ROOT).as_posix() + "/"
     completed = subprocess.run(
         ["git", "ls-files", "-z", "--", prefix],
         cwd=REPOSITORY_ROOT, capture_output=True, check=True,
@@ -60,7 +60,7 @@ def _tracked_vendor_files() -> set[str]:
 def status() -> dict[str, object]:
     expected = {rel: _digest(path) for rel, path in _included_source_files().items()}
     actual = {
-        str(path.relative_to(VENDOR_ROOT)): _digest(path)
+        path.relative_to(VENDOR_ROOT).as_posix(): _digest(path)
         for path in sorted(VENDOR_ROOT.rglob("*"))
         if path.is_file() and "__pycache__" not in path.parts
         and path.suffix not in {".pyc", ".pyo"}

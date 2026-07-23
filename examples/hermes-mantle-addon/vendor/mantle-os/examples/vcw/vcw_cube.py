@@ -438,7 +438,8 @@ def _decode_layer_payload(raw: bytes, band: str, idx: int,
 
 
 def _sync_file(path: str) -> None:
-    descriptor = os.open(path, os.O_RDONLY)
+    flags = os.O_RDWR if os.name == "nt" else os.O_RDONLY
+    descriptor = os.open(path, flags)
     try:
         os.fsync(descriptor)
     finally:

@@ -25,6 +25,7 @@ desktop.ini
 *.log
 .cache/
 tmp/
+work/
 
 # Node (the headless demo smoke tests under examples/tests/ — Python stays dependency-free)
 node_modules/

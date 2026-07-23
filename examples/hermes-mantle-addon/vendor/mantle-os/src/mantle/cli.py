@@ -183,10 +183,14 @@ def cmd_vitals(argv):
         print(str(e)); return 1
     led = v["ledger"]
     print("resident   : %s   (generation %d)" % (v["resident"], v["generation"]))
+    print("vcw        : %d band(s)   verify=%s"
+          % (v["band_count"], "ok" if v["verify_ok"] else "FAILED"))
     print("state      : %s   balance=%.1f / granted=%.1f credits   keys=%s"
           % (v["state"], led["balance"], led["granted"], led["keys"] or "none"))
     print("value      : %d record(s) of delivered work" % v["value_delivered"])
     print("immune log : %d event(s)" % v["immune_events"])
+    if v["verify_errors"]:
+        print("verify err : %s" % "; ".join(v["verify_errors"][:2]))
     print("portrait   : %s   (painted just now, by the resident)" % v["portrait"])
     return 0
 

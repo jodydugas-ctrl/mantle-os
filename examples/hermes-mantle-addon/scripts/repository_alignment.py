@@ -19,8 +19,8 @@ ROOT = ADDON_ROOT.parents[1]
 JSON_REPORT = ADDON_ROOT / "docs" / "REPOSITORY_ALIGNMENT.json"
 MD_REPORT = ADDON_ROOT / "docs" / "REPOSITORY_ALIGNMENT.md"
 GENERATED = {
-    str(JSON_REPORT.relative_to(ROOT)),
-    str(MD_REPORT.relative_to(ROOT)),
+    JSON_REPORT.relative_to(ROOT).as_posix(),
+    MD_REPORT.relative_to(ROOT).as_posix(),
 }
 INTERNAL_PREFIXES = (".ci/", ".hermes/")
 

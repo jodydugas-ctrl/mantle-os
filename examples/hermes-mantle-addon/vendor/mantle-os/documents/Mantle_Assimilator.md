@@ -1,39 +1,55 @@
-# Mantle OS — THE ASSIMILATOR (Path B)
+# Mantle OS - The Assimilator (Path B)
 
-**Mantle OS** · Take residence in existing code, non-destructively.
+**Mantle OS** - take residence in existing code, non-destructively.
 
-> **Moved.** The full assimilation / scanning doctrine — the prime directive, the Phase-0
-> App-Inventory gate, the 17-phase pipeline, the symbol-role table, the hook runtime, the
-> hard-fail list, and the APP_INVENTORY template — now lives in **one canonical home**:
+> **Moved.** The full assimilation and scanning doctrine - the prime directive, the
+> Phase-0 App Inventory gate, the 17-phase pipeline, the symbol-role table, the hook
+> runtime, the hard-fail list, and the APP_INVENTORY template - now lives in one
+> canonical home: [`documents/grimoire/The Grimoire.md`](grimoire/The%20Grimoire.md).
 >
-> 👉 **[`documents/grimoire/The Grimoire.md`](grimoire/The%20Grimoire.md)**,
-> especially the AppAI extension (§7: `NECROMANCY`, `RESURGERE`, residency, the §7.8 hard
-> fails) and the Mantle OS environment binding (§9.2, the operator's assimilation ritual).
->
-> This consolidation reflects that **the egg and assimilation are the same thing**: NECROMANCY
-> (assimilate/anchor/graft) and RESURGERE (reconstruct from an egg/seed) run on one shared
-> substrate — one scanner, one `ROLES` table, one fail-open hook runtime.
+> The consolidation rule is: NECROMANCY (assimilate/anchor/graft) and RESURGERE
+> (reconstruct from an egg/seed) share one substrate model. Discover the host first,
+> then use or grow the scanner, adapter, verifier, and fail-open hook runtime that
+> fits that host.
 
-## Assimilation, in one breath
+## Assimilation, In One Breath
 
-You are given a living host codebase. You do **not** rewrite its behavior — you grow organs
-around the existing tissue with additive, fail-open, reversible instrumentation. Nothing touches
-host code until the read-only **Phase-0 App Inventory & Organ Map** is produced and signed
-(`HF-B42`). See the canonical doctrine above for the full procedure.
+You are given a living host codebase. You do not rewrite its behavior. You grow organs
+around the existing tissue with additive, fail-open, reversible instrumentation. Nothing
+touches host code until the read-only Phase-0 App Inventory and Organ Map is produced
+and signed (`HF-B42`). See the canonical doctrine above for the full procedure.
 
-## Automation (quick reference)
+## Automation
 
-`src/mantle/assimilator/` + `anchor.py` + `graft.py` automate the whole path:
+`src/mantle/assimilator/` plus `anchor.py` and `graft.py` automate the path:
 
-- `python -m mantle assimilate <host> --dry-run` — the read-only AST dissection + Organ Map
-  (Phase 0). `.py` via `ast`; `.js/.mjs/.go/.rs` via the optional tree-sitter scanner
-  (`pip install mantle-os[multilang]`). Zero host writes.
-- `python -m mantle anchor <host>` — grow an anchored **resident** in a `.mantle/` nest, remember
-  the host's organ map as observed facts, pass the Stage-1 gate, and **prove do-no-harm with a
-  byte-level census**. Then `ask` / `feed` / `vitals` it.
-- `python -m mantle graft <graft-egg> <host>` — apply a non-destructive **patch** in a workspace
-  copy; `graft.weave(...)` threads the host's live callables through fail-open organ wrappers and
-  `unweave` detaches cleanly.
+- `python -m mantle assimilate <host> --dry-run` performs the read-only substrate
+  census, AST dissection, and Organ Map. Python is parsed with `ast`; `.js`, `.mjs`,
+  `.go`, and `.rs` use the optional tree-sitter scanner
+  (`pip install mantle-os[multilang]`). Native C-family, Qt, CMake, and other
+  discovered-but-unparsed surfaces are reported as adaptive tooling gaps instead of
+  being silently counted as complete. Zero host writes.
+- `python -m mantle anchor <host>` grows an anchored resident in a `.mantle/` nest,
+  remembers the host organ map as observed facts, passes the Stage-1 gate, and proves
+  do-no-harm with a byte-level census. Then `ask`, `feed`, and `vitals` operate it.
+- `python -m mantle graft <graft-egg> <host>` applies a non-destructive patch in a
+  workspace copy. `graft.weave(...)` threads the host live callables through fail-open
+  organ wrappers, and `unweave` detaches cleanly.
 
-The doctrine behind these commands — and the manual procedure for hosts the automation does not
-cover — is in the canonical NECROMANCY section linked above.
+## Production Refinements From NotepadNext
+
+The NotepadNext C++/Qt/CMake assimilation added platform rules that now apply generally:
+
+- Phase 0 identifies languages, frameworks, build files, and unparsed native/resource
+  surfaces before it proposes organs.
+- Standalone Phase-0 artifacts are refused if `--out` is the host tree or a child of
+  the host tree. Anchored residents remain the explicit exception: `anchor` may create
+  the additive `.mantle/` nest and proves all non-nest host files unchanged.
+- GitHub clone surfaces use Windows long-path-safe Git checkout policy.
+- Runtime and lifecycle receipts report VCW status through
+  `mantle.core.status.organism_status()`, not ad hoc Cube/Body convenience calls.
+- App-band generators use the reserved atlas and allocator helpers instead of
+  hand-picking spans near vault, phenotype, spore, or applet tissue.
+
+The manual procedure for hosts the current automation does not cover remains in the
+canonical NECROMANCY section of the Grimoire.

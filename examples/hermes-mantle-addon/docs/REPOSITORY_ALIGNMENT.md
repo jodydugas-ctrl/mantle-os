@@ -2,7 +2,7 @@
 
 **Status:** **PASS**
 
-**Files covered:** **351**
+**Files covered:** **365**
 
 **MIND fusion authorized:** **NO**
 
@@ -17,13 +17,13 @@ every git-tracked or non-ignored repository file; ignored caches/build output ex
 | Class | Files |
 |---|---:|
 | asset | 8 |
-| core-source | 72 |
-| documentation | 47 |
+| core-source | 74 |
+| documentation | 50 |
 | example-or-addon-source | 26 |
 | machine-data | 15 |
-| metadata-or-other | 9 |
-| test | 26 |
-| vendor | 146 |
+| metadata-or-other | 10 |
+| test | 27 |
+| vendor | 153 |
 | workflow | 2 |
 
 ## Resolved findings
