@@ -184,7 +184,8 @@ def assimilate(argv):
     flags = {a.split("=")[0]: (a.split("=", 1)[1] if "=" in a else True)
              for a in argv if a.startswith("--")}
     if not args:
-        print("usage: python -m mantle assimilate <host-path> [--dry-run] [--out=DIR]")
+        print("usage: python -m mantle assimilate <host-path> [--dry-run] [--out=DIR] "
+              "[--spore=out.png]")
         return 2
     root = args[0]
     from .assimilator import dry_run, write_artifacts
@@ -218,6 +219,14 @@ def assimilate(argv):
     else:
         print("\n  (dry run: no artifacts written; add --out=DIR for APP_INVENTORY.md "
               "+ assimilation_map.json)")
+    spore_out = flags.get("--spore")
+    if isinstance(spore_out, str):
+        from .assimilator import emit_spore
+        emitted = emit_spore(result, spore_out)
+        print("\n  SPORE EMITTED: %s" % emitted["path"])
+        print("    germ: %s  ·  source: census over %d host file(s), read-only"
+              % (emitted["germ"]["identity"]["name"], emitted["host_files"]))
+        print("    hatch it anywhere: python -m mantle hatch %s" % emitted["path"])
     print("\n  Host files modified  : 0  (Phase 0 is read-only by definition; hook")
     print("  insertion is authorized only after the APP_INVENTORY sign-off — HF-B42.)")
     return 0

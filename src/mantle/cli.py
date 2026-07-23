@@ -23,6 +23,7 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
     python -m mantle mind                           narrated Phase-2 fusion (offline)
     python -m mantle audit-mind                     Stage-2 gate + Stage-1 regression
     python -m mantle assimilate <path> --dry-run    Path B read-only dissection
+                                       --spore=out.png  ...and emit the host's germ spore
     python -m mantle check [--fast]                 EVERYTHING above that certifies, in
                                                       one command (the CI sequence, local)
 """
@@ -44,7 +45,7 @@ _USAGE = ("usage: python -m mantle "
           "reproduce | spore <op> ... | ghost <op> ... | "
           "demo | audit | prove | mind | audit-mind | "
           "check [--fast] | "
-          "assimilate <path> [--dry-run] [--out=DIR]]")
+          "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png]]")
 
 _COMMAND_ALIASES = {
     "anchor": "anchor",
@@ -234,7 +235,7 @@ def cmd_hatch(argv):
 def cmd_graft(argv):
     args, flags = _split(argv)
     if len(args) < 2:
-        print("usage: python -m mantle graft <graft-egg.json> <host-dir> [--allow-drift]")
+        print("usage: python -m mantle graft <spore.png|germ.json> <host-dir> [--allow-drift]")
         return 2
     from .graft import load_graft, apply, GraftError, GraftDrift
     print("=" * 74)
@@ -311,7 +312,7 @@ def cmd_reproduce(argv):
     """Print the two-method reproduction map (SEED vs GRAFT) -- the consolidation, one screen."""
     from . import reproduction as repro
     print("=" * 74)
-    print("MANTLE OS REPRODUCTION  ·  two methods, everything else is a facet")
+    print("MANTLE OS REPRODUCTION  ·  two methods, ONE artifact: the spore")
     print("=" * 74)
     for method, spec in repro.describe().items():
         print("\n%-6s (%s)  --  %s" % (method.upper(), spec["kind"], spec["biology"]))
@@ -319,8 +320,8 @@ def cmd_reproduce(argv):
             print("    %-10s %s" % (form, desc))
         print("    LAW: %s" % spec["law"])
     print("\nCall it:  from mantle import reproduction")
-    print("          reproduction.seed('spore'|'egg'|'vault', ...)   # independent")
-    print("          reproduction.graft('anchor'|'graft', ...)       # inside a host")
+    print("          reproduction.seed('spore', ...)             # independent")
+    print("          reproduction.graft('anchor'|'graft', ...)   # inside a host")
     return 0
 
 

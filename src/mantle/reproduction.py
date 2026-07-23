@@ -4,69 +4,62 @@ mantle.reproduction  --  the TWO ways an AppAI makes another AppAI (Mantle OS)
 
 Doctrine of record: documents/Mantle_Reproduction.md.
 
-The framework grew many propagation verbs over time -- egg, hatchery, vault, anchor,
-symbiosis, graft, and (newest) the spore. They are not six ideas; they are two, wearing
-different clothes. This module is the single seam that says so, and routes each old verb to
-the method it always belonged to. It adds no new behaviour: every call delegates to the
-canonical, already-audited module. It exists so that "how does an organism reproduce?" has a
-two-word answer -- SEED or GRAFT -- instead of a glossary.
+There is ONE travelling artifact -- the SPORE, a single PNG carrying the germ (the
+complete build data) and build instructions -- and two methods of reproduction. This
+module is the single seam that says so; every call delegates to the canonical,
+already-audited module. "How does an organism reproduce?" has a two-word answer --
+SEED or GRAFT -- and both answers are spores.
 
-  SEED  --  INDEPENDENT reproduction. The organism condenses itself into a dormant,
-            self-describing package of DATA (never programs) that grows into a certified Body
-            on its own, needing no host. One substrate, three castings of the same act:
-              * spore  -- the smallest seed: one PNG that IS a whole minimal agent
-                          (mantle.spore); optionally a cache-ghost (mantle.ghost).
-              * egg    -- a richer seed: a whole AppAI declared as one JSON document, grown
-                          by the hatchery through the Stage-1 gate (mantle.egg / mantle.hatchery).
-              * vault  -- a seed of an ALREADY-LIVING organism, sealed inside its own VCW, so a
-                          corrupted body can be rebuilt from itself (mantle.vault).
-            Whatever the size, a seed is data, and hatching it is always a BIRTH that faces the
-            same gate -- a tampered seed cannot smuggle an uncertified Body into the world.
+  SEED  --  INDEPENDENT reproduction. A spore whose germ declares a WHOLE new AppAI.
+            Hatching it is always a BIRTH through the one hatchery door
+            (mantle.hatchery.hatch) and faces the same Stage-1 gate every Body faces --
+            a tampered seed cannot smuggle an uncertified Body into the world. A bare
+            v1 spore (no germ) still hatches: its identity + task distill into a
+            minimal germ. Internal tissue of the same act: the VAULT (the organism's
+            own sealed germ inside its VCW, for self-reconstruction) and the
+            cache-ghost (mantle.ghost, a spore living in an LLM prompt cache).
 
-  GRAFT --  DEPENDENT reproduction. The organism propagates by taking up residence INSIDE a
-            host it does not own, growing its nervous system around what already lives there,
-            under a do-no-harm law and a metered energy economy. One act, three facets:
-              * anchor    -- move in: dissect the host read-only, grow an additive `.mantle/`
-                             nest, become the codebase's resident (mantle.anchor).
-              * symbiosis -- earn its keep: the credit ledger that feeds metered cognition;
-                             a starved graft falls back to a Zombie Body, never a corpse
-                             (mantle.symbiosis).
-              * graft-egg -- a NON-destructive patch against a NAMED host, applied in a
-                             workspace copy; the original is census-proven byte-identical
-                             (mantle.graft).
-            A graft never modifies a host file; the census proves do-no-harm as an invariant.
+  GRAFT --  DEPENDENT reproduction: a spore AIMED AT A HOST. The germ inside is a
+            non-destructive patch set against a NAMED host, applied in a workspace
+            copy; the original is census-proven byte-identical (mantle.graft). The
+            same act includes anchoring (mantle.anchor -- dissect the host read-only,
+            grow an additive `.mantle/` nest, become the codebase's resident) and is
+            sustained by symbiosis (mantle.symbiosis, the metered energy economy).
+            Assimilation closes the loop: `mantle assimilate <host> --spore=out.png`
+            scans an app and EMITS its spore.
 
-The old distinction "grow from scratch vs. assimilate an existing app" is the SAME axis as
-"seed vs. graft": a seed answers to no host, a graft lives in one. Two methods, both gated by
-the full invariant suite, no standing law weakened.
+A seed answers to no host, a graft lives in one. Two methods, one artifact, both gated
+by the full invariant suite, no standing law weakened.
 """
 from __future__ import annotations
 
 from typing import Any, Dict, Union
 
-SEED_FORMS = ("spore", "egg", "vault")
+SEED_FORMS = ("spore",)              # the one artifact ("egg"/"vault" route to its tissue)
 GRAFT_FORMS = ("anchor", "graft")
 
-#: The consolidation map -- every legacy verb under the method it always was. Used by the
-#: docs, `python -m mantle reproduce`, and the Field Guide so the story stays single-sourced.
+#: The consolidation map -- the one-artifact story. Used by the docs,
+#: `python -m mantle reproduce`, and the Field Guide so the story stays single-sourced.
 METHODS: Dict[str, Dict[str, Any]] = {
     "seed": {
         "kind": "independent",
-        "biology": "spores / seeds -- dormant, self-contained, grows with no host",
+        "biology": "spores -- dormant, self-contained, grows with no host",
         "forms": {
-            "spore": "mantle.spore  -- one PNG that is a whole minimal agent (optional cache-ghost)",
-            "egg":   "mantle.egg + mantle.hatchery  -- a whole AppAI declared as one JSON document",
-            "vault": "mantle.vault  -- an organism's own sealed seed, for self-reconstruction",
+            "spore": "mantle.spore + mantle.hatchery  -- ONE PNG carrying the germ (the whole "
+                     "build document); `mantle hatch <spore.png>` births it (cache-ghost optional)",
+            "vault": "reproduction organ tissue  -- the organism's own sealed germ, inside its "
+                     "VCW, for self-reconstruction (RESURGERE is a birthright)",
         },
         "law": "hatching a seed is a BIRTH: it faces the same Stage-1 gate every Body faces",
     },
     "graft": {
         "kind": "dependent",
-        "biology": "grafting / symbiosis -- propagate by living inside a host you do not own",
+        "biology": "a spore aimed at a host -- propagate by living inside what you do not own",
         "forms": {
             "anchor":    "mantle.anchor  -- take residence in a host codebase (additive nest)",
             "symbiosis": "mantle.symbiosis  -- the metered energy economy that sustains residency",
-            "graft":     "mantle.graft  -- a non-destructive patch against a named host",
+            "graft":     "mantle.graft  -- a graft-germ spore: a non-destructive patch against "
+                         "a named host",
         },
         "law": "a graft never modifies a host file; the census proves do-no-harm byte-for-byte",
     },
@@ -87,28 +80,35 @@ def describe() -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def seed(form: str = "spore", **kwargs) -> Dict[str, Any]:
-    """Reproduce INDEPENDENTLY. `form` selects the seed's size; kwargs pass through unchanged.
+    """Reproduce INDEPENDENTLY. kwargs pass through to the canonical module unchanged.
 
+        seed("spore", germ={...}, path="buddy.png")          # pack a germ spore
         seed("spore", name="Buddy", task="answer one question", path="buddy.png")
-        seed("egg",   path="examples/spores/greeter.png", out_dir="nest/")
-        seed("vault", seed=<egg-or-graft dict sealed in an organism>)
+        seed("spore", path="examples/spores/greeter.png", hatch=True, out_dir="nest/")
+        seed("vault", seed=<germ dict sealed in an organism>) # internal tissue
 
-    Every path ends in a certified Body (or, for a spore, a verifiable minimal seed). This
-    routes to the canonical module; it never re-implements the birth.
+    Every path ends in a certified Body (or a verifiable dormant spore). This routes to
+    the canonical module; it never re-implements the birth.
     """
     if form == "spore":
         from . import spore as _spore
-        path = _spore.create_spore(**kwargs)
+        if kwargs.pop("hatch", False):
+            from .hatchery import hatch as _hatch
+            return {"method": "seed", "form": "spore", "result": _hatch(**kwargs)}
+        germ = kwargs.pop("germ", None)
+        path = (_spore.pack_germ(germ, **kwargs) if germ is not None
+                else _spore.create_spore(**kwargs))
         return {"method": "seed", "form": "spore", "path": path,
                 "verify": _spore.verify_spore(path)["ok"]}
-    if form == "egg":
-        from .hatchery import hatch
-        return {"method": "seed", "form": "egg", "result": hatch(**kwargs)}
+    if form == "egg":                       # historical name for a germ hatch
+        from .hatchery import hatch as _hatch
+        return {"method": "seed", "form": "spore", "result": _hatch(**kwargs)}
     if form == "vault":
         from . import vault
         return {"method": "seed", "form": "vault", "result": vault.reconstruct(**kwargs)}
     raise ReproductionError(
-        f"unknown seed form {form!r}; expected one of {SEED_FORMS}")
+        f"unknown seed form {form!r}; expected one of {SEED_FORMS} "
+        "(the historical 'egg' and 'vault' names still route)")
 
 
 # ---------------------------------------------------------------------------

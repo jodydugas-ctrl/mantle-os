@@ -713,11 +713,14 @@ def _default_build_instructions(name: str, task: str) -> str:
 
 
 def pack_germ(germ: dict, path: str, *, task: str | None = None,
-              author: str | None = None, build: str | None = None) -> str:
+              author: str | None = None, build: str | None = None,
+              source: dict | None = None) -> str:
     """Pack a GERM (the full AppAI build document -- today's egg schema) into a
     new spore PNG at `path`, together with a `build` instruction note. The spore
     carries the germ as inert data; validation and growth belong to the hatchery
-    (`mantle hatch <path>`). Returns the path."""
+    (`mantle hatch <path>`). An optional `source` descriptor (provenance facts:
+    kind/path/sha256/notes -- never secrets) rides beside the germ and surfaces
+    in the hatch receipt. Returns the path."""
     if not isinstance(germ, dict) or not isinstance(germ.get("identity"), dict):
         raise ValueError("a germ must be a dict with an 'identity' mapping")
     name = germ["identity"].get("name")
@@ -729,6 +732,8 @@ def pack_germ(germ: dict, path: str, *, task: str | None = None,
     state = _new_state(name, task, author)
     state["germ"] = germ
     state["build"] = build or _default_build_instructions(name, task)
+    if source:
+        state["source"] = source
     state["display"]["lines"].append(
         "GERM ABOARD: I carry the complete build data for this AppAI -- "
         "hatch me with `python -m mantle hatch <this.png>`")

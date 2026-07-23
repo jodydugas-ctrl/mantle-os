@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
-mantle.graft  --  the GRAFT EGG and LIVE RESIDENCY (Mantle OS · R1 + R2)
+mantle.graft  --  the GRAFT GERM and LIVE RESIDENCY (Mantle OS · R1 + R2)
 
 Doctrine of record: documents/grimoire/The Grimoire.md (MantleOS @ residency/assimilation law --
 detail; "One substrate, two casts"). Graft reuses the single canonical organ-role table
 (ROLES from assimilator.scanner) and delegates scanning to anchor(); it never re-classifies.
 
+A graft is a SPORE AIMED AT A HOST: the same one-artifact story as every birth, but the
+germ inside is a patch set, not a from-scratch spec. `load_graft` accepts either a germ
+JSON file or a spore PNG carrying a graft germ.
+
 The graft rests on two reframes:
 
-  R1 -- the egg as a PATCH SET, not a from-scratch spec.
-        A normal egg (`mantle.egg`) declares a WHOLE new AppAI. A *graft* egg instead
+  R1 -- the germ as a PATCH SET, not a from-scratch spec.
+        A normal germ declares a WHOLE new AppAI. A *graft* germ instead
         carries a NON-DESTRUCTIVE diff against a NAMED host: extra app bands, hook
         directives (which classified symbols to thread through the organism), and
         instincts. Applying a graft never touches the original host -- it copies the host
@@ -25,10 +29,10 @@ The graft rests on two reframes:
         live, on every call, zero LLM. The host's behavior is preserved EXACTLY (same
         return, same exceptions). `unweave()` restores the originals; detach is clean.
 
-Eggs carry DATA, not programs: a graft's hooks are role directives, and any instinct it
+Germs carry DATA, not programs: a graft's hooks are role directives, and any instinct it
 carries rides the same gauntlet as every skill. A malformed graft never applies.
 
-    python -m mantle graft examples/eggs/notes_graft.json <host-dir>
+    python -m mantle graft examples/spores/notes_graft.png <host-dir>
 """
 from __future__ import annotations
 
@@ -90,6 +94,15 @@ def validate_graft(graft: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def load_graft(path: str) -> Dict[str, Any]:
+    """Load a graft from a germ JSON file or from a spore PNG carrying a graft germ
+    (a spore aimed at a host)."""
+    with open(path, "rb") as f:
+        if f.read(8) == b"\x89PNG\r\n\x1a\n":
+            from . import spore as _spore
+            germ = _spore.read_spore(path)["state"].get("germ")
+            if germ is None:
+                raise GraftError("spore %r carries no germ to graft" % path)
+            return validate_graft(germ)
     with open(path, "r", encoding="utf-8") as f:
         return validate_graft(json.load(f))
 

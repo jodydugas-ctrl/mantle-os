@@ -114,6 +114,84 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
     return "\n".join(L)
 
 
+def emit_spore(result: Dict[str, Any], out_png: str) -> Dict[str, Any]:
+    """Scan the app, emit a SPORE: condense a dry-run dissection into a germ-carrying
+    spore PNG -- the one artifact that births this host's resident AppAI anywhere.
+
+    The germ declares the resident's identity, do-no-harm truths, the app bands the
+    organ map proposed (host_state / host_actions), and the observed organ map as
+    inert data. The spore also carries a source descriptor (host path + census
+    fingerprint) so the hatch receipt can audit provenance. Emitting is still Phase 0:
+    ZERO writes to the host; hatching the spore faces the Stage-1 gate like any birth,
+    and host code stays OTHER until proven. Requires Pillow."""
+    import hashlib
+
+    amap = result["map"]
+    dissection = result["dissection"]
+    host = amap["host"]
+    name = "%s.Resident" % os.path.basename(os.path.abspath(host)).title().replace("_", "")
+
+    from ..anchor import census
+    host_census = census(host)
+    census_blob = json.dumps(host_census, sort_keys=True).encode("utf-8")
+
+    app_bands = [{"band": b["band"], "head": b["head"], "span": b.get("span", 1),
+                  "encoding": b.get("encoding", "log-json"),
+                  "private": bool(b.get("private")), "purpose": b.get("purpose", b["band"])}
+                 for b in propose_genome(amap["role_counts"])
+                 if 550 <= b["head"] <= 749]
+    organ_summary = {organ: [s["symbol"] for s in syms]
+                     for organ, syms in amap["organs"].items() if syms}
+
+    germ = {
+        "germ_format": "mantle-germ-v1",
+        "identity": {"name": name,
+                     "purpose": "resident AppAI assimilated read-only from %s"
+                                % os.path.basename(host),
+                     "born_of": "assimilation"},
+        "truths": ["if it is not in the VCW it did not happen",
+                   "the host is my body's home; I never harm it",
+                   "host code is OTHER until proven"],
+        "commandments": ["protect your VCW", "do no harm to the host",
+                         "you are a tool USER"],
+        "genome": app_bands,
+        "assimilation": {                      # observed facts, inert data
+            "role_counts": amap["role_counts"],
+            "organ_map": organ_summary,
+            "missing_organs": amap["missing_organs"],
+            "python_files": dissection["python_files"],
+        },
+    }
+
+    build = (
+        "# HOW TO BUILD THE RESIDENT AppAI IN THIS SPORE\n\n"
+        "This spore was emitted by a READ-ONLY assimilation (Path B, Phase 0) of the\n"
+        "host %r. Zero host files were modified.\n\n"
+        "With Mantle: python -m mantle hatch this_file.png --out=nest/\n"
+        "Without: decode my payload (Quickstart on the image) and read key 'germ'.\n\n"
+        "The germ's `assimilation` block is the observed organ map -- which host\n"
+        "symbols play which organ roles (%s). Treat it as observed fact, not law.\n"
+        "The hatched body is a resident: it mirrors host state into its bands and\n"
+        "wraps host effectors fail-open. Host code remains OTHER until the standing\n"
+        "gates prove otherwise; hook insertion still requires the signed\n"
+        "APP_INVENTORY (HF-B42).\n"
+        % (os.path.basename(host), ", ".join(sorted(organ_summary)) or "none found")
+    )
+    source = {
+        "kind": "assimilation",
+        "path": os.path.basename(host),
+        "sha256": "sha256:" + hashlib.sha256(census_blob).hexdigest(),
+        "notes": "census fingerprint over %d host file(s); emitted read-only"
+                 % len(host_census),
+    }
+
+    from .. import spore as _spore
+    _spore.pack_germ(germ, out_png, task=germ["identity"]["purpose"],
+                     build=build, source=source)
+    return {"path": out_png, "germ": germ, "source": source,
+            "host_files": len(host_census)}
+
+
 def write_artifacts(result: Dict[str, Any], out_dir: str, *,
                     allow_host_nest: bool = False) -> Dict[str, str]:
     """Write APP_INVENTORY.md + assimilation_map.json NEXT TO the operator (never into
