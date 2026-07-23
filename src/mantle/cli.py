@@ -22,7 +22,6 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
     python -m mantle mind                           narrated Phase-2 fusion (offline)
     python -m mantle audit-mind                     Stage-2 gate + Stage-1 regression
     python -m mantle assimilate <path> --dry-run    Path B read-only dissection
-    python -m mantle optimize-audit [--out=DIR] [--strict] repository inventory artifacts
     python -m mantle check [--fast]                 EVERYTHING above that certifies, in
                                                       one command (the CI sequence, local)
 """
@@ -42,7 +41,7 @@ _USAGE = ("usage: python -m mantle "
           "applet-audit <dir> <name> | applet-clone <dir> <https-github-url> <name> | "
           "hatch-spore <spore.png> [--out=DIR] | "
           "reproduce | spore <op> ... | ghost <op> ... | "
-          "demo | audit | prove | mind | audit-mind | optimize-audit [--out=DIR] [--strict] | "
+          "demo | audit | prove | mind | audit-mind | "
           "check [--fast] | "
           "assimilate <path> [--dry-run] [--out=DIR]]")
 
@@ -88,8 +87,6 @@ _COMMAND_ALIASES = {
     "audit-mind": "audit-mind",
     "audit_mind": "audit-mind",
     "assimilate": "assimilate",
-    "optimize-audit": "optimize-audit",
-    "optimize_audit": "optimize-audit",
     "check": "check",
 }
 
@@ -761,9 +758,6 @@ def main(argv=None):
     if cmd == "assimilate":
         from . import demos
         return demos.assimilate(rest)
-    if cmd == "optimize-audit":
-        from . import optimize_audit
-        return optimize_audit.main(rest)
     if cmd == "check":
         from . import check
         return check.main(rest)

@@ -194,7 +194,6 @@ python -m mantle hatch examples/eggs/greeter.json --out=nest/          # a whole
 python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
 python -m mantle graft examples/eggs/notes_graft.json examples/sample_app   # a non-destructive patch-graft
 python -m mantle doctor nest/                  # deployment checkup (incl. docs-vs-code coherence)
-python -m mantle optimize-audit --strict --out=C:\tmp\mantle-opt   # advisory whole-repo optimization inventory
 ```
 
 **The substrate continuum — the cache-ghost.** A seed keeps its memory *somewhere*, and persistence
