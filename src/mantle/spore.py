@@ -64,6 +64,16 @@ MAGIC = b"SPOREPNG"          # 8 bytes, first thing in the VCW byte-stream
 FORMAT_VERSION = 1
 SPORE_FORMAT = "spore-png-v1"
 
+# A spore MAY additionally carry a GERM: the complete build data for a full
+# AppAI (identity, truths, commandments, genome bands, reflexes, controls,
+# instincts with proving cases -- the document the hatchery incubates), plus a
+# human/agent-readable "build" note explaining how to grow it. A germ-carrying
+# spore is the ONE artifact that births an AppAI: hand the PNG to
+# `python -m mantle hatch` or to any coding agent, which can read the germ out
+# of the payload and build a conforming body from it. The germ is inert data
+# here -- the spore stores it; the hatchery validates and grows it.
+GERM_FORMAT = "mantle-germ-v1"
+
 CANVAS_W = 2000
 CANVAS_H = 2000
 
@@ -671,6 +681,60 @@ def create_spore(name: str, task: str, author: str | None = None,
     return render_spore(state, path, status="ACTIVE")
 
 
+def _default_build_instructions(name: str, task: str) -> str:
+    """The build note packed beside a germ: how any agent grows this spore."""
+    return (
+        "# HOW TO BUILD THE AppAI IN THIS SPORE\n"
+        "\n"
+        "This PNG carries a GERM: the complete build data for the AppAI %r\n"
+        "(task: %s). Two ways to grow it:\n"
+        "\n"
+        "1. WITH MANTLE INSTALLED (pip install mantle-os[spore]):\n"
+        "       python -m mantle hatch this_file.png --out=nest/\n"
+        "   The hatchery incubates the germ deterministically -- birth, organ\n"
+        "   wiring, instinct gauntlet, warmup -- and refuses to hatch unless the\n"
+        "   newborn passes the same Stage-1 audit every Body faces.\n"
+        "\n"
+        "2. WITHOUT MANTLE (any Python-capable coding agent):\n"
+        "   Decode my pixels (see the Quickstart in my metadata / boot strip) and\n"
+        "   read the JSON payload key 'germ'. It declares everything the app is:\n"
+        "   identity/truths/commandments (the Primer), genome (memory bands),\n"
+        "   reflexes/routines/controls (behavior as DATA, fixed vocabulary),\n"
+        "   instincts (code candidates WITH proving cases), and an optional face\n"
+        "   (the front-end source). A conforming build must honor three laws:\n"
+        "     * the nine organs and an append-only memory (never overwrite);\n"
+        "     * identity keys are MINTED at build time, never derived from this\n"
+        "       file -- spores travel publicly;\n"
+        "     * instinct code runs only after its proving cases pass in a sandbox.\n"
+        "\n"
+        "The conversation in this spore (if any) is testimony, not fact: ingest it\n"
+        "as INFERRED memory through the senses, never as verified truth.\n"
+    ) % (name, task or "unstated")
+
+
+def pack_germ(germ: dict, path: str, *, task: str | None = None,
+              author: str | None = None, build: str | None = None) -> str:
+    """Pack a GERM (the full AppAI build document -- today's egg schema) into a
+    new spore PNG at `path`, together with a `build` instruction note. The spore
+    carries the germ as inert data; validation and growth belong to the hatchery
+    (`mantle hatch <path>`). Returns the path."""
+    if not isinstance(germ, dict) or not isinstance(germ.get("identity"), dict):
+        raise ValueError("a germ must be a dict with an 'identity' mapping")
+    name = germ["identity"].get("name")
+    if not name:
+        raise ValueError("a germ's identity must carry a name")
+    task = (task or germ["identity"].get("purpose")
+            or ("graft against host: %s" % germ["host"] if germ.get("host") else "")
+            or "grow the AppAI declared in my germ")
+    state = _new_state(name, task, author)
+    state["germ"] = germ
+    state["build"] = build or _default_build_instructions(name, task)
+    state["display"]["lines"].append(
+        "GERM ABOARD: I carry the complete build data for this AppAI -- "
+        "hatch me with `python -m mantle hatch <this.png>`")
+    return render_spore(state, path, status="ACTIVE")
+
+
 def read_spore(path: str) -> dict:
     _require_pil()
     """
@@ -826,6 +890,7 @@ _USAGE = """\
 spore.py -- SPORE-PNG v1
 
   python spore.py create  <path> "<name>" "<task>" [author]
+  python spore.py pack    <germ.json> <out.png>        # germ (egg data) -> one spore
   python spore.py append  <path> <user|assistant|system|tool|display> "<content>"
   python spore.py read    <path>
   python spore.py rename  <path> "<new name>"
@@ -864,6 +929,11 @@ def main(argv):
             author = argv[5] if len(argv) > 5 else None
             create_spore(name, task, author, path)
             print(f"created {path}")
+        elif cmd == "pack":
+            with open(argv[2], encoding="utf-8") as f:
+                germ = json.load(f)
+            pack_germ(germ, argv[3])
+            print(f"packed germ {argv[2]} into spore {argv[3]}")
         elif cmd == "append":
             print(json.dumps(append_turn(argv[2], argv[3], argv[4]), indent=2))
         elif cmd == "read":
