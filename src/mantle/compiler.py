@@ -61,11 +61,15 @@ def validate_genome(specs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         boots.append(make_band_boot(band, head, enc, params=s.get("params"),
                                     private=bool(s.get("private")), span=s.get("span", 1),
                                     purpose=s.get("purpose", band)))
-    from .vcw.bands import genome_overlaps
+    from .vcw.bands import app_band_conflicts, genome_overlaps
     problems = genome_overlaps(boots)
     if problems:
         raise GenomeError("proposed bands overlap (spans, not just heads, must be "
                           "disjoint): %s" % "; ".join(problems))
+    conflicts = app_band_conflicts(boots)
+    if conflicts:
+        raise GenomeError("proposed bands collide with reserved app-band atlas: %s"
+                          % "; ".join(conflicts))
     return boots
 
 

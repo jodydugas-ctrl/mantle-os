@@ -622,7 +622,8 @@ def clone_github(url: str, workdir: str) -> str:
                           "accepted (got %r)" % url)
     import subprocess
     dest = os.path.join(workdir, "clone")
-    proc = subprocess.run(["git", "clone", "--depth", "1", "--no-tags", url, dest],
+    proc = subprocess.run(["git", "-c", "core.longpaths=true", "clone", "--depth", "1",
+                           "--no-tags", url, dest],
                           capture_output=True, text=True, timeout=300)
     if proc.returncode != 0:
         raise AppletError("git clone failed: %s" % (proc.stderr or "").strip()[-300:])

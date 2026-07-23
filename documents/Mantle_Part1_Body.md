@@ -237,14 +237,25 @@ with no MIND.* This is the most often shortchanged work; do it thoroughly.
 - **ControlBridge (Limbs):** for each mapped control, a Body-callable path that **operates** it.
 - **App-Face Bridge (Limbs):** render the app's visible face **declaratively** (a drawing
   bridge), never by ad-hoc raw DOM/host mutation.
+- **AppAI contact surface:** every app face must expose a standard way to open the
+  AppAI terminal. GUI apps should add an `AppAI` affordance beside existing Help/support
+  controls; mac-style chrome may use a black circular button beside the traffic lights;
+  command-line hosts expose the same surface as `<appname> --appAI`. Activating it opens
+  a terminal/chat surface owned by the Body and routed to the MIND when fused.
+- **Text-field commit discipline:** editable text boxes are not recorded to the VCW on
+  every keystroke. Senses may track transient focus state, but durable VCW entries are
+  appended only when the field is submitted or loses focus, unless a host explicitly
+  declares a different low-volume commit boundary.
 - **Action Execution Proof (Limbs):** every effector use records
   `{attempted, ok, method, ref, reason}` to the `brain`/`immune` bands.
 - `inhale` (Senses) / `exhale` (Limbs): all external input enters through Senses (→ `senses`) and
   all output leaves through the Limbs' bridges, so nothing bypasses the nervous system.
 
-**Audit hooks:** B-25 every human control is in the Surface Map (Senses coverage); B-26 each has a
-working ControlBridge path with a recorded proof (Limbs); B-27 graphical faces use the declarative
-App-Face Bridge, not raw host mutation (Limbs); B-28 all I/O flows through Senses (in) / Limbs (out).
+**Audit hooks:** B-25 every human control is in the Surface Map (Senses coverage), including
+the AppAI terminal opener; B-26 each has a working ControlBridge path with a recorded proof
+(Limbs); B-27 graphical faces use the declarative App-Face Bridge, not raw host mutation
+(Limbs); B-28 all I/O flows through Senses (in) / Limbs (out); B-28a text-entry surfaces commit
+on submit/blur rather than per keypress.
 
 ---
 

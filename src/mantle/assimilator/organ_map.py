@@ -51,10 +51,17 @@ def build_map(dissection: Dict[str, Any]) -> Dict[str, Any]:
                 (gaps if role == "DEPRECATED" else external).append(rec)
             else:
                 organ_symbols[organ].append(rec)
+    substrate = dissection.get("substrate") or {}
+    for gap in substrate.get("unsupported", []):
+        gaps.append({
+            "module": gap["substrate"],
+            "why": "%d file(s): %s" % (gap["files"], gap["reason"]),
+        })
 
     missing_organs = [o for o in ORGANS if not organ_symbols[o]]
     return {
         "host": dissection["root"],
+        "substrate": substrate,
         "organs": organ_symbols,
         "external_host_code": external,
         "gap_report": gaps,

@@ -49,6 +49,7 @@ families in §B-G4). This checklist is the human mirror. Any open hard-fail bloc
 | M-08 | MIND has no write path to Genome / facts / events / senses / immune / identity / discoveries / prime / app | HF-M08 | | |
 | M-09 | MIND may lift the veil on its own `thoughts` only | HF-M09 | | |
 | M-10 | Durable memory changes go via INTENTION → Body reflex write | HF-M08 | | |
+| M-10a | AppAI terminal routes user chat to the MIND without granting extra write/execute authority; prompt text commits on submit/blur only | HF-M28 | | |
 
 ### A2.6 / A2.7 — Cognition loop & trace
 
@@ -123,6 +124,7 @@ families in §B-G4). This checklist is the human mirror. Any open hard-fail bloc
 | HF-M25 | A self-inquiry/inferred answer is laundered into `facts`, or self-talk has no waste budget |
 | HF-M26 | The MIND self-promotes or executes ungated code (only the Body may calcify/execute) |
 | HF-M27 | Rebirth is unchosen/lossy, discards ancestry, or leaves generation-pinned refs dangling |
+| HF-M28 | The AppAI terminal bypasses Senses/Limbs containment, or logs prompt keystrokes instead of committed messages |
 
 ---
 

@@ -29,6 +29,7 @@ wakes it. Its powers are deliberately narrow:
 §2.2  Keyfile & model selection
 §2.3  The Awakening Ceremony
 §2.4  The MIND write surface (thoughts + brain only)
+§2.4a AppAI terminal surface
 §2.5  The Veil as a layer boundary
 §2.6  Heartbeat cognition loop
 §2.7  MODEL.REQUEST trace
@@ -97,6 +98,30 @@ The MIND **cannot** write the Genome, `facts`, `events`, `senses`, `immune`,
 `identity`, `discoveries`, `prime`, or app bands directly. To change durable memory it
 authors an INTENTION; a Body reflex performs the actual write into the correct band.
 This is enforced structurally — there is no API surfaced to the MIND for those bands.
+
+---
+
+## §2.4a The AppAI terminal surface
+
+Every fused AppAI must have a direct user-to-MIND contact surface. The Body owns the
+surface and opens it; the MIND owns only its answer. GUI hosts expose an `AppAI` option
+near Help/support affordances, or on mac-style chrome as a black circular button beside
+the traffic-light controls. CLI hosts expose the same surface with `<appname> --appAI`.
+
+Activation always opens or reveals a terminal-like conversation:
+
+- in a GUI, a large chat box with a text entry at the bottom;
+- in a command-line host, the existing terminal becomes the chat loop;
+- user messages enter through Senses, are committed on submit, and are routed to the
+  MIND only after normal fusion/authorization checks;
+- MIND responses are displayed in the terminal surface while private reasoning remains
+  in `thoughts` behind the veil;
+- the Body records bounded transcript/proof entries, not every keypress typed into the
+  prompt field.
+
+This terminal is not a backdoor limb. It is a conversation surface: it may request,
+explain, propose, or dispatch through the normal Body pathways, but it does not grant
+the MIND any extra write or execution authority.
 
 ---
 

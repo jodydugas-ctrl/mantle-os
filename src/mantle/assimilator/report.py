@@ -38,7 +38,26 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
     L.append("## A.1 Host identity")
     L.append("- **Root:** `%s`" % amap["host"])
     L.append("- **Python files:** %d" % dissection["python_files"])
+    substrate = dissection.get("substrate") or {}
+    if substrate:
+        L.append("- **Detected substrate:** %s" % ", ".join(substrate.get("languages", [])))
+        L.append("- **Build files:** %s" % (
+            ", ".join("`%s`" % p for p in substrate.get("build_files", [])[:8])
+            or "none"))
+        L.append("- **Adaptive native/tooling required:** %d file(s)" %
+                 substrate.get("coverage", {}).get("requires_adaptive_native_tools", 0))
     L.append("")
+    if substrate.get("unsupported"):
+        L.append("## A.2 Substrate coverage")
+        L.append("")
+        L.append("MantleOS is code-agnostic by discovery and tool growth, not by pretending one")
+        L.append("scanner sees every host. The following surfaces require an adaptive parser,")
+        L.append("observer, or verifier before any signed organ insertion:")
+        L.append("")
+        for gap in substrate["unsupported"]:
+            L.append("- `%s`: %d file(s) -- %s" %
+                     (gap["substrate"], gap["files"], gap["reason"]))
+        L.append("")
     L.append("## A.3/A.4 Symbol-role summary")
     L.append("")
     L.append("| Role | Count |")
@@ -95,9 +114,19 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
     return "\n".join(L)
 
 
-def write_artifacts(result: Dict[str, Any], out_dir: str) -> Dict[str, str]:
+def write_artifacts(result: Dict[str, Any], out_dir: str, *,
+                    allow_host_nest: bool = False) -> Dict[str, str]:
     """Write APP_INVENTORY.md + assimilation_map.json NEXT TO the operator (never into
     the host tree). Returns the written paths."""
+    host = os.path.realpath(result["dissection"]["root"])
+    out_real = os.path.realpath(out_dir)
+    if out_real == host or out_real.startswith(host + os.sep):
+        nest_real = os.path.realpath(os.path.join(host, ".mantle"))
+        if allow_host_nest and (out_real == nest_real or out_real.startswith(nest_real + os.sep)):
+            pass
+        else:
+            raise ValueError("assimilation artifacts must be written outside the host tree: %s"
+                             % out_dir)
     os.makedirs(out_dir, exist_ok=True)
     md = os.path.join(out_dir, "APP_INVENTORY.md")
     js = os.path.join(out_dir, "assimilation_map.json")

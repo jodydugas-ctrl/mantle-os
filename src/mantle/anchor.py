@@ -130,7 +130,7 @@ def anchor(host: str, name: Optional[str] = None,
     # 6. NEST: everything lives in .mantle/ -- and nowhere else
     os.makedirs(nest_dir, exist_ok=True)
     org.save(nest_dir)
-    write_artifacts(result, nest_dir)                 # APP_INVENTORY.md + map JSON
+    write_artifacts(result, nest_dir, allow_host_nest=True)  # APP_INVENTORY.md + map JSON
     _face.render(org, os.path.join(nest_dir, "face.png"))
     sym.record_value(org, "anchored: dissected %d files into the organ map"
                      % result["dissection"]["python_files"],
@@ -269,8 +269,13 @@ def vitals(host: str, portrait: Optional[str] = None) -> Dict[str, Any]:
     out = portrait or os.path.join(nest_dir, "face.png")
     _face.render(org, out)
     led = sym.ledger(org)
+    from .core.status import organism_status
+    status = organism_status(org)
     return {"resident": org.body.identity_name(),
             "state": sym.metabolic_state(org), "ledger": led,
             "value_delivered": len(led["value_records"]),
-            "generation": org.prime.generation,
+            "generation": status["generation"],
+            "band_count": status["band_count"],
+            "verify_ok": status["verify_ok"],
+            "verify_errors": status["verify_errors"],
             "immune_events": len(org.immune.log), "portrait": out}
