@@ -1,5 +1,5 @@
 {
-  "egg_format": "mantle-egg-v1",
+  "germ_format": "mantle-germ-v1",
   "identity": {
     "name": "Calculator.AppAI",
     "purpose": "a calculator that is born wearing its own front-end, sealed in its VCW"

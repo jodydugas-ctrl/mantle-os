@@ -130,7 +130,8 @@ QUICKSTART_CODE = (
     "import spore_min  # spore_min.append('spore.png','user','hi'); ...('assistant','reply')"
 )
 
-# Authority table -- which source wins for which concern.  See spore_format.md.
+# Authority table -- which source wins for which concern (mirrored into the PNG
+# metadata; doctrine: documents/REPRODUCTION.md).
 AUTHORITY = {
     "bootloader_spec": "metadata wins over the visible boot strip",
     "identity": "VCW payload is canonical (metadata only mirrors it)",

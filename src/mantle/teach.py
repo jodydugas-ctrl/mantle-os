@@ -309,8 +309,9 @@ def ch_graded_memory(org: Organism) -> bool:
 
 
 def ch_graft_residency(org: Organism) -> bool:
-    _say("\n— Chapter 12 · THE GRAFT EGG & THE LIVING RESIDENT (R1 + R2) —")
-    _say("A graft egg is a non-destructive PATCH against a named host: extra bands + hook")
+    _say("\n— Chapter 12 · THE GRAFT GERM & THE LIVING RESIDENT (R1 + R2) —")
+    _say("A graft germ (a spore aimed at a host) is a non-destructive PATCH against a named")
+    _say("host: extra bands + hook")
     _say("directives, applied in a WORKSPACE copy so the original is never touched. Then the")
     _say("resident WEAVES a live nervous system into the host's functions — each call now")
     _say("perceives and proves through the organism, while the host behaves exactly as before.")
@@ -418,7 +419,7 @@ def ch_ganglia_vault(org: Organism) -> bool:
 
     prog = _g.Ganglion(worker, "arm").run(task, 4).join().progress()
     telemetry = len(prog) == 4 and not worker.brain.fused
-    seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Worker.Reborn"},
+    seed = {"germ_format": "mantle-germ-v1", "identity": {"name": "Worker.Reborn"},
             "truths": ["if it is not in the VCW it did not happen"],
             "commandments": ["protect your VCW"]}
     _v.store_seed(worker, seed)

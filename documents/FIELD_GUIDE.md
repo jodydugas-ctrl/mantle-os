@@ -70,7 +70,7 @@ burn into append-only memory), classified deterministically (`REFLEX | ROUTINE |
 SIGNIFICANT`), recorded as exactly one `senses` entry. A REFLEX runs its bound Body
 response immediately and never touches the brain band.
 
-In an **egg**, reflexes are declared, not coded:
+In a **germ**, reflexes are declared, not coded:
 
 ```json
 {"action_id": "door", "event_type": "knock",
@@ -78,8 +78,8 @@ In an **egg**, reflexes are declared, not coded:
               "content": {"event": "a knock at the door"}, "opcode": "EVENT"}}
 ```
 
-The response vocabulary is fixed — `remember`, `complete`, `notify`, `operate` — so an
-egg can describe behavior without shipping a single line of executable code.
+The response vocabulary is fixed — `remember`, `complete`, `notify`, `operate` — so a
+germ can describe behavior without shipping a single line of executable code.
 
 **Proven live:** REFLEX classified, arc fired, one entry written, secret redacted.
 
@@ -111,7 +111,7 @@ trial) → the **trial** (declared proving cases) → **calcify** (code-hash + s
 capability set + provenance naming an author). At every later invocation: integrity,
 capability, and trust gates again, plus an Action Execution Proof through the Limb.
 
-In an egg, an instinct carries its own proving cases:
+In a germ, an instinct carries its own proving cases:
 
 ```json
 {"band": "greet_reflex", "entry": "greet",
@@ -240,11 +240,11 @@ org.memory.recall_ghosts("facts")   # -> the old lab (the latent ghost)
 original entry is never mutated (its hash stays valid); live reads are weight-ordered; and
 dedupe + compaction stay coherent with weights (a ghost survives compaction).
 
-## Chapter 13 · THE GRAFT EGG & THE LIVING RESIDENT — the real anchoring
+## Chapter 13 · THE GRAFT GERM & THE LIVING RESIDENT — the real anchoring
 
-The first kind of egg declares a *whole new* AppAI from nothing. The **graft egg** is the
-other half: a **non-destructive patch against a named host** — extra bands, hook directives,
-instincts — applied so the original is never touched.
+A plain germ declares a *whole new* AppAI from nothing. The **graft germ** is the
+other half — a spore aimed at a host: a **non-destructive patch against a named host** —
+extra bands, hook directives, instincts — applied so the original is never touched.
 
 `apply` copies the host into a **workspace** and grows the resident *there*; the original is
 census-proven byte-identical. If the host has **drifted** from the census the graft was built
@@ -259,10 +259,10 @@ with zero LLM. The host's behavior is preserved exactly (same return, same excep
 `unweave` restores the originals byte-for-byte. The static map becomes a pulse.
 
 ```bash
-python -m mantle graft examples/eggs/notes_graft.json examples/sample_app
+python -m mantle graft examples/spores/notes_graft.png examples/sample_app
 ```
 ```python
-res = graft.apply(load_graft("examples/eggs/notes_graft.json"), host)   # workspace; host untouched
+res = graft.apply(load_graft("examples/spores/notes_graft.png"), host)   # workspace; host untouched
 graft.weave(host_module.__dict__, res["hooks"], Assimilation(res["organism"]))   # live
 ```
 
@@ -336,7 +336,7 @@ calls**: zero-token telemetry. Fail-open like every limb — a crashed ganglion 
 event, never a parent crash.
 
 The **seed vault** makes survival a reflex. An organism stores its own **seed** — the
-declarative egg (or graft) that defines it — in a **SELF-encrypted, veiled** band: sealed
+declarative germ (or graft) that defines it — in a **SELF-encrypted, veiled** band: sealed
 under the genesis key, so a copied nest in a different body cannot open it (unreadable as
 OTHER). If the working body is corrupted, a `reconstruct` ceremony rebuilds a fresh body from
 the seed — **through the same Stage-1 gate**, so a tampered seed can never smuggle an
@@ -456,9 +456,10 @@ python -m mantle face nest/ my_appai.png
 
 ---
 
-## Writing your own egg (the practical appendix)
+## Writing your own germ (the practical appendix)
 
-Start from `examples/eggs/greeter.json` and change five things:
+A **germ** is the complete build document an AppAI travels with — the same schema
+`examples/eggs/greeter.json` uses. Start from it and change five things:
 
 1. **identity / truths / commandments** — who this creature is. Be specific; the
    Primer is immutable and the commandments become the immune system's seed.
@@ -471,10 +472,12 @@ Start from `examples/eggs/greeter.json` and change five things:
    birth.
 5. **instincts** — skills with proving cases. No case, no trial; no trial, no reflex.
 
-Then:
+Then hatch it directly, or pack it into a spore — the one artifact that carries the
+germ plus build instructions any coding agent can read:
 
 ```bash
-python -m mantle hatch my_egg.json --out=my_nest/
+python -m mantle hatch my_germ.json --out=my_nest/     # hatch the germ directly
+python -m mantle spore pack my_germ.json my_app.png    # ...or package it as a spore first
 python -m mantle audit            # the full gate, anytime
 python -m mantle prove            # the current security invariant suite
 python -m mantle mind             # fuse the offline MIND and watch containment
