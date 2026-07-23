@@ -92,11 +92,11 @@ open hard-fails leads to the same MIND fusion and Stage-2 gate.
 - Treat human-style UI input as an attempt, not success. A visible Body write or
   control action needs target-surface read-back, dirty-state evidence, a host receipt,
   or another body-owned verifier before its Limb proof may claim `ok=true`.
-- Route only explicit command/tool invocations through mapped Body controls before
-  ordinary MIND chat. Plain prose, even when it describes host actions, remains MIND
-  consultation unless it uses a known command surface such as `/write`, `/tabs`, or
-  `/model`. The MIND may propose the matching Body command, but Body must not silently
-  execute effectful controls from natural language.
+- Treat normal conversation as the resident's user interface. Slash commands are for
+  terminal maintenance and diagnostics, not app-specific Body features. The MIND should
+  interpret plain-English host-action requests against mapped SELF/body evidence, call
+  the matching Body nerve when the target and verifier are clear, and report a
+  maintenance gap when they are not.
 - Give every resident a host evidence index and consult it before generic MIND chat.
   An AppAI should answer questions about its software from the Phase-0 inventory, organ
   map, hook graph, certification receipts, controls, gaps, and limitations. Provider
@@ -105,6 +105,15 @@ open hard-fails leads to the same MIND fusion and Stage-2 gate.
 - When a resident is asked what functions it has, answer from GUI nerve coverage and
   Body proof status. Do not answer from a capped sample of controls, and do not collapse
   observer-only knowledge into verified ability.
+- Promote app-specific working surfaces into SELF from discovery and live Body evidence.
+  Tabs, documents, views, panels, canvases, sheets, buffers, and routes are host anatomy,
+  not global slash commands. If the host exposes a tab bar, map it; if it exposes no
+  tabs, do not invent them. Changed working-surface observations should be mirrored into
+  the VCW. Opaque native surfaces become maintenance gaps with proposed observers or
+  hooks.
+- Provide an explicit VCW reset maintenance command for resident development. Reset
+  recreates Prime from current evidence and clears transient runtime residue; it is never
+  triggered by ordinary prose.
 - DREAM/MAINTENANCE may surface missing or unverified GUI nerves as proposed Body/tool
   work. The MIND proposes those changes; Body implements and proves them after operator
   review.

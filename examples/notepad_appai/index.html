@@ -684,7 +684,9 @@
     "answer_host_questions_from": ["host_identity", "organ_summary", "control_surfaces", "surface_coverage_summary", "gaps", "limitations"],
     "provider_mind_role": "Phase 2 only; may interpret resident evidence after authorization",
     "missing_evidence_policy": "name the gap instead of guessing",
-    "effectful_action_policy": "effectful host-surface actions require explicit command/tool dispatch and Body-owned Action Execution Proof; plain prose remains MIND consultation"
+    "effectful_action_policy": "plain-English host-surface requests are interpreted by the resident MIND against mapped SELF/body evidence; effectful operations require Body-owned Action Execution Proof",
+    "working_surface_policy": "working surfaces are app-specific anatomy discovered from GUI coverage or live Body evidence and mirrored into VCW state; tabs are not universal slash commands and are not assumed for every app",
+    "reset_policy": "resident VCW resets must be explicit maintenance commands that recreate Prime from current evidence and clear transient runtime residue"
   },
   "organ_summary": {
     "Heart": {"count": 3, "samples": ["boot", "beforeunload guard", "UI refresh pulse"]},
@@ -894,6 +896,8 @@
       });
       lines.push(`GUI surfaces: ${coverage.total_surfaces}; statuses: ${JSON.stringify(coverage.status_counts)}`);
       lines.push(index.consultation_contract.effectful_action_policy);
+      lines.push(index.consultation_contract.working_surface_policy);
+      lines.push(index.consultation_contract.reset_policy);
     } else {
       lines.push(`${index.host_identity.name}: ${index.host_identity.purpose}`);
       lines.push(`Substrate: ${(index.host_identity.substrate_languages || []).join(", ")}`);

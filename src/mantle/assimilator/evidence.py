@@ -164,9 +164,20 @@ def build_host_evidence_index(amap: Dict[str, Any],
             ),
             "missing_evidence_policy": "name the gap instead of guessing",
             "effectful_action_policy": (
-                "effectful host-surface actions require explicit command/tool dispatch "
-                "and Body-owned Action Execution Proof; plain prose remains MIND "
-                "consultation"
+                "plain-English host-surface requests are interpreted by the resident "
+                "MIND against mapped SELF/body evidence; effectful operations require "
+                "Body-owned Action Execution Proof"
+            ),
+            "working_surface_policy": (
+                "active documents, tabs, panels, canvases, sheets, routes, and other "
+                "working surfaces are host-specific anatomy discovered from GUI "
+                "coverage or live Body evidence and recorded into the VCW; they are "
+                "not universal predefined slash commands"
+            ),
+            "reset_policy": (
+                "resident VCW resets must be explicit maintenance commands that "
+                "recreate Prime from current evidence and clear transient runtime "
+                "residue"
             ),
         },
     }
@@ -211,6 +222,13 @@ def answer_from_host_evidence(question: str, amap: Dict[str, Any]) -> str:
             lines.append("- `%s` at %s:%s [%s]" % (
                 c.get("control"), c.get("module"), c.get("line"), status))
         lines.append("Every control must produce Action Execution Proof before success.")
+        contract = index.get("consultation_contract", {})
+        if contract.get("effectful_action_policy"):
+            lines.append(contract["effectful_action_policy"])
+        if contract.get("working_surface_policy"):
+            lines.append(contract["working_surface_policy"])
+        if contract.get("reset_policy"):
+            lines.append(contract["reset_policy"])
         return "\n".join(lines)
 
     tokens = [t for t in re.findall(r"[a-z_]+", lowered) if t not in STOP_WORDS]

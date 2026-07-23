@@ -2274,8 +2274,11 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and "Substrate coverage" in inventory
             and evidence.get("kind") == "HOST_EVIDENCE_INDEX"
             and evidence.get("local_first_consultation") is True
-            and "explicit command/tool dispatch" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
-            and "plain prose remains MIND consultation" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
+            and "plain-English host-surface requests" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
+            and "mapped SELF/body evidence" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
+            and "host-specific anatomy" in evidence.get("consultation_contract", {}).get("working_surface_policy", "")
+            and "not universal predefined slash commands" in evidence.get("consultation_contract", {}).get("working_surface_policy", "")
+            and "explicit maintenance commands" in evidence.get("consultation_contract", {}).get("reset_policy", "")
             and "Resident host evidence index" in inventory
             and "adaptive parser/observer/verifier" in answer
             and os.path.exists(paths["inventory"])
@@ -2323,6 +2326,7 @@ def t_assimilator_gui_surface_nerve_coverage():
         and by_id["menuEdit"]["vcw_status"] == "sense_only"
         and by_id["pushExitFullScreen"]["vcw_status"] == "sense_only"
         and coverage["contract"]["no_silent_gui_omission"] is True
+        and "no generic app is assumed" in coverage["contract"].get("working_surface_policy", "")
     )
     return ok, "surfaces=%d statuses=%s" % (
         coverage["total_surfaces"], coverage["status_counts"])

@@ -185,6 +185,11 @@ def build_surface_coverage(symbols: Iterable[Dict[str, Any]],
             "effectful_claim_policy": (
                 "resident may claim operation only with Body-owned Action Execution Proof"
             ),
+            "working_surface_policy": (
+                "tabs/documents/views are recorded only when the host declares them or "
+                "Body observes them, then mirrored into SELF/VCW state; no generic app "
+                "is assumed to have a tab surface"
+            ),
         },
     }
 

@@ -60,7 +60,10 @@ async function runChecks(page) {
       expect(controlAnswer.includes("Observed Body controls"), "Control answer did not use resident evidence");
       expect(controlAnswer.includes("GUI surfaces"), "Control answer omitted GUI nerve coverage");
       expect(controlAnswer.includes("Action Execution Proof"), "Control answer omitted proof requirement");
-      expect(controlAnswer.includes("plain prose remains MIND consultation"), "Control answer omitted slash-command dispatch boundary");
+      expect(controlAnswer.includes("plain-English host-surface requests"), "Control answer omitted conversational MIND dispatch policy");
+      expect(controlAnswer.includes("working surfaces are app-specific anatomy"), "Control answer omitted app-specific working-surface policy");
+      expect(controlAnswer.includes("tabs are not universal slash commands"), "Control answer implied app tabs are global commands");
+      expect(controlAnswer.includes("resident VCW resets must be explicit"), "Control answer omitted explicit reset policy");
       expect(body.getLedger().some((entry) => entry.type === "resident_consultation"), "Resident consultation was not logged");
       expect(parity.length >= 11 && parity.every((row) => row.status === "PASS"), "Parity matrix is incomplete or not green");
       expect(body.phase1NoModelCalls() === true, "Phase-1 no-model policy missing");
