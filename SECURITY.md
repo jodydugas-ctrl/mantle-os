@@ -29,7 +29,7 @@ Include:
   authority.
 - Production MIND fusion requires fresh resident-bound evidence plus distinct authenticated
   operator and guardian approvals.
-- Reproduction is disabled by default and is not authorized by the 1.3.0 release.
+- Reproduction is disabled by default and is not authorized by the 1.4.0 release.
 - Authority credentials and provider credentials are deployment secrets and must never be
   committed.
 - The Hermes addon is fail-open toward host operation but fail-closed toward fusion authority.

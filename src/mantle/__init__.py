@@ -13,7 +13,7 @@ the runnable audits and their tamper proofs.
     python -m mantle teach                       # the Field Guide, running
     python -m mantle hatch examples/spores/greeter.png --out=nest/
 """
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 # The public API is exposed lazily (PEP 562): importing `mantle` is near-free; each name pulls
 # in its submodule only on first access. `from mantle import Organism` and `mantle.Organism`

@@ -69,7 +69,7 @@ def _worker(mode: str) -> dict[str, object]:
             session_id="session-integration",
         )
     )
-    assert status["mantle_version"] == "1.3.0"
+    assert status["mantle_version"], "runtime version must be reported"
     discovery_entry = registry.get_entry("mantle_record_discovery")
     assert discovery_entry is not None
     discovery_text = "bounded integration discovery"

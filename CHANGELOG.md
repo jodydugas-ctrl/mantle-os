@@ -2,10 +2,50 @@
 
 All notable release-level changes are documented here.
 
-## [Unreleased]
+## [1.4.0] — 2026-07-23
+
+### Changed — the streamlining release: one artifact, one door, one reading order
+
+- **The spore is THE artifact.** A spore PNG may now carry a **germ** — the complete
+  AppAI build document (the former egg schema) — plus a build note any coding agent can
+  read to grow the app with or without Mantle installed. `mantle spore pack` packs a
+  germ into a spore; `examples/spores/` ships generated germ spores.
+- **One birth door.** `mantle hatch <spore.png|germ.json>` is the single birth command;
+  `hatch-spore` is absorbed. `egg.py` folded into the hatchery
+  (`validate_germ`/`load_germ`; both `mantle-germ-v1` and legacy `mantle-egg-v1`
+  formats are accepted). `hatch_from_spore` moved beside the incubator it always called.
+- **Assimilation emits a spore.** `mantle assimilate <host> --spore=out.png` condenses
+  the read-only dissection into the host's germ spore. A graft is a spore aimed at a
+  host: `load_graft` accepts graft-germ spores.
+- **Rebirth simplified.** One heirloom law (carried or immune-logged, never silent), one
+  carry rule for both heirloom bands; `vault.py` folded into the Reproduction organ
+  module that always owned the tissue. On-disk formats unchanged; ancestors stay
+  readable.
+- **Docs consolidated.** One reading order (README → `documents/PRIMER.md` →
+  `mantle teach`); PRIMER absorbs the Doctrine, Organism Lens, and Positioning;
+  ARCHITECTURE.md absorbs the architecture note and the Part 1/2 build+audit
+  narratives; REPRODUCTION.md is the canonical reproduction + rebirth doctrine; the
+  VCW guide absorbs the anatomical atlas and compliance tiers. The Grimoire gained a
+  scope banner (§7/§9 are the Mantle-binding sections).
+- **Counts are derived, never hardcoded.** The doctor's docs-vs-code gate now fails if
+  any document hardcodes an invariant count; `mantle prove` prints the live count.
+- **CLI dispatch is table-driven**; underscore aliases are derived.
+
+### Removed
+
+- The vendored duplicate of the entire repository inside the Hermes addon
+  (`examples/hermes-mantle-addon/vendor/`, 9.9 MB). The addon loads the runtime from
+  `MANTLE_ADDON_RUNTIME_ROOT`, its install-time `runtime/` copy, or the repo checkout.
+- The self-referential optimization-audit layer: `optimize_audit.py`,
+  `documents/refinement/`, and 21 unregistered meta-invariant functions.
+- Scratch notes (`New_Commandments.txt`), the NotepadNext lifecycle zip (superseded by
+  `assimilate --spore`), and fourteen merged documentation files.
 
 ### Added
 
+- Invariant **SPORE-3** (germ round trip): germ → spore → hatch → certified body whose
+  vault returns the same germ, with the key minted, never derived.
+- `assimilator.emit_spore`, `spore.pack_germ`, and the unified `hatchery.hatch`.
 - Plug-and-play Hermes addon installer and `/mind <prompt>` command for one explicit, unscheduled
   AppAI cognition pulse through Hermes's active host LLM.
 - VCW persistence for content-withheld interactive MIND markers, hash-only request/response traces,
@@ -13,6 +53,10 @@ All notable release-level changes are documented here.
 
 ### Security
 
+- All standing laws re-proven unchanged: keys minted at birth (never derived from a
+  spore), foreign conversation ingested as INFERRED through Senses, the Stage-1 gate
+  mandatory on every birth path, do-no-harm census on every graft, and the heirloom
+  carry across rebirth.
 - Interactive MIND contact remains transient and user-directed; it does not attach the Brain, start
   autonomous cognition, or bypass independent production-fusion authority.
 - Echoed prompts are returned to the requesting surface but never written to any VCW band or

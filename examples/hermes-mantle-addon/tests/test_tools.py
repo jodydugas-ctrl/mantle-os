@@ -51,6 +51,14 @@ class RecordingContext:
         )
 
 
+def shipped_mantle_version() -> str:
+    """The version literal of the runtime the addon actually loads (never hardcoded)."""
+    import re
+    tools = load_module("hermes_mantle_tools_version_probe", TOOLS_PATH)
+    source = (tools._MANTLE_PACKAGE / "__init__.py").read_text(encoding="utf-8")
+    return re.search(r'__version__ = "([^"]+)"', source).group(1)
+
+
 class MantleStatusTests(unittest.TestCase):
     def test_status_reports_vendored_mantle_capabilities(self):
         tools = load_module("hermes_mantle_tools", TOOLS_PATH)
@@ -58,7 +66,7 @@ class MantleStatusTests(unittest.TestCase):
         result = json.loads(tools.mantle_status({}))
 
         self.assertTrue(result["success"])
-        self.assertEqual("1.3.0", result["mantle_version"])
+        self.assertEqual(shipped_mantle_version(), result["mantle_version"])
         self.assertEqual("true", result["mantle_scope"])
         self.assertEqual("vendored", result["source"])
         self.assertTrue({"audit", "prove", "check", "assimilate"}.issubset(result["commands"]))
@@ -85,7 +93,7 @@ class MantleStatusTests(unittest.TestCase):
                     sys.modules[name] = original
 
         self.assertTrue(result["success"])
-        self.assertEqual("1.3.0", result["mantle_version"])
+        self.assertEqual(shipped_mantle_version(), result["mantle_version"])
         self.assertNotIn("fake-command", result["commands"])
         self.assertIn("audit", result["commands"])
 
