@@ -2,6 +2,28 @@
 
 All notable release-level changes are documented here.
 
+## [Unreleased]
+
+### Changed — documentation reorganization (no code changes; framework still 1.4.0)
+
+- **Two on-ramps for specialists.** Added `AGENTS.md` at the repo root — an orientation
+  file for AI agents that explains the two jobs the biological framework does (it draws a
+  boundary you can see, and every organ name maps to real work) and how to use the
+  Grimoire. Added `documents/Mantle_for_Engineers.md` — a systems-language translation
+  layer (trust boundary, storage semantics, verification gates, the model-integration
+  contract, and a full term-mapping table) for engineers and AI specialists who want the
+  architecture before the metaphor.
+- **The README is the primer.** Folded `documents/PRIMER.md` into `README.md` and removed
+  it, so there is one biological entry document with only the two specialized doors
+  branching off it. The README now carries the plain-language on-ramp, the creed and
+  cosmology, the organism lens, the ontology glossary, and the six principles.
+- **Removed README redundancy.** The reproduction mechanics (cache-ghost and its four
+  laws, the per-module facet map, cache receipts), the applet-body commands and bands, and
+  the detailed Path A/B build procedure now point to their canonical homes
+  (`documents/REPRODUCTION.md`, `documents/Mantle_Applet_Bodies.md`,
+  `documents/ARCHITECTURE.md`) instead of duplicating them. The organic wording is
+  unchanged.
+
 ## [1.4.0] — 2026-07-23
 
 ### Changed — the streamlining release: one artifact, one door, one reading order

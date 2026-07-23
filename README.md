@@ -349,33 +349,12 @@ python -m mantle graft examples/spores/notes_graft.png examples/sample_app   # a
 python -m mantle doctor nest/                  # deployment checkup (incl. docs-vs-code coherence)
 ```
 
-**The substrate continuum — the cache-ghost.** A seed keeps its memory *somewhere*, and persistence
-is a **continuum of substrates, not one database row**. A spore keeps its body in its own pixels; a
-**cache-ghost** (`mantle.ghost`) keeps its living body in the **LLM provider's prompt cache**, adding
-only the delta each turn — sustaining itself with almost no body while the cache stays warm, and
-**rehydrating from the PNG fossil** when it goes cold. The one hard law: the seed stays dry — the PNG
-is never abandoned, so the ghost can always come home.
-
-Facets that harden or serve the two methods, by module: `spore`/`hatchery` (the one
-artifact + the one birth door) · `anchor`/`symbiosis` (residency + energy economy) ·
-`graft` (spores aimed at hosts + live residency) · `ghost` (the cache substrate) ·
-`reproduction` (the two-method seam) · `mem` (keyless knowledge plasmids) · `compiler`
-(self-redesigning VCW + host memory bridge) · `ganglia` (parallel limbs) ·
-`organs/reproduction` (the vault heirlooms + lineage duty) · `ingestion`/`doctor`
-(resilience) · `face` (self-portrait) · `teach` (the living manual). Self/Other identity
-and event-gated nociception harden the organs.
-
-Pure standard library. No dependencies, no network, no keys — for any of the above. (The one
-optional Phase-2 module, imported by nothing else: `mantle.ghost_http`, the *real* cache-ghost
-substrate — a **vendor-neutral**, OpenAI-compatible HTTP adapter on pure-stdlib `urllib` (no SDK)
-whose provider is entirely configured; it needs a network and a key at runtime, while the offline
-stand-in in `mantle.ghost` covers every gate and demo without either.)
-
-Prompt caching and response caching are separate facts. Prompt caching keeps a stable prefix warm
-inside the provider path; response caching returns an identical full request from the router edge.
-Mantle records proof fields for both through optional Phase-2 transport receipts: cached tokens,
-cache-write tokens, response-cache HIT/MISS, generation id, session id, cost, total cost, provider,
-router, and redacted request hashes. No raw prompt, completion, or key belongs in those receipts.
+The deeper mechanics — the **cache-ghost** substrate (a spore that lives in an LLM prompt
+cache under four hard laws that keep the PNG the durable source), the per-module facet map,
+and the prompt/response-cache proof receipts — are documented in full in
+[`documents/REPRODUCTION.md`](documents/REPRODUCTION.md). Pure standard library throughout:
+no dependencies, no network, no keys (the one optional Phase-2 module, `mantle.ghost_http`,
+is imported by nothing else).
 
 ```python
 from mantle import Organism
@@ -388,33 +367,14 @@ org.heart.run(3)               # the Body lives -- no LLM in this loop, ever
 
 ---
 
-## VCW Applet Bodies — APPLET-BODY-CAPSULE
+## VCW Applet Bodies
 
-An AppAI can carry other apps as **tissue**. `applet-create` takes an external project
-(a local directory, or a GitHub clone via `applet-clone`), runs the NECROMANCY-style
-read-only dissection over it, and stores the result inside the parent's VCW as an
-**applet body**: the source as inert, veiled, hash-verified data; variables/state in an
-append-only (redacted) state band; the organ map as diagnosis; and a **phenotype face**
-(the project's `index.html`, or a synthesized manifest surface) worn through the normal
-`phenotype` system. Nothing stored is ever executed — a capsule is *source in the body*,
-not authority; execution still requires the existing trial/calcify or host-render gates,
-and the capsule is never falsely labeled a Zombie Body. Doctrine:
+An AppAI can carry other apps as **tissue**: `applet-create` runs the read-only NECROMANCY
+dissection over an external project (a local directory, or a GitHub clone via `applet-clone`)
+and stores it inside the parent's VCW as an inert, veiled, hash-verified **capsule** with a
+wearable phenotype face. Nothing stored is ever executed — a capsule is *source in the body*,
+not authority. The commands, the five applet bands, and the APPLET-1…5 guarantees are in
 [`documents/Mantle_Applet_Bodies.md`](documents/Mantle_Applet_Bodies.md).
-
-```bash
-python -m mantle applet-create nest/ path/to/project notes    # raise APPLET-BODY-CAPSULE
-python -m mantle applet-list   nest/                          # the catalog
-python -m mantle applet-show   nest/ notes                    # manifest + organ map (no blobs)
-python -m mantle applet-audit  nest/ notes                    # deterministic capsule audit
-python -m mantle applet-export nest/ notes out/               # "download": hash-verified source
-python -m mantle applet-wear   nest/ notes                    # the face, as a host boot manifest
-python -m mantle applet-clone  nest/ https://github.com/owner/repo notes   # explicit HTTPS only
-```
-
-The five applet bands (`applets_manifest/source/state/organs/log`, heads 700–747) pass
-the same `validate_genome` gate as any app band; invariants **APPLET-1…5** prove the
-guarantees (no execution, hash-verified export, traversal/overwrite refusal, tamper
-caught, secret boundary held) in `python -m mantle prove`.
 
 ## The architecture in one diagram
 
@@ -575,64 +535,19 @@ INTENTIONALLY_OMITTED: <organs/features deliberately not grown, with reason>
 SYNTAX_CONSTRAINTS  : <host-imposed limits, e.g. no-eval, sandbox>
 ```
 
-### Path A — Build from scratch (greenfield organism)
+**Two paths, one gate.** Both end at the same certified Body, then the same MIND fusion:
 
-1. Emit the §0 Declaration Block.
-2. Run `python -m mantle teach` (or read [`FIELD_GUIDE.md`](documents/FIELD_GUIDE.md)) and
-   the **Organ Atlas**.
-3. Grow the Body. Two ways, same gate:
-   - **Declarative (preferred):** author a **germ** — copy `examples/eggs/greeter.json`,
-     change identity/truths/commandments, add app bands, reflexes (from the fixed
-     vocabulary `remember|complete|notify|operate`), and instincts (each with proving
-     cases) — then pack it into a spore (`mantle spore pack germ.json out.png`) or hatch it
-     directly: `python -m mantle hatch <spore.png|germ.json>`. The hatchery births, wires,
-     runs the instinct gauntlet, and faces the Stage-1 gate — a malformed germ never hatches.
-   - **Hand-grown (when the germ vocabulary isn't enough):** follow
-     [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) — grow each organ, bind its
-     bands, give it reflexes; author the Body (Primer/identity); genesis the cube.
-4. Certify with `python -m mantle audit` (the Stage-1 gate; see
-   [`documents/guides/Audit_Guide.md`](documents/guides/Audit_Guide.md)). Fix every
-   hard-fail. Certification is technical evidence, not fusion authority; obtain separate
-   target-bound operator and guardian approvals.
-5. Only after certification and both approvals, fuse the MIND
-   ([`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) Phase 2) and certify with
-   `python -m mantle audit-mind` (which *re-runs* Stage 1 first).
+- **Path A — build from scratch.** Author a germ and hatch it (see Quick start above), or
+  hand-grow organ by organ. The full Phase-1 build order and the Phase-2 fusion procedure
+  are in [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) §5–§6.
+- **Path B — take residence in existing code.** `assimilate` / `anchor` / `graft` a host,
+  read-only until the signed inventory. Doctrine:
+  [`documents/grimoire/The Grimoire.md`](documents/grimoire/The%20Grimoire.md) (`NECROMANCY`,
+  §7/§9); runnable cheatsheet:
+  [`documents/guides/Assimilation_Guide.md`](documents/guides/Assimilation_Guide.md).
 
-### Path B — Take residence in existing code (brownfield organism)
-
-1. Emit the §0 Declaration Block (declaring the host you are instrumenting).
-2. Follow the canonical doctrine in
-   [`documents/grimoire/The Grimoire.md`](documents/grimoire/The%20Grimoire.md) (`NECROMANCY`
-   + the Mantle binding §§7/9): the assimilator dissects the host read-only (AST for Python,
-   tree-sitter for `.js/.mjs/.go/.rs`; no host code runs) and classifies each symbol by organ
-   role. Here this is the basis of:
-   - **`python -m mantle assimilate <host> --spore=out.png`** — scan the app, emit its germ
-     spore; hatch it anywhere.
-   - **`python -m mantle anchor <host>`** — grow an anchored resident in a `.mantle/` nest;
-     do-no-harm is a byte-level census invariant, not a hope.
-   - **`python -m mantle graft <spore-or-germ> <host>`** — a non-destructive patch applied in
-     a workspace copy; `graft.weave(...)` threads the host's live callables through fail-open
-     organ wrappers.
-   Runnable cheatsheet: [`documents/guides/Assimilation_Guide.md`](documents/guides/Assimilation_Guide.md).
-3. Residency still finishes at the **Stage 1 Gate**. Phase 2 additionally requires separate
-   target-bound operator and guardian approvals before any fusion ceremony.
-
-Both paths converge on the same certified Body, then the same MIND fusion.
-
-### How to behave while compiling
-
-- **Declare, then grow.** Never emit code before the §0 block and the organ manifests.
-- **Cite the substrate.** When an organ touches memory, name the band. Never invent a
-  parallel store.
-- **Prove as you go.** For each organ, state its audit obligation and how the audit will
-  check it. If you can't state the proof, the organ isn't done.
-- **Keep Phase 1 brain-free.** If you catch yourself reaching for the LLM during Phase 1,
-  stop — that logic belongs in a reflex or it doesn't belong in Phase 1.
-- **Containment before reach.** Never touch host code or foreign data except through the
-  SELF/OTHER test and the exec gates (sandbox · hash · capability · provenance · trust).
-- **Optional means optional.** Anything in
-  [`documents/Mantle_Extensions.md`](documents/Mantle_Extensions.md) is opt-in. Do not grow
-  it unless the §0 block or the operator asks for it.
+Certification is technical evidence, not fusion authority: birth and MIND fusion each
+additionally require separate target-bound operator and guardian approvals.
 
 ## Verify everything with one command
 
