@@ -43,15 +43,14 @@ def _literal_assignment(path: Path, name: str) -> Any:
 def _load_mantle_metadata() -> tuple[str, list[str]]:
     """Read metadata from the fixed vendored source without importing ``mantle``."""
     version = _literal_assignment(_MANTLE_PACKAGE / "__init__.py", "__version__")
-    aliases = _literal_assignment(_MANTLE_PACKAGE / "cli.py", "_COMMAND_ALIASES")
+    commands = _literal_assignment(_MANTLE_PACKAGE / "cli.py", "_COMMANDS")
     if not isinstance(version, str):
         raise RuntimeError("vendored Mantle __version__ must be a string")
-    if not isinstance(aliases, dict) or not all(
-        isinstance(key, str) and isinstance(value, str)
-        for key, value in aliases.items()
+    if not isinstance(commands, (list, tuple)) or not all(
+        isinstance(name, str) for name in commands
     ):
-        raise RuntimeError("vendored Mantle command registry must map strings to strings")
-    return version, sorted(set(aliases.values()))
+        raise RuntimeError("vendored Mantle command registry must be strings")
+    return version, sorted(set(commands))
 
 
 def mantle_status(args: dict, **kwargs) -> str:

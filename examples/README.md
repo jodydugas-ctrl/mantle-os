@@ -11,17 +11,15 @@ These are proven by the framework's own gate. Read and run these first:
 - **`sample_app/`** - the canonical Path-B teaching host: an ordinary notes app
   with a README role map for Heart, Senses, Memory, Immune, Limbs, and Brain
   affordance. Use it with `python -m mantle assimilate examples/sample_app
-  --dry-run`, `python -m mantle anchor`, and the graft egg.
-- **`../examples/eggs/greeter.json`** - the egg template.
-  **`../examples/eggs/notes_graft.json`** - a graft egg targeting `sample_app`.
-  **`../examples/eggs/calculator.json`** - an egg that declares its own origin
-  face, including the AppAI terminal surface and submit/blur text commit policy.
+  --dry-run` (add `--spore=out.png` to emit its germ spore), `python -m mantle
+  anchor`, and the graft spore.
+- **`spores/`** - germ spores, the one artifact that births an AppAI:
+  `python -m mantle hatch examples/spores/greeter.png --out=nest/`.
+- **`eggs/`** - the germ files those spores are packed from: `greeter.json`
+  (the template), `notes_graft.json` (a graft germ targeting `sample_app`),
+  and `calculator.json` (declares its own origin face, including the AppAI
+  terminal surface and submit/blur text commit policy).
 - **`phenotype_demo.py`** - wearable app-faces end to end.
-- **`notepadnext_appai_lifecycle/notepadnext_appai_seed_package.zip`** - a
-  compact NotepadNext MantleOS seed package with the encrypted lifecycle SPORE
-  PNG, the distilled lifecycle egg JSON, and a README explaining how the seed
-  recreates the larger local assimilation workflow without checking in the full
-  generated agent workspace.
 
 The single best example is the framework proving itself: `python -m mantle teach`
 (mirror: [`../FIELD_GUIDE.md`](../documents/FIELD_GUIDE.md)).

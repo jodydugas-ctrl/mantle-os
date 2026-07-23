@@ -47,48 +47,18 @@ _USAGE = ("usage: python -m mantle "
           "check [--fast] | "
           "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png]]")
 
-_COMMAND_ALIASES = {
-    "anchor": "anchor",
-    "ask": "ask",
-    "feed": "feed",
-    "vitals": "vitals",
-    "hatch": "hatch",
-    "graft": "graft",
-    "spore": "spore",
-    "ghost": "ghost",
-    "reproduce": "reproduce",
-    "doctor": "doctor",
-    "teach": "teach",
-    "face": "face",
-    "face-list": "face-list",
-    "face_list": "face-list",
-    "face-save": "face-save",
-    "face_save": "face-save",
-    "face-wear": "face-wear",
-    "face_wear": "face-wear",
-    "applet-create": "applet-create",
-    "applet_create": "applet-create",
-    "applet-list": "applet-list",
-    "applet_list": "applet-list",
-    "applet-show": "applet-show",
-    "applet_show": "applet-show",
-    "applet-export": "applet-export",
-    "applet_export": "applet-export",
-    "applet-wear": "applet-wear",
-    "applet_wear": "applet-wear",
-    "applet-audit": "applet-audit",
-    "applet_audit": "applet-audit",
-    "applet-clone": "applet-clone",
-    "applet_clone": "applet-clone",
-    "demo": "demo",
-    "audit": "audit",
-    "prove": "prove",
-    "mind": "mind",
-    "audit-mind": "audit-mind",
-    "audit_mind": "audit-mind",
-    "assimilate": "assimilate",
-    "check": "check",
-}
+_COMMANDS = (
+    "anchor", "ask", "feed", "vitals", "hatch", "graft", "spore", "ghost",
+    "reproduce", "doctor", "teach", "face", "face-list", "face-save", "face-wear",
+    "applet-create", "applet-list", "applet-show", "applet-export", "applet-wear",
+    "applet-audit", "applet-clone", "demo", "audit", "prove", "mind", "audit-mind",
+    "assimilate", "check",
+)
+
+# every command answers to its hyphenated name and its underscore twin
+_COMMAND_ALIASES = {name: name for name in _COMMANDS}
+_COMMAND_ALIASES.update({name.replace("-", "_"): name
+                         for name in _COMMANDS if "-" in name})
 
 
 def known_commands(include_aliases: bool = False):
@@ -665,78 +635,87 @@ def cmd_applet_clone(argv):
         shutil.rmtree(workdir, ignore_errors=True)
 
 
+def _cmd_teach(rest):
+    from . import teach
+    return teach.main(rest)
+
+
+def _cmd_demo(rest):
+    from . import demos
+    return demos.demo(rest)
+
+
+def _cmd_audit(rest):
+    from .audits import stage1
+    return stage1.main(rest)
+
+
+def _cmd_prove(rest):
+    from .audits import invariants
+    return invariants.main(rest)
+
+
+def _cmd_mind(rest):
+    from . import demos
+    return demos.mind_demo(rest)
+
+
+def _cmd_audit_mind(rest):
+    from .audits import stage2
+    return stage2.main(rest)
+
+
+def _cmd_assimilate(rest):
+    from . import demos
+    return demos.assimilate(rest)
+
+
+def _cmd_check(rest):
+    from . import check
+    return check.main(rest)
+
+
+_DISPATCH = {
+    "anchor": cmd_anchor,
+    "ask": cmd_ask,
+    "feed": cmd_feed,
+    "vitals": cmd_vitals,
+    "hatch": cmd_hatch,
+    "graft": cmd_graft,
+    "spore": cmd_spore,
+    "ghost": cmd_ghost,
+    "reproduce": cmd_reproduce,
+    "doctor": cmd_doctor,
+    "teach": _cmd_teach,
+    "face": cmd_face,
+    "face-list": cmd_face_list,
+    "face-save": cmd_face_save,
+    "face-wear": cmd_face_wear,
+    "applet-create": cmd_applet_create,
+    "applet-list": cmd_applet_list,
+    "applet-show": cmd_applet_show,
+    "applet-export": cmd_applet_export,
+    "applet-wear": cmd_applet_wear,
+    "applet-audit": cmd_applet_audit,
+    "applet-clone": cmd_applet_clone,
+    # the narrated tours and the gates
+    "demo": _cmd_demo,
+    "audit": _cmd_audit,
+    "prove": _cmd_prove,
+    "mind": _cmd_mind,
+    "audit-mind": _cmd_audit_mind,
+    "assimilate": _cmd_assimilate,
+    "check": _cmd_check,
+}
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     raw_cmd = argv[0] if argv else "teach"
     cmd = _COMMAND_ALIASES.get(raw_cmd, raw_cmd)
-    rest = argv[1:]
-    if cmd == "anchor":
-        return cmd_anchor(rest)
-    if cmd == "ask":
-        return cmd_ask(rest)
-    if cmd == "feed":
-        return cmd_feed(rest)
-    if cmd == "vitals":
-        return cmd_vitals(rest)
-    if cmd == "hatch":
-        return cmd_hatch(rest)
-    if cmd == "graft":
-        return cmd_graft(rest)
-    if cmd == "spore":
-        return cmd_spore(rest)
-    if cmd == "ghost":
-        return cmd_ghost(rest)
-    if cmd == "reproduce":
-        return cmd_reproduce(rest)
-    if cmd == "doctor":
-        return cmd_doctor(rest)
-    if cmd == "teach":
-        from . import teach
-        return teach.main(rest)
-    if cmd == "face":
-        return cmd_face(rest)
-    if cmd == "face-list":
-        return cmd_face_list(rest)
-    if cmd == "face-save":
-        return cmd_face_save(rest)
-    if cmd == "face-wear":
-        return cmd_face_wear(rest)
-    if cmd == "applet-create":
-        return cmd_applet_create(rest)
-    if cmd == "applet-list":
-        return cmd_applet_list(rest)
-    if cmd == "applet-show":
-        return cmd_applet_show(rest)
-    if cmd == "applet-export":
-        return cmd_applet_export(rest)
-    if cmd == "applet-wear":
-        return cmd_applet_wear(rest)
-    if cmd == "applet-audit":
-        return cmd_applet_audit(rest)
-    if cmd == "applet-clone":
-        return cmd_applet_clone(rest)
-    # ---- the narrated tours and the gates ----
-    if cmd == "demo":
-        from . import demos
-        return demos.demo(rest)
-    if cmd == "audit":
-        from .audits import stage1
-        return stage1.main(rest)
-    if cmd == "prove":
-        from .audits import invariants
-        return invariants.main(rest)
-    if cmd == "mind":
-        from . import demos
-        return demos.mind_demo(rest)
-    if cmd == "audit-mind":
-        from .audits import stage2
-        return stage2.main(rest)
-    if cmd == "assimilate":
-        from . import demos
-        return demos.assimilate(rest)
-    if cmd == "check":
-        from . import check
-        return check.main(rest)
+    handler = _DISPATCH.get(cmd)
+    if handler is not None:
+        return handler(argv[1:])
     print(_USAGE)
     return 2 if raw_cmd in ("-h", "--help", "help") else 1
 

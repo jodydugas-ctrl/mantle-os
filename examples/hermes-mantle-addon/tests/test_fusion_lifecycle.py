@@ -22,6 +22,12 @@ from mantle_addon.authority import Ed25519AuthorityProvider, _canonical_payload
 from mantle_addon.config import ResidentConfig
 from mantle_addon.runtime import FusionLifecycleError, ResidentRuntime
 from mantle_addon.stage1_gate import GateRow, Stage1Receipt, run_gate
+from mantle_addon.vendor import vendored_symbol
+
+
+def _framework_invariant_count() -> int:
+    """The live invariant count, derived from the loaded runtime (never hardcoded)."""
+    return len(vendored_symbol("audits.invariants", "TESTS"))
 
 
 class _Mind:
@@ -109,7 +115,7 @@ class FusionLifecycleTests(unittest.TestCase):
             fails=[],
             framework_passed=True,
             framework_rows=20,
-            framework_invariants=93,
+            framework_invariants=_framework_invariant_count(),
             framework_failures=[],
             summary="complete test receipt",
             issued_at=(now - timedelta(seconds=60)).isoformat(),
@@ -267,7 +273,8 @@ class FusionLifecycleTests(unittest.TestCase):
             post_defusion.passed,
             f"{post_defusion.summary}; failures={post_defusion.fails}",
         )
-        self.assertEqual(93, post_defusion.framework_invariants)
+        self.assertEqual(_framework_invariant_count(),
+                         post_defusion.framework_invariants)
 
     def test_defusion_stops_scheduler_without_holding_runtime_lock(self):
         receipt, readiness, authorization = self._evidence()
