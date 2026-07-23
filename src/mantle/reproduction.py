@@ -90,7 +90,7 @@ def seed(form: str = "spore", **kwargs) -> Dict[str, Any]:
     """Reproduce INDEPENDENTLY. `form` selects the seed's size; kwargs pass through unchanged.
 
         seed("spore", name="Buddy", task="answer one question", path="buddy.png")
-        seed("egg",   egg_path="examples/eggs/greeter.json", out_dir="nest/")
+        seed("egg",   path="examples/spores/greeter.png", out_dir="nest/")
         seed("vault", seed=<egg-or-graft dict sealed in an organism>)
 
     Every path ends in a certified Body (or, for a spore, a verifiable minimal seed). This

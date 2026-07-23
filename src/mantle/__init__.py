@@ -5,12 +5,13 @@ nine contracted organs mesh on one deterministic SignalBus around a durable pict
 (the VCW cube), with an immune system and a heartbeat -- all certified with no LLM attached.
 Only then may a bounded MIND be fused, and it may only ever extend what already lives.
 
-An AppAI can be declared as a single egg, take residence in a host codebase, share knowledge,
-redesign its own VCW, and reconstruct itself -- every capability gated by the runnable audits
-and their tamper proofs.
+An AppAI travels as a single SPORE -- one PNG carrying its germ (the complete build data)
+and build instructions any coding agent can read. It can take residence in a host codebase,
+share knowledge, redesign its own VCW, and reconstruct itself -- every capability gated by
+the runnable audits and their tamper proofs.
 
     python -m mantle teach                       # the Field Guide, running
-    python -m mantle hatch examples/eggs/greeter.json --out=nest/
+    python -m mantle hatch examples/spores/greeter.png --out=nest/
 """
 __version__ = "1.3.0"
 
@@ -32,15 +33,18 @@ _LAZY = {
     "CapacityError": ("mantle.vcw", "CapacityError"),
     "OVERFLOW_THRESHOLD": ("mantle.vcw", "OVERFLOW_THRESHOLD"),
     "EMERGENCY_THRESHOLD": ("mantle.vcw", "EMERGENCY_THRESHOLD"),
-    "EGG_FORMAT": ("mantle.egg", "EGG_FORMAT"),
-    "EggError": ("mantle.egg", "EggError"),
-    "validate_egg": ("mantle.egg", "validate"),
-    "load_egg": ("mantle.egg", "load"),
+    "GERM_FORMAT": ("mantle.hatchery", "GERM_FORMAT"),
+    "EGG_FORMAT": ("mantle.hatchery", "EGG_FORMAT"),
+    "EggError": ("mantle.hatchery", "EggError"),
+    "validate_germ": ("mantle.hatchery", "validate_germ"),
+    "load_germ": ("mantle.hatchery", "load_germ"),
     "incubate": ("mantle.hatchery", "incubate"),
     "hatch": ("mantle.hatchery", "hatch"),
     "HatchError": ("mantle.hatchery", "HatchError"),
-    # SEED reproduction -- the smallest form: the SPORE (one PNG that is a whole agent)
+    # SEED reproduction -- the ONE artifact: the SPORE (one PNG that is a whole agent,
+    # optionally carrying the germ -- the complete build data -- for a full AppAI)
     "create_spore": ("mantle.spore", "create_spore"),
+    "pack_germ": ("mantle.spore", "pack_germ"),
     "read_spore": ("mantle.spore", "read_spore"),
     "verify_spore": ("mantle.spore", "verify_spore"),
 }

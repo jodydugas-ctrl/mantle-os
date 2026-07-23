@@ -68,7 +68,7 @@ CONTRACT = OrganContract(
         {"name": "seed-carry", "trigger": "rebirth",
          "effect": "sealed seed + sealed origin spore carried into the new Prime; "
                    "an uncarriable seed becomes an immune event, never a silent loss"},
-        {"name": "spore-distill", "trigger": "hatch_from_spore",
+        {"name": "spore-distill", "trigger": "hatchery.hatch_from_spore",
          "effect": "spore -> primer + ingested memories; spore sealed as SELF tissue; "
                    "key MINTED, never derived from the spore"},
     ],
@@ -92,10 +92,11 @@ def spore_vault_band(head: int = None, span: int = None) -> Dict[str, Any]:
                           purpose="the SELF-sealed origin spore (SPORE-DISTILLATION)")
 
 
-def spore_to_egg(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Distill a spore's STATE (identity + task) into an egg: the spore becomes the
-    PRIMER of the body it births. Pure data transformation -- no key material is ever
-    read from, or written into, the spore state."""
+def distill_germ(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Distill a bare spore's STATE (identity + task) into a minimal germ: the spore
+    becomes the PRIMER of the body it births. Pure data transformation -- no key
+    material is ever read from, or written into, the spore state. (A germ-carrying
+    spore skips this: its germ IS the build document.)"""
     ident = dict(state.get("identity") or {})
     name = ident.get("spore_name") or "Spore.AppAI"
     task = ident.get("task") or ""
@@ -103,7 +104,7 @@ def spore_to_egg(state: Dict[str, Any]) -> Dict[str, Any]:
     if task:
         truths.append("my task: %s" % task)
     return {
-        "egg_format": "mantle-egg-v1",
+        "germ_format": "mantle-germ-v1",
         "identity": {"name": name, "purpose": task or "hatched from a spore",
                      "born_of": "spore-png"},
         "truths": truths,
@@ -180,81 +181,6 @@ def sporeagent_source_receipt(state: Dict[str, Any],
     }
 
 
-def hatch_from_spore(png_path: Optional[str] = None, *,
-                     state: Optional[Dict[str, Any]] = None,
-                     out_dir: Optional[str] = None,
-                     warmup_beats: int = 3,
-                     source_receipt: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """SPORE-DISTILLATION: hatch a full organism FROM a spore. The spore contributes the
-    primer (identity, task -> truths) and the memories (conversation, ingested as
-    inferred); entropy contributes the key (minted at birth, exactly as every birth).
-    The spore is then sealed under the NEW body's key into `spore_vault` -- the midwife
-    becomes SELF tissue -- and remains referenceable through organism.reproduction.
-
-    Give either `png_path` (needs Pillow) or an already-decoded `state` dict."""
-    raw: Optional[bytes] = None
-    origin = "state"
-    if state is None:
-        if png_path is None:
-            raise ValueError("hatch_from_spore needs png_path or state")
-        from .. import spore as _spore
-        with open(png_path, "rb") as f:
-            raw = f.read()
-        state = _spore.read_spore(png_path)["state"]
-        origin = "png"
-
-    egg = spore_to_egg(state)
-    from ..hatchery import incubate
-    result = incubate(egg, warmup_beats=warmup_beats)   # a BIRTH: faces the Stage-1 gate
-    org = result["organism"]
-
-    # the spore's memory enters honestly: through Senses, distilled as INFERRED
-    conv = [e for e in (state.get("conversation") or []) if e.get("content")]
-    if conv:
-        from ..ingestion import ingest
-        ingest(org, [{"kind": "idea",
-                      "text": "%s: %s" % (e.get("opcode") or e.get("role") or "TURN",
-                                          e.get("content"))} for e in conv])
-
-    # seal the spore as SELF tissue -- under the key the body MINTED at birth
-    blob = raw if raw is not None else json.dumps(state, sort_keys=True,
-                                                  default=str).encode("utf-8")
-    rec = org.reproduction.store_spore(blob, {
-        "spore_name": egg["identity"]["name"], "origin": origin})
-    org.memory.remember("facts", {"origin_spore": egg["identity"]["name"],
-                                  "sha256": rec["sha256"], "band": SPORE_BAND,
-                                  "sealed": True, "chunks": rec["chunks"]},
-                        opcode="OBSERVED", source="spore-distillation", verified=True)
-
-    if out_dir:
-        import os
-        os.makedirs(out_dir, exist_ok=True)
-        org.save(out_dir)
-        result["report"]["saved_to"] = out_dir
-
-    source = sporeagent_source_receipt(state, source_receipt)
-    org.memory.remember("facts", {"sporeagent_source": source},
-                        opcode="OBSERVED", source="sporeagent-lifecycle",
-                        verified=source["certified"] and source["sealed"])
-
-    receipt = {"spore": egg["identity"]["name"], "origin": origin,
-               "certified": org.stage1_certified,
-               "memories_ingested": len(conv),
-               "spore_sealed": True, "spore_sha256": rec["sha256"],
-               "key_derived_from_spore": False,          # THE KEY LAW, stated in the receipt
-               "key_fingerprint": org.body.key_fingerprint,
-               "primer_boundary": {
-                   "spore_becomes": "PRIMER",
-                   "body_key_owner": "BODY",
-                   "mind_key_access": False,
-                   "key_material_in_receipt": False,
-                   "sealed": True,
-               },
-               "source": source}
-    result["report"]["spore_distillation"] = receipt
-    return {"organism": org, "report": result["report"], "receipt": receipt}
-
-
 class Reproduction(Organ):
     """The ninth organ. Owns the reproduction verbs, the vault/spore tissue, the band
     atlas, and the lineage-continuity duty (seed-carry on rebirth)."""
@@ -295,7 +221,8 @@ class Reproduction(Organ):
         exists; only this sealed copy is SELF."""
         if SPORE_BAND not in self.org.prime.bands:
             raise PermissionError("this organism has no %r band (hatch through "
-                                  "spore_to_egg, or add spore_vault_band())" % SPORE_BAND)
+                                  "the hatchery's spore path, or add "
+                                  "spore_vault_band())" % SPORE_BAND)
         sha = "sha256:" + hashlib.sha256(blob).hexdigest()
         ciphertext = self.org.body.seal_bytes(blob)
         b64 = base64.b64encode(ciphertext).decode("ascii")

@@ -10,9 +10,9 @@ a deterministic health check that catches those before they bite:
   ancestor-seals        every sealed ancestor still matches its fingerprint
   genesis-key           the SELF key still matches its recorded fingerprint (M2)
   ledger-nonnegative    the symbiosis ledger never went negative (the starvation law)
-  docs-vs-code          the invariant count claimed in the README matches the actual gate;
-                        docs-vs-code-organs does the same for the organ count (ORGAN_ORDER)
-                        (the coherence gate -- the docs cannot silently drift from the code)
+  docs-vs-code          no doc hardcodes an invariant count (the count is derived from the
+                        code -- `mantle prove` prints it -- so prose can never drift stale);
+                        docs-vs-code-organs ties the README's organ count to ORGAN_ORDER
 
 `checkup(org, repo_root=...)` returns {ok, checks:[...]}; `ok` is False if any check fails.
 """
@@ -28,17 +28,30 @@ _NUMBER_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 
 
 
 def _docs_vs_code(repo_root: str) -> Dict[str, Any]:
-    """The coherence gate: the README's "<N> security invariants" must equal the real count."""
-    from .audits.invariants import TESTS
-    actual = len(TESTS)
-    try:
-        with open(os.path.join(repo_root, "README.md"), encoding="utf-8") as f:
-            m = re.search(r"(\d+)\s+security invariants", f.read())
-    except OSError:
+    """The coherence gate, inverted: NO doc may hardcode an invariant count. The live
+    count comes from the code (`python -m mantle prove` prints it); a number written
+    into prose goes stale the moment an invariant is added, so its presence IS the
+    failure. Scans README.md and every markdown file under documents/."""
+    pattern = re.compile(r"\b\d+(?:/\d+)?\s+(?:security\s+|executable\s+)?invariants\b",
+                         re.IGNORECASE)
+    offenders: List[str] = []
+    targets = [os.path.join(repo_root, "README.md")]
+    docs_dir = os.path.join(repo_root, "documents")
+    for base, _dirs, files in os.walk(docs_dir):
+        targets.extend(os.path.join(base, f) for f in files if f.endswith(".md"))
+    if not os.path.isfile(targets[0]):
         return {"check": "docs-vs-code", "ok": False, "detail": "README.md not found"}
-    claimed = int(m.group(1)) if m else None
-    return {"check": "docs-vs-code", "ok": claimed == actual,
-            "detail": "README claims %s; the gate has %d" % (claimed, actual)}
+    for path in targets:
+        try:
+            with open(path, encoding="utf-8") as f:
+                if pattern.search(f.read()):
+                    offenders.append(os.path.relpath(path, repo_root))
+        except OSError:
+            continue
+    return {"check": "docs-vs-code", "ok": not offenders,
+            "detail": ("no hardcoded invariant counts (the count is derived: mantle prove)"
+                       if not offenders else
+                       "hardcoded invariant count in: %s" % ", ".join(offenders[:5]))}
 
 
 def _docs_vs_code_organs(repo_root: str) -> Dict[str, Any]:

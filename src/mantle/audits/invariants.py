@@ -2336,7 +2336,8 @@ def t_spore_distillation_key_law():
     body it births; the spore is sealed as SELF tissue and opens only for SELF; and the
     genesis key is MINTED, never derived -- two bodies hatched from the SAME spore state
     carry different keys (a public spore can never forge SELF; anti-clone holds)."""
-    from ..organs.reproduction import hatch_from_spore, SPORE_BAND, SPORE_OPCODE
+    from ..hatchery import hatch_from_spore
+    from ..organs.reproduction import SPORE_BAND, SPORE_OPCODE
     state = {"identity": {"spore_name": "Midwife", "task": "assist the assimilation"},
              "conversation": [{"opcode": "USER", "content": "hello"},
                               {"opcode": "ASSISTANT", "content": "ready"}]}
@@ -2368,7 +2369,7 @@ def t_sporeagent_lifecycle_receipt():
     metadata, treats host code as OTHER, and never exposes Body key material."""
     from .. import spore as _spore
     from .. import spore_min as _spore_min
-    from ..organs.reproduction import hatch_from_spore
+    from ..hatchery import hatch_from_spore
 
     secret_token = "sk-SECRETSECRETSECRETSECRET"
     private_key = "-----BEGIN PRIVATE KEY-----\nabc123\n-----END PRIVATE KEY-----"
@@ -2434,6 +2435,39 @@ def t_sporeagent_lifecycle_receipt():
     return (declared_and_receipted and boundary and no_leak and missing_explicit and purity,
             "source lifecycle receipt is explicit, redacted, OTHER-until-proven, "
             "and absent from pure spore.py/spore_min.py")
+
+
+def t_spore_germ_round_trip():
+    """SPORE-3 (ONE ARTIFACT): a germ-carrying spore is the complete birth package.
+    The germ (the full build document) travels inside the spore state, hatches through
+    the one hatchery door into a certified body, and comes back out of the newborn's
+    vault equal to what went in -- and the spore itself returns from spore_vault. The
+    state path is pure stdlib (no Pillow needed to prove the law)."""
+    from ..hatchery import hatch_from_spore
+    from ..vault import open_seed
+    germ = {"germ_format": "mantle-germ-v1",
+            "identity": {"name": "GermCarried.AppAI", "purpose": "prove the round trip"},
+            "truths": ["if it is not in the VCW it did not happen"],
+            "commandments": ["protect your VCW"],
+            "controls": [{"id": "app.echo", "label": "Echo"}]}
+    state = {"identity": {"spore_name": "GermSpore", "task": "carry a whole AppAI"},
+             "germ": dict(germ),
+             "build": "hatch me: python -m mantle hatch this.png",
+             "conversation": [{"opcode": "USER", "content": "grow"}]}
+    out = hatch_from_spore(state=json.loads(json.dumps(state)))
+    org, receipt = out["organism"], out["receipt"]
+    vaulted = open_seed(org)
+    germ_back = (vaulted.get("identity") == germ["identity"]
+                 and vaulted.get("truths") == germ["truths"]
+                 and vaulted.get("commandments") == germ["commandments"]
+                 and vaulted.get("controls") == germ["controls"])
+    spore_back = json.loads(org.reproduction.open_spore())["germ"]["identity"] \
+        == germ["identity"]
+    named = org.body.identity_name() == "GermCarried.AppAI"
+    return (org.stage1_certified and receipt["germ_carried"] and germ_back
+            and spore_back and named and receipt["key_derived_from_spore"] is False,
+            "germ rode the spore through the one door: certified body, germ back from "
+            "the vault, spore back from spore_vault, key minted not derived")
 
 
 TESTS = [
@@ -2530,6 +2564,7 @@ TESTS = [
     ("REPRO-4 anchor-births-through-hatchery", t_repro_anchor_births_through_hatchery),
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
+    ("SPORE-3 germ-round-trip (one artifact)", t_spore_germ_round_trip),
 ]
 
 

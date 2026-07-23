@@ -6,10 +6,11 @@
 
 [![Zombie Body Audit](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml/badge.svg)](https://github.com/jodydugas-ctrl/mantle-os/actions/workflows/audit.yml)
 
-*The organism re-certifies on every commit: the Stage-1 gate, 93 security invariants, the
-Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
+*The organism re-certifies on every commit: the Stage-1 gate, the security invariant
+suite, the Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
-**Current certification count:** 93 security invariants (`python -m mantle prove`).
+**Current certification count:** run `python -m mantle prove` -- the count is derived
+from the code, never hardcoded in prose (the doctor's docs-vs-code gate enforces this).
 
 Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURITY.md`](SECURITY.md)
 
@@ -138,7 +139,7 @@ python -m mantle demo          # narrated life: born -> senses -> reflex -> reme
                                #   protects -> acts -> calcifies -> metabolizes ->
                                #   rebirths -> persists
 python -m mantle audit         # the Stage-1 Zombie Body gate (deterministic, LLM-free)
-python -m mantle prove         # 93 security invariants, red/green
+python -m mantle prove         # the security invariant suite, red/green
 
 # the gate must CATCH tampering (all three MUST exit non-zero)
 python -m mantle audit --break-hash

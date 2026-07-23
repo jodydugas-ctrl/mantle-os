@@ -2,8 +2,9 @@
 """
 mantle.cli  --  one command for the whole organism (Mantle OS)
 
-    python -m mantle hatch <egg.json> [--out=DIR]   incubate an egg -> certified AppAI
-                                                      (+ hatch report + self-portrait)
+    python -m mantle hatch <spore.png|germ.json> [--out=DIR]
+                                                    THE birth command: a germ spore (or
+                                                      bare germ) -> certified AppAI
     python -m mantle teach [N]                      the Field Guide, RUNNING: each
                                                       chapter proves its claim live
     python -m mantle face <organism-dir> [out.png]  the organism paints its own state
@@ -32,14 +33,14 @@ import sys
 
 _USAGE = ("usage: python -m mantle "
           "[anchor <host> | ask <host> [--mind] <question> | feed <host> --credits=N "
-          "[--key=NAME] | vitals <host> | hatch <egg> [--out=DIR] | teach [N] | "
+          "[--key=NAME] | vitals <host> | hatch <spore.png|germ.json> [--out=DIR] | "
+          "teach [N] | "
           "face <dir> [out.png] | face-list <dir> | face-save <dir> <name> <src> [--default] | "
           "face-wear <dir> <name> | "
           "applet-create <dir> <source-dir> <name> [--entry=X] [--face=FILE] [--no-source] "
           "[--grow] | applet-list <dir> | applet-show <dir> <name> [--json] | "
           "applet-export <dir> <name> <dest> [--overwrite] | applet-wear <dir> <name> | "
           "applet-audit <dir> <name> | applet-clone <dir> <https-github-url> <name> | "
-          "hatch-spore <spore.png> [--out=DIR] | "
           "reproduce | spore <op> ... | ghost <op> ... | "
           "demo | audit | prove | mind | audit-mind | "
           "check [--fast] | "
@@ -78,8 +79,6 @@ _COMMAND_ALIASES = {
     "applet_audit": "applet-audit",
     "applet-clone": "applet-clone",
     "applet_clone": "applet-clone",
-    "hatch-spore": "hatch-spore",
-    "hatch_spore": "hatch-spore",
     "demo": "demo",
     "audit": "audit",
     "prove": "prove",
@@ -197,28 +196,38 @@ def cmd_hatch(argv):
     flags = {a.split("=")[0]: (a.split("=", 1)[1] if "=" in a else True)
              for a in argv if a.startswith("--")}
     if not args:
-        print("usage: python -m mantle hatch <egg.json> [--out=DIR]")
+        print("usage: python -m mantle hatch <spore.png|germ.json> [--out=DIR]")
         return 2
     from .hatchery import hatch, HatchError
-    from .egg import EggError
     print("=" * 74)
-    print("MANTLE OS HATCHERY  ·  egg: %s" % args[0])
+    print("MANTLE OS HATCHERY  ·  %s" % args[0])
     print("=" * 74)
     try:
         result = hatch(args[0], out_dir=flags.get("--out")
                        if isinstance(flags.get("--out"), str) else None)
-    except (EggError, HatchError) as e:
-        print("\nTHE EGG DID NOT HATCH: %s" % e)
+    except (HatchError, RuntimeError, ValueError, OSError) as e:
+        print("\nTHE GERM DID NOT HATCH: %s" % e)
         return 1
     rep = result["report"]
     for stage in rep["stages"]:
         for k, v in stage.items():
             print("  %-9s %s" % (k.upper(), v))
     print("\n  certified : %s  (the same Stage-1 gate every Body faces)" % rep["certified"])
+    r = rep.get("spore_distillation")
+    if r:
+        print("  spore     : %s   (origin: %s, germ aboard: %s)"
+              % (r["spore"], r["origin"], r["germ_carried"]))
+        print("  memories  : %d conversation turn(s) ingested as INFERRED"
+              % r["memories_ingested"])
+        print("  sealed    : %s  (%s -> spore_vault, SELF tissue)"
+              % (r["spore_sealed"], r["spore_sha256"][:23]))
+        print("  key derived from spore : %s  (keys are MINTED, never derived)"
+              % r["key_derived_from_spore"])
     if rep.get("saved_to"):
         print("  saved to  : %s" % rep["saved_to"])
-        print("  portrait  : %s   (the organism painted it itself)" % rep["portrait"])
-    print("\nHATCHED. %s is alive, certified, and dormant -- ready for a MIND." % rep["egg"])
+        if rep.get("portrait"):
+            print("  portrait  : %s   (the organism painted it itself)" % rep["portrait"])
+    print("\nHATCHED. %s is alive, certified, and dormant -- ready for a MIND." % rep["germ"])
     return 0
 
 
@@ -631,38 +640,6 @@ def cmd_applet_audit(argv):
     return 0 if passed else 1
 
 
-def cmd_hatch_spore(argv):
-    """SPORE-DISTILLATION: hatch a full organism FROM a spore PNG. The spore becomes
-    the primer + memories; the key is MINTED at birth (never derived from the spore);
-    the spore is then sealed as SELF tissue in the spore_vault band."""
-    args, flags = _split(argv)
-    if not args:
-        print("usage: python -m mantle hatch-spore <spore.png> [--out=DIR]")
-        return 2
-    from .core.organism import Organism  # noqa: F401 -- init the core->organs mesh first
-    from .organs.reproduction import hatch_from_spore
-    print("=" * 74)
-    print("MANTLE OS SPORE-DISTILLATION  ·  %s" % args[0])
-    print("=" * 74)
-    try:
-        result = hatch_from_spore(args[0], out_dir=flags.get("--out")
-                                  if isinstance(flags.get("--out"), str) else None)
-    except (RuntimeError, ValueError, OSError) as e:
-        print("\nTHE SPORE DID NOT HATCH: %s" % e)
-        return 1
-    r = result["receipt"]
-    print("  spore          : %s   (origin: %s)" % (r["spore"], r["origin"]))
-    print("  certified      : %s  (a BIRTH -- the same Stage-1 gate)" % r["certified"])
-    print("  memories       : %d conversation turn(s) ingested as INFERRED" % r["memories_ingested"])
-    print("  spore sealed   : %s  (%s -> spore_vault, SELF tissue)" % (r["spore_sealed"], r["spore_sha256"][:23]))
-    print("  key derived from spore : %s  (keys are MINTED, never derived)" % r["key_derived_from_spore"])
-    print("  key fingerprint: %s" % r["key_fingerprint"])
-    if result["report"].get("saved_to"):
-        print("  saved to       : %s" % result["report"]["saved_to"])
-    print("\nDISTILLED. The midwife is now SELF tissue of the body it birthed.")
-    return 0
-
-
 def cmd_applet_clone(argv):
     args, flags = _split(argv)
     if len(args) < 3:
@@ -737,8 +714,6 @@ def main(argv=None):
         return cmd_applet_audit(rest)
     if cmd == "applet-clone":
         return cmd_applet_clone(rest)
-    if cmd == "hatch-spore":
-        return cmd_hatch_spore(rest)
     # ---- the narrated tours and the gates ----
     if cmd == "demo":
         from . import demos
