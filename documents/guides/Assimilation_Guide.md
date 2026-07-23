@@ -92,10 +92,11 @@ open hard-fails leads to the same MIND fusion and Stage-2 gate.
 - Treat human-style UI input as an attempt, not success. A visible Body write or
   control action needs target-surface read-back, dirty-state evidence, a host receipt,
   or another body-owned verifier before its Limb proof may claim `ok=true`.
-- Route imperative operator requests through mapped Body controls before ordinary MIND
-  chat. If a prompt names a known host action or surface operation, the AppAI should
-  execute the Body sequence or return a failed proof, not merely produce a plan for the
-  operator to carry out.
+- Route only explicit command/tool invocations through mapped Body controls before
+  ordinary MIND chat. Plain prose, even when it describes host actions, remains MIND
+  consultation unless it uses a known command surface such as `/write`, `/tabs`, or
+  `/model`. The MIND may propose the matching Body command, but Body must not silently
+  execute effectful controls from natural language.
 - Give every resident a host evidence index and consult it before generic MIND chat.
   An AppAI should answer questions about its software from the Phase-0 inventory, organ
   map, hook graph, certification receipts, controls, gaps, and limitations. Provider

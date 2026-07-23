@@ -164,8 +164,9 @@ def build_host_evidence_index(amap: Dict[str, Any],
             ),
             "missing_evidence_policy": "name the gap instead of guessing",
             "effectful_action_policy": (
-                "imperative host-surface requests route to Body/Limbs and require "
-                "Action Execution Proof"
+                "effectful host-surface actions require explicit command/tool dispatch "
+                "and Body-owned Action Execution Proof; plain prose remains MIND "
+                "consultation"
             ),
         },
     }

@@ -2274,6 +2274,8 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and "Substrate coverage" in inventory
             and evidence.get("kind") == "HOST_EVIDENCE_INDEX"
             and evidence.get("local_first_consultation") is True
+            and "explicit command/tool dispatch" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
+            and "plain prose remains MIND consultation" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
             and "Resident host evidence index" in inventory
             and "adaptive parser/observer/verifier" in answer
             and os.path.exists(paths["inventory"])

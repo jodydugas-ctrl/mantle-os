@@ -60,6 +60,7 @@ async function runChecks(page) {
       expect(controlAnswer.includes("Observed Body controls"), "Control answer did not use resident evidence");
       expect(controlAnswer.includes("GUI surfaces"), "Control answer omitted GUI nerve coverage");
       expect(controlAnswer.includes("Action Execution Proof"), "Control answer omitted proof requirement");
+      expect(controlAnswer.includes("plain prose remains MIND consultation"), "Control answer omitted slash-command dispatch boundary");
       expect(body.getLedger().some((entry) => entry.type === "resident_consultation"), "Resident consultation was not logged");
       expect(parity.length >= 11 && parity.every((row) => row.status === "PASS"), "Parity matrix is incomplete or not green");
       expect(body.phase1NoModelCalls() === true, "Phase-1 no-model policy missing");
