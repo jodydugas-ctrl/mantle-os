@@ -21,14 +21,18 @@ All notable release-level changes are documented here.
   carry rule for both heirloom bands; `vault.py` folded into the Reproduction organ
   module that always owned the tissue. On-disk formats unchanged; ancestors stay
   readable.
-- **Docs consolidated.** One reading order (README → `documents/PRIMER.md` →
-  `mantle teach`); PRIMER absorbs the Doctrine, Organism Lens, and Positioning;
+- **Docs consolidated.** One reading order (README → `mantle teach`); the README
+  absorbs the Primer, Doctrine, Organism Lens, and Positioning;
   ARCHITECTURE.md absorbs the architecture note and the Part 1/2 build+audit
   narratives; REPRODUCTION.md is the canonical reproduction + rebirth doctrine; the
   VCW guide absorbs the anatomical atlas and compliance tiers. The Grimoire gained a
   scope banner (§7/§9 are the Mantle-binding sections).
 - **Counts are derived, never hardcoded.** The doctor's docs-vs-code gate now fails if
   any document hardcodes an invariant count; `mantle prove` prints the live count.
+- **Legacy imports fail visibly.** The doctor now rejects Python imports of the removed
+  `mantle.egg` module; callers load germs through `mantle.hatchery`.
+- **Phenotype example follows maintained surfaces.** The walkthrough loads its germ through
+  the hatchery and wears the Notepad AppAI as its second face.
 - **CLI dispatch is table-driven**; underscore aliases are derived.
 
 ### Removed
@@ -40,6 +44,8 @@ All notable release-level changes are documented here.
   `documents/refinement/`, and 21 unregistered meta-invariant functions.
 - Scratch notes (`New_Commandments.txt`), the NotepadNext lifecycle zip (superseded by
   `assimilate --spore`), and fourteen merged documentation files.
+- The standalone Reference Agent and Spreadsheet Agent browser demos, their duplicate
+  `egg.author` / `egg.hatch` primitives, and their dedicated smoke test.
 
 ### Added
 

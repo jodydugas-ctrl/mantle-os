@@ -13,6 +13,8 @@ a deterministic health check that catches those before they bite:
   docs-vs-code          no doc hardcodes an invariant count (the count is derived from the
                         code -- `mantle prove` prints it -- so prose can never drift stale);
                         docs-vs-code-organs ties the README's organ count to ORGAN_ORDER
+  legacy-egg-imports    no Python source imports the removed mantle.egg module; germ
+                        loading and validation live in mantle.hatchery
 
 `checkup(org, repo_root=...)` returns {ok, checks:[...]}; `ok` is False if any check fails.
 """
@@ -74,6 +76,68 @@ def _docs_vs_code_organs(repo_root: str) -> Dict[str, Any]:
             "detail": "README claims %s organs; ORGAN_ORDER has %d" % (claimed, actual)}
 
 
+def _legacy_egg_imports(repo_root: str) -> Dict[str, Any]:
+    """Reject imports of the removed ``mantle.egg`` module.
+
+    The egg implementation was consolidated into ``mantle.hatchery``. Parse Python
+    sources rather than searching text so historical prose and compatibility schema
+    names remain valid.
+    """
+    import ast
+
+    ignored_dirs = {".git", ".venv", "__pycache__", "build", "dist", "node_modules"}
+    offenders: List[str] = []
+    for base, dirs, files in os.walk(repo_root):
+        dirs[:] = [d for d in dirs if d not in ignored_dirs]
+        for filename in files:
+            if not filename.endswith(".py"):
+                continue
+            path = os.path.join(base, filename)
+            rel = os.path.relpath(path, repo_root)
+            try:
+                with open(path, encoding="utf-8") as f:
+                    tree = ast.parse(f.read(), filename=rel)
+            except (OSError, SyntaxError):
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    if any(alias.name == "mantle.egg"
+                           or alias.name.startswith("mantle.egg.")
+                           for alias in node.names):
+                        offenders.append(rel)
+                        break
+                if not isinstance(node, ast.ImportFrom):
+                    continue
+                module = node.module or ""
+                absolute_legacy = (
+                    module == "mantle.egg"
+                    or module.startswith("mantle.egg.")
+                    or (module == "mantle" and any(alias.name == "egg"
+                                                   for alias in node.names))
+                )
+                relative_legacy = (
+                    node.level > 0
+                    and rel.replace(os.sep, "/").startswith("src/mantle/")
+                    and (module == "egg"
+                         or module.startswith("egg.")
+                         or (not module and any(alias.name == "egg"
+                                                for alias in node.names)))
+                )
+                if absolute_legacy or relative_legacy:
+                    offenders.append(rel)
+                    break
+    offenders = sorted(set(offenders))
+    return {
+        "check": "legacy-egg-imports",
+        "ok": not offenders,
+        "detail": (
+            "no Python source imports removed mantle.egg"
+            if not offenders
+            else "removed mantle.egg imported by: %s" % ", ".join(offenders[:5])
+        ),
+    }
+
+
 def checkup(org: Any, repo_root: Optional[str] = None) -> Dict[str, Any]:
     """Run the deployment checkup. Pass `repo_root` to include the docs-vs-code gate."""
     checks: List[Dict[str, Any]] = []
@@ -94,5 +158,6 @@ def checkup(org: Any, repo_root: Optional[str] = None) -> Dict[str, Any]:
     if repo_root:
         checks.append(_docs_vs_code(repo_root))
         checks.append(_docs_vs_code_organs(repo_root))
+        checks.append(_legacy_egg_imports(repo_root))
 
     return {"ok": all(c["ok"] for c in checks), "checks": checks}

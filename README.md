@@ -490,8 +490,10 @@ examples/                example AppAIs + the normative substrate
   eggs/                  the germ files those spores are packed from
   spore/                 a custom VCW substrate in PNG form — purity audit + VCW-conformance proof
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
-  *.html / *.yaml        reference demos (browser-tested) — see examples/README.md
-  tests/                 headless smoke tests for the HTML demos (Playwright; CI: Demo Smoke)
+  Mantle_Live_Agent.html live MIND workbench (browser-tested) — see examples/README.md
+  notepad_appai/         maintained browser host example
+  Mantle_MacroDroid_Schema.yaml  Path-B alignment contract
+  tests/                 headless smoke tests for maintained browser examples
 ```
 
 Reading order: **this README is the primer** → run `python -m mantle teach`

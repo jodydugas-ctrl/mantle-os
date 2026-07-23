@@ -327,6 +327,9 @@ def _coordinator() -> None:
                 {
                     "HERMES_HOME": str(hermes_home),
                     "HERMES_ENABLE_PROJECT_PLUGINS": "1",
+                    "MANTLE_ADDON_RUNTIME_ROOT": str(
+                        (project.parents[1] / "src" / "mantle").resolve()
+                    ),
                 }
             )
             completed = subprocess.run(
