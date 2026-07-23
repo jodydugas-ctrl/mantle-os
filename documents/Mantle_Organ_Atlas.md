@@ -1,7 +1,7 @@
 # Mantle OS — ORGAN ATLAS
 
 **Mantle OS** · The first-class organ taxonomy
-*Read [`PRIMER.md`](PRIMER.md) (the doctrine, the lens)
+*Read the [`README`](../README.md) (the primer: the doctrine, the lens)
 (how to see), and [`examples/vcw/GUIDE.md`](../examples/vcw/GUIDE.md) (the substrate) first. The Lens teaches you to
 **recognize** organs in any app; this Atlas is the **formal catalog** of what each organ is, the
 bands it owns, its reflexes, and its audit obligations.*

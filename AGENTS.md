@@ -136,7 +136,7 @@ operator/guardian decision.
 - **The architecture in engineering terms** → [`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md)
   (term mapping, runtime modules, storage semantics, the MIND integration contract, and the
   change/verification rules for agents in §10–§11).
-- **The doctrine and the octopus lens, in the organic language** → [`documents/PRIMER.md`](documents/PRIMER.md).
+- **The doctrine and the octopus lens, in the organic language** → the [`README`](README.md) (this project's primer).
 - **Learn by watching it run** → `python -m mantle teach` (prose mirror:
   [`documents/FIELD_GUIDE.md`](documents/FIELD_GUIDE.md)).
 - **The organ contracts in full** → [`documents/Mantle_Organ_Atlas.md`](documents/Mantle_Organ_Atlas.md).

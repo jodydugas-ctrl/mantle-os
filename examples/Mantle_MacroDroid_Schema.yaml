@@ -13,7 +13,7 @@ mantle_alignment:
   framework: "Mantle OS"
   substrate: "VCW Cube (vcw-cube-png-v2) — named bands with reserved spans; this schema is referenced (<band.N>), not copied, into context"
   audit_bundle:
-    - "documents/PRIMER.md"
+    - "README.md"
     - "documents/FIELD_GUIDE.md"                 # the RUNNABLE manual (python -m mantle teach) — see the whole organism prove itself
     - "documents/Mantle_Organ_Atlas.md"
     - "documents/guides/Assimilation_Guide.md"   # Path B — residency (anchor/graft); App Inventory gated first
