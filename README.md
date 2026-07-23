@@ -14,9 +14,16 @@ from the code, never hardcoded in prose (the doctor's docs-vs-code gate enforces
 
 Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURITY.md`](SECURITY.md)
 
-> **New here, or skeptical of the biology metaphor?** Start with the plain-language
-> on-ramp in [`documents/PRIMER.md`](documents/PRIMER.md) §0 — a one-idea summary and an
+> **New here?** Two non-normative on-ramps, neither required to build:
+> [`documents/PRIMER.md`](documents/PRIMER.md) §0 — a plain-language summary and an
 > honest list of limitations.
+> [`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md) — the same
+> system described in systems terms, for engineers and AI agents who want the architecture
+> before the metaphor: trust boundary, storage semantics, verification gates, model
+> integration contract, and a full term-mapping table.
+>
+> The organic model is the design language, not decoration — Mantle is built on the
+> octopus and the doctrine stays in that language. These files are the door, not the house.
 
 > **For LLM agents.** Mantle OS is operated through the **Grimoire**, its spellbook —
 > load it when the work needs doctrine, AppAI operation, assimilation, or mutation of
@@ -291,6 +298,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     face.py teach.py     the PNG self-portrait + the running Field Guide
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
+  Mantle_for_Engineers.md the systems-level, non-normative translation layer
   PRIMER.md              THE doctrine home: on-ramp, creed, lens, operating procedure
   FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   ARCHITECTURE.md        the shape + the Phase-1/Phase-2 build path

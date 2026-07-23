@@ -1,6 +1,6 @@
 # Examples
 
-## Current And Gate-Aligned
+## Current and Gate-Aligned
 
 These are proven by the framework's own gate. Read and run these first:
 
