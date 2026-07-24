@@ -2472,7 +2472,10 @@ def t_resident_runtime_protocol_contract():
         and heartbeat["payload"]["interval_seconds"] == 600
         and heartbeat["payload"]["wake_type"] == "unscheduled"
         and heartbeat["payload"]["provider_attempted"] is True
+        and heartbeat["payload"]["api_call_count"] == 1
+        and heartbeat["payload"]["commands_batched"] is True
         and "never move" in heartbeat["payload"]["policy"]
+        and "committed non-command user submit" in heartbeat["payload"]["policy"]
         and [item["role"] for item in recent] == ["user", "mind"]
         and "Do you have any rules" in context
         and "AppAI Primer truths" in context

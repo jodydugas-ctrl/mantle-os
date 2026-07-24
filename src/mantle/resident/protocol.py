@@ -79,9 +79,13 @@ RESIDENT_RUNTIME_POLICIES = {
         "A fused resident Body owns exactly one natural cognitive heartbeat scheduler "
         "with a 600-second cadence. Body, Senses, Reflexes, Immune distress, user "
         "submits, and explicit pain may add unscheduled wakes, but these never move "
-        "or replace the natural baseline. Every natural or unscheduled MIND/provider "
-        "call records a HEARTBEAT_PULSE receipt in the current Prime VCW, including "
-        "wake reason, command stack, provider attempt/result, and drift where applicable."
+        "or replace the natural baseline. A committed non-command user submit is an "
+        "unscheduled heartbeat so conversation does not wait for the next natural tick. "
+        "Each heartbeat makes at most one MIND/provider API call; Body commands and "
+        "sensory/reflex observations are batched inside that pulse. Every natural or "
+        "unscheduled MIND/provider call records a HEARTBEAT_PULSE receipt in the current "
+        "Prime VCW, including wake reason, command stack, provider attempt/result, API "
+        "call count, batched-command flag, and drift where applicable."
     ),
 }
 
@@ -219,6 +223,8 @@ def heartbeat_pulse_event(beat_number: int,
                           provider_attempted: bool,
                           provider_ok: bool,
                           command_stack: List[str] | None = None,
+                          api_call_count: int | None = None,
+                          commands_batched: bool = True,
                           interval_seconds: int = 600,
                           source: str = "resident-heartbeat",
                           payload: Dict[str, Any] | None = None) -> Dict[str, Any]:
@@ -230,6 +236,8 @@ def heartbeat_pulse_event(beat_number: int,
         "wake": dict(wake or {}),
         "provider_attempted": bool(provider_attempted),
         "provider_ok": bool(provider_ok),
+        "api_call_count": int(api_call_count if api_call_count is not None else (1 if provider_attempted else 0)),
+        "commands_batched": bool(commands_batched),
         "command_stack": list(command_stack or []),
         "policy": RESIDENT_RUNTIME_POLICIES["heartbeat_scheduler_policy"],
     }

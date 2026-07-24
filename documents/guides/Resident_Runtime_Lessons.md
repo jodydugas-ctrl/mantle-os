@@ -148,12 +148,19 @@ unscheduled wakes, but those wakes do not move or replace the natural baseline.
 Every natural or unscheduled MIND/provider call must record a `HEARTBEAT_PULSE`
 receipt in Prime VCW.
 
+**User conversation:** a committed non-command user message is not an ordinary
+terminal chat shortcut. It is an unscheduled Heart pulse that wakes cognition
+early so the user does not wait for the next natural ten-minute beat. The pulse
+may batch committed text, sensory observations, reflex findings, and Body
+commands, but it still makes at most one MIND/provider API call.
+
 **Prevention:** every resident heartbeat receipt should include:
 
 - beat number and natural interval;
 - wake type: natural or unscheduled;
 - wake reason and coordinates;
 - the heartbeat command stack for that API call;
+- API call count and a batched-command flag;
 - provider attempted/result/error and response hash;
 - drift for natural beats when measurable.
 
