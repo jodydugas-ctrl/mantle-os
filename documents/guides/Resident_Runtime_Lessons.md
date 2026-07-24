@@ -48,6 +48,30 @@ Each surface needs a VCW status such as `verified_body_operation`,
 Do not answer capability questions from capped samples. Answer from the full
 coverage table and separate "I can observe this" from "I can operate this."
 
+## App-Local Vocabulary
+
+**Failure seen:** a NotepadNext resident was asked to delete the current project
+and start a new one. It refused literally because NotepadNext is not a
+project-based IDE, then guessed the current tab was blank from the tab title.
+
+**Fix:** app-local nouns are part of SELF/body evidence. In a Notepad-like app,
+`current project` may safely map to the active document/workspace when the user
+does not name a filesystem path, repository, folder, disk, or source project.
+The resident should translate to the nearest mapped surface, execute only the
+safe app-local operation, and prove the result by Body readback.
+
+**Prevention:** every surface map should carry domain aliases and refusal
+boundaries:
+
+- local aliases such as project -> document/workspace for Notepad-style apps;
+- hard stops for filesystem words such as repo, directory, path, disk, or drive;
+- the Body nerve that implements the translated intent;
+- the verifier that proves the translated visible state.
+
+Do not refuse safe intent just because the user's noun is not the host's formal
+noun. Do not delete filesystem state unless the user explicitly names a
+filesystem target and the resident has a certified destructive-action policy.
+
 ## Text Inputs
 
 **Failure seen:** the resident inferred a fresh tab was empty even though the user
@@ -65,6 +89,26 @@ recording every keypress, but they must record the final user-visible value when
 the user submits, leaves the field, changes documents, or asks what is there.
 If a live readback nerve is unavailable, the resident must say it cannot read
 the current value yet; it must not guess from tab state.
+
+## Opaque Native Controls
+
+**Failure seen:** the packaged Qt NotepadNext window exposed zero editor child
+HWNDs, so a Win32 child-control scanner could see the top-level window but not
+the `ScintillaNext` editor. The resident therefore failed to clear/read the
+actual body surface until another observation channel was added.
+
+**Fix:** the resident added fallback nerves through Windows UI Automation and
+clipboard-mediated readback. UIA supplied the opaque editor rectangle and status
+labels such as document length; keyboard/clipboard interaction supplied committed
+text when available; the status bar supplied empty-document proof when clipboard
+copy returned only line endings.
+
+**Prevention:** native GUI certification should not depend on one accessibility
+API. For every visible user surface, the nerve map should name primary and
+secondary channels when possible: HWND/control text, UI Automation, accessibility
+patterns, status labels, clipboard-mediated reads, file/export proof, or
+host-native observers. If all channels fail, record a maintenance gap instead of
+guessing.
 
 ## VCW Continuity
 
@@ -115,6 +159,9 @@ Minimum regression set for these issues:
 - `RESIDENT-RT-1 runtime-protocol` invariants pass.
 - GUI coverage reports include text commit policy and body test plan entries.
 - Text-surface audits require `HOST_TEXT_COMMIT` coverage.
+- Surface maps include app-local aliases and refusal boundaries.
+- Opaque native controls have at least one readback/verifier strategy or a
+  maintenance gap.
 - Resident prompts include recent VCW context before provider calls.
 - Example residents answer from shared Primer text.
 - CI checks relevant examples after every push.
