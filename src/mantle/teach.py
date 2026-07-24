@@ -19,6 +19,7 @@ import tempfile
 from typing import Any, Callable, Dict, List, Tuple
 
 from .core.organism import Organism
+from .primer import appai_commandments, appai_truths
 from .vcw.bands import standard_genome, make_band_boot
 from .vcw.drivers import trial, SandboxError
 from .audits import stage1
@@ -42,8 +43,8 @@ def _fresh() -> Organism:
     genome = standard_genome() + [make_band_boot("greet_reflex", 600, "exec",
                                                  purpose="teaching skill")]
     return Organism.birth(identity={"name": "FieldGuide.AppAI"},
-                          truths=["if it is not in the VCW it did not happen"],
-                          commandments=["protect your VCW", "you are a tool USER"],
+                          truths=appai_truths(),
+                          commandments=appai_commandments(),
                           genome=genome)
 
 
@@ -358,8 +359,8 @@ def ch_mem_vcw(org: Organism) -> bool:
     keyless = _mem.is_mem_vcw(plasmid)
     finder = Organism.birth(
         identity={"name": "Finder.AppAI"},
-        truths=["if it is not in the VCW it did not happen"],
-        commandments=["protect your VCW"],
+        truths=appai_truths(),
+        commandments=appai_commandments(),
         genome=standard_genome() + [make_band_boot("adopted", 600, "exec",
                                                    purpose="digested skills")])
     rep = _mem.digest(finder, plasmid, code_band="adopted")
@@ -409,8 +410,8 @@ def ch_ganglia_vault(org: Organism) -> bool:
     from .organs import reproduction as _v
     worker = Organism.birth(
         identity={"name": "Worker.AppAI"},
-        truths=["if it is not in the VCW it did not happen"],
-        commandments=["protect your VCW"],
+        truths=appai_truths(),
+        commandments=appai_commandments(),
         genome=standard_genome() + [_g.ganglion_band("arm", 600), _v.vault_band()])
 
     def task(report, n):
@@ -420,8 +421,8 @@ def ch_ganglia_vault(org: Organism) -> bool:
     prog = _g.Ganglion(worker, "arm").run(task, 4).join().progress()
     telemetry = len(prog) == 4 and not worker.brain.fused
     seed = {"germ_format": "mantle-germ-v1", "identity": {"name": "Worker.Reborn"},
-            "truths": ["if it is not in the VCW it did not happen"],
-            "commandments": ["protect your VCW"]}
+            "truths": appai_truths(),
+            "commandments": appai_commandments()}
     _v.store_seed(worker, seed)
     reborn = _v.reconstruct(_v.open_seed(worker))
     return _prove("a ganglion reported its progress as zero-token telemetry; the organism "
@@ -440,8 +441,8 @@ def ch_resilience(org: Organism) -> bool:
     from . import ingestion as _ing, doctor as _doc
     worker = Organism.birth(
         identity={"name": "Resilient.AppAI"},
-        truths=["if it is not in the VCW it did not happen"],
-        commandments=["protect your VCW"],
+        truths=appai_truths(),
+        commandments=appai_commandments(),
         genome=standard_genome() + [symbiosis_band()])
     grant(worker, 50)
     metered_by_usage(lambda p: "ok", worker, price_per_1k=10.0)("a")
@@ -501,8 +502,8 @@ def ch_phenotype(org: Organism) -> bool:
     from . import phenotype as _ph
     worker = Organism.birth(
         identity={"name": "Faced.AppAI"},
-        truths=["if it is not in the VCW it did not happen"],
-        commandments=["protect your VCW"],
+        truths=appai_truths(),
+        commandments=appai_commandments(),
         genome=standard_genome() + _ph.phenotype_bands())
     worker.limbs.register_control("grid", {"kind": "grid"}, lambda v: None)
     origin = "<!doctype html><title>Faced.AppAI</title><body>origin surface</body>"
@@ -513,8 +514,9 @@ def ch_phenotype(org: Organism) -> bool:
     round_trip = _ph.open_face(worker, "spreadsheet")["source"] == sheet
     worn = _ph.active_face(worker) == "spreadsheet"
     # OTHER (a different body, a different key) cannot read the sealed face
-    other = Organism.birth(identity={"name": "Thief.AppAI"}, truths=["t"],
-                           commandments=["protect your VCW"],
+    other = Organism.birth(identity={"name": "Thief.AppAI"},
+                           truths=appai_truths(),
+                           commandments=appai_commandments(),
                            genome=standard_genome() + _ph.phenotype_bands())
     _ph.restore(other, _ph.snapshot(worker))
     try:

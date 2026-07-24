@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""Canonical resident terminal/MIND/Body protocol rules.
+
+These helpers capture the platform lessons from NotepadNext.AppAI without tying
+future residents to that host. Generated terminals can use this module for the
+three-lane runtime:
+
+* slash-prefixed maintenance commands,
+* ordinary prose for MIND conversation,
+* hidden MIND-authored Body requests that fail closed and write proof to VCW.
+"""
+from __future__ import annotations
+
+import datetime as dt
+import hashlib
+import json
+import re
+from typing import Any, Dict, Iterable, List, Tuple
+
+
+VCW_TEXT_LIMIT = 8000
+BODY_DIRECTIVE_RE = re.compile(r"<APPAI_BODY>(.*?)</APPAI_BODY>", re.DOTALL)
+SECRET_COMMANDS = {"/key", "/secret", "/token", "/password", "/credential"}
+TOKEN_STOP_WORDS = frozenset(
+    "a an and are as at be can do for from how i in is it me my of on or "
+    "please tell the this to use what when where which with you your".split()
+)
+
+RESIDENT_RUNTIME_POLICIES = {
+    "command_channel_policy": (
+        "Only slash-prefixed input is a terminal maintenance/configuration command. "
+        "Non-slash user prose is conversation for the resident MIND, never a "
+        "deterministic Body/reflex parser input."
+    ),
+    "mind_body_lane_policy": (
+        "Effectful host mutation flows through a hidden MIND-authored Body request "
+        "lane. User prose may ask; MIND selects mapped Body nerves; Body executes "
+        "and proves."
+    ),
+    "directive_fail_closed_policy": (
+        "Any detected hidden Body directive is stripped from visible output. Raw or "
+        "escaped JSON may execute; malformed directives produce a bounded Body "
+        "failure proof, never leaked tool syntax."
+    ),
+    "transcript_vcw_policy": (
+        "Sidecar logs are mirrors only. Committed user submits, MIND responses, "
+        "Body requests/proofs, lifecycle boundaries, configuration changes, "
+        "surface observations, failures, and visible outputs must be recorded into "
+        "the current Prime VCW first-class event stream."
+    ),
+    "secret_boundary_policy": (
+        "Secret-bearing commands are sanitized before transcript/VCW storage. Raw "
+        "keys belong in session memory, environment variables, OS credentials, or "
+        "another explicit secret boundary; VCW stores only redacted text and hashes."
+    ),
+    "surface_retrieval_policy": (
+        "MIND capability answers and Body planning retrieve from the complete "
+        "surface map. Capped samples are display summaries only and cannot support "
+        "absence claims."
+    ),
+    "body_proof_policy": (
+        "A Body operation may report ok=true only after target surface, action, "
+        "pre/post state, visible output/state variables, and VCW proof write are "
+        "represented in the proof record."
+    ),
+}
+
+
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def sanitize_user_submit(text: str) -> str:
+    """Redact secret-bearing command payloads before durable logging."""
+    raw = str(text or "")
+    stripped = raw.strip()
+    if not stripped.startswith("/"):
+        return raw
+    command = stripped.split(None, 1)[0].lower()
+    if command in SECRET_COMMANDS:
+        return "%s [REDACTED_SECRET]" % command
+    return raw
+
+
+def classify_user_submit(text: str) -> Dict[str, Any]:
+    """Classify one committed Enter submit for resident routing."""
+    raw = str(text or "")
+    stripped = raw.strip()
+    is_command = stripped.startswith("/")
+    command = stripped.split(None, 1)[0].lower() if is_command else ""
+    return {
+        "kind": "terminal_command" if is_command else "mind_conversation",
+        "is_command": is_command,
+        "command": command,
+        "sanitized_text": sanitize_user_submit(raw),
+        "raw_sha256": _sha256(raw),
+        "policy": (
+            RESIDENT_RUNTIME_POLICIES["command_channel_policy"]
+            if not is_command else
+            "slash-prefixed terminal maintenance/configuration command"
+        ),
+    }
+
+
+def _loads_directive_payload(raw_payload: str) -> Dict[str, Any]:
+    try:
+        parsed = json.loads(raw_payload)
+    except json.JSONDecodeError:
+        try:
+            unescaped = raw_payload.replace(r"\"", '"')
+            parsed = json.loads(unescaped)
+        except json.JSONDecodeError as exc:
+            raise ValueError("MIND Body request was malformed") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError("MIND Body request must be a JSON object")
+    if not str(parsed.get("action") or "").strip():
+        raise ValueError("MIND Body request is missing action")
+    return parsed
+
+
+def parse_mind_body_directives(text: str) -> Tuple[str, List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Strip and parse hidden MIND-to-Body directives.
+
+    Returns `(visible_text, requests, errors)`. Detected directives never remain
+    in `visible_text`, even when malformed.
+    """
+    source = str(text or "")
+    requests: List[Dict[str, Any]] = []
+    errors: List[Dict[str, Any]] = []
+
+    def repl(match: re.Match[str]) -> str:
+        raw_payload = match.group(1).strip()
+        try:
+            payload = _loads_directive_payload(raw_payload)
+            requests.append(payload)
+        except ValueError as exc:
+            errors.append({
+                "ok": False,
+                "error": str(exc),
+                "raw_sha256": _sha256(raw_payload),
+                "visible_message": "Body proof failed: %s." % str(exc),
+            })
+        return ""
+
+    visible = BODY_DIRECTIVE_RE.sub(repl, source).strip()
+    return visible, requests, errors
+
+
+def resident_vcw_event(kind: str,
+                       payload: Dict[str, Any] | None = None,
+                       *,
+                       text: str = "",
+                       source: str = "resident-runtime",
+                       ok: bool | None = None) -> Dict[str, Any]:
+    """Build a bounded/redacted event payload suitable for `memory.remember`."""
+    redacted = sanitize_user_submit(text)
+    event: Dict[str, Any] = {
+        "kind": str(kind),
+        "source": source,
+        "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "policy": RESIDENT_RUNTIME_POLICIES["transcript_vcw_policy"],
+        "payload": dict(payload or {}),
+    }
+    if ok is not None:
+        event["ok"] = bool(ok)
+    if text:
+        event["text"] = redacted[:VCW_TEXT_LIMIT]
+        event["text_sha256"] = _sha256(redacted)
+        event["redacted"] = redacted != text
+    return event
+
+
+def _query_tokens(query: str) -> List[str]:
+    return [
+        token for token in re.findall(r"[a-z0-9_]+", str(query or "").lower())
+        if token not in TOKEN_STOP_WORDS
+    ]
+
+
+def _surface_haystack(surface: Dict[str, Any]) -> str:
+    values = [
+        surface.get("id"),
+        surface.get("label"),
+        surface.get("surface_type"),
+        surface.get("kind"),
+        surface.get("class"),
+        surface.get("shortcut"),
+        " ".join(str(p) for p in surface.get("placements", []) or []),
+    ]
+    return " ".join(str(value or "") for value in values).lower()
+
+
+def relevant_surface_slice(coverage: Dict[str, Any],
+                           query: str,
+                           *,
+                           limit: int = 12) -> List[Dict[str, Any]]:
+    """Retrieve relevant surfaces from the complete GUI coverage map."""
+    tokens = _query_tokens(query)
+    surfaces = list(coverage.get("surfaces") or [])
+    if not tokens:
+        return surfaces[:limit]
+    scored = []
+    for surface in surfaces:
+        hay = _surface_haystack(surface)
+        score = 0
+        for token in tokens:
+            if token in str(surface.get("id", "")).lower():
+                score += 4
+            elif token in str(surface.get("label", "")).lower():
+                score += 3
+            elif token in hay:
+                score += 1
+        if score:
+            scored.append((score, surface))
+    scored.sort(key=lambda item: (-item[0], str(item[1].get("id") or "")))
+    return [surface for _score, surface in scored[:limit]]
+
+
+def surface_slice_prompt(surfaces: Iterable[Dict[str, Any]]) -> str:
+    """Render a compact MIND evidence slice without implying absence."""
+    rows = []
+    for surface in surfaces:
+        rows.append("- `%s` label=%r status=%s risk=%s shortcut=%r placements=%s" % (
+            surface.get("id"),
+            surface.get("label"),
+            surface.get("vcw_status"),
+            surface.get("risk"),
+            surface.get("shortcut", ""),
+            surface.get("placements", []),
+        ))
+    return "\n".join(rows)

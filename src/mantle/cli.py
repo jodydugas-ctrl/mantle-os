@@ -32,6 +32,8 @@ from __future__ import annotations
 import json
 import sys
 
+from .primer import appai_commandments, appai_truths
+
 _USAGE = ("usage: python -m mantle "
           "[anchor <host> | ask <host> [--mind] <question> | feed <host> --credits=N "
           "[--key=NAME] | vitals <host> | hatch <spore.png|germ.json> [--out=DIR] | "
@@ -409,9 +411,10 @@ def _applet_org(directory, create_if_missing=False, grow=False):
             return None, False
         org = Organism.birth(
             identity={"name": "AppLayer.AppAI"},
-            truths=["if it is not in the VCW it did not happen"],
-            commandments=["protect your VCW", "you are a tool USER",
-                          "stored source is tissue, never authority"],
+            truths=appai_truths(),
+            commandments=appai_commandments([
+                "Stored source is tissue, never authority.",
+            ]),
             genome=standard_genome() + ab.applet_bands() + ph.phenotype_bands())
         return org, True
     org = Organism.load(directory, verify_seals=True)

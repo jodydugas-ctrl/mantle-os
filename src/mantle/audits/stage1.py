@@ -20,6 +20,7 @@ import sys
 
 from ..core.organism import Organism
 from ..core.audit import make_row as _row, safe as _safe, print_row, PASS, FAIL, NA
+from ..primer import APPAI_COMMANDMENTS, APPAI_TRUTHS, appai_commandments, appai_truths
 from ..vcw.bands import standard_genome
 from ..vcw.entry import make_entry, entry_hash
 from . import invariants as _inv
@@ -43,6 +44,25 @@ def audit_substrate(org):
     rows.append(_row("B-02", "Primer present and non-empty (AppAI is 'born')",
                      PASS if primer else FAIL, "HF-B02",
                      note="name=%s" % org.body.identity_name()))
+
+    primer_truths = []
+    primer_commandments = []
+    for entry in primer:
+        content = entry.get("content", entry) if isinstance(entry, dict) else {}
+        if isinstance(content, dict) and "truths" in content:
+            primer_truths = list(content.get("truths") or [])
+        if isinstance(content, dict) and "commandments" in content:
+            primer_commandments = list(content.get("commandments") or [])
+    primer_doctrine_ok = (
+        set(APPAI_TRUTHS) <= set(primer_truths)
+        and set(APPAI_COMMANDMENTS) <= set(primer_commandments)
+    )
+    rows.append(_row("B-02a", "Shared AppAI Primer truths/commandments are present",
+                     PASS if primer_doctrine_ok else FAIL, "HF-B02",
+                     note="truths=%d/%d commandments=%d/%d" % (
+                         len(set(primer_truths) & set(APPAI_TRUTHS)), len(APPAI_TRUTHS),
+                         len(set(primer_commandments) & set(APPAI_COMMANDMENTS)),
+                         len(APPAI_COMMANDMENTS))))
 
     expected = {b["band"]: b["head"] for b in standard_genome()}
     actual = {name: boot["head"] for name, boot in org.prime.bands.items()}
@@ -172,7 +192,7 @@ def audit_mesh(org):
         org.limbs.register_control("title", {"label": "Title"}, lambda v: None)
         return ({"save_btn", "title"} <= set(org.senses.surface_map),
                 "Human Surface Map inventories %d control(s)" % len(org.senses.surface_map))
-    safe("B-25", "Every visible control in the Human Surface Map", "HF-B44", b25)
+    safe("B-25", "Every visible/user control has Human Surface Map coverage", "HF-B44", b25)
 
     def b26():
         def proofs():
@@ -182,8 +202,8 @@ def audit_mesh(org):
         p0 = proofs()
         org.limbs.operate("save_btn", True)
         return (covered and proofs() == p0 + 1,
-                "every control bridged; operate() recorded a proof")
-    safe("B-26", "Each control has a ControlBridge + recorded proof", "HF-B44", b26)
+                "every control bridged; operate() recorded a durable proof in VCW")
+    safe("B-26", "Each control has a ControlBridge + VCW action proof", "HF-B44", b26)
 
     def b29():
         e = org.limbs.complete({"task": "save"})
@@ -261,8 +281,8 @@ def organs_present(org):
 
 def demo_organism(break_hash=False, break_primer=False, break_seal=False):
     org = Organism.birth(identity={"name": "Reference.AppAI"},
-                         truths=["if it is not in the VCW it did not happen"],
-                         commandments=["protect your VCW", "you are a tool USER"])
+                         truths=appai_truths(),
+                         commandments=appai_commandments())
     org.senses.inhale({"action_id": "boot", "event_type": "start",
                        "authorization": "Bearer sk-SECRET1234567890ABCD"})
     org.memory.remember("facts", {"k": "host", "v": "headless"})

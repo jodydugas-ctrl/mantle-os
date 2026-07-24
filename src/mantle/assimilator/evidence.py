@@ -13,6 +13,7 @@ import os
 import re
 from typing import Any, Dict, List
 
+from ..resident.protocol import RESIDENT_RUNTIME_POLICIES, relevant_surface_slice
 from .surface_coverage import build_surface_coverage, flatten_dissection_symbols
 
 
@@ -116,6 +117,17 @@ def build_host_evidence_index(amap: Dict[str, Any],
             "GUI nerve maintenance gaps remain for %d surface(s); they must be proposed "
             "to Body before any operability claim." % len(missing_surfaces)
         )
+    body_test_plan = surface_coverage.get("body_test_plan") or []
+    unproven_body_tests = [
+        item for item in body_test_plan
+        if item.get("current_status") != "verified_body_operation"
+    ]
+    if unproven_body_tests:
+        limitations.append(
+            "Systematic Body testing remains for %d user surface(s); outputs and "
+            "state variables from each test must be written into VCW before the "
+            "resident may treat them as truth." % len(unproven_body_tests)
+        )
 
     return {
         "kind": "HOST_EVIDENCE_INDEX",
@@ -146,7 +158,21 @@ def build_host_evidence_index(amap: Dict[str, Any],
             "status_counts": surface_coverage.get("status_counts", {}),
             "type_counts": surface_coverage.get("type_counts", {}),
             "maintenance_findings": len(surface_coverage.get("maintenance_findings", [])),
+            "body_test_plan_items": len(body_test_plan),
+            "unproven_body_test_items": len(unproven_body_tests),
         },
+        "runtime_policies": dict(RESIDENT_RUNTIME_POLICIES),
+        "body_test_plan_summary": [
+            {
+                "surface": item.get("surface"),
+                "phase": item.get("phase"),
+                "risk": item.get("risk"),
+                "current_status": item.get("current_status"),
+                "vcw_requirement": item.get("vcw_requirement"),
+                "output_requirement": item.get("output_requirement"),
+            }
+            for item in body_test_plan[:40]
+        ],
         "gaps": gaps,
         "limitations": limitations,
         "consultation_contract": {
@@ -163,6 +189,13 @@ def build_host_evidence_index(amap: Dict[str, Any],
                 "must not replace the evidence index"
             ),
             "missing_evidence_policy": "name the gap instead of guessing",
+            "command_channel_policy": RESIDENT_RUNTIME_POLICIES["command_channel_policy"],
+            "mind_body_lane_policy": RESIDENT_RUNTIME_POLICIES["mind_body_lane_policy"],
+            "directive_fail_closed_policy": RESIDENT_RUNTIME_POLICIES["directive_fail_closed_policy"],
+            "transcript_vcw_policy": RESIDENT_RUNTIME_POLICIES["transcript_vcw_policy"],
+            "secret_boundary_policy": RESIDENT_RUNTIME_POLICIES["secret_boundary_policy"],
+            "surface_retrieval_policy": RESIDENT_RUNTIME_POLICIES["surface_retrieval_policy"],
+            "body_proof_policy": RESIDENT_RUNTIME_POLICIES["body_proof_policy"],
             "effectful_action_policy": (
                 "plain-English host-surface requests are interpreted by the resident "
                 "MIND against mapped SELF/body evidence; effectful operations require "
@@ -173,6 +206,17 @@ def build_host_evidence_index(amap: Dict[str, Any],
                 "working surfaces are host-specific anatomy discovered from GUI "
                 "coverage or live Body evidence and recorded into the VCW; they are "
                 "not universal predefined slash commands"
+            ),
+            "systematic_body_test_policy": (
+                "after Body birth, every mapped user surface is systematically probed "
+                "through a safe Body nerve or observer; action proof, visible output, "
+                "state variables, and any resulting working-surface changes are "
+                "recorded into VCW"
+            ),
+            "output_truth_policy": (
+                "displays, files, clipboard values, dialogs, status text, emitted "
+                "events, and relevant variables are not known to the resident unless "
+                "they are represented in VCW"
             ),
             "creative_work_policy": (
                 "creative/generative content must be authored by the resident MIND, "
@@ -222,16 +266,49 @@ def answer_from_host_evidence(question: str, amap: Dict[str, Any]) -> str:
                 surface_summary.get("total_surfaces", 0),
                 surface_summary.get("status_counts", {}),
             ))
+            lines.append("- Systematic Body tests: %s planned; %s unproven" % (
+                surface_summary.get("body_test_plan_items", 0),
+                surface_summary.get("unproven_body_test_items", 0),
+            ))
+        surface_coverage = amap.get("surface_coverage") or {}
+        matches = relevant_surface_slice(surface_coverage, question, limit=6)
+        if matches:
+            lines.append("Relevant surfaces from complete coverage:")
+            for surface in matches:
+                lines.append("- `%s` label=%r status=%s risk=%s" % (
+                    surface.get("id"),
+                    surface.get("label"),
+                    surface.get("vcw_status"),
+                    surface.get("risk"),
+                ))
         for c in controls[:8]:
             status = c.get("vcw_status") or c.get("role")
             lines.append("- `%s` at %s:%s [%s]" % (
                 c.get("control"), c.get("module"), c.get("line"), status))
         lines.append("Every control must produce Action Execution Proof before success.")
         contract = index.get("consultation_contract", {})
+        if contract.get("command_channel_policy"):
+            lines.append(contract["command_channel_policy"])
+        if contract.get("mind_body_lane_policy"):
+            lines.append(contract["mind_body_lane_policy"])
+        if contract.get("directive_fail_closed_policy"):
+            lines.append(contract["directive_fail_closed_policy"])
+        if contract.get("transcript_vcw_policy"):
+            lines.append(contract["transcript_vcw_policy"])
+        if contract.get("secret_boundary_policy"):
+            lines.append(contract["secret_boundary_policy"])
+        if contract.get("surface_retrieval_policy"):
+            lines.append(contract["surface_retrieval_policy"])
+        if contract.get("body_proof_policy"):
+            lines.append(contract["body_proof_policy"])
         if contract.get("effectful_action_policy"):
             lines.append(contract["effectful_action_policy"])
         if contract.get("working_surface_policy"):
             lines.append(contract["working_surface_policy"])
+        if contract.get("systematic_body_test_policy"):
+            lines.append(contract["systematic_body_test_policy"])
+        if contract.get("output_truth_policy"):
+            lines.append(contract["output_truth_policy"])
         if contract.get("creative_work_policy"):
             lines.append(contract["creative_work_policy"])
         if contract.get("reset_policy"):

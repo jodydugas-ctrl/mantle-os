@@ -16,6 +16,11 @@ DESTRUCTIVE_HINTS = (
     "delete", "trash", "remove", "clear", "close", "exit", "quit", "print",
     "save", "reload", "rename", "update", "install",
 )
+OUTPUTFUL_HINTS = (
+    "open", "new", "save", "reload", "print", "export", "find", "replace",
+    "copy", "paste", "undo", "redo", "zoom", "split", "show", "hide",
+    "toggle", "select", "sort", "convert", "format", "run", "record",
+)
 
 
 def normalize_surface_id(value: Any) -> str:
@@ -69,6 +74,65 @@ def _is_not_implemented(surface_id: str, label: str, edges: List[Dict[str, Any]]
 def _is_risky(surface_id: str, label: str) -> bool:
     low = ("%s %s" % (surface_id, label)).lower()
     return any(hint in low for hint in DESTRUCTIVE_HINTS)
+
+
+def _may_emit_output(surface_id: str, label: str, surface_type: str) -> bool:
+    low = ("%s %s %s" % (surface_id, label, surface_type)).lower()
+    return surface_type.startswith(("menu", "toolbar", "widget")) or any(
+        hint in low for hint in OUTPUTFUL_HINTS
+    )
+
+
+def _surface_test_plan(surface: Dict[str, Any]) -> Dict[str, Any]:
+    risk = surface.get("risk")
+    may_emit_output = _may_emit_output(
+        str(surface.get("id") or ""),
+        str(surface.get("label") or ""),
+        str(surface.get("surface_type") or ""),
+    )
+    if surface.get("vcw_status") == "verified_body_operation":
+        phase = "regression"
+    elif risk == "guarded":
+        phase = "guarded_probe"
+    else:
+        phase = "systematic_probe"
+    return {
+        "surface": surface.get("id"),
+        "phase": phase,
+        "risk": risk,
+        "nerve_requirement": (
+            "register a Body nerve or explicit observer for this surface; no MIND "
+            "operability claim is allowed until the nerve writes proof to VCW"
+        ),
+        "pre_state_requirement": (
+            "snapshot reachable state/display variables before interaction and write "
+            "the observation to VCW"
+        ),
+        "action_requirement": (
+            "operate through the user-facing surface or a host-native equivalent; "
+            "destructive/guarded surfaces require a safe fixture or dry-run harness"
+        ),
+        "output_requirement": (
+            "capture all visible outputs, dialogs, document/view changes, emitted "
+            "status text, files/clipboard changes, and relevant state variables into VCW"
+            if may_emit_output else
+            "record that no user-visible output channel is expected, then verify by "
+            "post-action observation"
+        ),
+        "post_state_requirement": (
+            "read back the body state/output after interaction; ok=true requires "
+            "post-action evidence, not merely a non-throwing call"
+        ),
+        "vcw_requirement": (
+            "write USER_SURFACE_TEST, BODY_ACTION_PROOF, and SURFACE_OUTPUT_OBSERVED "
+            "events into the current Prime VCW"
+        ),
+        "current_status": surface.get("vcw_status"),
+    }
+
+
+def build_systematic_body_test_plan(surfaces: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [_surface_test_plan(surface) for surface in surfaces]
 
 
 def build_surface_coverage(symbols: Iterable[Dict[str, Any]],
@@ -168,22 +232,37 @@ def build_surface_coverage(symbols: Iterable[Dict[str, Any]],
 
     status_counts = Counter(s["vcw_status"] for s in surfaces)
     type_counts = Counter(s["surface_type"].split(":", 1)[0] for s in surfaces)
+    body_test_plan = build_systematic_body_test_plan(surfaces)
     return {
         "kind": "GUI_NERVE_COVERAGE",
-        "schema_version": "mantle-gui-nerve-coverage-v1",
+        "schema_version": "mantle-gui-nerve-coverage-v2",
         "total_surfaces": len(surfaces),
         "status_counts": dict(status_counts),
         "type_counts": dict(type_counts),
         "surfaces": surfaces,
         "maintenance_findings": maintenance_findings,
+        "body_test_plan": body_test_plan,
         "contract": {
             "no_silent_gui_omission": True,
+            "all_user_surfaces_require_body_tests": True,
+            "all_outputs_must_enter_vcw": True,
             "known_surface_policy": (
                 "every discovered GUI surface is classified as verified, observer-only, "
                 "sense-only, not implemented, or a maintenance gap"
             ),
+            "systematic_body_test_policy": (
+                "after initial Body birth, Body must systematically probe every mapped "
+                "user-manipulable surface with safe fixtures/dry-runs for guarded "
+                "surfaces, attach a nerve or explicit observer, capture outputs and "
+                "state variables, and write proofs into VCW"
+            ),
             "effectful_claim_policy": (
                 "resident may claim operation only with Body-owned Action Execution Proof"
+            ),
+            "output_truth_policy": (
+                "visible outputs, dialogs, files, clipboard changes, status text, "
+                "document/view changes, emitted events, and relevant variables are "
+                "truth only after they are recorded into VCW"
             ),
             "working_surface_policy": (
                 "tabs/documents/views are recorded only when the host declares them or "
@@ -203,6 +282,12 @@ def render_surface_coverage_markdown(coverage: Dict[str, Any],
         "- **Total GUI surfaces:** %s" % coverage.get("total_surfaces", 0),
         "- **No silent GUI omission:** `%s`" % str(
             coverage.get("contract", {}).get("no_silent_gui_omission", False)
+        ).lower(),
+        "- **All user surfaces require Body tests:** `%s`" % str(
+            coverage.get("contract", {}).get("all_user_surfaces_require_body_tests", False)
+        ).lower(),
+        "- **All outputs must enter VCW:** `%s`" % str(
+            coverage.get("contract", {}).get("all_outputs_must_enter_vcw", False)
         ).lower(),
         "",
         "## Status Counts",
@@ -257,4 +342,25 @@ def render_surface_coverage_markdown(coverage: Dict[str, Any],
             lines.append("- ... and %d more" % (len(findings) - 80))
     else:
         lines.append("- none")
+    plan = coverage.get("body_test_plan") or []
+    lines += [
+        "",
+        "## Systematic Body Test Plan",
+        "",
+        "Every user-manipulable surface needs a Body nerve or explicit observer,",
+        "safe action proof, output/state capture, and VCW writeback. Guarded",
+        "surfaces require a fixture or dry-run harness before operation.",
+        "",
+        "| Surface | Phase | Risk | VCW Status |",
+        "|---|---|---|---|",
+    ]
+    for item in plan[:80]:
+        lines.append("| `%s` | %s | %s | %s |" % (
+            item.get("surface"),
+            item.get("phase"),
+            item.get("risk"),
+            item.get("current_status"),
+        ))
+    if len(plan) > 80:
+        lines.append("| ... | ... | ... | %d more |" % (len(plan) - 80))
     return "\n".join(lines) + "\n"

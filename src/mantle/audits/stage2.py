@@ -16,6 +16,7 @@ import sys
 
 from ..core.audit import safe as _safe, print_row, PASS, FAIL
 from ..core.organism import Organism
+from ..primer import appai_commandments, appai_truths
 from ..vcw.bands import standard_genome, make_band_boot
 from ..vcw.entry import make_entry
 from ..mind import stub_mind, fuse, WRITE_SURFACE
@@ -129,8 +130,8 @@ def fused_demo():
     genome = standard_genome() + [make_band_boot("reflex_probe", 600, "exec",
                                                  purpose="skill cultivation probe")]
     org = Organism.birth(identity={"name": "Fused.AppAI"},
-                         truths=["if it is not in the VCW it did not happen"],
-                         commandments=["protect your VCW", "you are a tool USER"],
+                         truths=appai_truths(),
+                         commandments=appai_commandments(),
                          genome=genome)
     org.memory.remember("facts", {"k": "host", "v": "headless"})
     # Technical gate and explicit offline audit authority are separate inputs.

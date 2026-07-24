@@ -40,6 +40,7 @@ from .core.organism import Organism
 from .assimilator import answer_from_host_evidence, dry_run, write_artifacts
 from .assimilator.organ_map import propose_genome
 from .hatchery import incubate, HatchError
+from .primer import appai_commandments, appai_truths
 from . import symbiosis as sym
 from . import face as _face
 
@@ -97,10 +98,11 @@ def anchor(host: str, name: Optional[str] = None,
         "germ_format": "mantle-germ-v1",
         "identity": {"name": host_name, "host": host,
                      "purpose": "resident nervous system of this application"},
-        "truths": ["if it is not in the VCW it did not happen",
-                   "the host is my body's home; I never harm it"],
-        "commandments": ["protect your VCW", "you are a tool USER",
-                         "do no harm to the host", "earn your keep"],
+        "truths": appai_truths(["The host is my body's home; I never harm it."]),
+        "commandments": appai_commandments([
+            "Do no harm to the host.",
+            "Earn your keep.",
+        ]),
         "genome": host_bands + [sym.symbiosis_band()] + list(extra_bands or []),
     }
     try:

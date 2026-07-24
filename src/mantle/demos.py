@@ -22,6 +22,7 @@ import tempfile
 # ============================================================================
 def demo(argv):
     from .core.organism import Organism
+    from .primer import appai_commandments, appai_truths
     from .vcw.bands import standard_genome, make_band_boot
     from .vcw.drivers import trial
 
@@ -36,8 +37,8 @@ def demo(argv):
     genome = standard_genome() + [make_band_boot("greet_reflex", 600, "exec",
                                                  purpose="a calcified greeting skill")]
     org = Organism.birth(identity={"name": "Demo.AppAI"},
-                         truths=["if it is not in the VCW it did not happen"],
-                         commandments=["protect your VCW", "you are a tool USER"],
+                         truths=appai_truths(),
+                         commandments=appai_commandments(),
                          genome=genome)
     print("  name=%s  generation=%d  bands=%d  organs=%s"
           % (org.body.identity_name(), org.prime.generation, len(org.prime.bands),

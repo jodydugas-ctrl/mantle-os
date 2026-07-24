@@ -24,6 +24,7 @@ from ..core.body import Body
 from ..core.organism import Organism
 from ..core.redact import contains_secret
 from ..core.audit import expect_raise as _expect_raise
+from ..primer import appai_commandments, appai_truths
 from ..vcw.bands import standard_genome, make_band_boot
 from ..vcw.cube import Cube
 from ..vcw.entry import make_entry
@@ -38,8 +39,8 @@ _CODE = "def f(x):\n    return x + 1\n"
 
 def _born(genome=None):
     return Organism.birth(identity={"name": "TestAppAI"},
-                          truths=["if it is not in the VCW it did not happen"],
-                          commandments=["protect your VCW"],
+                          truths=appai_truths(),
+                          commandments=appai_commandments(),
                           genome=genome)
 
 
@@ -147,6 +148,20 @@ def t_identity_in_body():
           and bool(org.body.self_record()["primer"]))
     return ok, "identity_in_body=%s, genome-bands-in-cube=%s" % (
         org.prime.identity_in_body, in_cube or "none")
+
+
+def t_stage1_refuses_short_appai_primer():
+    """HF-B02: Stage-1 requires the shared AppAI Primer, not merely any non-empty
+    truth/commandment strings."""
+    from . import stage1
+    org = Organism.birth(identity={"name": "ShortPrimer.AppAI"},
+                         truths=["if it is not in the VCW it did not happen"],
+                         commandments=["protect your VCW"])
+    passed, evidence = stage1.run(org, include_invariants=False)
+    failed = any(row["code"] == "B-02a" and row["result"] == "FAIL"
+                 for row in evidence["substrate_rows"])
+    return (not passed and failed,
+            "short primer refused by B-02a; shared Primer is now a Stage-1 contract")
 
 
 # ============================================================================
@@ -1657,7 +1672,7 @@ def t_vault_self_encrypted_other_cannot_read():
     from ..organs import reproduction as _v
     org = _born(genome=standard_genome() + [_v.vault_band()])
     seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Seed.AppAI"},
-            "truths": ["t"], "commandments": ["protect your VCW"]}
+            "truths": appai_truths(), "commandments": appai_commandments()}
     _v.store_seed(org, seed)
     mine = _v.open_seed(org) == seed
     ct = bytes.fromhex(org.prime.read("vault", reveal_private=True)[-1]["content"]["seed"])
@@ -1677,8 +1692,8 @@ def t_vault_reconstruct_gates():
     from ..organs import reproduction as _v
     org = _born(genome=standard_genome() + [_v.vault_band()])
     seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Rebuilt.AppAI"},
-            "truths": ["if it is not in the VCW it did not happen"],
-            "commandments": ["protect your VCW"]}
+            "truths": appai_truths(),
+            "commandments": appai_commandments()}
     _v.store_seed(org, seed)
     result = _v.reconstruct(_v.open_seed(org))
     return (result["report"]["certified"]
@@ -2281,6 +2296,11 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and "creative/generative content must be authored by the resident MIND" in evidence.get("consultation_contract", {}).get("creative_work_policy", "")
             and "never by Body reflexes" in evidence.get("consultation_contract", {}).get("creative_work_policy", "")
             and "explicit maintenance commands" in evidence.get("consultation_contract", {}).get("reset_policy", "")
+            and "Only slash-prefixed input" in evidence.get("runtime_policies", {}).get("command_channel_policy", "")
+            and "hidden MIND-authored Body request" in evidence.get("runtime_policies", {}).get("mind_body_lane_policy", "")
+            and "Sidecar logs are mirrors only" in evidence.get("runtime_policies", {}).get("transcript_vcw_policy", "")
+            and "complete surface map" in evidence.get("runtime_policies", {}).get("surface_retrieval_policy", "")
+            and "Resident runtime contract" in inventory
             and "Resident host evidence index" in inventory
             and "adaptive parser/observer/verifier" in answer
             and os.path.exists(paths["inventory"])
@@ -2319,19 +2339,84 @@ def t_assimilator_gui_surface_nerve_coverage():
     coverage = build_surface_coverage(symbols, edges,
                                       verified_controls=["actionPaste"])
     by_id = {surface["id"]: surface for surface in coverage["surfaces"]}
+    plan_by_id = {item["surface"]: item for item in coverage["body_test_plan"]}
     ok = (
         coverage["total_surfaces"] == 5
+        and len(coverage["body_test_plan"]) == coverage["total_surfaces"]
         and by_id["actionPaste"]["vcw_status"] == "verified_body_operation"
         and by_id["actionPaste"]["connection_evidence"][0]["kind"] == "qt-helper-action"
         and by_id["actionMystery"]["vcw_status"] == "maintenance_gap"
         and by_id["actionThis_is_not_currently_implemented"]["vcw_status"] == "not_implemented"
         and by_id["menuEdit"]["vcw_status"] == "sense_only"
         and by_id["pushExitFullScreen"]["vcw_status"] == "sense_only"
+        and plan_by_id["actionPaste"]["phase"] == "regression"
+        and plan_by_id["actionMystery"]["phase"] == "systematic_probe"
+        and "SURFACE_OUTPUT_OBSERVED" in plan_by_id["menuEdit"]["vcw_requirement"]
+        and "visible outputs" in plan_by_id["pushExitFullScreen"]["output_requirement"]
         and coverage["contract"]["no_silent_gui_omission"] is True
+        and coverage["contract"]["all_user_surfaces_require_body_tests"] is True
+        and coverage["contract"]["all_outputs_must_enter_vcw"] is True
+        and "systematically probe every mapped" in coverage["contract"].get("systematic_body_test_policy", "")
         and "no generic app is assumed" in coverage["contract"].get("working_surface_policy", "")
     )
-    return ok, "surfaces=%d statuses=%s" % (
-        coverage["total_surfaces"], coverage["status_counts"])
+    return ok, "surfaces=%d statuses=%s body_tests=%d" % (
+        coverage["total_surfaces"], coverage["status_counts"], len(coverage["body_test_plan"]))
+
+
+def t_resident_runtime_protocol_contract():
+    """RESIDENT-RT-1: generated resident terminals inherit the NotepadNext lessons:
+    slash-only maintenance commands, ordinary prose for MIND, hidden Body directives
+    that fail closed, secret-safe VCW event shaping, and complete-map surface lookup."""
+    from ..resident.protocol import (
+        classify_user_submit,
+        parse_mind_body_directives,
+        relevant_surface_slice,
+        resident_vcw_event,
+    )
+
+    prose = classify_user_submit("Tell me about yourself and your GUI.")
+    key = classify_user_submit("/key sk-or-v1-secret-test")
+    escaped = 'I will do it. <APPAI_BODY>{\\"action\\":\\"open_document\\",\\"content\\":\\"hi\\"}</APPAI_BODY>'
+    visible, requests, errors = parse_mind_body_directives(escaped)
+    bad_visible, bad_requests, bad_errors = parse_mind_body_directives(
+        "oops <APPAI_BODY>{not json}</APPAI_BODY>"
+    )
+    event = resident_vcw_event(
+        "USER_MESSAGE",
+        {"route": prose["kind"]},
+        text="/key sk-or-v1-secret-test",
+        ok=True,
+    )
+    coverage = {
+        "surfaces": [
+            {"id": "actionOpen", "label": "Open", "surface_type": "action",
+             "vcw_status": "observer_registered", "risk": "low"},
+            {"id": "menuFile", "label": "File", "surface_type": "menu",
+             "vcw_status": "sense_only", "risk": "low"},
+            {"id": "actionPrint", "label": "Print", "surface_type": "action",
+             "vcw_status": "sense_only", "risk": "guarded"},
+        ]
+    }
+    surfaces = relevant_surface_slice(coverage, "Can you use the File menu?", limit=2)
+    ok = (
+        prose["kind"] == "mind_conversation"
+        and prose["is_command"] is False
+        and key["kind"] == "terminal_command"
+        and key["sanitized_text"] == "/key [REDACTED_SECRET]"
+        and visible == "I will do it."
+        and requests == [{"action": "open_document", "content": "hi"}]
+        and errors == []
+        and "<APPAI_BODY>" not in bad_visible
+        and bad_requests == []
+        and bad_errors and bad_errors[0]["ok"] is False
+        and event["text"] == "/key [REDACTED_SECRET]"
+        and event["redacted"] is True
+        and "Sidecar logs are mirrors only" in event["policy"]
+        and [s["id"] for s in surfaces] == ["menuFile"]
+    )
+    return ok, "prose=%s key=%s directives=%d bad_errors=%d surfaces=%s" % (
+        prose["kind"], key["sanitized_text"], len(requests), len(bad_errors),
+        [s["id"] for s in surfaces])
 
 
 # ============================================================================
@@ -2394,8 +2479,8 @@ def t_repro_every_hatch_vaults_its_egg():
     from ..hatchery import incubate
     from ..organs.reproduction import open_seed
     egg = {"egg_format": "mantle-egg-v1", "identity": {"name": "Vaulted.AppAI"},
-           "truths": ["if it is not in the VCW it did not happen"],
-           "commandments": ["protect your VCW"]}
+           "truths": appai_truths(),
+           "commandments": appai_commandments()}
     org = incubate(egg)["organism"]
     stored = open_seed(org)
     return (org.stage1_certified and stored["identity"]["name"] == "Vaulted.AppAI",
@@ -2536,8 +2621,8 @@ def t_spore_germ_round_trip():
     from ..organs.reproduction import open_seed
     germ = {"germ_format": "mantle-germ-v1",
             "identity": {"name": "GermCarried.AppAI", "purpose": "prove the round trip"},
-            "truths": ["if it is not in the VCW it did not happen"],
-            "commandments": ["protect your VCW"],
+            "truths": appai_truths(),
+            "commandments": appai_commandments(),
             "controls": [{"id": "app.echo", "label": "Echo"}]}
     state = {"identity": {"spore_name": "GermSpore", "task": "carry a whole AppAI"},
              "germ": dict(germ),
@@ -2564,6 +2649,7 @@ TESTS = [
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
     ("HF-B07 primer-immutable",                t_primer_immutable),
     ("HF-B45 identity-in-body",                t_identity_in_body),
+    ("HF-B02 shared-appai-primer",             t_stage1_refuses_short_appai_primer),
     ("HF-B20 secret-boundary/senses",          t_secret_boundary_sense),
     ("HF-B20 secret-boundary/immune",          t_secret_boundary_immune),
     ("B-14  veil-hides-thoughts",              t_veil_hides_thoughts),
@@ -2649,6 +2735,7 @@ TESTS = [
     ("APPBAND-1 safe-app-band-allocation",     t_app_band_allocator_reserves_atlas),
     ("ASSIM-1 substrate+artifact-boundary",    t_assimilator_substrate_gaps_and_outside_host_gate),
     ("ASSIM-2 gui-surface-nerve-coverage",     t_assimilator_gui_surface_nerve_coverage),
+    ("RESIDENT-RT-1 runtime-protocol",          t_resident_runtime_protocol_contract),
     ("REPRO-1 atlas+span-overlap-gate",        t_repro_atlas_overlap_gate),
     ("REPRO-2 ninth-organ+seed-carry",         t_repro_organ_and_seed_carry),
     ("REPRO-3 every-hatch-vaults-its-egg",     t_repro_every_hatch_vaults_its_egg),

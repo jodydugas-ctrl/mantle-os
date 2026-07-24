@@ -12,6 +12,8 @@ import json
 import os
 from typing import Any, Dict
 
+from ..primer import appai_commandments, appai_truths
+
 from .scanner import scan_project
 from .organ_map import build_map, propose_genome, ORGANS
 from .surface_coverage import render_surface_coverage_markdown
@@ -118,6 +120,24 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
         limitations = evidence.get("limitations", [])
         if limitations:
             L.append("- **Known limits:** %s" % " ".join(limitations[:2]))
+        runtime_policies = evidence.get("runtime_policies", {})
+        if runtime_policies:
+            L.append("")
+            L.append("### Resident runtime contract")
+            L.append("")
+            L.append("Future resident terminals generated from this evidence must preserve these")
+            L.append("boundaries:")
+            for key in (
+                "command_channel_policy",
+                "mind_body_lane_policy",
+                "directive_fail_closed_policy",
+                "transcript_vcw_policy",
+                "secret_boundary_policy",
+                "surface_retrieval_policy",
+                "body_proof_policy",
+            ):
+                if runtime_policies.get(key):
+                    L.append("- **%s:** %s" % (key, runtime_policies[key]))
         L.append("")
     coverage = amap.get("surface_coverage") or {}
     if coverage:
@@ -188,11 +208,13 @@ def emit_spore(result: Dict[str, Any], out_png: str) -> Dict[str, Any]:
                      "purpose": "resident AppAI assimilated read-only from %s"
                                 % os.path.basename(host),
                      "born_of": "assimilation"},
-        "truths": ["if it is not in the VCW it did not happen",
-                   "the host is my body's home; I never harm it",
-                   "host code is OTHER until proven"],
-        "commandments": ["protect your VCW", "do no harm to the host",
-                         "you are a tool USER"],
+        "truths": appai_truths([
+            "The host is my body's home; I never harm it.",
+            "Host code is OTHER until proven.",
+        ]),
+        "commandments": appai_commandments([
+            "Do no harm to the host.",
+        ]),
         "genome": app_bands,
         "assimilation": {                      # observed facts, inert data
             "role_counts": amap["role_counts"],

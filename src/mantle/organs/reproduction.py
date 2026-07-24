@@ -41,6 +41,7 @@ from typing import Any, Dict, List, Optional
 
 from .contract import Organ, OrganContract
 from ..core.redact import redact
+from ..primer import appai_commandments, appai_truths
 from ..vcw.bands import make_band_boot, APP_BAND_ATLAS
 from ..vcw.entry import make_entry
 
@@ -152,7 +153,7 @@ def distill_germ(state: Dict[str, Any]) -> Dict[str, Any]:
     ident = dict(state.get("identity") or {})
     name = ident.get("spore_name") or "Spore.AppAI"
     task = ident.get("task") or ""
-    truths = ["if it is not in the VCW it did not happen"]
+    truths = appai_truths()
     if task:
         truths.append("my task: %s" % task)
     return {
@@ -160,7 +161,7 @@ def distill_germ(state: Dict[str, Any]) -> Dict[str, Any]:
         "identity": {"name": name, "purpose": task or "hatched from a spore",
                      "born_of": "spore-png"},
         "truths": truths,
-        "commandments": ["protect your VCW", "you are a tool USER", "keep the seed dry"],
+        "commandments": appai_commandments(["Keep the seed dry."]),
         "genome": [{"band": SPORE_BAND, "head": APP_BAND_ATLAS[SPORE_BAND][0],
                     "span": APP_BAND_ATLAS[SPORE_BAND][1], "encoding": "log-json",
                     "private": True, "params": {"max_entries_per_layer": 1},
