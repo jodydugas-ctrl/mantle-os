@@ -69,6 +69,12 @@ RESIDENT_RUNTIME_POLICIES = {
         "declared low-volume host boundary fires, or Body performs an explicit "
         "readback proof."
     ),
+    "mind_context_rehydration_policy": (
+        "Before every resident MIND call, Body reads a bounded recent slice from the "
+        "current Prime VCW event stream and places it in the MIND context. A resident "
+        "must not answer continuity, pronoun, or 'what did we discuss' questions from "
+        "provider session memory or sidecar transcripts alone."
+    ),
 }
 
 
@@ -197,6 +203,86 @@ def text_commit_event(surface_id: str,
         source=source,
         ok=True,
     )
+
+
+def _event_content(entry: Dict[str, Any]) -> Dict[str, Any]:
+    content = entry.get("content")
+    return content if isinstance(content, dict) else {}
+
+
+def _event_text(entry: Dict[str, Any]) -> str:
+    content = _event_content(entry)
+    return str(content.get("text") or content.get("message") or "")
+
+
+def recent_conversation_events(events: Iterable[Dict[str, Any]],
+                               *,
+                               current_user_text: str = "",
+                               limit: int = 12,
+                               include_commands: bool = False) -> List[Dict[str, Any]]:
+    """Return recent USER/MIND turns from VCW entries, excluding current submit once.
+
+    Resident terminals usually append the current user submit before they build the
+    MIND prompt. For continuity, the recent-history slice should describe prior
+    conversation; the current turn is supplied separately as the active user prompt.
+    """
+    selected: List[Dict[str, Any]] = []
+    skipped_current = False
+    current = str(current_user_text or "")
+    for entry in reversed(list(events or [])):
+        opcode = str(entry.get("opcode") or "")
+        if opcode not in {"USER_MESSAGE", "MIND_RESPONSE"}:
+            continue
+        text = _event_text(entry)
+        if not text:
+            continue
+        marker = _event_content(entry).get("marker")
+        is_slash_command = (
+            isinstance(marker, dict) and bool(marker.get("slash_command"))
+        ) or text.strip().startswith("/")
+        if not include_commands and opcode == "USER_MESSAGE" and is_slash_command:
+            continue
+        if not skipped_current and current and opcode == "USER_MESSAGE" and text == current:
+            skipped_current = True
+            continue
+        selected.append({
+            "opcode": opcode,
+            "role": "user" if opcode == "USER_MESSAGE" else "mind",
+            "text": text,
+            "ts": _event_content(entry).get("ts") or entry.get("ts"),
+            "id": entry.get("id"),
+        })
+        if len(selected) >= limit:
+            break
+    return list(reversed(selected))
+
+
+def render_recent_vcw_context(events: Iterable[Dict[str, Any]],
+                              *,
+                              current_user_text: str = "",
+                              limit: int = 12,
+                              text_limit: int = 900) -> str:
+    """Render bounded recent VCW conversation for a resident MIND prompt."""
+    recent = recent_conversation_events(
+        events,
+        current_user_text=current_user_text,
+        limit=limit,
+    )
+    if not recent:
+        return (
+            "Recent VCW conversation before this user turn: none found in the "
+            "current Prime VCW event stream."
+        )
+    lines = [
+        "Recent VCW conversation before this user turn "
+        "(canonical memory, newest entries included last):"
+    ]
+    for event in recent:
+        text = event["text"]
+        if len(text) > text_limit:
+            text = text[:text_limit] + " ...[truncated]"
+        lines.append("- %s: %s" % (event["role"], text.replace("\n", "\\n")))
+    return "\n".join(lines)
 
 
 def _query_tokens(query: str) -> List[str]:

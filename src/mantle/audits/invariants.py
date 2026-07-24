@@ -2310,6 +2310,7 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and "hidden MIND-authored Body request" in evidence.get("runtime_policies", {}).get("mind_body_lane_policy", "")
             and "Sidecar logs are mirrors only" in evidence.get("runtime_policies", {}).get("transcript_vcw_policy", "")
             and "complete surface map" in evidence.get("runtime_policies", {}).get("surface_retrieval_policy", "")
+            and "Before every resident MIND call" in evidence.get("runtime_policies", {}).get("mind_context_rehydration_policy", "")
             and "Resident runtime contract" in inventory
             and "Resident host evidence index" in inventory
             and "adaptive parser/observer/verifier" in answer
@@ -2385,7 +2386,9 @@ def t_resident_runtime_protocol_contract():
     from ..resident.protocol import (
         classify_user_submit,
         parse_mind_body_directives,
+        recent_conversation_events,
         relevant_surface_slice,
+        render_recent_vcw_context,
         resident_vcw_event,
         text_commit_event,
     )
@@ -2408,6 +2411,24 @@ def t_resident_runtime_protocol_contract():
         "please eat a sandwich",
         boundary="blur",
         payload={"document_name": "New 1"},
+    )
+    vcw_entries = [
+        {"id": 1, "opcode": "USER_MESSAGE",
+         "content": {"text": "Do you have any rules you follow?"}},
+        {"id": 2, "opcode": "USER_MESSAGE",
+         "content": {"text": "/memory", "marker": {"slash_command": True}}},
+        {"id": 2, "opcode": "MIND_RESPONSE",
+         "content": {"text": "Yes. My rules are the AppAI Primer truths and commandments."}},
+        {"id": 3, "opcode": "USER_MESSAGE",
+         "content": {"text": "So what do they mean to you?"}},
+    ]
+    recent = recent_conversation_events(
+        vcw_entries,
+        current_user_text="So what do they mean to you?",
+    )
+    context = render_recent_vcw_context(
+        vcw_entries,
+        current_user_text="So what do they mean to you?",
     )
     coverage = {
         "surfaces": [
@@ -2437,6 +2458,9 @@ def t_resident_runtime_protocol_contract():
         and committed["kind"] == "HOST_TEXT_COMMIT"
         and committed["payload"]["commit_policy"] == "submit_or_blur"
         and committed["text"] == "please eat a sandwich"
+        and [item["role"] for item in recent] == ["user", "mind"]
+        and "Do you have any rules" in context
+        and "AppAI Primer truths" in context
         and [s["id"] for s in surfaces] == ["menuFile"]
     )
     return ok, "prose=%s key=%s directives=%d bad_errors=%d surfaces=%s" % (
