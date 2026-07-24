@@ -27,23 +27,20 @@ These are proven by the framework's own gate. Read and run these first:
 The single best example is the framework proving itself: `python -m mantle teach`
 (mirror: [`../FIELD_GUIDE.md`](../documents/FIELD_GUIDE.md)).
 
-## Self-Contained Reference Demos
+## Standalone Surfaces and Contracts
 
-- `Mantle_Reference_Agent.html` - a single-file, in-browser Reference AppAI.
-- `Mantle_Spreadsheet_Agent.html` - a single-file in-browser spreadsheet AppAI
-  demo.
 - `Mantle_Live_Agent.html` - the live agent workbench that fuses a real MIND over
   OpenRouter when the operator supplies a key.
 - `Mantle_MacroDroid_Schema.yaml` - the Path-B alignment contract and MacroDroid
   JSON schema for anchoring/grafting a Mantle resident onto a MacroDroid host.
 
-The browser demos are useful demonstrations, but the authoritative implementation
+These are demonstrations and integration references; the authoritative implementation
 lives in the `src/mantle/` Python package and its runnable gates.
 
 ## Headless Smoke Tests
 
-`examples/tests/` contains browser/runtime smoke tests for the demos and the
-Calculator AppAI terminal behavior. Locally:
+`examples/tests/` contains browser/runtime smoke tests for the live agent, Calculator
+AppAI terminal behavior, and Notepad AppAI. Locally:
 
 ```bash
 python -m http.server 8765 --directory examples

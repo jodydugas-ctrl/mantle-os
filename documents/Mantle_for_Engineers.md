@@ -2,8 +2,8 @@
 
 Non-normative translation layer for engineers and AI agents.
 
-This document describes Mantle OS in systems language. It does not replace the README,
-PRIMER, Grimoire, or organ-oriented doctrine. The organic vocabulary is the design language
+This document describes Mantle OS in systems language. It does not replace the README
+(the primer), Grimoire, or organ-oriented doctrine. The organic vocabulary is the design language
 of the project; this file maps that language to implementation boundaries so maintainers
 can reason about the code quickly.
 

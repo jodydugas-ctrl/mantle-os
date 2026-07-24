@@ -3,7 +3,7 @@
 **Mantle OS** · Opt-in overlays. **Not normative.**
 *Nothing in this document is part of the core organism. Do not grow any of it unless
 the §0 Declaration Block or the operator explicitly asks. The core framework
-(`PRIMER`, `Organ Atlas`, `Part 1/2`, `Assimilator`) is complete without it.*
+(the `README` primer, `ARCHITECTURE`, `Organ Atlas`, the Grimoire) is complete without it.*
 
 > Why these live here: in earlier versions LIGATURE and polymorphic Body mode were
 > large, normative, and experimental — they bloated the Body spec and were rarely

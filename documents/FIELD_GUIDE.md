@@ -432,14 +432,14 @@ and the old generation keeps its own readable copy in the sealed ancestor.
 
 ```bash
 python -m mantle hatch examples/spores/calculator.png --out=nest/  # born wearing its origin face
-python -m mantle face-save nest/ spreadsheet examples/Mantle_Spreadsheet_Agent.html --kind=html
-python -m mantle face-list nest/                          # origin (default, worn) + spreadsheet
-python -m mantle face-wear nest/ spreadsheet              # the boot manifest a host renders
+python -m mantle face-save nest/ notepad examples/notepad_appai/index.html --kind=html
+python -m mantle face-list nest/                          # origin (default, worn) + notepad
+python -m mantle face-wear nest/ notepad                  # the boot manifest a host renders
 python examples/phenotype_demo.py                         # the whole story, end to end
 ```
 
 **Proven live:** an organism is born wearing its origin face, seals a second face (the real
-179 KB spreadsheet surface) into its VCW, wears it (the source recovers byte-for-byte), keeps the
+maintained Notepad AppAI surface) into its VCW, wears it (the source recovers byte-for-byte), keeps the
 change append-only, refuses to be read by an OTHER body, and carries its default face across a
 rebirth — all with no model call.
 

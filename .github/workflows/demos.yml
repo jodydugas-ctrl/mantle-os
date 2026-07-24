@@ -1,9 +1,7 @@
-name: Demo Smoke (headless browser)
+name: Example Smoke (headless browser)
 
-# The single-file HTML reference demos (examples/*.html) run a whole organism in the browser.
-# The Python substrate is certified by the Zombie Body Audit workflow; this one gives the demos
-# their own runtime regression cover: each must mount, expose its engine, and PASS its in-browser
-# self-audit / Genome+resolver checks. (Loads React/Babel from the unpkg CDN, so it needs network.)
+# The Python substrate is certified by the Zombie Body Audit workflow. This workflow
+# gives the maintained browser examples their own runtime regression coverage.
 
 on:
   push:
@@ -38,18 +36,13 @@ jobs:
           python -m http.server 8765 --directory examples &
           # wait for the server to answer before launching the browser
           for i in $(seq 1 20); do
-            if curl -sf http://localhost:8765/Mantle_Spreadsheet_Agent.html -o /dev/null; then break; fi
+            if curl -sf http://localhost:8765/notepad_appai/ -o /dev/null; then break; fi
             sleep 0.5
           done
 
-      - name: Smoke-test both demos (mount + self-audit)
+      - name: Smoke-test maintained examples
         working-directory: examples/tests
-        timeout-minutes: 3
+        timeout-minutes: 5
         env:
           BASE_URL: http://localhost:8765
-        run: node demo_smoke.mjs
-
-      - name: Smoke-test the live agent (jsdom mount + runnable Stage-1 gate)
-        working-directory: examples/tests
-        timeout-minutes: 2
-        run: node live_agent_smoke.mjs
+        run: npm test

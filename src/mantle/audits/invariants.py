@@ -1917,8 +1917,8 @@ def t_ingest_distills():
 
 def t_doctor_checkup():
     """DOCTOR-1: the doctor passes a healthy organism and a docs-coherent repo, and CATCHES an
-    unhealthy one (a tampered cube fails verify). The docs-vs-code gate ties the README's
-    invariant count to the actual gate."""
+    unhealthy one (a tampered cube fails verify). Repository coherence includes derived
+    documentation claims and a static ban on imports of the removed mantle.egg module."""
     from .. import doctor as _doc
     org = _born()
     org.memory.remember("facts", {"k": "v"})
@@ -1929,12 +1929,22 @@ def t_doctor_checkup():
         next(c for c in healthy["checks"] if c["check"] == "docs-vs-code")["ok"]
         if repository_checkout else True
     )
+    legacy_imports_ok = (
+        next(c for c in healthy["checks"] if c["check"] == "legacy-egg-imports")["ok"]
+        if repository_checkout else True
+    )
+    with tempfile.TemporaryDirectory() as td:
+        stale = os.path.join(td, "stale.py")
+        with open(stale, "w", encoding="utf-8") as f:
+            f.write("from mantle import egg\n")
+        legacy_import_rejected = not _doc._legacy_egg_imports(td)["ok"]
     idx = org.prime.band_layers["facts"][0]
     org.prime.layer_content(idx)[0]["content"] = {"k": "EVIL"}   # tamper the cube
     sick = _doc.checkup(org)
-    return (healthy["ok"] and coherence_ok and not sick["ok"],
+    return (healthy["ok"] and coherence_ok and legacy_imports_ok
+            and legacy_import_rejected and not sick["ok"],
             "doctor passed a healthy deployment%s; caught the tampered cube"
-            % (" + docs coherence" if repository_checkout else ""))
+            % (" + repository coherence" if repository_checkout else ""))
 
 
 # ============================================================================

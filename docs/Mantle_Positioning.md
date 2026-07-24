@@ -1,6 +1,6 @@
 # Mantle OS Positioning
 
-Non-normative on-ramp. The canonical doctrine lives in [`../documents/PRIMER.md`](../documents/PRIMER.md),
+Non-normative on-ramp. The canonical doctrine lives in the project [`README`](../README.md) (the primer),
 and the source-backed engineering map lives in
 [`../documents/Mantle_for_Engineers.md`](../documents/Mantle_for_Engineers.md).
 
@@ -33,6 +33,6 @@ This is why the organic language is intentional. It names engineering boundaries
 - **Brain/MIND** is optional cognition, added only after the Body is proven.
 - **VCW** is the append-only memory substrate.
 
-For a plain-language introduction, read [`../documents/PRIMER.md`](../documents/PRIMER.md).
+For a plain-language introduction, read the [`README`](../README.md) (the primer).
 For engineers and AI agents, read
 [`../documents/Mantle_for_Engineers.md`](../documents/Mantle_for_Engineers.md).

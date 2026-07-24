@@ -925,7 +925,7 @@ Reproduction doctrine: `documents/REPRODUCTION.md` — **one artifact (the spore
 | `MEM-DIGESTION` | `ingestion.py`, `mem.py`, `vcw/metabolism.py`, `core/redact.py`, `organs/immune.py` | `feed`; quarantine before promotion (§7.5†) |
 | `SKILL-CALCIFICATION` | `hatchery.py` (INSTINCTS gauntlet: sandbox → trial → calcify), `compiler.py`, `phenotype.py`, `teach.py` | `teach`, `prove` |
 | `METABOLIC-GOVERNANCE` | `organs/heart.py`, `symbiosis.py`, `vcw/metabolism.py`, `mind/runtime.py` | `documents/Mantle_Urge_System.md`, `documents/guides/VCW_Guide.md` |
-| `CREMATION` | policy-enforced across `organs/reproduction.py` (DNR), `organs/immune.py` (tombstone/redact), `organs/genome.py` (lineage) | `documents/PRIMER.md` |
+| `CREMATION` | policy-enforced across `organs/reproduction.py` (DNR), `organs/immune.py` (tombstone/redact), `organs/genome.py` (lineage) | `README.md` |
 | `VOCARE` | `mind/` (`mind.py`, `containment.py`, `runtime.py`, `inner_voice.py`, `transport.py`, `usage.py`), `audits/stage2.py`, `organs/brain.py` | `mind`, `audit-mind`; containment law §7.4 |
 | `RESURGERE` | `organs/reproduction.py` (seed → `reconstruct()`), `hatchery.py` (`incubate`) | DNR and budget gates first (§7.5) |
 | `CACHE-HAUNT` | `ghost.py`, `ghost_http.py`, `spore.py` | `ghost`; §9.3 |
