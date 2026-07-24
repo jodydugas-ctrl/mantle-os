@@ -170,6 +170,8 @@ def build_host_evidence_index(amap: Dict[str, Any],
                 "current_status": item.get("current_status"),
                 "vcw_requirement": item.get("vcw_requirement"),
                 "output_requirement": item.get("output_requirement"),
+                "commit_policy": item.get("commit_policy"),
+                "commit_requirement": item.get("commit_requirement"),
             }
             for item in body_test_plan[:40]
         ],
@@ -196,6 +198,7 @@ def build_host_evidence_index(amap: Dict[str, Any],
             "secret_boundary_policy": RESIDENT_RUNTIME_POLICIES["secret_boundary_policy"],
             "surface_retrieval_policy": RESIDENT_RUNTIME_POLICIES["surface_retrieval_policy"],
             "body_proof_policy": RESIDENT_RUNTIME_POLICIES["body_proof_policy"],
+            "text_commit_policy": RESIDENT_RUNTIME_POLICIES["text_commit_policy"],
             "effectful_action_policy": (
                 "plain-English host-surface requests are interpreted by the resident "
                 "MIND against mapped SELF/body evidence; effectful operations require "
@@ -301,6 +304,8 @@ def answer_from_host_evidence(question: str, amap: Dict[str, Any]) -> str:
             lines.append(contract["surface_retrieval_policy"])
         if contract.get("body_proof_policy"):
             lines.append(contract["body_proof_policy"])
+        if contract.get("text_commit_policy"):
+            lines.append(contract["text_commit_policy"])
         if contract.get("effectful_action_policy"):
             lines.append(contract["effectful_action_policy"])
         if contract.get("working_surface_policy"):

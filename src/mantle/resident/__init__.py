@@ -9,6 +9,7 @@ from .protocol import (
     relevant_surface_slice,
     resident_vcw_event,
     sanitize_user_submit,
+    text_commit_event,
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "relevant_surface_slice",
     "resident_vcw_event",
     "sanitize_user_submit",
+    "text_commit_event",
 ]

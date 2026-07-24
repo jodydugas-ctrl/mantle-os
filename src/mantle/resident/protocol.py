@@ -63,6 +63,12 @@ RESIDENT_RUNTIME_POLICIES = {
         "pre/post state, visible output/state variables, and VCW proof write are "
         "represented in the proof record."
     ),
+    "text_commit_policy": (
+        "Text inputs do not write every keypress into VCW. They record one durable "
+        "text value when the user submits, the input loses focus/blur commits, a "
+        "declared low-volume host boundary fires, or Body performs an explicit "
+        "readback proof."
+    ),
 }
 
 
@@ -168,6 +174,29 @@ def resident_vcw_event(kind: str,
         event["text_sha256"] = _sha256(redacted)
         event["redacted"] = redacted != text
     return event
+
+
+def text_commit_event(surface_id: str,
+                      text: str,
+                      *,
+                      boundary: str,
+                      source: str = "resident-text-surface",
+                      payload: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    """Build a VCW event for committed text without logging per-key input."""
+    event_payload = {
+        "surface": surface_id,
+        "commit_boundary": boundary,
+        "commit_policy": "submit_or_blur",
+        "policy": RESIDENT_RUNTIME_POLICIES["text_commit_policy"],
+    }
+    event_payload.update(payload or {})
+    return resident_vcw_event(
+        "HOST_TEXT_COMMIT",
+        event_payload,
+        text=text,
+        source=source,
+        ok=True,
+    )
 
 
 def _query_tokens(query: str) -> List[str]:

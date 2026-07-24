@@ -2340,6 +2340,8 @@ def t_assimilator_gui_surface_nerve_coverage():
          "line": 13, "label": "Edit"},
         {"kind": "ui-widget", "symbol": "pushExitFullScreen", "module": "MainWindow.ui",
          "line": 14, "class": "QPushButton", "label": "Exit Full Screen"},
+        {"kind": "ui-widget", "symbol": "editorText", "module": "MainWindow.ui",
+         "line": 15, "class": "QTextEdit", "label": "Document Text"},
     ]
     edges = [
         {"kind": "qt-helper-action", "sender": "ui->actionPaste",
@@ -2351,7 +2353,7 @@ def t_assimilator_gui_surface_nerve_coverage():
     by_id = {surface["id"]: surface for surface in coverage["surfaces"]}
     plan_by_id = {item["surface"]: item for item in coverage["body_test_plan"]}
     ok = (
-        coverage["total_surfaces"] == 5
+        coverage["total_surfaces"] == 6
         and len(coverage["body_test_plan"]) == coverage["total_surfaces"]
         and by_id["actionPaste"]["vcw_status"] == "verified_body_operation"
         and by_id["actionPaste"]["connection_evidence"][0]["kind"] == "qt-helper-action"
@@ -2359,13 +2361,16 @@ def t_assimilator_gui_surface_nerve_coverage():
         and by_id["actionThis_is_not_currently_implemented"]["vcw_status"] == "not_implemented"
         and by_id["menuEdit"]["vcw_status"] == "sense_only"
         and by_id["pushExitFullScreen"]["vcw_status"] == "sense_only"
+        and by_id["editorText"]["commit_policy"] == "submit_or_blur"
         and plan_by_id["actionPaste"]["phase"] == "regression"
         and plan_by_id["actionMystery"]["phase"] == "systematic_probe"
         and "SURFACE_OUTPUT_OBSERVED" in plan_by_id["menuEdit"]["vcw_requirement"]
         and "visible outputs" in plan_by_id["pushExitFullScreen"]["output_requirement"]
+        and "HOST_TEXT_COMMIT" in plan_by_id["editorText"]["commit_requirement"]
         and coverage["contract"]["no_silent_gui_omission"] is True
         and coverage["contract"]["all_user_surfaces_require_body_tests"] is True
         and coverage["contract"]["all_outputs_must_enter_vcw"] is True
+        and "keypresses are transient" in coverage["contract"].get("text_commit_policy", "")
         and "systematically probe every mapped" in coverage["contract"].get("systematic_body_test_policy", "")
         and "no generic app is assumed" in coverage["contract"].get("working_surface_policy", "")
     )
@@ -2382,6 +2387,7 @@ def t_resident_runtime_protocol_contract():
         parse_mind_body_directives,
         relevant_surface_slice,
         resident_vcw_event,
+        text_commit_event,
     )
 
     prose = classify_user_submit("Tell me about yourself and your GUI.")
@@ -2396,6 +2402,12 @@ def t_resident_runtime_protocol_contract():
         {"route": prose["kind"]},
         text="/key sk-or-v1-secret-test",
         ok=True,
+    )
+    committed = text_commit_event(
+        "editor.main",
+        "please eat a sandwich",
+        boundary="blur",
+        payload={"document_name": "New 1"},
     )
     coverage = {
         "surfaces": [
@@ -2422,6 +2434,9 @@ def t_resident_runtime_protocol_contract():
         and event["text"] == "/key [REDACTED_SECRET]"
         and event["redacted"] is True
         and "Sidecar logs are mirrors only" in event["policy"]
+        and committed["kind"] == "HOST_TEXT_COMMIT"
+        and committed["payload"]["commit_policy"] == "submit_or_blur"
+        and committed["text"] == "please eat a sandwich"
         and [s["id"] for s in surfaces] == ["menuFile"]
     )
     return ok, "prose=%s key=%s directives=%d bad_errors=%d surfaces=%s" % (

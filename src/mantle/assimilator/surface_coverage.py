@@ -21,6 +21,10 @@ OUTPUTFUL_HINTS = (
     "copy", "paste", "undo", "redo", "zoom", "split", "show", "hide",
     "toggle", "select", "sort", "convert", "format", "run", "record",
 )
+TEXT_INPUT_HINTS = (
+    "edit", "editor", "text", "textbox", "lineedit", "textedit", "plaintextedit",
+    "scintilla", "prompt", "search", "replace", "input",
+)
 
 
 def normalize_surface_id(value: Any) -> str:
@@ -83,6 +87,14 @@ def _may_emit_output(surface_id: str, label: str, surface_type: str) -> bool:
     )
 
 
+def _text_commit_policy(surface_id: str, label: str, surface_type: str,
+                        class_name: str = "") -> str:
+    low = ("%s %s %s %s" % (surface_id, label, surface_type, class_name)).lower()
+    if any(hint in low for hint in TEXT_INPUT_HINTS):
+        return "submit_or_blur"
+    return ""
+
+
 def _surface_test_plan(surface: Dict[str, Any]) -> Dict[str, Any]:
     risk = surface.get("risk")
     may_emit_output = _may_emit_output(
@@ -126,6 +138,13 @@ def _surface_test_plan(surface: Dict[str, Any]) -> Dict[str, Any]:
         "vcw_requirement": (
             "write USER_SURFACE_TEST, BODY_ACTION_PROOF, and SURFACE_OUTPUT_OBSERVED "
             "events into the current Prime VCW"
+        ),
+        "commit_policy": surface.get("commit_policy", ""),
+        "commit_requirement": (
+            "for text input surfaces, do not record every keypress; write one "
+            "HOST_TEXT_COMMIT event on submit, blur/focus-loss, declared host "
+            "commit boundary, or explicit Body readback"
+            if surface.get("commit_policy") == "submit_or_blur" else ""
         ),
         "current_status": surface.get("vcw_status"),
     }
@@ -214,6 +233,9 @@ def build_surface_coverage(symbols: Iterable[Dict[str, Any]],
             status = "maintenance_gap"
         rec["vcw_status"] = status
         rec["risk"] = "guarded" if _is_risky(sid, rec.get("label", "")) else "low"
+        rec["commit_policy"] = _text_commit_policy(
+            sid, rec.get("label", ""), rec.get("surface_type", ""), rec.get("class", "")
+        )
         rec["proof_requirement"] = (
             "observed in surface inventory plus connection evidence; ok=true requires "
             "Body operation and post-action readback"
@@ -264,6 +286,12 @@ def build_surface_coverage(symbols: Iterable[Dict[str, Any]],
                 "document/view changes, emitted events, and relevant variables are "
                 "truth only after they are recorded into VCW"
             ),
+            "text_commit_policy": (
+                "text inputs use commit_policy=submit_or_blur: keypresses are "
+                "transient Senses activity, while submit, blur/focus-loss, declared "
+                "host commit boundaries, or explicit Body readback create durable "
+                "HOST_TEXT_COMMIT entries"
+            ),
             "working_surface_policy": (
                 "tabs/documents/views are recorded only when the host declares them or "
                 "Body observes them, then mirrored into SELF/VCW state; no generic app "
@@ -289,6 +317,9 @@ def render_surface_coverage_markdown(coverage: Dict[str, Any],
         "- **All outputs must enter VCW:** `%s`" % str(
             coverage.get("contract", {}).get("all_outputs_must_enter_vcw", False)
         ).lower(),
+        "- **Text commit policy:** %s" % (
+            coverage.get("contract", {}).get("text_commit_policy", "not declared")
+        ),
         "",
         "## Status Counts",
         "",
@@ -310,15 +341,16 @@ def render_surface_coverage_markdown(coverage: Dict[str, Any],
         "",
         "## Surface Samples",
         "",
-        "| Surface | Type | Status | Risk | Evidence |",
-        "|---|---|---|---|---:|",
+        "| Surface | Type | Status | Risk | Commit | Evidence |",
+        "|---|---|---|---|---|---:|",
     ]
     for surface in (coverage.get("surfaces") or [])[:60]:
-        lines.append("| `%s` | %s | %s | %s | %d |" % (
+        lines.append("| `%s` | %s | %s | %s | %s | %d |" % (
             surface.get("id"),
             surface.get("surface_type"),
             surface.get("vcw_status"),
             surface.get("risk"),
+            surface.get("commit_policy") or "",
             len(surface.get("connection_evidence") or []),
         ))
     findings = coverage.get("maintenance_findings") or []
