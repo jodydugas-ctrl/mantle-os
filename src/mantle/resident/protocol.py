@@ -75,6 +75,14 @@ RESIDENT_RUNTIME_POLICIES = {
         "must not answer continuity, pronoun, or 'what did we discuss' questions from "
         "provider session memory or sidecar transcripts alone."
     ),
+    "heartbeat_scheduler_policy": (
+        "A fused resident Body owns exactly one natural cognitive heartbeat scheduler "
+        "with a 600-second cadence. Body, Senses, Reflexes, Immune distress, user "
+        "submits, and explicit pain may add unscheduled wakes, but these never move "
+        "or replace the natural baseline. Every natural or unscheduled MIND/provider "
+        "call records a HEARTBEAT_PULSE receipt in the current Prime VCW, including "
+        "wake reason, command stack, provider attempt/result, and drift where applicable."
+    ),
 }
 
 
@@ -200,6 +208,35 @@ def text_commit_event(surface_id: str,
         "HOST_TEXT_COMMIT",
         event_payload,
         text=text,
+        source=source,
+        ok=True,
+    )
+
+
+def heartbeat_pulse_event(beat_number: int,
+                          *,
+                          wake: Dict[str, Any] | None = None,
+                          provider_attempted: bool,
+                          provider_ok: bool,
+                          command_stack: List[str] | None = None,
+                          interval_seconds: int = 600,
+                          source: str = "resident-heartbeat",
+                          payload: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    """Build a VCW event for natural or unscheduled resident Heart pulses."""
+    event_payload = {
+        "beat_number": int(beat_number),
+        "interval_seconds": int(interval_seconds),
+        "wake_type": "unscheduled" if wake else "natural",
+        "wake": dict(wake or {}),
+        "provider_attempted": bool(provider_attempted),
+        "provider_ok": bool(provider_ok),
+        "command_stack": list(command_stack or []),
+        "policy": RESIDENT_RUNTIME_POLICIES["heartbeat_scheduler_policy"],
+    }
+    event_payload.update(payload or {})
+    return resident_vcw_event(
+        "HEARTBEAT_PULSE",
+        event_payload,
         source=source,
         ok=True,
     )

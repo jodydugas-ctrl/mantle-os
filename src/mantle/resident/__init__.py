@@ -5,6 +5,7 @@ from __future__ import annotations
 from .protocol import (
     RESIDENT_RUNTIME_POLICIES,
     classify_user_submit,
+    heartbeat_pulse_event,
     parse_mind_body_directives,
     recent_conversation_events,
     relevant_surface_slice,
@@ -17,6 +18,7 @@ from .protocol import (
 __all__ = [
     "RESIDENT_RUNTIME_POLICIES",
     "classify_user_submit",
+    "heartbeat_pulse_event",
     "parse_mind_body_directives",
     "recent_conversation_events",
     "relevant_surface_slice",

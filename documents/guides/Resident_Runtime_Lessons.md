@@ -132,6 +132,34 @@ Sidecar files and transcripts are mirrors only. A sidecar write failure must be
 recorded and fail open so the resident can keep working from canonical VCW. A
 canonical VCW write failure is an immune event and must be visible to the MIND.
 
+## Heartbeat Scheduler
+
+**Failure seen:** a resident inherited Mantle's `Heart` organ and passed Body
+certification, but the app-specific runtime had no live scheduler. Its terminal
+blocked on user input, so no ten-minute MIND/API heartbeat fired during stasis,
+unscheduled sensory wakes were not distinct from ordinary chat, and no
+`HEARTBEAT_PULSE` stream existed in Prime VCW.
+
+**Fix:** resident Body certification must prove the resident-bound lifecycle,
+not only the library organ. A fused resident needs exactly one natural cognitive
+heartbeat scheduler with a 600-second cadence. User submits, Senses, Reflexes,
+Immune distress, explicit pain, and other significant Body events may add
+unscheduled wakes, but those wakes do not move or replace the natural baseline.
+Every natural or unscheduled MIND/provider call must record a `HEARTBEAT_PULSE`
+receipt in Prime VCW.
+
+**Prevention:** every resident heartbeat receipt should include:
+
+- beat number and natural interval;
+- wake type: natural or unscheduled;
+- wake reason and coordinates;
+- the heartbeat command stack for that API call;
+- provider attempted/result/error and response hash;
+- drift for natural beats when measurable.
+
+If the provider key is missing, the heartbeat still records into VCW with
+`provider_attempted=false`; the AppAI still ages by recorded experience.
+
 ## Shared Primer
 
 **Failure seen:** the Hermes example resident used an older short Primer while
@@ -163,5 +191,7 @@ Minimum regression set for these issues:
 - Opaque native controls have at least one readback/verifier strategy or a
   maintenance gap.
 - Resident prompts include recent VCW context before provider calls.
+- Resident Body audits prove one 600-second scheduler, unscheduled wake behavior,
+  heartbeat command-stack receipts, and `HEARTBEAT_PULSE` VCW persistence.
 - Example residents answer from shared Primer text.
 - CI checks relevant examples after every push.

@@ -200,6 +200,7 @@ def build_host_evidence_index(amap: Dict[str, Any],
             "body_proof_policy": RESIDENT_RUNTIME_POLICIES["body_proof_policy"],
             "text_commit_policy": RESIDENT_RUNTIME_POLICIES["text_commit_policy"],
             "mind_context_rehydration_policy": RESIDENT_RUNTIME_POLICIES["mind_context_rehydration_policy"],
+            "heartbeat_scheduler_policy": RESIDENT_RUNTIME_POLICIES["heartbeat_scheduler_policy"],
             "effectful_action_policy": (
                 "plain-English host-surface requests are interpreted by the resident "
                 "MIND against mapped SELF/body evidence; effectful operations require "
@@ -309,6 +310,8 @@ def answer_from_host_evidence(question: str, amap: Dict[str, Any]) -> str:
             lines.append(contract["text_commit_policy"])
         if contract.get("mind_context_rehydration_policy"):
             lines.append(contract["mind_context_rehydration_policy"])
+        if contract.get("heartbeat_scheduler_policy"):
+            lines.append(contract["heartbeat_scheduler_policy"])
         if contract.get("effectful_action_policy"):
             lines.append(contract["effectful_action_policy"])
         if contract.get("working_surface_policy"):

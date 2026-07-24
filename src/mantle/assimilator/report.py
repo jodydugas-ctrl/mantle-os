@@ -137,6 +137,7 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
                 "body_proof_policy",
                 "text_commit_policy",
                 "mind_context_rehydration_policy",
+                "heartbeat_scheduler_policy",
             ):
                 if runtime_policies.get(key):
                     L.append("- **%s:** %s" % (key, runtime_policies[key]))

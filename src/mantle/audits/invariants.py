@@ -2311,6 +2311,7 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and "Sidecar logs are mirrors only" in evidence.get("runtime_policies", {}).get("transcript_vcw_policy", "")
             and "complete surface map" in evidence.get("runtime_policies", {}).get("surface_retrieval_policy", "")
             and "Before every resident MIND call" in evidence.get("runtime_policies", {}).get("mind_context_rehydration_policy", "")
+            and "600-second cadence" in evidence.get("runtime_policies", {}).get("heartbeat_scheduler_policy", "")
             and "Resident runtime contract" in inventory
             and "Resident host evidence index" in inventory
             and "adaptive parser/observer/verifier" in answer
@@ -2385,6 +2386,7 @@ def t_resident_runtime_protocol_contract():
     that fail closed, secret-safe VCW event shaping, and complete-map surface lookup."""
     from ..resident.protocol import (
         classify_user_submit,
+        heartbeat_pulse_event,
         parse_mind_body_directives,
         recent_conversation_events,
         relevant_surface_slice,
@@ -2411,6 +2413,14 @@ def t_resident_runtime_protocol_contract():
         "please eat a sandwich",
         boundary="blur",
         payload={"document_name": "New 1"},
+    )
+    heartbeat = heartbeat_pulse_event(
+        7,
+        wake={"reason": "user_submit", "band": "senses", "ref": "abc123"},
+        provider_attempted=True,
+        provider_ok=True,
+        command_stack=["assemble", "call provider", "record receipt"],
+        payload={"drift_seconds": 0.2},
     )
     vcw_entries = [
         {"id": 1, "opcode": "USER_MESSAGE",
@@ -2458,6 +2468,11 @@ def t_resident_runtime_protocol_contract():
         and committed["kind"] == "HOST_TEXT_COMMIT"
         and committed["payload"]["commit_policy"] == "submit_or_blur"
         and committed["text"] == "please eat a sandwich"
+        and heartbeat["kind"] == "HEARTBEAT_PULSE"
+        and heartbeat["payload"]["interval_seconds"] == 600
+        and heartbeat["payload"]["wake_type"] == "unscheduled"
+        and heartbeat["payload"]["provider_attempted"] is True
+        and "never move" in heartbeat["payload"]["policy"]
         and [item["role"] for item in recent] == ["user", "mind"]
         and "Do you have any rules" in context
         and "AppAI Primer truths" in context
