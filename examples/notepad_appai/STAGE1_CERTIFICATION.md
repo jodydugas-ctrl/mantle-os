@@ -33,7 +33,7 @@
 | Save As | Prompts destination and writes | Body/Limb save-as path, proof emitted | `notepad_appai_smoke.mjs` | PASS |
 | Plain text | No rich text | `<textarea>`, `text/plain;charset=utf-8`, no formatting in buffer | manual + smoke test | PASS |
 | Unsaved detection | Dirty marker and confirm before destructive action | saved-buffer comparison, New/Open/Close guard, `beforeunload` | `notepad_appai_smoke.mjs` | PASS |
-| Clean text commits | Text input should not append VCW/ledger rows per keystroke | editor input updates dirty UI only; one `buffer_committed` row is appended on blur or save/open/new proof actions; legacy `buffer_changed` rows are migrated out on load | `notepad_appai_smoke.mjs` | PASS |
+| Clean text commits | Text input should not append VCW/ledger rows per keystroke | editor input updates dirty UI only; one `HOST_TEXT_COMMIT` row with `commit_policy=submit_or_blur` is appended on blur or save/open/new proof actions; legacy `buffer_changed` and `buffer_committed` rows are migrated on load | `notepad_appai_smoke.mjs` | PASS |
 | Cut/copy/paste/delete/select all/undo | Basic editing commands | Clipboard/selection commands plus native undo | manual inspection | PASS |
 | Find/Find Next | Select next matching text | deterministic string search with wrap-around | `notepad_appai_smoke.mjs` | PASS |
 | Replace | Replace current/all matches | deterministic current/all replacement | `notepad_appai_smoke.mjs` | PASS |
@@ -103,7 +103,7 @@ EVIDENCE:
 - Embedded AppAI declaration, organ map, and parity matrix in `index.html`.
 - Embedded host evidence index and local-first consultation API for software/body questions.
 - Append-only ledger and Action Execution Proof records for effectful file actions.
-- Smoke test covers launch, edit, clean text commit-on-blur behavior, new/open/save/save-as, unsaved guard, find/replace, word wrap, file error handling, declaration, organ map, host evidence consultation, dormant Brain, and no external network.
+- Smoke test covers launch, edit, clean `HOST_TEXT_COMMIT` behavior on blur, no per-keystroke text ledger writes, new/open/save/save-as, unsaved guard, find/replace, word wrap, file error handling, declaration, organ map, host evidence consultation, dormant Brain, and no external network.
 
 TESTS:
 - `python -m http.server 8765 --directory examples`

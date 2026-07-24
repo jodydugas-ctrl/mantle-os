@@ -661,7 +661,7 @@
   ],
   "human_surface_map": [
     {"control": "File/Open/Save/Save As", "organ": "Limbs", "proof_plan": "Action Execution Proof record"},
-    {"control": "Editor textarea", "organ": "Senses + Memory", "proof_plan": "dirty state and ledger event"},
+    {"control": "Editor textarea", "organ": "Senses + Memory", "proof_plan": "HOST_TEXT_COMMIT on blur/submit/readback, not per keypress"},
     {"control": "Find/Replace/Go To", "organ": "Senses", "proof_plan": "deterministic buffer selection/update"},
     {"control": "MIND dormant panel", "organ": "Brain", "proof_plan": "disabled readiness only"}
   ]
@@ -685,6 +685,7 @@
     "provider_mind_role": "Phase 2 only; may interpret resident evidence after authorization",
     "missing_evidence_policy": "name the gap instead of guessing",
     "effectful_action_policy": "plain-English host-surface requests are interpreted by the resident MIND against mapped SELF/body evidence; effectful operations require Body-owned Action Execution Proof",
+    "text_commit_policy": "text inputs use commit_policy=submit_or_blur: keypresses are transient Senses activity; blur/focus-loss, submit, declared host commit boundaries, or explicit Body readback create durable HOST_TEXT_COMMIT entries",
     "working_surface_policy": "working surfaces are app-specific anatomy discovered from GUI coverage or live Body evidence and mirrored into VCW state; tabs are not universal slash commands and are not assumed for every app",
     "creative_work_policy": "creative/generative content must be authored by the resident MIND, never by Body reflexes; Body may only place or verify MIND-authored or user-literal content",
     "reset_policy": "resident VCW resets must be explicit maintenance commands that recreate Prime from current evidence and clear transient runtime residue"
@@ -703,12 +704,14 @@
     {"control": "loadTextFile", "organ": "Limbs", "proof_requirement": "File.text receipt or failed proof"},
     {"control": "saveFile", "organ": "Limbs", "proof_requirement": "write adapter receipt with byte/hash evidence"},
     {"control": "saveAsFile", "organ": "Limbs", "proof_requirement": "destination receipt with byte/hash evidence"},
-    {"control": "findNext/replace/goToLine", "organ": "Senses", "proof_requirement": "deterministic selection or buffer update"}
+    {"control": "findNext/replace/goToLine", "organ": "Senses", "proof_requirement": "deterministic selection or buffer update"},
+    {"control": "editor", "organ": "Senses + Memory", "proof_requirement": "HOST_TEXT_COMMIT with commit_policy=submit_or_blur and text hash/length"}
   ],
   "surface_coverage_summary": {
     "kind": "GUI_NERVE_COVERAGE",
-    "schema_version": "mantle-gui-nerve-coverage-v1",
-    "policy": "runtime readGuiNerveCoverage() enumerates DOM controls and checks data-action handlers"
+    "schema_version": "mantle-gui-nerve-coverage-v2",
+    "policy": "runtime readGuiNerveCoverage() enumerates DOM controls and checks data-action handlers",
+    "text_commit_policy": "textarea/input controls use commit_policy=submit_or_blur and emit HOST_TEXT_COMMIT only at durable commit boundaries"
   },
   "gaps": [],
   "limitations": [
@@ -846,7 +849,11 @@
         surface_type: control.tagName.toLowerCase(),
         label: control.getAttribute("aria-label") || control.textContent.trim() || id,
         vcw_status: "sense_only",
+        commit_policy: /^(textarea|input)$/i.test(control.tagName) ? "submit_or_blur" : "",
         proof_requirement: "input state is observable; effectful actions are routed through named controls",
+        commit_requirement: /^(textarea|input)$/i.test(control.tagName)
+          ? "write one HOST_TEXT_COMMIT event on blur/focus-loss, submit, declared host commit boundary, or explicit Body readback"
+          : "",
         connection_evidence: [control.tagName.toLowerCase()]
       });
     });
@@ -860,7 +867,7 @@
     }, {});
     return {
       kind: "GUI_NERVE_COVERAGE",
-      schema_version: "mantle-gui-nerve-coverage-v1",
+      schema_version: "mantle-gui-nerve-coverage-v2",
       total_surfaces: surfaces.length,
       status_counts,
       type_counts,
@@ -870,7 +877,8 @@
         .map((surface) => ({ surface: surface.id, status: surface.vcw_status })),
       contract: {
         no_silent_gui_omission: true,
-        effectful_claim_policy: "ok=true requires Body-owned Action Execution Proof"
+        effectful_claim_policy: "ok=true requires Body-owned Action Execution Proof",
+        text_commit_policy: "text inputs use commit_policy=submit_or_blur; keypresses are transient and durable text enters VCW as HOST_TEXT_COMMIT"
       }
     };
   }
@@ -897,6 +905,7 @@
       });
       lines.push(`GUI surfaces: ${coverage.total_surfaces}; statuses: ${JSON.stringify(coverage.status_counts)}`);
       lines.push(index.consultation_contract.effectful_action_policy);
+      lines.push(index.consultation_contract.text_commit_policy);
       lines.push(index.consultation_contract.working_surface_policy);
       lines.push(index.consultation_contract.creative_work_policy);
       lines.push(index.consultation_contract.reset_policy);
@@ -932,17 +941,37 @@
   function loadLedger() {
     state.ledger = safeJsonParse(localStorage.getItem(LEDGER_KEY), []);
     if (!Array.isArray(state.ledger)) state.ledger = [];
-    const legacyNoise = state.ledger.filter((entry) => entry && entry.type === "buffer_changed").length;
-    if (legacyNoise > 0) {
-      state.ledger = state.ledger.filter((entry) => !entry || entry.type !== "buffer_changed");
-      state.ledger.push({
+      const legacyNoise = state.ledger.filter((entry) => entry && entry.type === "buffer_changed").length;
+      if (legacyNoise > 0) {
+        state.ledger = state.ledger.filter((entry) => !entry || entry.type !== "buffer_changed");
+        state.ledger.push({
         id: `evt-${Date.now()}-migrate`,
         timestamp: new Date().toISOString(),
         type: "ledger_migration",
-        detail: { removed: "legacy per-keystroke buffer_changed rows", count: legacyNoise }
+          detail: { removed: "legacy per-keystroke buffer_changed rows", count: legacyNoise }
+        });
+        persistLedger();
+      }
+      let renamed = 0;
+      state.ledger.forEach((entry) => {
+        if (entry && entry.type === "buffer_committed") {
+          entry.type = "HOST_TEXT_COMMIT";
+          entry.detail = Object.assign({
+            commit_policy: "submit_or_blur",
+            legacy_type: "buffer_committed"
+          }, entry.detail || {});
+          renamed += 1;
+        }
       });
-      persistLedger();
-    }
+      if (renamed > 0) {
+        state.ledger.push({
+          id: `evt-${Date.now()}-text-commit-migrate`,
+          timestamp: new Date().toISOString(),
+          type: "ledger_migration",
+          detail: { renamed: "buffer_committed -> HOST_TEXT_COMMIT", count: renamed }
+        });
+        persistLedger();
+      }
   }
 
   function persistLedger() {
@@ -985,9 +1014,9 @@
         const p = entry.detail;
         return `${p.timestamp} ${p.ok ? "OK" : "FAIL"} ${p.method} ${p.ref || ""}`;
       }
-      if (entry.type === "buffer_committed") {
+      if (entry.type === "HOST_TEXT_COMMIT") {
         const d = entry.detail || {};
-        return `${entry.timestamp} buffer_committed chars=${d.chars} ${d.reason || ""}`;
+        return `${entry.timestamp} HOST_TEXT_COMMIT chars=${d.chars} ${d.commit_boundary || d.reason || ""}`;
       }
       return `${entry.timestamp} ${entry.type}`;
     });
@@ -1094,8 +1123,10 @@
     if (editor.value === state.lastCommittedText) return false;
     state.lastCommittedText = editor.value;
     const hash = await sha256Hex(editor.value);
-    appendLedger("buffer_committed", {
+    appendLedger("HOST_TEXT_COMMIT", {
       reason,
+      commit_boundary: reason,
+      commit_policy: "submit_or_blur",
       file: redactRef(state.fileName),
       chars: editor.value.length,
       dirty: isDirty(),

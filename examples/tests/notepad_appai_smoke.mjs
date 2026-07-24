@@ -47,12 +47,16 @@ async function runChecks(page) {
       expect(evidenceIndex.kind === "HOST_EVIDENCE_INDEX", "Resident host evidence index missing");
       expect(evidenceIndex.schema_version === "mantle-host-evidence-v2", "Resident host evidence index is not v2");
       expect(evidenceIndex.local_first_consultation === true, "Resident consultation is not local-first");
+      expect(evidenceIndex.consultation_contract.text_commit_policy.includes("HOST_TEXT_COMMIT"), "Text commit policy missing from resident evidence");
       expect(evidenceIndex.control_surfaces.some((control) => control.control === "saveFile"), "Body save control evidence missing");
       expect(guiCoverage.kind === "GUI_NERVE_COVERAGE", "GUI nerve coverage missing");
+      expect(guiCoverage.schema_version === "mantle-gui-nerve-coverage-v2", "GUI nerve coverage is not v2");
       expect(guiCoverage.total_surfaces >= 30, "GUI nerve coverage omitted visible controls");
       expect(guiCoverage.contract.no_silent_gui_omission === true, "GUI nerve coverage lacks no-silent-omission contract");
+      expect(guiCoverage.contract.text_commit_policy.includes("HOST_TEXT_COMMIT"), "GUI coverage lacks text commit contract");
       expect((guiCoverage.maintenance_findings || []).length === 0, "GUI data-action handler gap exists");
       expect(guiCoverage.surfaces.filter((surface) => surface.surface_type === "action").every((surface) => surface.vcw_status === "verified_body_operation"), "Not every data-action has a Body handler");
+      expect(guiCoverage.surfaces.some((surface) => surface.id === "editor" && surface.commit_policy === "submit_or_blur"), "Editor surface lacks submit_or_blur commit policy");
       const structureAnswer = body.consultHostEvidence("How is this software structured?");
       expect(structureAnswer.includes("Substrate: browser-javascript"), "Structure answer did not use resident evidence");
       expect(structureAnswer.includes("Limbs"), "Structure answer omitted organ map");
@@ -60,6 +64,7 @@ async function runChecks(page) {
       expect(controlAnswer.includes("Observed Body controls"), "Control answer did not use resident evidence");
       expect(controlAnswer.includes("GUI surfaces"), "Control answer omitted GUI nerve coverage");
       expect(controlAnswer.includes("Action Execution Proof"), "Control answer omitted proof requirement");
+      expect(controlAnswer.includes("HOST_TEXT_COMMIT"), "Control answer omitted text commit policy");
       expect(controlAnswer.includes("plain-English host-surface requests"), "Control answer omitted conversational MIND dispatch policy");
       expect(controlAnswer.includes("working surfaces are app-specific anatomy"), "Control answer omitted app-specific working-surface policy");
       expect(controlAnswer.includes("tabs are not universal slash commands"), "Control answer implied app tabs are global commands");
@@ -80,13 +85,19 @@ async function runChecks(page) {
         editor.dispatchEvent(new Event("input", { bubbles: true }));
       }
       const duringTyping = body.getLedger().slice(beforeTyping);
-      expect(!duringTyping.some((entry) => entry.type === "buffer_changed" || entry.type === "buffer_committed"), "Focused typing wrote noisy buffer ledger entries");
+      expect(!duringTyping.some((entry) => entry.type === "buffer_changed" || entry.type === "buffer_committed" || entry.type === "HOST_TEXT_COMMIT"), "Focused typing wrote noisy buffer ledger entries");
       editor.blur();
       await new Promise((resolve) => setTimeout(resolve, 50));
       const afterBlur = body.getLedger().slice(beforeTyping);
-      const blurCommits = afterBlur.filter((entry) => entry.type === "buffer_committed");
+      const blurCommits = afterBlur.filter((entry) => entry.type === "HOST_TEXT_COMMIT");
       expect(!afterBlur.some((entry) => entry.type === "buffer_changed"), "Legacy per-keystroke buffer_changed entries still exist");
-      expect(blurCommits.length === 1 && blurCommits[0].detail.chars === 3 && blurCommits[0].detail.reason === "editor_blur", "Editor blur did not write one clean buffer commit");
+      expect(
+        blurCommits.length === 1
+          && blurCommits[0].detail.chars === 3
+          && blurCommits[0].detail.commit_policy === "submit_or_blur"
+          && blurCommits[0].detail.commit_boundary === "editor_blur",
+        "Editor blur did not write one clean HOST_TEXT_COMMIT"
+      );
 
       body.setText("draft text", "draft.txt", false);
       expect(body.isDirty() === true, "edit buffer did not become dirty");
