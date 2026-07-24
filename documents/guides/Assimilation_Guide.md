@@ -81,6 +81,11 @@ open hard-fails leads to the same MIND fusion and Stage-2 gate.
 
 ## 4. Production Rules From NotepadNext
 
+See also
+[`Resident_Runtime_Lessons.md`](Resident_Runtime_Lessons.md), which records the
+NotepadNext.AppAI failures, fixes, and prevention rules that should be inherited
+by future residents.
+
 - Do not infer language from the user's description or repository name. Census first.
 - Distinguish source language, framework, build system, resource files, generated files,
   and vendored dependency tissue before proposing insertion.

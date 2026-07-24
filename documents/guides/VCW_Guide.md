@@ -8,6 +8,9 @@ didn't happen.* The on-disk format is unchanged from v2 (`vcw-cube-png-v2`).
 The anatomical atlas (coordinate ownership, colour semantics) and the compliance
 tiers (what to do when a full VCW can't run) are the last two sections of this guide.
 The machine-readable atlas companion is `mantle.vcw.atlas`.
+For resident recall, text-commit, sidecar, and MIND rehydration lessons from
+NotepadNext.AppAI, see
+[`Resident_Runtime_Lessons.md`](Resident_Runtime_Lessons.md).
 
 ## The mental model
 
