@@ -61,7 +61,7 @@ jobs:
           path: .ci/hermes-agent
 
       - name: Install Mantle integration dependencies
-        run: pip install -e . cryptography==46.0.7 pyyaml==6.0.3
+        run: pip install -e ".[spore]" cryptography==46.0.7 pyyaml==6.0.3
 
       - name: Hermes addon behavior contracts
         working-directory: examples/hermes-mantle-addon
