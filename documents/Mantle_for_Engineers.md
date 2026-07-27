@@ -100,8 +100,8 @@ uses staged writes followed by verification and atomic replacement.
 
 The cube bootloader declares dimensions, band allocation, layer ownership, privacy, and the
 driver/profile that interprets each layer. RGBA are four addressable substrate lanes, not a
-single global data model. A Grimoire-compatible profile may map those lanes to atom, role,
-evidence, and force. Other layers can map the same lanes to log JSON, key-value data,
+single global data model. The registered `grimoire-v0.9` profile maps those lanes to atom,
+role, evidence, and force. Other layers can map the same lanes to log JSON, key-value data,
 spatial state, tool/database payload, exec reflex metadata, indexes, or repair bytes.
 
 Rules that matter for implementation:

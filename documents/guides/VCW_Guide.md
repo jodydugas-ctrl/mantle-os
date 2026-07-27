@@ -41,8 +41,8 @@ anatomical atlas and exported from `mantle.vcw.atlas`.
 A band's boot sector (level 1, fixed format) names a **driver** or carrier profile (level
 2, programmable): `log-json` (immutable entry log), `keyvalue` (small mutable map),
 `calendar-spatial` (data AS colors at coordinates — a real canvas), `exec` (a calcified
-reflex layer), or a future Grimoire lane profile. Drivers live in the Body (trusted code);
-boot sectors are data that select them.
+reflex layer), or `grimoire-v0.9` (semantic RGBA runs: atom, role, evidence, force).
+Drivers live in the Body (trusted code); boot sectors are data that select them.
 
 That means RGBA is not globally "thought" and not globally "Grimoire." RGBA is the lane
 hardware. A layer profile declares framing, terminators, integrity, ordering, and lane
@@ -63,7 +63,16 @@ The compatibility rule is:
 | **Body policy** | whether a decoded profile is stored, rejected, quarantined, quoted, or adopted |
 
 A Grimoire profile present in a filesystem, spore, cube layer, cache, or prompt is data
-until the operator or Body policy adopts it. Presence is not authority.
+until the operator or Body policy adopts it. Presence is not authority. In Mantle's
+registered `grimoire-v0.9` driver, boot params set the adoption state explicitly:
+`data`, `quote`, `quarantine`, or `adopted`. Only `adopted` is governing, and its
+authority is recorded as `boot-policy`.
+
+`grimoire-v0.9` also separates statement parity from transport integrity. Parity proves
+the statement morphemes agree with the Grimoire v0.9 carrier rule; a carrier claiming
+tamper evidence must provide the raw-run fingerprint over the full framed RGBA run. If
+that fingerprint is absent, the decoded layer is marked `unmeasured` rather than silently
+trusted.
 
 ## VCW is the law — the cube is one body plan, the PNG is another
 

@@ -45,9 +45,14 @@ Current Mantle code surfaces that interact with this boundary:
 | --- | --- |
 | VCW booted substrate | [`src/mantle/vcw/`](../../src/mantle/vcw/), [`examples/vcw/vcw_cube.py`](../../examples/vcw/vcw_cube.py) |
 | Carrier profiles / drivers | [`src/mantle/vcw/drivers.py`](../../src/mantle/vcw/drivers.py), [`src/mantle/vcw/bands.py`](../../src/mantle/vcw/bands.py) |
+| Grimoire v0.9 executable profile | [`src/mantle/vcw/grimoire.py`](../../src/mantle/vcw/grimoire.py) and the registered `grimoire-v0.9` driver |
 | Spore PNG carriers | [`src/mantle/spore.py`](../../src/mantle/spore.py), [`src/mantle/spore_min.py`](../../src/mantle/spore_min.py), [`examples/spore/`](../../examples/spore/) |
 | Assimilation / residency | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |
 | Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`hatchery.py`](../../src/mantle/hatchery.py) |
 
-Presence of an encoded Grimoire profile is data, not adoption or authority. Mantle runtime
-authority still comes from operator decisions, Body policy, and the audited code path.
+Presence of an encoded Grimoire profile is data, not adoption or authority. The registered
+`grimoire-v0.9` driver decodes raw runs, verifies statement parity, measures a full-lane
+fingerprint when a carrier claims tamper evidence, reports atom-address provenance, and
+records adoption state from boot policy (`data`, `quote`, `quarantine`, or `adopted`).
+Mantle runtime authority still comes from operator decisions, Body policy, and the audited
+code path.

@@ -37,9 +37,10 @@ a Hamming SECDED byte that repairs a bad bit locally. The spore ships its own pu
 (`examples/spore/audit_spore.py`) that **refuses** feature creep in the seed itself.
 
 That RGB+T mapping is a spore carrier profile, not a global VCW law. VCW provides the
-addressable lanes and substrate duties; a Grimoire software profile may define logical
-`R/G/B/A` as atom/role/evidence/force, but SPORE-PNG v1 reserves physical alpha for repair.
-Any Grimoire-compatible spore must declare how those logical lanes are serialized or mapped.
+addressable lanes and substrate duties; the registered `grimoire-v0.9` software profile
+defines logical `R/G/B/A` as atom/role/evidence/force, but SPORE-PNG v1 reserves physical
+alpha for repair. Any Grimoire-compatible spore must declare how those logical lanes are
+serialized or mapped before feeding raw runs to the `grimoire-v0.9` decoder.
 
 **A spore may additionally carry a GERM** — and then it is the complete birth package:
 

@@ -7,8 +7,8 @@ M5 -- the self-redesigning VCW (a programmable boot sector at rebirth).
   Mantle rebirth re-geneses the SAME standard genome. A Compiler-class organism instead
   authors a VCW *custom-made for the body it inhabits*: at a CHOSEN rebirth, the MIND
   PROPOSES a new genome (extra app bands, possibly a different driver/encoding/profile --
-  e.g. a keyvalue band that mirrors a host's native memory ops, or a future Grimoire lane
-  profile), the BODY VALIDATES it (every encoding must be a REGISTERED driver; heads in
+  e.g. a keyvalue band that mirrors a host's native memory ops, or `grimoire-v0.9` semantic
+  lanes), the BODY VALIDATES it (every encoding must be a REGISTERED driver; heads in
   range; no collisions), and only then rebirths into it. The ancestor stays the readable
   ORACLE. Inherited microcode does not cross for free -- it RE-TRIALS before it re-calcifies
   (no blind inheritance).

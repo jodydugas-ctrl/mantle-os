@@ -20,9 +20,10 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 > required to build:
 >
 > - **[`AGENTS.md`](AGENTS.md)** — for AI agents: what the biological framework is *for* (the
->   two jobs the organ names do) and how to use the **Grimoire**, Mantle's VCW software
->   profile for atom/role/evidence/force encoding on RGBA-compatible substrate lanes.
->   Routine code reading and small fixes proceed from the docs and working code.
+>   two jobs the organ names do) and how to use the **Grimoire**, Mantle's registered
+>   `grimoire-v0.9` VCW software profile for atom/role/evidence/force encoding on
+>   RGBA-compatible substrate lanes. Routine code reading and small fixes proceed from the
+>   docs and working code.
 > - **[`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md)** — for
 >   engineers and AI specialists who want the architecture before the metaphor: trust
 >   boundary, storage semantics, verification gates, the model-integration contract, and a
@@ -437,7 +438,7 @@ every Stage-1 row to prove it.
 | **Organ** | A self-contained code module with a manifest, reflexes, and audit obligations. |
 | **Reflex** | A deterministic, no-LLM behavior. The Body is made of reflexes. |
 | **Band** | A reserved, named range of cube layers with a boot sector declaring owner, driver/profile, privacy, and purpose. |
-| **Layer profile / driver** | The software contract that decides how one layer frames and interprets its four RGBA lanes. Grimoire semantics are one profile, not the whole substrate. |
+| **Layer profile / driver** | The software contract that decides how one layer frames and interprets its four RGBA lanes. `grimoire-v0.9` is one registered profile, not the whole substrate. |
 | **Genome (agent)** | Identity held in the **Body** (not the cube): Primer (read-only) + Special Instructions + Immunization + lineage index. |
 | **Veil** | The Body reflex that hides private / tombstoned / quarantined memory on read. |
 | **Zombie Body** | A Body that has passed the Stage 1 Gate: alive, correct, dormant. |

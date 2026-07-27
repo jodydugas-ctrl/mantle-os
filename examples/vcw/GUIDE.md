@@ -40,8 +40,7 @@ why rebirth loses nothing.
 
 Two-level encoding: the boot-sector format is fixed and universal (the Body always knows
 how to read it); the *payload* format is programmable — the boot sector names a driver or
-carrier profile (`log-json`, `keyvalue`, `calendar-spatial`, `exec`, or future Grimoire
-lane profiles).
+carrier profile (`log-json`, `keyvalue`, `calendar-spatial`, `exec`, or `grimoire-v0.9`).
 
 RGBA are the four substrate lanes, not a universal meaning. A layer can boot them as log
 bytes, spatial state, repair-protected spore payload, tool/database state, or Grimoire

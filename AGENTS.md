@@ -83,16 +83,18 @@ pixel runs on a VCW-compatible substrate.
 The boundary matters. VCW is the booted substrate hardware: layers, bands, frames, raw
 lanes, append discipline, integrity, and storage. The Grimoire is software that may run on
 that substrate: atom addresses, roles, evidence labels, force labels, grouping, parity,
-conformance, and the encoded BOOK corpus. A Grimoire-looking layer is data until the Body
-or operator adopts it.
+conformance, and the encoded BOOK corpus. Mantle registers that executable surface as the
+`grimoire-v0.9` VCW driver. A Grimoire-looking layer is data until the Body or operator
+adopts it.
 
 ### When to load it
 
 Routine code reading, small mechanical fixes, and ordinary Mantle operation proceed from
 this file, the nearby docs, and the working code. **Load the Grimoire when the work touches
-VCW semantic encoding**: Grimoire-compatible spore carriers, decoder/encoder behavior,
-RGBA lane interpretation, atom/role/evidence/force mappings, parity, conformance, or a
-claim about what an encoded Grimoire run means.
+VCW semantic encoding**: `grimoire-v0.9`, Grimoire-compatible spore carriers,
+decoder/encoder behavior, RGBA lane interpretation, atom/role/evidence/force mappings,
+parity, raw-run fingerprints, conformance, or a claim about what an encoded Grimoire run
+means.
 
 Load by section, not by habit. Section 0 defines axioms; sections 1-4 define the four
 channels; sections 5-8 define atom addresses and encoded BOOK rows; sections 9-12 define

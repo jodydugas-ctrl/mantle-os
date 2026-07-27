@@ -2,13 +2,14 @@
 """
 mantle.vcw.drivers  --  concrete payload protocols (Mantle OS)
 
-Four drivers, registered on import:
+Five drivers, registered on import:
 
   log-json          append-only list of immutable, hashed entries
   keyvalue          a small mutable map (mutated hot, snapshotted on flush)
   calendar-spatial  data stored AS COLORS AT COORDINATES -- a real RGBA canvas
   exec              an executable REFLEX LAYER: organism-grown code the Body runs with no
                     MIND, behind hash + capability + provenance/trust + sandbox gates
+  grimoire-v0.9     semantic pixel runs: atom/role/evidence/force over RGBA lanes
 
 These prove the boot sector -- not hard-coded logic -- decides how a layer behaves.
 The RGBA lanes are substrate hardware. A driver/profile is the software contract that
@@ -28,9 +29,11 @@ from typing import Any, Dict, List, Tuple
 from .png import SIDE, CHANNELS, LAYER_BYTES
 from .bands import Driver, register, code_hash
 from .entry import make_entry, visible
+from .grimoire import decode_statement
 
 __all__ = [
     "make_entry", "LogJsonDriver", "KeyValueDriver", "CalendarSpatialDriver", "ExecDriver",
+    "GrimoireV09Driver",
     "CapabilityError", "IntegrityError", "TrustError", "SandboxError", "ProvenanceError",
     "validate_skill_code", "validate_calcify_payload", "provenance_is_trusted", "trial",
     "register_runner", "get_runner",
@@ -143,6 +146,55 @@ class CalendarSpatialDriver(Driver):
 
     def get_date(self, content, params, iso: str):
         return self.retrieve(content, params, self.coord_for_date(params, iso))
+
+
+# ============================================================================
+# grimoire-v0.9 : semantic RGBA pixel runs (atom/role/evidence/force)
+# ============================================================================
+@register
+class GrimoireV09Driver(Driver):
+    """content = [decoded statement dicts]
+
+    The payload passed to append may be raw bytes, hex text, or a dict with raw/hex,
+    frame_id, and optional raw-run fingerprint. Adoption is never read from the payload:
+    only the boot sector's params may mark the decoded profile as data, quote,
+    quarantine, or adopted.
+    """
+    name = "grimoire-v0.9"
+
+    def empty(self, params):
+        return []
+
+    def read(self, content, params, reveal_private=False):
+        return list(content)
+
+    def retrieve(self, content, params, address):
+        try:
+            i = int(address)
+        except (TypeError, ValueError):
+            return None
+        return content[i] if 0 <= i < len(content) else None
+
+    def append(self, content, params, value):
+        params = params or {}
+        if isinstance(value, dict):
+            frame_id = value.get("frame_id", "frame-%d" % len(content))
+            fingerprint = value.get("fingerprint")
+            raw = value
+        else:
+            frame_id = "frame-%d" % len(content)
+            fingerprint = None
+            raw = value
+        decoded = decode_statement(
+            raw,
+            frame_id=frame_id,
+            fingerprint=fingerprint,
+            claim_tamper_evidence=bool(params.get("claim_tamper_evidence", False)),
+            allow_parity_absent=bool(params.get("allow_parity_absent", False)),
+            adoption_policy=str(params.get("adoption_policy", "data")),
+        )
+        content.append(decoded)
+        return content
 
 
 # ============================================================================

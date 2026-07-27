@@ -9,9 +9,10 @@ and the [VCW Substrate Guide](../../documents/guides/VCW_Guide.md) for the canon
 regions, RGB+T repair rule, and display/memory boundary.
 
 SPORE-PNG v1 is also the clearest example of why VCW lanes are profile-defined. Its
-physical alpha channel is a Hamming SECDED repair byte, not Grimoire force. A future
-Grimoire-compatible spore carrier must declare how logical Grimoire lanes are serialized
-or mapped instead of reading repair alpha as semantic `A`.
+physical alpha channel is a Hamming SECDED repair byte, not Grimoire force. A
+Grimoire-compatible spore carrier must declare how logical `grimoire-v0.9` lanes are
+serialized or mapped before feeding raw runs to the Grimoire decoder instead of reading
+repair alpha as semantic `A`.
 
 It wears a second hat too: because it is a whole self-contained agent — identity, one task, one
 append-only conversation, and an embedded Python reader/writer inside its own pixels — it is also the
