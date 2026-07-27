@@ -25,8 +25,8 @@ writes anything; its output feeds organ_map + report.
 
 This module is the single canonical scanner/classifier for the whole framework: anchor,
 graft, and the egg/RESURGERE reconstruct path all reuse it (no second copy exists). The
-doctrine of record is documents/grimoire/The Grimoire.md, sections §§7/9
-(NECROMANCY + Mantle OS binding).
+Grimoire is the VCW semantic software profile; scanner behavior is defined here and in the
+Mantle assimilation docs.
 """
 from __future__ import annotations
 

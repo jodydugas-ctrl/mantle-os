@@ -20,10 +20,9 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 > required to build:
 >
 > - **[`AGENTS.md`](AGENTS.md)** — for AI agents: what the biological framework is *for* (the
->   two jobs the organ names do) and how to use the **Grimoire**, Mantle's doctrine (cast
->   **`Intellige`**, read-only comprehension, first; §7 and §9 of the single canonical,
->   Mantle-versioned Grimoire file bind it to this codebase). The Grimoire is doctrine, not a toll
->   booth — routine code reading and small fixes proceed from the docs and working code.
+>   two jobs the organ names do) and how to use the **Grimoire**, Mantle's VCW software
+>   profile for atom/role/evidence/force encoding on RGBA-compatible substrate lanes.
+>   Routine code reading and small fixes proceed from the docs and working code.
 > - **[`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md)** — for
 >   engineers and AI specialists who want the architecture before the metaphor: trust
 >   boundary, storage semantics, verification gates, the model-integration contract, and a
@@ -277,8 +276,8 @@ picture-memory substrate). Given that, Mantle OS can join **most AIs** to **most
 The mind can be any AI; the body can be any container; the code can be any language. The system
 does not care which combination you choose — that is the point.
 
-This versatility is exactly why **assimilation** (the **NECROMANCY** spell; `python -m mantle
-assimilate`) is so powerful: it can turn *most existing applications* into an AppAI —
+This versatility is exactly why **assimilation** (`python -m mantle assimilate`) is so
+powerful: it can turn *most existing applications* into an AppAI —
 **including applications that already contain agents.** The Compiler, for example, wraps its
 pre-existing **Hermes** agent with an additive Mantle autonomic nervous system. Hermes remains
 the cognitive host; Mantle grows *around* what already lives there without demanding a rewrite.
@@ -378,7 +377,7 @@ org.heart.run(3)               # the Body lives -- no LLM in this loop, ever
 
 ## VCW Applet Bodies
 
-An AppAI can carry other apps as **tissue**: `applet-create` runs the read-only NECROMANCY
+An AppAI can carry other apps as **tissue**: `applet-create` runs the read-only assimilation
 dissection over an external project (a local directory, or a GitHub clone via `applet-clone`)
 and stores it inside the parent's VCW as an inert, veiled, hash-verified **capsule** with a
 wearable phenotype face. Nothing stored is ever executed — a capsule is *source in the body*,
@@ -484,7 +483,7 @@ documents/               the books and the living doctrine
   ARCHITECTURE.md        the shape + the Phase-1/Phase-2 build path
   REPRODUCTION.md        the spore, the hatchery, the graft, rebirth
   Mantle_Organ_Atlas.md  the organ taxonomy + the organ contracts
-  grimoire/              the Mantle-versioned Grimoire file (§7/§9 bind it to Mantle)
+  grimoire/              the canonical Grimoire VCW software profile
   guides/ (VCW · audit · lifecycle · assimilation · visual) · assets/ (diagrams)
 examples/                example AppAIs + the normative substrate
   spores/                germ spores — hatch one: `mantle hatch examples/spores/greeter.png`
@@ -552,9 +551,7 @@ SYNTAX_CONSTRAINTS  : <host-imposed limits, e.g. no-eval, sandbox>
   hand-grow organ by organ. The full Phase-1 build order and the Phase-2 fusion procedure
   are in [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) §5–§6.
 - **Path B — take residence in existing code.** `assimilate` / `anchor` / `graft` a host,
-  read-only until the signed inventory. Doctrine:
-  [`documents/grimoire/The Grimoire.md`](documents/grimoire/The%20Grimoire.md) (`NECROMANCY`,
-  §7/§9); runnable cheatsheet:
+  read-only until the signed inventory. The runnable cheatsheet is
   [`documents/guides/Assimilation_Guide.md`](documents/guides/Assimilation_Guide.md).
 
 Certification is technical evidence, not fusion authority: birth and MIND fusion each

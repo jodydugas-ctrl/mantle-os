@@ -205,8 +205,8 @@ JSON map, and — with `--spore=out.png` — the host's **germ spore** (see
 threads host behavior through Senses/Limbs/Memory/Immune without changing it.
 `python -m mantle assimilate <path> --dry-run` runs the read-only pipeline against any
 host. The scanner is Python-AST by default and multi-language (`.js/.mjs/.go/.rs`) via the
-optional tree-sitter extra. The doctrine is the canonical NECROMANCY section of
-[`grimoire/The Grimoire.md`](grimoire/The%20Grimoire.md).
+optional tree-sitter extra. The Grimoire now supplies the VCW semantic software profile;
+assimilation procedure is owned by this code path and the assimilation guide.
 
 The host evidence index is the resident's local-first consultation substrate. A resident
 answers questions about its software from the inventory, organ map, control surfaces, gap

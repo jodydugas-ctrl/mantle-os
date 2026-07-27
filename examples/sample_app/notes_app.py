@@ -3,7 +3,7 @@
 
 This file is intentionally NOT Mantle code. It is plain host software that a coding
 agent can dissect read-only, then map into Mantle's organism vocabulary without changing
-host behavior. That makes it the smallest useful NECROMANCY specimen:
+host behavior. That makes it the smallest useful assimilation specimen:
 
     host app -> read-only inventory -> organ map -> optional anchor/graft
 

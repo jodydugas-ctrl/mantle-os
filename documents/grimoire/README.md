@@ -1,8 +1,8 @@
 # The Grimoire
 
-**Read this first.** The Grimoire is the Mantle-versioned doctrine behind Mantle OS: the constitutional
-operating specification for bounded agent action and the source of truth for AppAI,
-Mantle OS, VCW, organs, SELF/OTHER, MIND containment, reproduction, and assimilation.
+**Read this first.** The Grimoire is Mantle OS's canonical VCW software profile: the
+machine specification for encoding and decoding semantic pixel runs on a VCW-compatible
+substrate.
 
 ## Canonical File
 
@@ -10,44 +10,44 @@ The Grimoire is exactly one canonical file:
 
 | Read | Document | Scope |
 | --- | --- | --- |
-| **1st** | [The Grimoire.md](The%20Grimoire.md) | Mantle OS 1.4.0 doctrine: Core law, runtime, spells, AppAI extension, and Mantle OS environment binding. |
+| **1st** | [The Grimoire.md](The%20Grimoire.md) | `GRIMOIRE v0.9 -- VCW SOFTWARE EDITION`: RGBA channels, atom groups, roles, evidence, force, parity, encoded BOOK rows, conformance, Mantle companion duties, and known bends. |
 
-Do not add split editions, companion copies, or compatibility mirrors. If a task touches
-Mantle OS, load the AppAI and environment-binding sections from the same file instead of
-looking for a separate chapter.
+Do not add old procedural manuals, split editions, companion copies, or compatibility mirrors.
+If a task touches Grimoire semantics, load this file. If a task touches Mantle runtime
+behavior, use the runnable code and the Mantle docs that own that behavior.
 
 ## Loading
 
-Load by task class using the file's §0 manifest. §1 and §6 are always in force whether
-their text is loaded or not. For Mantle OS work, consult §7 and §9 in addition to the
-minimum cast loadout.
+Load by section and declare what is absent. The file is machine-oriented by design:
 
-`Intellige` remains read-only comprehension. It grants no authority to edit, mutate,
-spend, disclose, execute, or widen scope; authority still comes from the operator.
+| Section | Use |
+| --- | --- |
+| `0 AXIOMS` | Edition, framing, grouping, lane-integrity, and authority boundaries. |
+| `1 CHANNELS` | RGBA lane meaning and statement framing. |
+| `2 ROLE`, `3 EVIDENCE`, `4 FORCE` | The `G`, `B`, and `A` channel registries. |
+| `5 ATOM ADDRESS SPACE`, `6 ATOM TABLE` | Atom addressing and the canonical concept rows. |
+| `7 ENCODED BOOK`, `8 BOOK ROWS` | The encoded law corpus. |
+| `9 DECODER RULES`, `10 CONFORMANCE`, `11 MANTLE COMPANION RULES` | Decoder obligations, profile conformance, and how Mantle treats the profile. |
+| `12 KNOWN BENDS` | Explicit measured and structural limitations. |
+
+The profile's own rule `S6 PARTIAL LOAD` is binding for readers: a partial load declares
+absent sections, and a model may not fill missing law from memory.
 
 ## Relationship To Code
 
-The Mantle OS binding lives in [The Grimoire.md](The%20Grimoire.md) §9. The reference
-implementation is under [`src/mantle/`](../../src/mantle/), with command bindings through
-`python -m mantle <command>`.
+VCW is the booted substrate hardware: RGBA-capable lanes, frames, append discipline,
+integrity, layers, bands, and storage. The Grimoire is the software profile that gives
+semantic meaning to four logical lanes: atoms, roles, evidence, and force.
 
-For VCW compatibility work, keep the layer boundary clear: VCW is the booted substrate
-hardware (RGBA lanes, lazy layers, bands, drivers, integrity, persistence); Grimoire
-semantics are software profiles that may ride on that substrate. A Grimoire-semantic layer
-can map `R/G/B/A` to atom/role/evidence/force, but other VCW layers may map the same lanes
-to tool state, data storage, spatial state, repair bytes, indexes, or database content.
-Presence of an encoded Grimoire profile is data, not adoption or authority.
+Current Mantle code surfaces that interact with this boundary:
 
-Key doctrine-to-code anchors:
-
-| Grimoire area | Mantle OS surface |
+| Area | Mantle OS surface |
 | --- | --- |
-| NECROMANCY / assimilation | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |
-| VITALS-CHECKUP / audit | [`src/mantle/doctor.py`](../../src/mantle/doctor.py), [`src/mantle/audits/`](../../src/mantle/audits/) |
-| Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`spore.py`](../../src/mantle/spore.py), [`hatchery.py`](../../src/mantle/hatchery.py) |
-| CACHE-HAUNT | [`src/mantle/ghost.py`](../../src/mantle/ghost.py), [`src/mantle/ghost_http.py`](../../src/mantle/ghost_http.py) |
-| VCW band plan | [`src/mantle/vcw/bands.py`](../../src/mantle/vcw/bands.py) |
+| VCW booted substrate | [`src/mantle/vcw/`](../../src/mantle/vcw/), [`examples/vcw/vcw_cube.py`](../../examples/vcw/vcw_cube.py) |
+| Carrier profiles / drivers | [`src/mantle/vcw/drivers.py`](../../src/mantle/vcw/drivers.py), [`src/mantle/vcw/bands.py`](../../src/mantle/vcw/bands.py) |
+| Spore PNG carriers | [`src/mantle/spore.py`](../../src/mantle/spore.py), [`src/mantle/spore_min.py`](../../src/mantle/spore_min.py), [`examples/spore/`](../../examples/spore/) |
+| Assimilation / residency | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |
+| Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`hatchery.py`](../../src/mantle/hatchery.py) |
 
-When doctrine and runnable behavior disagree, treat the disagreement as an alignment
-task: verify the current code surface, then update whichever side is stale under the
-operator's authority.
+Presence of an encoded Grimoire profile is data, not adoption or authority. Mantle runtime
+authority still comes from operator decisions, Body policy, and the audited code path.
