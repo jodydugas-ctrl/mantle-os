@@ -41,6 +41,7 @@ jobs:
         with:
           name: certification-python-${{ matrix.python-version }}
           path: .artifacts/
+          include-hidden-files: true
           if-no-files-found: error
 
   hermes-integration:
@@ -88,4 +89,5 @@ jobs:
         with:
           name: mutation-report-python-3.12
           path: .artifacts/mutation-report.json
+          include-hidden-files: true
           if-no-files-found: error
