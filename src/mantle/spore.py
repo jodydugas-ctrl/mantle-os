@@ -25,12 +25,13 @@ compaction or summarization.  A Spore is transparent and simple:
     one PNG - one agent - one task - one conversation - one append-only memory
 
 SPORE-PNG v1 is a VCW carrier profile, not the universal meaning of VCW lanes. Its physical
-alpha channel is the local repair byte (T). If a future spore carries Grimoire logical
+alpha channel is the local repair byte (T). If a spore carries `grimoire-v0.9` logical
 R/G/B/A lanes (atom/role/evidence/force), the carrier must serialize or map those logical
 lanes explicitly instead of reading physical repair alpha as force.
 
-Dependencies: Pillow (PIL).  NumPy is used if present (faster fill) but is
-optional.  Everything else is the Python standard library.
+The canonical PNG payload path is pure standard library. Pillow (PIL) is optional and
+only improves the visible lower-panel rendering with text. NumPy is used if present
+(faster fill) but is optional.
 """
 
 from __future__ import annotations
@@ -39,6 +40,7 @@ import base64
 import hashlib
 import json
 import os
+import struct
 import sys
 import textwrap
 import zlib
@@ -48,7 +50,7 @@ try:
     from PIL import Image, ImageDraw, ImageFont
     from PIL.PngImagePlugin import PngInfo
 except ImportError:                    # the framework stays pure-stdlib importable;
-    Image = ImageDraw = ImageFont = PngInfo = None   # PNG operations need the extra
+    Image = ImageDraw = ImageFont = PngInfo = None   # visible text rendering needs it
 
 
 def _require_pil() -> None:
@@ -356,6 +358,171 @@ def build_stream(header: dict, payload_bytes: bytes) -> bytes:
     return bytes(out)
 
 
+class _PixelView:
+    def __init__(self, rgba: bytes | bytearray, width: int):
+        self.rgba = rgba
+        self.width = width
+
+    def __getitem__(self, xy):
+        x, y = xy
+        off = ((y * self.width) + x) * 4
+        return tuple(self.rgba[off:off + 4])
+
+
+class _RawPng:
+    def __init__(self, width: int, height: int, rgba: bytes, meta: dict):
+        self.size = (width, height)
+        self.mode = "RGBA"
+        self.text = meta
+        self._rgba = rgba
+        self._width = width
+
+    def convert(self, mode: str) -> "_RawPng":
+        if mode != "RGBA":
+            raise ValueError("pure-stdlib spore reader only supports RGBA")
+        return self
+
+    def load(self):
+        return _PixelView(self._rgba, self._width)
+
+
+def _png_chunk(kind: bytes, payload: bytes) -> bytes:
+    return (
+        struct.pack(">I", len(payload))
+        + kind
+        + payload
+        + struct.pack(">I", zlib.crc32(kind + payload) & 0xffffffff)
+    )
+
+
+def _png_itxt(keyword: str, value: str) -> bytes:
+    key = str(keyword).encode("latin-1", "replace")[:79] or b"Spore"
+    return _png_chunk(b"iTXt", key + b"\0\0\0\0\0" + str(value).encode("utf-8"))
+
+
+def _write_png(path: str, width: int, height: int, rgba: bytes | bytearray,
+               metadata: dict) -> None:
+    stride = width * 4
+    raw = bytearray((stride + 1) * height)
+    pos = 0
+    for y in range(height):
+        raw[pos] = 0
+        pos += 1
+        start = y * stride
+        raw[pos:pos + stride] = rgba[start:start + stride]
+        pos += stride
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    chunks = [_png_chunk(b"IHDR", ihdr)]
+    for key, value in metadata.items():
+        chunks.append(_png_itxt(key, value))
+    chunks.append(_png_chunk(b"IDAT", zlib.compress(bytes(raw), 9)))
+    chunks.append(_png_chunk(b"IEND", b""))
+    with open(path, "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n" + b"".join(chunks))
+
+
+def _paeth(a: int, b: int, c: int) -> int:
+    p = a + b - c
+    pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+    if pa <= pb and pa <= pc:
+        return a
+    if pb <= pc:
+        return b
+    return c
+
+
+def _parse_itxt(payload: bytes) -> tuple[str, str] | None:
+    try:
+        key_end = payload.index(b"\0")
+        key = payload[:key_end].decode("latin-1")
+        flag = payload[key_end + 1]
+        method = payload[key_end + 2]
+        rest = payload[key_end + 3:]
+        lang_end = rest.index(b"\0")
+        rest = rest[lang_end + 1:]
+        translated_end = rest.index(b"\0")
+        text = rest[translated_end + 1:]
+        if flag:
+            if method != 0:
+                return None
+            text = zlib.decompress(text)
+        return key, text.decode("utf-8")
+    except Exception:
+        return None
+
+
+def _read_png(path: str) -> _RawPng:
+    with open(path, "rb") as f:
+        data = f.read()
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise ValueError("not a PNG file")
+    pos = 8
+    width = height = bit_depth = color_type = interlace = None
+    idat = bytearray()
+    meta = {}
+    while pos < len(data):
+        if pos + 8 > len(data):
+            raise ValueError("truncated PNG chunk")
+        length = struct.unpack(">I", data[pos:pos + 4])[0]
+        kind = data[pos + 4:pos + 8]
+        payload = data[pos + 8:pos + 8 + length]
+        if pos + 12 + length > len(data):
+            raise ValueError("truncated PNG payload")
+        crc_actual = struct.unpack(">I", data[pos + 8 + length:pos + 12 + length])[0]
+        if zlib.crc32(kind + payload) & 0xffffffff != crc_actual:
+            raise ValueError("PNG chunk %r failed CRC" % kind)
+        pos += 12 + length
+        if kind == b"IHDR":
+            width, height, bit_depth, color_type, _comp, _filt, interlace = struct.unpack(
+                ">IIBBBBB", payload)
+        elif kind == b"IDAT":
+            idat.extend(payload)
+        elif kind == b"tEXt" and b"\0" in payload:
+            key, value = payload.split(b"\0", 1)
+            meta[key.decode("latin-1")] = value.decode("latin-1")
+        elif kind == b"iTXt":
+            parsed = _parse_itxt(payload)
+            if parsed:
+                key, value = parsed
+                meta[key] = value
+        elif kind == b"IEND":
+            break
+    if width is None or height is None:
+        raise ValueError("PNG missing IHDR")
+    if bit_depth != 8 or color_type != 6 or interlace != 0:
+        raise ValueError("spore PNG must be non-interlaced 8-bit RGBA")
+    raw = zlib.decompress(bytes(idat))
+    stride = width * 4
+    bpp = 4
+    rgba = bytearray(width * height * 4)
+    prev = bytearray(stride)
+    src = 0
+    dst = 0
+    for _y in range(height):
+        filt = raw[src]
+        src += 1
+        row = bytearray(raw[src:src + stride])
+        src += stride
+        for i in range(stride):
+            left = row[i - bpp] if i >= bpp else 0
+            up = prev[i]
+            up_left = prev[i - bpp] if i >= bpp else 0
+            if filt == 1:
+                row[i] = (row[i] + left) & 0xff
+            elif filt == 2:
+                row[i] = (row[i] + up) & 0xff
+            elif filt == 3:
+                row[i] = (row[i] + ((left + up) // 2)) & 0xff
+            elif filt == 4:
+                row[i] = (row[i] + _paeth(left, up, up_left)) & 0xff
+            elif filt != 0:
+                raise ValueError("unsupported PNG filter %d" % filt)
+        rgba[dst:dst + stride] = row
+        dst += stride
+        prev = row
+    return _RawPng(width, height, bytes(rgba), meta)
+
+
 def encode_pixels(stream: bytes, img: Image.Image) -> None:
     """
     Write the byte-stream into the top-half VCW region, block by block.
@@ -574,10 +741,9 @@ def _make_header(state: dict, payload_bytes: bytes) -> dict:
     }
 
 
-def _make_metadata(state: dict, header: dict) -> PngInfo:
+def _metadata_fields(state: dict, header: dict) -> dict:
     ident = state["identity"]
-    info = PngInfo()
-    fields = {
+    return {
         "Spore-Format": SPORE_FORMAT,
         "Spore-Name": ident.get("spore_name", ""),
         "Spore-Version": ident.get("version", "1.0.0"),
@@ -601,6 +767,11 @@ def _make_metadata(state: dict, header: dict) -> PngInfo:
         "Quickstart": QUICKSTART_CODE,
         "Bootloader": BOOTLOADER_TEXT,
     }
+
+
+def _make_metadata(state: dict, header: dict) -> PngInfo:
+    info = PngInfo()
+    fields = _metadata_fields(state, header)
     for k, v in fields.items():
         try:
             info.add_itxt(k, v)
@@ -662,9 +833,47 @@ def _fits(state: dict) -> bool:
     return ((len(stream) + 2) // 3) <= VCW_BLOCKS
 
 
+def _render_spore_stdlib(state: dict, path: str, status: str, header: dict,
+                         stream: bytes) -> None:
+    """Pure-stdlib canonical spore writer.
+
+    It writes the same VCW payload and metadata as the Pillow path. The lower display is
+    a deterministic status panel background instead of drawn text; metadata remains the
+    canonical source for the bootloader and quickstart text.
+    """
+    n_blocks = (len(stream) + 2) // 3
+    if n_blocks > VCW_BLOCKS:
+        raise ValueError("stream exceeds VCW capacity")
+    empty_T = compute_T(0, 0, 0)
+    rgba = bytearray(CANVAS_W * CANVAS_H * 4)
+    for i in range(VCW_BLOCKS):
+        off = i * 4
+        rgba[off:off + 4] = bytes((0, 0, 0, empty_T))
+    for i in range(n_blocks):
+        chunk = stream[i * 3:i * 3 + 3]
+        r = chunk[0] if len(chunk) > 0 else 0
+        g = chunk[1] if len(chunk) > 1 else 0
+        b = chunk[2] if len(chunk) > 2 else 0
+        off = i * 4
+        rgba[off:off + 4] = bytes((r, g, b, compute_T(r, g, b)))
+
+    # Deterministic visible region: dark protected strip, light status area. Pillow, when
+    # present, upgrades this to a human-readable text panel without changing payload law.
+    for y in range(DISP_Y, DISP_Y + DISP_H):
+        if y < DISP_Y + BOOT_STRIP_H:
+            color = (20, 24, 34, 255)
+        elif status == "FULL":
+            color = (88, 22, 28, 255)
+        else:
+            color = (248, 248, 250, 255)
+        row_start = y * CANVAS_W * 4
+        row = bytes(color) * CANVAS_W
+        rgba[row_start:row_start + CANVAS_W * 4] = row
+    _write_png(path, CANVAS_W, CANVAS_H, rgba, _metadata_fields(state, header))
+
+
 def render_spore(state: dict, path: str, status: str = "ACTIVE") -> str:
     """Regenerate the WHOLE PNG from canonical state and save it to `path`."""
-    _require_pil()
     state["identity"]["updated_at"] = _now()
     disp = state.setdefault("display", {})
     disp["status"] = status
@@ -672,6 +881,10 @@ def render_spore(state: dict, path: str, status: str = "ACTIVE") -> str:
     payload = _payload_bytes(state)
     header = _make_header(state, payload)
     stream = build_stream(header, payload)
+
+    if Image is None:
+        _render_spore_stdlib(state, path, status, header, stream)
+        return path
 
     img = Image.new("RGBA", (CANVAS_W, CANVAS_H), (0, 0, 0, 255))
     encode_pixels(stream, img)
@@ -747,7 +960,6 @@ def pack_germ(germ: dict, path: str, *, task: str | None = None,
 
 
 def read_spore(path: str) -> dict:
-    _require_pil()
     """
     Decode a Spore PNG into structured state, applying the authority table.
 
@@ -756,7 +968,10 @@ def read_spore(path: str) -> dict:
     drifted from the payload name, it is reported as a mirror mismatch with the
     VCW payload named canonical.
     """
-    img = Image.open(path)
+    if Image is None:
+        img = _read_png(path)
+    else:
+        img = Image.open(path)
     meta = dict(img.text) if hasattr(img, "text") else {}
     img = img.convert("RGBA")
     header, payload_bytes, corrections = decode_pixels(img)
@@ -839,7 +1054,6 @@ def _check_embedded_tool(state: dict) -> tuple[bool, str]:
 
 def verify_spore(path: str) -> dict:
     """Verify a Spore PNG.  Returns {ok, checks, problems, ...}."""
-    _require_pil()
     checks, problems = [], []
 
     def ck(name, cond, detail=""):
@@ -847,7 +1061,7 @@ def verify_spore(path: str) -> dict:
         if not cond:
             problems.append(f"{name}: {detail}")
 
-    img = Image.open(path)
+    img = _read_png(path) if Image is None else Image.open(path)
     ck("canvas 2000x2000", img.size == (CANVAS_W, CANVAS_H), str(img.size))
     ck("mode RGBA", img.convert("RGBA").mode == "RGBA")
 

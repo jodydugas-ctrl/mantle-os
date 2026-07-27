@@ -38,3 +38,6 @@ Repository = "https://github.com/jodydugas-ctrl/mantle-os"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["examples/tests"]

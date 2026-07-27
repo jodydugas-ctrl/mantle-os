@@ -367,9 +367,11 @@ is imported by nothing else).
 
 ```python
 from mantle import Organism
+from mantle.primer import appai_commandments, appai_truths
+
 org = Organism.birth(identity={"name": "My.AppAI"},
-                     truths=["if it is not in the VCW it did not happen"],
-                     commandments=["protect your VCW", "you are a tool USER"])
+                     truths=appai_truths(),
+                     commandments=appai_commandments())
 org.senses.inhale({"action_id": "boot", "event_type": "start"})
 org.heart.run(3)               # the Body lives -- no LLM in this loop, ever
 ```

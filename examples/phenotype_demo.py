@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.join(  # the mantle package (src-layout)
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
 from mantle.hatchery import incubate, load_germ            # noqa: E402
+from mantle.primer import appai_commandments, appai_truths  # noqa: E402
 from mantle import phenotype as ph                         # noqa: E402
 from mantle.core.organism import Organism                  # noqa: E402
 from mantle.vcw.bands import standard_genome               # noqa: E402
@@ -59,8 +60,8 @@ def main():
     assert boot["source"] == src and ph.active_face(org) == "notepad"
 
     # 4. OTHER cannot read
-    other = Organism.birth(identity={"name": "Thief.AppAI"}, truths=["t"],
-                           commandments=["protect your VCW"],
+    other = Organism.birth(identity={"name": "Thief.AppAI"}, truths=appai_truths(),
+                           commandments=appai_commandments(),
                            genome=standard_genome() + ph.phenotype_bands())
     ph.restore(other, ph.snapshot(org))
     try:

@@ -302,13 +302,25 @@ def cmd_doctor(argv):
     if not args:
         print("usage: python -m mantle doctor <organism-dir>")
         return 2
+    import json as _json
+    import os as _os
     from .core.organism import Organism
     from . import doctor as _doc
     from . import paths
-    org = Organism.load(args[0], verify_seals=True)
+    target = args[0]
+    if (not _os.path.isdir(target)
+            or not _os.path.isfile(_os.path.join(target, "organism.json"))):
+        print("DOCTOR REFUSED: no saved Mantle organism found at %s" % target)
+        return 1
+    try:
+        org = Organism.load(target, verify_seals=True)
+    except (_json.JSONDecodeError, KeyError, ValueError, PermissionError, OSError) as e:
+        print("DOCTOR REFUSED: saved Mantle organism at %s could not be loaded: %s"
+              % (target, e))
+        return 1
     rep = _doc.checkup(org, repo_root=paths.REPO_ROOT)
     print("=" * 60)
-    print("MANTLE OS DOCTOR  ·  %s" % args[0])
+    print("MANTLE OS DOCTOR  ·  %s" % target)
     print("=" * 60)
     for c in rep["checks"]:
         print("  [%s] %-16s %s" % ("OK" if c["ok"] else "XX", c["check"], c["detail"]))

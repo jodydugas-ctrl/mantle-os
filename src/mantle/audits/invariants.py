@@ -728,13 +728,17 @@ def t_bugfix_runtime_boundaries():
     old_image = _spore.Image
     try:
         _spore.Image = None
-        state = {"identity": {"spore_name": "x", "task": "t"}, "conversation": []}
-        pillow_refused = _expect_raise(
-            lambda: _spore.render_spore(state, os.path.join(tempfile.gettempdir(), "x.png")),
-            RuntimeError)[0]
+        p = os.path.join(tempfile.gettempdir(), "x-spore-stdlib.png")
+        state = _spore._new_state("x", "t", None)
+        _spore.render_spore(state, p)
+        info = _spore.read_spore(p)
+        stdlib_spore = (
+            info["state"]["identity"]["spore_name"] == "x"
+            and _spore.verify_spore(p)["ok"]
+        )
     finally:
         _spore.Image = old_image
-    checks.append(("spore-pillow", pillow_refused))
+    checks.append(("spore-stdlib-png", stdlib_spore))
 
     egg = {"identity": {"name": "<script>x</script>", "purpose": "<b>p</b>"},
            "controls": [{"id": "\" onclick=\"x", "label": "<b>Click</b>"}]}

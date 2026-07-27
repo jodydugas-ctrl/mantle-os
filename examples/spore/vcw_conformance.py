@@ -21,7 +21,7 @@ adapter, proving the same read/write grammar the cube speaks works on the PNG me
     python examples/spore/vcw_conformance.py <a_spore.png> # prove a given PNG
 
 Exit code 0 = CONFORMANT, non-zero = NOT CONFORMANT.
-Dependency: Pillow (PIL). Standard library otherwise.
+Pure standard library.
 """
 from __future__ import annotations
 
@@ -29,9 +29,6 @@ import os
 import shutil
 import sys
 import tempfile
-
-from PIL import Image
-from PIL.PngImagePlugin import PngInfo
 
 try:
     from mantle import spore
@@ -88,13 +85,20 @@ class SporeAsVCWLayer:
         return spore.append_turn(self.path, role, content)
 
 
-def _resave(img, srcpath, dst):
-    """Re-save `img` preserving the PNG text metadata found in `srcpath`."""
-    meta = Image.open(srcpath).text
-    pi = PngInfo()
-    for k, v in meta.items():
-        pi.add_itxt(k, v)
-    img.save(dst, "PNG", pnginfo=pi)
+def _set_pixel(path, x, y, rgba):
+    """Mutate one RGBA pixel while preserving spore metadata."""
+    img = spore._read_png(path)
+    data = bytearray(img._rgba)
+    off = ((y * img.size[0]) + x) * 4
+    data[off:off + 4] = bytes(rgba)
+    spore._write_png(path, img.size[0], img.size[1], data, dict(img.text))
+
+
+def _rewrite_metadata(path, updates):
+    img = spore._read_png(path)
+    meta = dict(img.text)
+    meta.update(updates)
+    spore._write_png(path, img.size[0], img.size[1], img._rgba, meta)
 
 
 class Conformance:
@@ -147,9 +151,7 @@ def audit(path: str) -> Conformance:
         # 4. integrity checks: broken magic must be refused -------------------
         q = os.path.join(d, "tamper.png")
         spore.create_spore("CONF", "integrity", path=q)
-        img = Image.open(q).convert("RGBA"); px = img.load()
-        px[0, 0] = (0, 0, 0, spore.compute_T(0, 0, 0))    # wipe the first magic bytes
-        _resave(img, q, q)
+        _set_pixel(q, 0, 0, (0, 0, 0, spore.compute_T(0, 0, 0)))  # wipe magic bytes
         refused = False
         try:
             spore.read_spore(q)
@@ -162,17 +164,13 @@ def audit(path: str) -> Conformance:
         r = os.path.join(d, "repair.png")
         spore.create_spore("CONF", "repair", path=r)
         spore.append_turn(r, "user", "protect me")
-        img = Image.open(r).convert("RGBA"); px = img.load()
-        rr, gg, bb, aa = px[4, 0]
-        px[4, 0] = (rr ^ 0b100, gg, bb, aa)               # single-bit flip
-        _resave(img, r, r)
+        rr, gg, bb, aa = spore._read_png(r).load()[4, 0]
+        _set_pixel(r, 4, 0, (rr ^ 0b100, gg, bb, aa))      # single-bit flip
         one = spore.read_spore(r)["corrections"]
         spore.create_spore("CONF", "repair2", path=r)
         spore.append_turn(r, "user", "detect tampering")
-        img = Image.open(r).convert("RGBA"); px = img.load()
-        rr, gg, bb, aa = px[7, 0]
-        px[7, 0] = (rr ^ 0b11, gg, bb, aa)                # two-bit flip
-        _resave(img, r, r)
+        rr, gg, bb, aa = spore._read_png(r).load()[7, 0]
+        _set_pixel(r, 7, 0, (rr ^ 0b11, gg, bb, aa))       # two-bit flip
         two = spore.read_spore(r)["corrections"]
         c.prove("repair signaling",
                 one["repaired"] >= 1 and one["corrupt"] == 0
@@ -189,11 +187,7 @@ def audit(path: str) -> Conformance:
         # 7. authority rules ---------------------------------------------------
         a = os.path.join(d, "auth.png")
         spore.create_spore("CANON", "authority", path=a)
-        img = Image.open(a); m = dict(img.text); m["Spore-Name"] = "META-TAMPER"
-        pi = PngInfo()
-        for k, v in m.items():
-            pi.add_itxt(k, v)
-        img.convert("RGBA").save(a, "PNG", pnginfo=pi)
+        _rewrite_metadata(a, {"Spore-Name": "META-TAMPER"})
         ai = spore.read_spore(a)
         mm = ai["name_mirror_mismatch"]
         c.prove("authority rules",
