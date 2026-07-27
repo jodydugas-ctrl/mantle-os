@@ -24,6 +24,11 @@ compaction or summarization.  A Spore is transparent and simple:
 
     one PNG - one agent - one task - one conversation - one append-only memory
 
+SPORE-PNG v1 is a VCW carrier profile, not the universal meaning of VCW lanes. Its physical
+alpha channel is the local repair byte (T). If a future spore carries Grimoire logical
+R/G/B/A lanes (atom/role/evidence/force), the carrier must serialize or map those logical
+lanes explicitly instead of reading physical repair alpha as force.
+
 Dependencies: Pillow (PIL).  NumPy is used if present (faster fill) but is
 optional.  Everything else is the Python standard library.
 """

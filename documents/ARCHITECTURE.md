@@ -110,9 +110,13 @@ Immune event.
 
 ## 4. The VCW substrate (optimized, invariants intact)
 
-Unchanged doctrine: durable PNG-layer memory; named bands; immutable hashed entries; the
-veil; staged save → verify → atomic replace; append before overwrite; rebirth separate
-from capacity. What the implementation adds, without weakening any of that:
+Unchanged doctrine: VCW is the durable booted substrate: RGBA lane hardware, named bands,
+immutable hashed entries, the veil, staged save → verify → atomic replace, append before
+overwrite, and rebirth separate from capacity. The standard cube is visualized as
+800x800x800, but layers materialize only as boot-declared bands need them. Layer
+drivers/profiles decide what the four lanes mean: log bytes, key/value storage, spatial
+state, exec payload, or Grimoire software lanes. What the implementation adds, without
+weakening any of that:
 
 - **Lazy layer materialization** — a sealed ancestor costs nothing until referenced.
 - **Changed-layer-only persistence** — per-layer signatures; only dirty layers re-encode.

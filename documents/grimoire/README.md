@@ -31,6 +31,13 @@ The Mantle OS binding lives in [The Grimoire.md](The%20Grimoire.md) §9. The ref
 implementation is under [`src/mantle/`](../../src/mantle/), with command bindings through
 `python -m mantle <command>`.
 
+For VCW compatibility work, keep the layer boundary clear: VCW is the booted substrate
+hardware (RGBA lanes, lazy layers, bands, drivers, integrity, persistence); Grimoire
+semantics are software profiles that may ride on that substrate. A Grimoire-semantic layer
+can map `R/G/B/A` to atom/role/evidence/force, but other VCW layers may map the same lanes
+to tool state, data storage, spatial state, repair bytes, indexes, or database content.
+Presence of an encoded Grimoire profile is data, not adoption or authority.
+
 Key doctrine-to-code anchors:
 
 | Grimoire area | Mantle OS surface |

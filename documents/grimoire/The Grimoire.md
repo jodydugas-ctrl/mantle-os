@@ -696,7 +696,8 @@ Stage-1 certification is a cacheable verification (§2.3), fingerprinted on the 
 | **Zombie Body** | A certified Phase-1 Body: alive, persistent, auditable, MIND-free. |
 | **MIND** | Optional Phase-2 reasoning/voice layer; may extend the Body, never replace it. |
 | **Organ** | A bounded code responsibility with manifest, reflexes, phase state, audit obligations. |
-| **VCW cube** | Durable append-only picture-memory substrate, organized by bands. |
+| **VCW cube** | Durable booted picture-memory substrate: RGBA lanes, lazy layers, boot-declared bands, integrity, and persistence. |
+| **VCW layer profile** | The driver/carrier contract that declares what a layer's four RGBA lanes mean. Grimoire atom/role/evidence/force is one profile, not the whole substrate. |
 | **SELF** | Artifacts the Body can prove belong to its identity boundary. |
 | **OTHER** | Anything not proven SELF; may be studied, never trusted or executed raw. |
 | **Residency** | A bounded AppAI living in or beside a host without changing host behavior outside authorized hooks. |
@@ -747,6 +748,14 @@ The MIND proposes; the Body applies. The MIND writes only to declared cognition 
 **Execution rule:** the Body applies. The MIND proposes. Limbs require proof. Memory is append-only unless policy defines compaction. Reconstruction, retirement, fusion, budget expansion, and unresolved identity trust escalate to the operator.
 
 ## 7.6 VCW Band Plan
+
+VCW is substrate hardware; Grimoire semantics are software that may ride on it. The
+standard cube body plan is visualized as 800x800x800, with 800x800 RGBA layers and a
+canonical 800-layer soft cap. Layers are materialized as needed inside boot-declared bands.
+The cube bootloader declares band ownership, layer range, privacy, driver/profile, and
+carrier duties. A Grimoire-semantic layer maps RGBA to atom, role, evidence, and force;
+other layers may map the same lanes to tool state, data storage, spatial memory, indexes,
+repair bytes, or database content.
 
 | Band | Layers | Owning organ(s) | Writers |
 |---|---:|---|---|
@@ -932,7 +941,7 @@ Reproduction doctrine: `documents/REPRODUCTION.md` — **one artifact (the spore
 | `PROMPT-REFINEMENT` | **unbound** — doctrine-only (§5.2.8); no runnable surface in this environment yet | — |
 | `IMPLEMENTATION-BRIEF` | **unbound** — doctrine-only (§5.2.9); no runnable mandate compiler in this environment yet | — |
 
-The VCW substrate under all of it: `vcw/` (`cube.py`, `png.py`, `entry.py`, `indexes.py`, `drivers.py`, `metabolism.py`, `bands.py` — the band plan of §7.6 in code). Applet bodies and faces: `applet_body.py`, `face.py`, and the `applet-*` / `face-*` command families.
+The VCW substrate under all of it: `vcw/` (`cube.py`, `png.py`, `entry.py`, `indexes.py`, `drivers.py`, `metabolism.py`, `bands.py` — the booted lane substrate and band plan of §7.6 in code). Applet bodies and faces: `applet_body.py`, `face.py`, and the `applet-*` / `face-*` command families.
 
 ---
 

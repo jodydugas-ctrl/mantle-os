@@ -50,7 +50,7 @@ That's the whole stance. The rest is rigor about how you make "can never break i
 |---|---|---|
 | The app's deterministic core | **Body** (its **organs**) | Ordinary, testable code that runs with no model attached |
 | A hard-coded, no-AI behavior | **reflex** | A plain function the Body runs itself |
-| The database / memory | **VCW cube** | An append-only log where each record is hashed; you add or retire records, never rewrite them. It's a normal ZIP of PNG files, so you can literally open the memory in an image viewer |
+| The database / memory hardware | **VCW cube** | A booted, append-only substrate: RGBA lanes, lazy PNG layers, boot-declared bands, and hashed records. You add or retire records, never rewrite them; it is a normal ZIP of PNG files, so you can literally open the memory in an image viewer |
 | The "who am I" config | **Genome / Primer** | Read-only identity, set once, held outside the cube |
 | The app's installer file | **spore** (carrying a **germ**) | One PNG holding the complete build data + instructions any coding agent can read |
 | The LLM | **MIND** | A plain `prompt → text` function, added last, allowed to write to only two scratch areas |
@@ -232,9 +232,18 @@ Three consequences shape Mantle:
 
 Two commitments the doctrine forces, stated once here: **the Primer lives in the BODY, not
 the cube** (the agent genome — Primer + commandments + defining data — is held by the Body;
-the cube genome is the band layout; the cube is pure *experiential* memory), and **capacity
-never silently kills** (rebirth is always chosen, always retains the prior generation as
-read-only ancestry; generation-pinned references keep the past addressable forever).
+the cube genome is the booted band/layer layout; the cube is pure *experiential* memory),
+and **capacity never silently kills** (rebirth is always chosen, always retains the prior
+generation as read-only ancestry; generation-pinned references keep the past addressable
+forever).
+
+One compatibility distinction matters: **VCW is substrate hardware; the Grimoire is
+software.** VCW provides addressable RGBA lanes, lazy layers, boot-declared bands,
+persistence, integrity, and per-layer carrier profiles. A Grimoire-semantic layer may map
+the lanes as `R=atom`, `G=role`, `B=evidence`, and `A=force`; another layer may use the
+same lanes for tool state, app data, indexes, spatial memory, repair bytes, or a database.
+The cube bootloader decides the body plan and active profiles; presentation or placement
+never grants authority.
 
 **The one paragraph:** an AppAI is a coherent self that remembers everything in a durable
 cube it treats as reality, acts through organs it wields, learns skills that harden into
@@ -423,12 +432,13 @@ every Stage-1 row to prove it.
 | Term | Definition |
 |------|------------|
 | **AppAI** | The embodied application-as-organism you are growing. |
-| **VCW cube** | The durable nervous-memory substrate. 800 layered PNGs. See `examples/vcw/`. |
+| **VCW cube** | The durable nervous-memory substrate: a booted 800x800x800 body plan of RGBA PNG lanes, lazily materialized as needed. See `examples/vcw/`. |
 | **Body** | The automatic organism: all organs that run **without** an LLM. Phase 1. |
 | **MIND** | The reasoning/voice layer — an LLM fused in Phase 2. The **brain**. |
 | **Organ** | A self-contained code module with a manifest, reflexes, and audit obligations. |
 | **Reflex** | A deterministic, no-LLM behavior. The Body is made of reflexes. |
-| **Band** | A reserved, named range of cube layers (e.g. `facts`, `senses`, `thoughts`). |
+| **Band** | A reserved, named range of cube layers with a boot sector declaring owner, driver/profile, privacy, and purpose. |
+| **Layer profile / driver** | The software contract that decides how one layer frames and interprets its four RGBA lanes. Grimoire semantics are one profile, not the whole substrate. |
 | **Genome (agent)** | Identity held in the **Body** (not the cube): Primer (read-only) + Special Instructions + Immunization + lineage index. |
 | **Veil** | The Body reflex that hides private / tombstoned / quarantined memory on read. |
 | **Zombie Body** | A Body that has passed the Stage 1 Gate: alive, correct, dormant. |
@@ -451,7 +461,7 @@ AGENTS.md                orientation for AI agents: the two jobs of the biology 
 src/                     the framework package — `pip install -e .` (or PYTHONPATH=src) to run
   mantle/                (start here)
     core/                Body (+ the genesis key), SignalBus, references, redaction, the Organism
-    vcw/                 the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
+    vcw/                 the booted substrate: PNG lanes, bands, drivers, cube, metabolism, graded-memory overlay
     organs/              the nine organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
     assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, invariant suite)
@@ -503,7 +513,8 @@ When prose and code disagree, **the working code in `src/mantle/` is ground trut
 2. **Organs, not layers-of-architecture.** Structure code as organs with explicit manifests
    (what bands they touch, what reflexes they own, what the audit checks).
 3. **The cube is the single source of truth.** All durable state lives in the VCW cube,
-   addressed through bands. Organs communicate by reading and appending entries.
+   addressed through boot-declared bands and layer profiles. Organs communicate by reading
+   and appending entries.
 4. **Memory is immutable and append-only.** You never rewrite the past. You **append**,
    **tombstone** (retire), or **quarantine** (isolate). The Primer is immutable from genesis.
 5. **Everything is provable.** Every organ carries audit obligations. "It probably works"

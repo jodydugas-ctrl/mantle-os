@@ -11,6 +11,8 @@ Four drivers, registered on import:
                     MIND, behind hash + capability + provenance/trust + sandbox gates
 
 These prove the boot sector -- not hard-coded logic -- decides how a layer behaves.
+The RGBA lanes are substrate hardware. A driver/profile is the software contract that
+decides how a layer frames the lanes and what they encode.
 """
 from __future__ import annotations
 

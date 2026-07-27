@@ -41,8 +41,8 @@ produce a portable build artifact without modifying the host.
 | Limbs | Outbound action boundary | `src/mantle/organs/limbs.py` |
 | Immune | Error, integrity, and policy violation boundary | `src/mantle/organs/immune.py` |
 | Genome / Primer | Identity and immutable bootstrap data held outside the cube | `src/mantle/core/body.py` |
-| VCW cube | Append-only PNG-layer storage substrate | `src/mantle/vcw/` |
-| Band | Named range of VCW storage layers | `src/mantle/vcw/bands.py` |
+| VCW cube | Booted append-only PNG/RGBA substrate | `src/mantle/vcw/` |
+| Band | Named range of VCW layers with boot-declared driver/profile | `src/mantle/vcw/bands.py` |
 | Spore | Portable PNG artifact | `src/mantle/spore.py` |
 | Germ | Declarative build document carried by a spore or JSON file | `src/mantle/hatchery.py` |
 | Anchor | Additive resident runtime in an existing host project | `src/mantle/anchor.py` |
@@ -93,15 +93,24 @@ exception, invalid reference, policy violation, integrity failure
 
 ## 4. Storage Semantics
 
-The VCW cube is append-only storage implemented as PNG layers. Records are assigned to named
-bands. Entries are hashed, and persistence uses staged writes followed by verification and
-atomic replacement.
+The VCW cube is booted substrate hardware implemented as PNG/RGBA layers. The standard body
+plan is visualized as 800 layers of 800x800 pixels, but layers are materialized lazily as
+bands need them. Records are assigned to named bands. Entries are hashed, and persistence
+uses staged writes followed by verification and atomic replacement.
+
+The cube bootloader declares dimensions, band allocation, layer ownership, privacy, and the
+driver/profile that interprets each layer. RGBA are four addressable substrate lanes, not a
+single global data model. A Grimoire-compatible profile may map those lanes to atom, role,
+evidence, and force. Other layers can map the same lanes to log JSON, key-value data,
+spatial state, tool/database payload, exec reflex metadata, indexes, or repair bytes.
 
 Rules that matter for implementation:
 
 - Append new records instead of mutating historical records.
 - Tombstone or quarantine old records instead of deleting them silently.
 - Use band declarations from `src/mantle/vcw/bands.py`; do not invent ad hoc storage.
+- Treat lane semantics as driver/profile-defined. Do not assume every RGBA layer is a
+  Grimoire thought stream.
 - Keep identity and primer data in `Body`, not in the VCW cube.
 - Keep secrets out of input and error logs by using the existing redaction boundary.
 - Preserve sealed ancestors as read-only storage.

@@ -75,6 +75,10 @@ A beautiful intuition for the cube's **addressability** — and one correction m
   **800 PNG layers** of 800×800×4 RGBA bytes. The `(layer, x, y)` byte address is a real
   primitive — but it is used directly only by **spatial drivers** (the calendar canvas)
   and low-level tools.
+- The 800-layer cube is the canonical visualization soft cap; layers materialize only as
+  boot-declared bands need them. RGBA are substrate lanes, and a layer driver/profile
+  declares whether those lanes mean log bytes, spatial state, repair data, tool/database
+  data, or Grimoire software lanes.
 - Normal memory is **append-only entry streams**: you never "write at a coordinate," you
   append a hashed entry to a band and read through the veil. There is no arbitrary
   in-place write anywhere in the doctrine — that is the whole point.

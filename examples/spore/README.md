@@ -8,6 +8,11 @@ file format** — and the spore proves the substrate can molt into a different m
 and the [VCW Substrate Guide](../../documents/guides/VCW_Guide.md) for the canonical
 regions, RGB+T repair rule, and display/memory boundary.
 
+SPORE-PNG v1 is also the clearest example of why VCW lanes are profile-defined. Its
+physical alpha channel is a Hamming SECDED repair byte, not Grimoire force. A future
+Grimoire-compatible spore carrier must declare how logical Grimoire lanes are serialized
+or mapped instead of reading repair alpha as semantic `A`.
+
 It wears a second hat too: because it is a whole self-contained agent — identity, one task, one
 append-only conversation, and an embedded Python reader/writer inside its own pixels — it is also the
 smallest form of the **SEED** reproductive method

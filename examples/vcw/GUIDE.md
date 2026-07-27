@@ -10,11 +10,13 @@ whose docstring defines the format field by field. The production engine is
 ## 1. Why memory is pictures
 
 The VCW ("Visual Cortex Workspace") cube stores an AppAI's whole experiential memory as a
-stack of **800 real PNG images** (800×800 RGBA each) inside a ZIP. Not "like" images —
-actual, valid PNGs you can open in any viewer (`python vcw_cube.py extract …`). The point
-is *inspectability as a property of the substrate*: an organism whose memory is pictures
-cannot have invisible memory. A spatial band (the calendar driver) takes it literally:
-data IS colors at coordinates.
+booted substrate: a standard **800×800×800** body plan made of real PNG layers, each
+800×800 RGBA, inside a ZIP. The 800-layer shape is the canonical visualization soft cap;
+layers are created only when a band needs them. Not "like" images — actual, valid PNGs you
+can open in any viewer (`python vcw_cube.py extract …`). The point is *inspectability as a
+property of the substrate*: an organism whose memory is pictures cannot have invisible
+memory. A spatial band (the calendar driver) takes it literally: data IS colors at
+coordinates.
 
 Memory doctrine, in one breath: **if it's not in the VCW, it didn't happen** — so the
 cube is append-only, every entry is hashed, every read is veiled, every save is verified
@@ -37,8 +39,14 @@ reserves eight: `identity` 100 · `facts` 150 · `events` 200 · `discoveries` 2
 why rebirth loses nothing.
 
 Two-level encoding: the boot-sector format is fixed and universal (the Body always knows
-how to read it); the *payload* format is programmable — the boot sector names a driver
-(`log-json`, `keyvalue`, `calendar-spatial`, `exec`).
+how to read it); the *payload* format is programmable — the boot sector names a driver or
+carrier profile (`log-json`, `keyvalue`, `calendar-spatial`, `exec`, or future Grimoire
+lane profiles).
+
+RGBA are the four substrate lanes, not a universal meaning. A layer can boot them as log
+bytes, spatial state, repair-protected spore payload, tool/database state, or Grimoire
+software lanes such as `R=atom`, `G=role`, `B=evidence`, `A=force`. VCW is the hardware
+and boot map; the Grimoire is software that may run on that hardware.
 
 ## 3. The entry — the atom of experience
 

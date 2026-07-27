@@ -6,15 +6,16 @@ mantle.compiler  --  the Compiler-class leap: a self-redesigning VCW + a memory 
 M5 -- the self-redesigning VCW (a programmable boot sector at rebirth).
   Mantle rebirth re-geneses the SAME standard genome. A Compiler-class organism instead
   authors a VCW *custom-made for the body it inhabits*: at a CHOSEN rebirth, the MIND
-  PROPOSES a new genome (extra app bands, possibly a different driver/encoding -- e.g. a
-  keyvalue band that mirrors a host's native memory ops), the BODY VALIDATES it (every
-  encoding must be a REGISTERED driver; heads in range; no collisions), and only then
-  rebirths into it. The ancestor stays the readable ORACLE. Inherited microcode does not
-  cross for free -- it RE-TRIALS before it re-calcifies (no blind inheritance).
+  PROPOSES a new genome (extra app bands, possibly a different driver/encoding/profile --
+  e.g. a keyvalue band that mirrors a host's native memory ops, or a future Grimoire lane
+  profile), the BODY VALIDATES it (every encoding must be a REGISTERED driver; heads in
+  range; no collisions), and only then rebirths into it. The ancestor stays the readable
+  ORACLE. Inherited microcode does not cross for free -- it RE-TRIALS before it re-calcifies
+  (no blind inheritance).
 
   Gate it hard: an organism authoring its own storage protocol is exactly where the
-  encoding/head/provenance checks must NOT bend. An unregistered encoding is refused; the
-  current generation is untouched.
+  encoding/profile/head/provenance checks must NOT bend. An unregistered encoding is
+  refused; the current generation is untouched.
 
 M6 -- the memory bridge (host and resident share one brain).
   A translation surface that presents a host-native memory API (dict-like get/set/keys)

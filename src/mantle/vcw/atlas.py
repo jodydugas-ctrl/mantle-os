@@ -34,6 +34,10 @@ MEASUREMENT_RULES = {
         "content colour stores payload or spatial state; activity colour reports "
         "status/pressure and is not canonical payload"
     ),
+    "lane_semantics_are_profiled": (
+        "RGBA are substrate lanes; the cube boot and layer driver/profile declare "
+        "what the lanes mean for that layer"
+    ),
 }
 
 
@@ -101,9 +105,12 @@ def build_atlas() -> Dict[str, Any]:
         "cube": {
             "format": VCW_FORMAT,
             "layer_count": LAYER_COUNT,
+            "layer_count_role": "canonical visualization soft cap; layers materialize on demand",
             "layer_width": SIDE,
             "layer_height": SIDE,
             "channels": CHANNELS,
+            "lanes": ["R", "G", "B", "A"],
+            "lane_semantics": "boot/profile-defined",
             "layer_bytes": LAYER_BYTES,
             "byte_address_formula": "offset = (y * SIDE + x) * CHANNELS",
             "png_profile": "non-interlaced 8-bit RGBA",
@@ -151,6 +158,7 @@ def verify_atlas() -> List[str]:
         "measurement_scaling",
         "private_tissue",
         "content_vs_activity_colour",
+        "lane_semantics_are_profiled",
     }
     if set(atlas["measurement_rules"]) != required_rules:
         problems.append("measurement rule set drift")

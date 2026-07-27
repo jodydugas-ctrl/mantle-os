@@ -9,6 +9,11 @@ bytes it writes are identical to the production engine's
 ([`src/mantle/vcw/cube.py`](../../src/mantle/vcw/cube.py)) — [`interop.py`](interop.py) proves
 both directions on every CI run.
 
+Read the cube as VCW hardware: addressable RGBA lanes, boot-declared bands, lazy layers,
+drivers, integrity, and persistence. The standard body plan is visualized as an
+800x800x800 cube, but layers materialize only as needed. Grimoire lane semantics are
+software that can ride on the substrate; they are not the only meaning RGBA can have.
+
 ```bash
 # the whole format, proven in one run
 python vcw_cube.py selftest

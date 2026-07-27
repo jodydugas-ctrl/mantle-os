@@ -36,6 +36,11 @@ top-half **VCW** colour field; each pixel's RGB carries payload bytes and its al
 a Hamming SECDED byte that repairs a bad bit locally. The spore ships its own purity audit
 (`examples/spore/audit_spore.py`) that **refuses** feature creep in the seed itself.
 
+That RGB+T mapping is a spore carrier profile, not a global VCW law. VCW provides the
+addressable lanes and substrate duties; a Grimoire software profile may define logical
+`R/G/B/A` as atom/role/evidence/force, but SPORE-PNG v1 reserves physical alpha for repair.
+Any Grimoire-compatible spore must declare how those logical lanes are serialized or mapped.
+
 **A spore may additionally carry a GERM** — and then it is the complete birth package:
 
 - the **germ** is the full AppAI build document (identity, truths, commandments, genome

@@ -7,14 +7,17 @@ vocabulary.
 
 When this file and the source disagree, **the source wins** (`src/mantle/`), and
 `examples/vcw/vcw_cube.py` is the standalone normative definition of the storage format.
+For VCW work, keep the hardware/software boundary intact: VCW is the booted RGBA substrate
+and layer/band map; Grimoire semantics are a software profile that may run on that
+substrate, not the only meaning of every pixel.
 
 ---
 
 ## What Mantle OS is, in one breath
 
 Mantle OS grows an application as a living organism — an **AppAI** — built **Body first,
-brain second**. Nine deterministic **organs** mesh on one signal bus around a durable
-picture-memory substrate (the **VCW cube**). The **Body** is proven alive and correct
+brain second**. Nine deterministic **organs** mesh on one signal bus around a durable,
+booted picture-memory substrate (the **VCW cube**). The **Body** is proven alive and correct
 *with no model attached* (the Stage-1 gate), and only then may a bounded **MIND** (an LLM)
 be fused — and it may only ever *extend* what already lives, never replace a reflex.
 
