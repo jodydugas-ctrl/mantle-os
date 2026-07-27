@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parity test for the language-agnostic NECROMANCY path.
+"""Parity test for the language-agnostic assimilation path.
 
 Asserts the JS organ map (via mantle.assimilator.scanner_ts) equals the Python organ
 map (via mantle.assimilator.scanner) for the equivalent notes_app fixture, and that the

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.png  --  the pure-stdlib PNG codec (Mantle OS)
+mantle.vcw.png  --  the pure-stdlib PNG lane hardware codec (Mantle OS)
 
 Every VCW layer is a REAL, valid PNG image: the whole organism's memory is a directory of
 pictures you can open in any image viewer. This module is the lowest substrate primitive --
@@ -13,6 +13,11 @@ flat RGBA bytes <-> PNG bytes, and the layer pixel-stream layout:
 
 A single byte inside a layer is addressed by (layer, x, y):
   offset = (y * SIDE + x) * CHANNELS          # CHANNELS = 4 (R,G,B,A)
+
+This file deliberately does not assign semantic meaning to R/G/B/A. Those are the four
+addressable substrate lanes. The cube boot sector and the layer's driver/profile decide
+whether the lanes carry log JSON bytes, spatial state, tool/database payload, or a
+Grimoire software profile such as atom/role/evidence/force.
 
 We WRITE filter type 0 (None) scanlines at zlib level 1 (the payload is JSON + zero pad --
 level 1 compresses it nearly as small as level 6 at a fraction of the CPU; the level is

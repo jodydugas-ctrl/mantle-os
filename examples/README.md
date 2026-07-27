@@ -15,6 +15,8 @@ These are proven by the framework's own gate. Read and run these first:
   anchor`, and the graft spore.
 - **`spores/`** - germ spores, the one artifact that births an AppAI:
   `python -m mantle hatch examples/spores/greeter.png --out=nest/`.
+- **`files_appai/`** - the deterministic Files source aide plus generated-carrier
+  and local certification scripts. Serve `examples/` and open `/files_appai/`.
 - **`eggs/`** - the germ files those spores are packed from: `greeter.json`
   (the template), `notes_graft.json` (a graft germ targeting `sample_app`),
   and `calculator.json` (declares its own origin face, including the AppAI
@@ -39,7 +41,8 @@ lives in the `src/mantle/` Python package and its runnable gates.
 
 ## Headless Smoke Tests
 
-`examples/tests/` contains browser/runtime smoke tests for the live agent, Calculator
+`examples/tests/` contains browser/runtime smoke tests for the live agent, Calculator,
+Files.AppAI,
 AppAI terminal behavior, and Notepad AppAI. Locally:
 
 ```bash

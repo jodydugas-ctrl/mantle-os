@@ -9,6 +9,9 @@ Two-level encoding:
 
 A band reserves a RANGE of `span` layers starting at `head`; physical layers materialize on
 demand and reclaimed layers return to a per-band free pool. Every band declares a purpose.
+The boot map is the cube's substrate bootloader: it decides which layers exist, who owns
+them, what driver/profile interprets their four RGBA lanes, and which lanes are payload,
+repair, index, tool, database, spatial, or Grimoire-semantic data.
 
 CAPACITY DOCTRINE (executable): a band's *pressure* is the fraction of its reserved span
 that is allocated. Crossing OVERFLOW (0.75) fires an `overflow` immune event and triggers

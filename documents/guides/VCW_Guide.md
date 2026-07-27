@@ -1,9 +1,18 @@
 # Mantle OS — The VCW Substrate Guide
 
-The VCW ("Visual Cortex Workspace") cube is the organism's durable nervous-memory: a
-stack of 800 real PNG layers (800×800 RGBA) in a ZIP container, addressable byte-by-byte
-(`offset = (y*SIDE + x) * 4`), readable in any image viewer. *If it's not in the VCW, it
-didn't happen.* The on-disk format is unchanged from v2 (`vcw-cube-png-v2`).
+The VCW ("Visual Cortex Workspace") is the organism's booted substrate hardware: a
+standard body plan visualized as an 800×800×800 cube, with 800×800 RGBA layers in a ZIP
+container, addressable byte-by-byte (`offset = (y*SIDE + x) * 4`), readable in any image
+viewer. The 800-layer shape is the canonical visualization soft cap; layers are generated
+only as bands need them. *If it's not in the VCW, it didn't happen.* The on-disk format is
+unchanged from v2 (`vcw-cube-png-v2`).
+
+The Grimoire is software that can run on that substrate. In a Grimoire-semantic layer,
+the four RGBA lanes may mean atom, role, evidence, and force. In another layer, the same
+four lanes may be boot-mapped to tool state, app data, indexes, a database payload,
+spatial memory, or repair bytes. VCW supplies the lanes, frames, allocation, integrity,
+and persistence; the cube bootloader and each layer's driver/profile declare what those
+lanes mean.
 
 The anatomical atlas (coordinate ownership, colour semantics) and the compliance
 tiers (what to do when a full VCW can't run) are the last two sections of this guide.
@@ -18,6 +27,7 @@ NotepadNext.AppAI, see
 cube   = one GENERATION of experiential memory (identity lives in the Body, never here)
 band   = a named, contiguous reserved RANGE of layers, self-described by a boot sector
 layer  = one real PNG; materialized on demand inside the band's range
+lane   = one of the four addressable RGBA streams; semantics are profile-defined
 entry  = one immutable record; hashed over EVERY non-volatile field
 veil   = private bands read as [] unless deliberately lifted; tombstoned/quarantined
          entries never surface
@@ -28,16 +38,47 @@ anatomical atlas and exported from `mantle.vcw.atlas`.
 
 ## Boot sectors and drivers (two-level encoding)
 
-A band's boot sector (level 1, fixed format) names a **driver** (level 2, programmable):
-`log-json` (immutable entry log), `keyvalue` (small mutable map), `calendar-spatial`
-(data AS colors at coordinates — a real canvas), `exec` (a calcified reflex layer).
+A band's boot sector (level 1, fixed format) names a **driver** or carrier profile (level
+2, programmable): `log-json` (immutable entry log), `keyvalue` (small mutable map),
+`calendar-spatial` (data AS colors at coordinates — a real canvas), `exec` (a calcified
+reflex layer), or `grimoire-v0.9` (semantic RGBA runs: atom, role, evidence, force).
 Drivers live in the Body (trusted code); boot sectors are data that select them.
+
+That means RGBA is not globally "thought" and not globally "Grimoire." RGBA is the lane
+hardware. A layer profile declares framing, terminators, integrity, ordering, and lane
+meaning for that layer. One band can store four streams of semantic Grimoire morphemes;
+another can use those lanes as a compact database record. SPORE-PNG v2 declares the
+Grimoire mapping directly, including Alpha as force.
+
+## VCW Hardware, Grimoire Software
+
+The compatibility rule is:
+
+| Layer | Responsibility |
+| --- | --- |
+| **VCW substrate** | addressable RGBA lanes, lazy layers, boot-declared bands, append discipline, persistence, integrity, and carrier/profile selection |
+| **Cube bootloader** | dimensions, band allocation, layer ownership, driver/profile, privacy, capacity policy, and carrier duties |
+| **Layer profile / driver** | how the four lanes are framed, ended, verified, stored, and interpreted for this layer |
+| **Grimoire software profile** | one possible lane meaning: `R=atom`, `G=role`, `B=evidence`, `A=force` |
+| **Body policy** | whether a decoded profile is stored, rejected, quarantined, quoted, or adopted |
+
+A Grimoire profile present in a filesystem, spore, cube layer, cache, or prompt is data
+until the operator or Body policy adopts it. Presence is not authority. In Mantle's
+registered `grimoire-v0.9` driver, boot params set the adoption state explicitly:
+`data`, `quote`, `quarantine`, or `adopted`. Only `adopted` is governing, and its
+authority is recorded as `boot-policy`.
+
+`grimoire-v0.9` also separates statement parity from transport integrity. Parity proves
+the statement morphemes agree with the Grimoire v0.9 carrier rule; a carrier claiming
+tamper evidence must provide the raw-run fingerprint over the full framed RGBA run. If
+that fingerprint is absent, the decoded layer is marked `unmeasured` rather than silently
+trusted.
 
 ## VCW is the law — the cube is one body plan, the PNG is another
 
 The boot sector deciding behaviour (not hard-coded logic) has a larger consequence: **VCW is
-not one file format. It is a memory GRAMMAR — a law about how state is stored, grown, proven,
-and exposed.** The 800-layer cube (`vcw-cube-png-v2`) is one *body plan* that obeys the law. A
+not one file format. It is substrate hardware plus a memory grammar — a law about how state is
+stored, grown, proven, and exposed.** The 800-layer cube (`vcw-cube-png-v2`) is one *body plan* that obeys the law. A
 [**spore**](../../examples/spore/) — a single PNG that carries its whole memory in its top-half
 colour field — is **another**. Same law, different medium. So the spore is not a toy Mantle; it
 is proof the substrate can **molt into different media**.
@@ -47,10 +88,10 @@ A substrate *is* a VCW layer when it provides the nine properties of the memory 
 | The law (memory grammar) | The cube body plan | The SPORE-PNG body plan |
 | --- | --- | --- |
 | **addressable region** | bands over layers; `offset=(y·SIDE+x)·4` | the top-half VCW region; block index `i→(i%W, i//W)` |
-| **canonical payload** | driver-native content per layer, hashed entries | one JSON payload with a `payload_checksum` |
+| **canonical payload** | driver-native content per layer, hashed entries | one JSON payload serialized as Grimoire v0.9 QUOTE statements |
 | **append-only evolution** | `log-json` immutable entries, monotonic ids | append-only conversation, ids `0..n` |
-| **integrity checks** | staged save→verify, content signatures, seals | magic + `payload_checksum` (a wiped header is refused) |
-| **repair signaling** | coherence checks; a corrupt cube never replaces a healthy one | per-block Hamming SECDED in alpha: repair 1 bit, report 2 |
+| **integrity checks** | staged save→verify, content signatures, seals | G=0x7f statement PARITY + full-lane SHA-256 over payload frames |
+| **integrity signaling** | coherence checks; a corrupt cube never replaces a healthy one | a parity or package fingerprint mismatch rejects the carrier |
 | **embedded boot instructions** | band + cube boot sectors (self-describing) | magic/version/header + `BOOTLOADER` + a runnable embedded reader/writer |
 | **authority rules** | cube boot is the authoritative band map; the veil | `AUTHORITY` table: VCW payload canonical over metadata/strip |
 | **read/write protocol** | `read` / `retrieve` / `append` | `read_spore` / retrieve-by-index / `append_turn` |
@@ -141,23 +182,26 @@ Live code remains the source of behavioural truth; this section names the anatom
 place so diagrams, spores, faces, and audits use the same measurement vocabulary. The
 machine-readable companion is `mantle.vcw.atlas`.
 
-**Coordinate ownership.** The cube body plan is `vcw-cube-png-v2`: 800 layers, each an
-800x800 non-interlaced 8-bit RGBA PNG; a byte inside a layer is addressed as
-`offset = (y * SIDE + x) * CHANNELS`. Layer ownership is band ownership: a band owns the
-half-open layer range `[head, head + span)` declared by its boot sector. The standard
-genome owns identity, facts, events, discoveries, senses, immune, brain, and private
-thoughts bands. App bands live in 550-749, with framework-reserved ranges declared by
-`APP_BAND_ATLAS`; caller bands must be allocated only from gaps. Layers 750-799 are tail
-space. The spore body plan is `spore-png-v1`: a 2000x2000 RGBA PNG whose top half is the
-canonical VCW region and whose bottom half is display (the protected boot strip lives
-inside the display region); the regions must remain disjoint.
+**Coordinate ownership.** The cube body plan is `vcw-cube-png-v2`: up to 800 layers, each
+an 800x800 non-interlaced 8-bit RGBA PNG; a byte inside a layer is addressed as
+`offset = (y * SIDE + x) * CHANNELS`. The 800-layer count is the standard visualization
+soft cap; layers are lazily materialized inside boot-declared bands. Layer ownership is
+band ownership: a band owns the half-open layer range `[head, head + span)` declared by
+its boot sector. The standard genome owns identity, facts, events, discoveries, senses,
+immune, brain, and private thoughts bands. App bands live in 550-749, with
+framework-reserved ranges declared by `APP_BAND_ATLAS`; caller bands must be allocated
+only from gaps. Layers 750-799 are tail space. The spore body plan is `spore-png-v2`: a
+2000x2000 RGBA PNG whose top half is the canonical VCW region and whose bottom half is
+display (the protected boot strip lives inside the display region); the regions must
+remain disjoint.
 
-**Colour and transparency semantics.** Content colour is payload: in a cube spatial
-layer, RGBA stores the spatial state directly (alpha 0 = free, 255 = occupied); in a
-spore, RGB stores payload bytes and alpha is the Hamming SECDED repair byte. Activity
-colour is status: the face/self-portrait uses colours for pressure, organ state,
-lineage, and immune ticks — diagnostic display signals, not canonical payload. A private
-band still owns coordinates; the veil controls what crosses the boundary.
+**Lane and colour semantics.** RGBA are four substrate lanes. Content colour is payload
+only under the active layer profile: in a cube spatial layer, RGBA stores the spatial
+state directly (alpha 0 = free, 255 = occupied); in a v2 spore, physical RGBA maps to
+atom, role, evidence, and force. Activity colour is status: the face/self-portrait
+uses colours for pressure, organ state, lineage, and immune ticks — diagnostic display
+signals, not canonical payload. A private band still owns coordinates; the veil controls
+what crosses the boundary.
 
 **Measurement rules.** Measurement views must be deterministic (same canonical state,
 same measurement image). Inspection scaling must use nearest-neighbor sampling —

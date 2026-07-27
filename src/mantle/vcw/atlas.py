@@ -34,6 +34,10 @@ MEASUREMENT_RULES = {
         "content colour stores payload or spatial state; activity colour reports "
         "status/pressure and is not canonical payload"
     ),
+    "lane_semantics_are_profiled": (
+        "RGBA are substrate lanes; the cube boot and layer driver/profile declare "
+        "what the lanes mean for that layer"
+    ),
 }
 
 
@@ -54,9 +58,11 @@ def _spore_regions() -> Dict[str, Any]:
         "vcw_region": vcw,
         "display_region": display,
         "boot_strip_region": boot_strip,
-        "payload_encoding": "RGB",
-        "repair_encoding": "T alpha channel Hamming SECDED",
-        "address_formula": "block_index -> (VCW_X + i % VCW_W, VCW_Y + i // VCW_W)",
+        "payload_encoding": "grimoire-v0.9-quoted-bytes",
+        "statement_integrity": "G=0x7f PARITY over R/B/A",
+        "container_integrity": "SHA-256 over raw payload RGBA lanes and frame boundaries",
+        "alpha_lane": "force (HEAD=QUOTE; non-HEAD semantic morphemes inherit with A=0)",
+        "address_formula": "pixel_index -> (VCW_X + i % VCW_W, VCW_Y + i // VCW_W)",
         "vcw_capacity_bytes": spore.VCW_CAPACITY_BYTES,
     }
 
@@ -101,9 +107,12 @@ def build_atlas() -> Dict[str, Any]:
         "cube": {
             "format": VCW_FORMAT,
             "layer_count": LAYER_COUNT,
+            "layer_count_role": "canonical visualization soft cap; layers materialize on demand",
             "layer_width": SIDE,
             "layer_height": SIDE,
             "channels": CHANNELS,
+            "lanes": ["R", "G", "B", "A"],
+            "lane_semantics": "boot/profile-defined",
             "layer_bytes": LAYER_BYTES,
             "byte_address_formula": "offset = (y * SIDE + x) * CHANNELS",
             "png_profile": "non-interlaced 8-bit RGBA",
@@ -142,8 +151,12 @@ def verify_atlas() -> List[str]:
     if app_ranges != APP_BAND_ATLAS:
         problems.append("reserved app-band atlas drift")
     spore = atlas["spore"]
-    if spore["payload_encoding"] != "RGB" or "SECDED" not in spore["repair_encoding"]:
-        problems.append("spore RGB+T repair encoding drift")
+    if (spore["payload_encoding"] != "grimoire-v0.9-quoted-bytes"
+            or spore["alpha_lane"] !=
+            "force (HEAD=QUOTE; non-HEAD semantic morphemes inherit with A=0)"
+            or "G=0x7f PARITY" not in spore["statement_integrity"]
+            or "SHA-256" not in spore["container_integrity"]):
+        problems.append("spore Grimoire v0.9 carrier encoding drift")
     if _regions_overlap(spore["vcw_region"], spore["display_region"]):
         problems.append("spore VCW and display regions overlap")
     required_rules = {
@@ -151,6 +164,7 @@ def verify_atlas() -> List[str]:
         "measurement_scaling",
         "private_tissue",
         "content_vs_activity_colour",
+        "lane_semantics_are_profiled",
     }
     if set(atlas["measurement_rules"]) != required_rules:
         problems.append("measurement rule set drift")

@@ -2,9 +2,10 @@
 """
 mantle.graft  --  the GRAFT GERM and LIVE RESIDENCY (Mantle OS · R1 + R2)
 
-Doctrine of record: documents/grimoire/The Grimoire.md (MantleOS @ residency/assimilation law --
-detail; "One substrate, two casts"). Graft reuses the single canonical organ-role table
-(ROLES from assimilator.scanner) and delegates scanning to anchor(); it never re-classifies.
+Graft procedure is owned by the Mantle runtime docs and code. The Grimoire is the VCW
+software profile, not a separate residency manual. Graft reuses the single canonical
+organ-role table (ROLES from assimilator.scanner) and delegates scanning to anchor(); it
+never re-classifies.
 
 A graft is a SPORE AIMED AT A HOST: the same one-artifact story as every birth, but the
 germ inside is a patch set, not a from-scratch spec. `load_graft` accepts either a germ

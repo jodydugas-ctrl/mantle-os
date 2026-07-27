@@ -15,10 +15,15 @@ own gates stop an uncertified Body. Read here, run there; they are the same book
 ## Before chapter one: the two sentences that explain everything
 
 An **AppAI** is software grown as a living creature: a deterministic **Body** of nine
-organs around a durable picture-memory (the **VCW cube**), proven alive and correct
+organs around a durable, booted picture-memory substrate (the **VCW cube**), proven alive and correct
 with **no AI attached**, and only then given a bounded **MIND**. Beyond that comes the
 reproductive step: a whole AppAI travelling as one **spore** file (its **germ** is the
 complete build document), incubated by the **hatchery** into a certified organism.
+
+VCW is the hardware layer: RGBA lanes, lazy layers, boot-declared bands, integrity, and
+persistence. Grimoire-style lane semantics are software profiles that may run on that
+substrate; other layers may map the same lanes to tools, app data, repair bytes, indexes,
+or a database.
 
 The fastest possible start:
 
@@ -42,9 +47,11 @@ Immunization working copy.
 
 ```python
 from mantle import Organism
+from mantle.primer import appai_commandments, appai_truths
+
 org = Organism.birth(identity={"name": "My.AppAI"},
-                     truths=["if it is not in the VCW it did not happen"],
-                     commandments=["protect your VCW", "you are a tool USER"])
+                     truths=appai_truths(),
+                     commandments=appai_commandments())
 ```
 
 **Proven live:** the sealed Primer refuses a second birth; identity is Body-resident.

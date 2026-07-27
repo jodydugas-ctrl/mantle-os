@@ -112,9 +112,13 @@ Immune event.
 
 ## 4. The VCW substrate (optimized, invariants intact)
 
-Unchanged doctrine: durable PNG-layer memory; named bands; immutable hashed entries; the
-veil; staged save → verify → atomic replace; append before overwrite; rebirth separate
-from capacity. What the implementation adds, without weakening any of that:
+Unchanged doctrine: VCW is the durable booted substrate: RGBA lane hardware, named bands,
+immutable hashed entries, the veil, staged save → verify → atomic replace, append before
+overwrite, and rebirth separate from capacity. The standard cube is visualized as
+800x800x800, but layers materialize only as boot-declared bands need them. Layer
+drivers/profiles decide what the four lanes mean: log bytes, key/value storage, spatial
+state, exec payload, or Grimoire software lanes. What the implementation adds, without
+weakening any of that:
 
 - **Lazy layer materialization** — a sealed ancestor costs nothing until referenced.
 - **Changed-layer-only persistence** — per-layer signatures; only dirty layers re-encode.
@@ -203,8 +207,8 @@ JSON map, and — with `--spore=out.png` — the host's **germ spore** (see
 threads host behavior through Senses/Limbs/Memory/Immune without changing it.
 `python -m mantle assimilate <path> --dry-run` runs the read-only pipeline against any
 host. The scanner is Python-AST by default and multi-language (`.js/.mjs/.go/.rs`) via the
-optional tree-sitter extra. The doctrine is the canonical NECROMANCY section of
-[`grimoire/The Grimoire.md`](grimoire/The%20Grimoire.md).
+optional tree-sitter extra. The Grimoire now supplies the VCW semantic software profile;
+assimilation procedure is owned by this code path and the assimilation guide.
 
 The host evidence index is the resident's local-first consultation substrate. A resident
 answers questions about its software from the inventory, organ map, control surfaces, gap

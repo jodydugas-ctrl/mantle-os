@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """
-mantle.vcw.cube  --  the boot-driven Cube (Mantle OS)
+mantle.vcw.cube  --  the boot-driven VCW substrate (Mantle OS)
 
 One cube = one generation of experiential memory: a stack of 800 real-PNG layers grouped
 into named BANDS, each band self-described by a boot sector that names a driver. Identity
 is NOT here -- the Primer lives in the Body; the cube is pure experiential memory.
+
+The 800x800x800 cube is the standard body plan and visualization geometry. The layer count
+is a canonical soft cap: layers are materialized only when a boot-declared band needs them.
+RGBA are the four substrate lanes, not permanently "thought" or "Grimoire" semantics. A
+layer's boot-selected driver/profile declares how those lanes are framed, ended, verified,
+and interpreted.
 
 substrate properties (all invariant-preserving):
 

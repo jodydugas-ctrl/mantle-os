@@ -25,13 +25,14 @@ from ..core.organism import Organism
 from ..core.redact import contains_secret
 from ..core.audit import expect_raise as _expect_raise
 from ..primer import appai_commandments, appai_truths
-from ..vcw.bands import standard_genome, make_band_boot
+from ..vcw.bands import standard_genome, make_band_boot, get_driver
 from ..vcw.cube import Cube
 from ..vcw.entry import make_entry
 from ..vcw.drivers import (ExecDriver, CapabilityError, IntegrityError, TrustError,
                            SandboxError, ProvenanceError, ResourceLimitError,
                            ProtocolError, PythonExecRunner, validate_calcify_payload,
                            trial)
+from ..vcw.grimoire import GrimoireDecodeError, raw_run_fingerprint
 from ..vcw.bands import code_hash
 from .registry import build_registry, by_concern
 
@@ -326,6 +327,114 @@ def t_lazy_load_equivalence():
     touched_only_facts = lazy.materialized_count() == 1
     return (untouched and same and touched_only_facts,
             "0 layers decoded before read; reads identical; 1 layer decoded after")
+
+
+def t_grimoire_v09_profile_driver_integrity():
+    """GRIMOIRE-1: the v0.9 profile is a real boot-selectable VCW driver.
+
+    It preserves raw RGBA runs, validates statement parity, validates full-lane
+    fingerprints when tamper evidence is claimed, exposes atom-address provenance, and
+    treats adoption/quarantine/quote status as boot policy instead of payload authority.
+    """
+    raw = bytes.fromhex("9a010801212a000013400000a87f0801")
+    frame_id = "book-row-000"
+    fingerprint = raw_run_fingerprint(raw, frame_id)
+    genome = standard_genome() + [make_band_boot(
+        "grimoire_profile", 600, "grimoire-v0.9", span=1,
+        params={"claim_tamper_evidence": True, "adoption_policy": "data"},
+        purpose="Grimoire v0.9 semantic profile proof")]
+    cube = Cube.genesis(genome)
+    registered = get_driver("grimoire-v0.9").name == "grimoire-v0.9"
+
+    cube.append("grimoire_profile", {
+        "raw": raw,
+        "frame_id": frame_id,
+        "fingerprint": fingerprint,
+    })
+    decoded = cube.retrieve("grimoire_profile", 0)
+    read_back = cube.read("grimoire_profile")[0]
+    provenance = decoded["groups"][0]["atoms"][0]["atom"]
+    good = (
+        registered
+        and decoded == read_back
+        and decoded["profile"] == "grimoire-v0.9"
+        and decoded["byte_order"] == "RGBA"
+        and decoded["frame_id"] == frame_id
+        and decoded["raw"] == raw.hex()
+        and decoded["parity_status"] == "ok"
+        and decoded["fingerprint_status"] == "ok"
+        and decoded["full_lane_integrity"] == "measured"
+        and decoded["head_evidence"] == "STIPULATED"
+        and decoded["head_force"] == "LAW"
+        and decoded["adoption"] == {
+            "status": "data",
+            "governing": False,
+            "authority": "none",
+        }
+        and provenance["address"] == 154
+        and "external address table" in provenance["allocation_rule"]
+    )
+
+    adopted = Cube.genesis(standard_genome() + [make_band_boot(
+        "grimoire_adopted", 600, "grimoire-v0.9", span=1,
+        params={"adoption_policy": "adopted"},
+        purpose="boot-policy adoption proof")])
+    adopted.append("grimoire_adopted", {"hex": raw.hex(), "frame_id": "adopted"})
+    adopted_status = adopted.retrieve("grimoire_adopted", 0)["adoption"]
+    adoption_booted = adopted_status == {
+        "status": "adopted",
+        "governing": True,
+        "authority": "boot-policy",
+    }
+    quote_quarantine_booted = True
+    for policy in ("quote", "quarantine"):
+        policy_cube = Cube.genesis(standard_genome() + [make_band_boot(
+            "grimoire_policy", 600, "grimoire-v0.9", span=1,
+            params={"adoption_policy": policy},
+            purpose="boot-policy %s proof" % policy)])
+        policy_cube.append("grimoire_policy", {
+            "hex": raw.hex(),
+            "frame_id": "policy-" + policy,
+        })
+        policy_status = policy_cube.retrieve("grimoire_policy", 0)["adoption"]
+        quote_quarantine_booted = quote_quarantine_booted and policy_status == {
+            "status": policy,
+            "governing": False,
+            "authority": "none",
+        }
+
+    unmeasured = Cube.genesis(standard_genome() + [make_band_boot(
+        "grimoire_unmeasured", 600, "grimoire-v0.9", span=1,
+        params={"claim_tamper_evidence": True},
+        purpose="missing full-lane fingerprint proof")])
+    unmeasured.append("grimoire_unmeasured", {"hex": raw.hex(), "frame_id": "missing"})
+    missing_fp = unmeasured.retrieve("grimoire_unmeasured", 0)
+    missing_marked = (
+        missing_fp["fingerprint_status"] == "missing"
+        and missing_fp["full_lane_integrity"] == "unmeasured"
+    )
+
+    wrong_fingerprint, _ = _expect_raise(
+        lambda: cube.append("grimoire_profile", {
+            "raw": raw,
+            "frame_id": frame_id,
+            "fingerprint": "sha256:" + ("0" * 64),
+        }),
+        GrimoireDecodeError)
+    bad_parity = bytearray(raw)
+    bad_parity[-1] ^= 0x01
+    parity_refused, _ = _expect_raise(
+        lambda: cube.append("grimoire_profile", {
+            "raw": bytes(bad_parity),
+            "frame_id": "bad-parity",
+            "fingerprint": raw_run_fingerprint(bytes(bad_parity), "bad-parity"),
+        }),
+        GrimoireDecodeError)
+
+    return (good and adoption_booted and quote_quarantine_booted and missing_marked
+            and wrong_fingerprint and parity_refused,
+            "grimoire-v0.9 boots as a driver; raw/parity/fingerprint/provenance/"
+            "adoption paths are executable")
 
 
 # ============================================================================
@@ -760,16 +869,24 @@ def t_bugfix_runtime_boundaries():
     checks.append(("mind-dispatch", refused_intent and e.get("authorship") == "MIND"
                    and e.get("content", {}).get("phase") == "DELEGATED"))
 
-    prefix = _spore.MAGIC + bytes([_spore.FORMAT_VERSION]) \
-        + (_spore.VCW_CAPACITY_BYTES).to_bytes(4, "big")
+    hostile_manifest = json.dumps({
+        "magic": _spore.MAGIC.decode("ascii"),
+        "format_version": _spore.FORMAT_VERSION,
+        "encoding": "grimoire-v0.9-quoted-bytes",
+        "frame_payload_bytes": _spore.FRAME_PAYLOAD_BYTES,
+        "payload_frame_count": _spore.VCW_BLOCKS + 1,
+        "payload_length": 0,
+        "payload_checksum": _spore._sha(b""),
+        "payload_fingerprint": _spore._full_lane_fingerprint([]),
+    }, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    hostile_raw = _spore.encode_quoted_bytes(hostile_manifest)
 
     class FakePixels:
         def __getitem__(self, xy):
             x, y = xy
             i = y * _spore.VCW_W + x
-            chunk = prefix[i * 3:i * 3 + 3].ljust(3, b"\0")
-            r, g, b = chunk
-            return r, g, b, _spore.compute_T(r, g, b)
+            off = i * 4
+            return tuple(hostile_raw[off:off + 4].ljust(4, b"\0"))
 
     class FakeImage:
         def load(self):
@@ -781,13 +898,17 @@ def t_bugfix_runtime_boundaries():
     old_image = _spore.Image
     try:
         _spore.Image = None
-        state = {"identity": {"spore_name": "x", "task": "t"}, "conversation": []}
-        pillow_refused = _expect_raise(
-            lambda: _spore.render_spore(state, os.path.join(tempfile.gettempdir(), "x.png")),
-            RuntimeError)[0]
+        p = os.path.join(tempfile.gettempdir(), "x-spore-stdlib.png")
+        state = _spore._new_state("x", "t", None)
+        _spore.render_spore(state, p)
+        info = _spore.read_spore(p)
+        stdlib_spore = (
+            info["state"]["identity"]["spore_name"] == "x"
+            and _spore.verify_spore(p)["ok"]
+        )
     finally:
         _spore.Image = old_image
-    checks.append(("spore-pillow", pillow_refused))
+    checks.append(("spore-stdlib-png", stdlib_spore))
 
     egg = {"identity": {"name": "<script>x</script>", "purpose": "<b>p</b>"},
            "controls": [{"id": "\" onclick=\"x", "label": "<b>Click</b>"}]}
@@ -3210,6 +3331,7 @@ _INVARIANT_DEFINITIONS = [
     ("HF-B46b seal-tamper-detected",           t_seal_tamper_detected),
     ("B-CAP capacity->metabolism-not-rebirth", t_capacity_metabolism_not_rebirth),
     ("B-LZ  lazy-load-equivalence",            t_lazy_load_equivalence),
+    ("GRIMOIRE-1 v0.9-driver+integrity",       t_grimoire_v09_profile_driver_integrity),
     ("HF-B47 exec-integrity-gate",             t_exec_integrity),
     ("HF-B48 exec-capability-gate",            t_exec_capability),
     ("HF-B50 exec-trust/foreign-refused",      t_exec_trust_foreign),

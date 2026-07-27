@@ -11,7 +11,7 @@ an approved host boundary.
 Composition, not invention -- every mechanic here is an existing Mantle system:
 
   * dissection      -> mantle.assimilator.scanner (read-only, never executes host code)
-  * diagnosis       -> mantle.assimilator.organ_map (the NECROMANCY organ model)
+  * diagnosis       -> mantle.assimilator.organ_map (the assimilation organ model)
   * band validation -> mantle.compiler.validate_genome (the same Body gate the
                        self-redesigning VCW passes through)
   * the face        -> mantle.phenotype.express / wear (no second face mechanism)
@@ -99,7 +99,7 @@ def applet_bands() -> List[Dict[str, Any]]:
         {"band": STATE_BAND, "head": 728, "span": 8, "encoding": "log-json",
          "purpose": "applet state/variables (redacted, append-only)"},
         {"band": ORGANS_BAND, "head": 736, "span": 8, "encoding": "log-json",
-         "purpose": "applet organ maps + scan reports (NECROMANCY diagnosis)"},
+         "purpose": "applet organ maps + scan reports (assimilation diagnosis)"},
         {"band": LOG_BAND, "head": 744, "span": 4, "encoding": "log-json",
          "purpose": "append-only applet event log (create/audit/export/wear)"},
     ])
@@ -283,7 +283,7 @@ def create_applet_body(org: Any, source_dir: str, name: str, *,
                       "an applet named %r already exists (applet bodies are append-only; "
                       "use a new name)" % name)
 
-    # 1. NECROMANCY-style dissection: read-only scan + organ map (existing systems)
+    # 1. Assimilation-style dissection: read-only scan + organ map (existing systems)
     dissection = scanner.scan_project(source_dir)
     omap = organ_map.build_map(dissection)
 

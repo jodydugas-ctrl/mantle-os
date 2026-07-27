@@ -127,7 +127,8 @@ they are*.
 ### 4.2 Genome — identity, inheritance & lineage
 The Genome is **held in the Body, not the cube** (`src/mantle/core/body.py`). There are two distinct
 genomes: the **agent genome** (who you are — the Genome organ here) lives in the Body; the
-**cube genome** (the band layout) is the cube boot sector. The cube is pure experiential memory.
+**cube genome** (the booted band/layer/profile layout) is the cube boot sector. The cube is
+pure experiential memory.
 - **Owns** three Body-resident, addressable categories — the mutable surface over the
   append-only VCW — plus the lineage index:
   - **Primer** (read-only): identity + the Commandments; immutable post-birth.

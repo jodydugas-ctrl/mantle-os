@@ -1,0 +1,97 @@
+{
+  "germ": "Files.AppAI",
+  "stages": [
+    {
+      "birth": {
+        "bands": 19,
+        "name": "Files.AppAI"
+      }
+    },
+    {
+      "wire": {
+        "reflexes": 3,
+        "routines": 2,
+        "controls": 6
+      }
+    },
+    {
+      "face": {
+        "default": "origin",
+        "kind": "html",
+        "bytes": 47239
+      }
+    },
+    {
+      "instinct": {
+        "entry": "files_area",
+        "cases": 4
+      }
+    },
+    {
+      "instinct": {
+        "entry": "files_verify_command",
+        "cases": 3
+      }
+    },
+    {
+      "warmup": {
+        "beats": 3,
+        "immune_events": 0
+      }
+    },
+    {
+      "gate": {
+        "passed": true,
+        "rows": 21,
+        "fails": []
+      }
+    },
+    {
+      "vault": {
+        "seed": "stored (SELF-sealed germ)"
+      }
+    }
+  ],
+  "egg": "Files.AppAI",
+  "certified": true,
+  "spore_distillation": {
+    "spore": "Files.AppAI",
+    "origin": "png",
+    "germ_carried": true,
+    "certified": true,
+    "memories_ingested": 0,
+    "spore_sealed": true,
+    "spore_sha256": "sha256:6e4ca258e11aee5992af8e085a33aaebbec1494871b4b7609ba4ad0779647f4d",
+    "key_derived_from_spore": false,
+    "key_fingerprint": "d6057fe39c969a4b",
+    "primer_boundary": {
+      "spore_becomes": "PRIMER",
+      "body_key_owner": "BODY",
+      "mind_key_access": false,
+      "key_material_in_receipt": false,
+      "sealed": true
+    },
+    "source": {
+      "declared": true,
+      "descriptor": {
+        "kind": "git",
+        "notes": "commit-bound source evidence; no network access during regeneration",
+        "ref": "[REDACTED]",
+        "url": "https://github.com/files-community/Files"
+      },
+      "receipt": {},
+      "fetched": false,
+      "assimilated": false,
+      "certified": false,
+      "sealed": false,
+      "body_status": "not_certified_here",
+      "source_self_status": "OTHER_until_PRIMER_seal_provenance_and_certification",
+      "host_code_is_self": false,
+      "key_owner": "BODY",
+      "mind_key_access": false,
+      "key_material_in_receipt": false
+    }
+  },
+  "saved_to": "C:\\Users\\jodyd\\OneDrive\\Documents\\GITHUB Files Project\\Files.AppAI.nest",
+  "portrait": "C:\\Users\\jodyd\\OneDrive\\Documents\\GITHUB Files Project\\Files.AppAI.nest\\face.png"
+}

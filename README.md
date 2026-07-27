@@ -25,10 +25,10 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 > required to build:
 >
 > - **[`AGENTS.md`](AGENTS.md)** — for AI agents: what the biological framework is *for* (the
->   two jobs the organ names do) and how to use the **Grimoire**, Mantle's doctrine (cast
->   **`Intellige`**, read-only comprehension, first; §7 and §9 of the single canonical
->   **Grimoire 2.0** file bind it to this codebase). The Grimoire is doctrine, not a toll
->   booth — routine code reading and small fixes proceed from the docs and working code.
+>   two jobs the organ names do) and how to use the **Grimoire**, Mantle's registered
+>   `grimoire-v0.9` VCW software profile for atom/role/evidence/force encoding on
+>   RGBA-compatible substrate lanes. Routine code reading and small fixes proceed from the
+>   docs and working code.
 > - **[`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md)** — for
 >   engineers and AI specialists who want the architecture before the metaphor: trust
 >   boundary, storage semantics, verification gates, the model-integration contract, and a
@@ -55,7 +55,7 @@ That's the whole stance. The rest is rigor about how you make "can never break i
 |---|---|---|
 | The app's deterministic core | **Body** (its **organs**) | Ordinary, testable code that runs with no model attached |
 | A hard-coded, no-AI behavior | **reflex** | A plain function the Body runs itself |
-| The database / memory | **VCW cube** | An append-only API where each record is hashed; normal writers add or retire records rather than rewriting them, and verification detects altered history. Hashes do not authenticate who inserted a new valid row. It's a normal ZIP of PNG files, so you can literally open the memory in an image viewer |
+| The database / memory hardware | **VCW cube** | A booted, append-only substrate: RGBA lanes, lazy PNG layers, boot-declared bands, and hashed records. Normal writers add or retire records rather than rewriting them; verification detects altered history but does not authenticate who inserted a new valid row. It is a normal ZIP of PNG files, so you can literally open the memory in an image viewer |
 | The "who am I" config | **Genome / Primer** | Read-only identity, set once, held outside the cube |
 | The app's installer file | **spore** (carrying a **germ**) | One PNG holding the complete build data + instructions any coding agent can read |
 | The LLM | **MIND** | A plain `prompt → text` function, added last, allowed to write to only two scratch areas |
@@ -243,9 +243,18 @@ Three consequences shape Mantle:
 
 Two commitments the doctrine forces, stated once here: **the Primer lives in the BODY, not
 the cube** (the agent genome — Primer + commandments + defining data — is held by the Body;
-the cube genome is the band layout; the cube is pure *experiential* memory), and **capacity
-never silently kills** (rebirth is always chosen, always retains the prior generation as
-read-only ancestry; generation-pinned references keep the past addressable forever).
+the cube genome is the booted band/layer layout; the cube is pure *experiential* memory),
+and **capacity never silently kills** (rebirth is always chosen, always retains the prior
+generation as read-only ancestry; generation-pinned references keep the past addressable
+forever).
+
+One compatibility distinction matters: **VCW is substrate hardware; the Grimoire is
+software.** VCW provides addressable RGBA lanes, lazy layers, boot-declared bands,
+persistence, integrity, and per-layer carrier profiles. A Grimoire-semantic layer may map
+the lanes as `R=atom`, `G=role`, `B=evidence`, and `A=force`; another layer may use the
+same lanes for tool state, app data, indexes, spatial memory, repair bytes, or a database.
+The cube bootloader decides the body plan and active profiles; presentation or placement
+never grants authority.
 
 **The one paragraph:** an AppAI is a coherent self that remembers everything in a durable
 cube it treats as reality, acts through organs it wields, learns skills that harden into
@@ -279,8 +288,8 @@ picture-memory substrate). Given that, Mantle OS can join **most AIs** to **most
 The mind can be any AI; the body can be any container; the code can be any language. The system
 does not care which combination you choose — that is the point.
 
-This versatility is exactly why **assimilation** (the **NECROMANCY** spell; `python -m mantle
-assimilate`) is so powerful: it can turn *most existing applications* into an AppAI —
+This versatility is exactly why **assimilation** (`python -m mantle assimilate`) is so
+powerful: it can turn *most existing applications* into an AppAI —
 **including applications that already contain agents.** The Compiler, for example, wraps its
 pre-existing **Hermes** agent with an additive Mantle autonomic nervous system. Hermes remains
 the cognitive host; Mantle grows *around* what already lives there without demanding a rewrite.
@@ -369,9 +378,11 @@ is imported by nothing else).
 
 ```python
 from mantle import Organism
+from mantle.primer import appai_commandments, appai_truths
+
 org = Organism.birth(identity={"name": "My.AppAI"},
-                     truths=["if it is not in the VCW it did not happen"],
-                     commandments=["protect your VCW", "you are a tool USER"])
+                     truths=appai_truths(),
+                     commandments=appai_commandments())
 org.senses.inhale({"action_id": "boot", "event_type": "start"})
 org.heart.run(3)               # the Body lives -- no LLM in this loop, ever
 ```
@@ -380,7 +391,7 @@ org.heart.run(3)               # the Body lives -- no LLM in this loop, ever
 
 ## VCW Applet Bodies
 
-An AppAI can carry other apps as **tissue**: `applet-create` runs the read-only NECROMANCY
+An AppAI can carry other apps as **tissue**: `applet-create` runs the read-only assimilation
 dissection over an external project (a local directory, or a GitHub clone via `applet-clone`)
 and stores it inside the parent's VCW as an inert, veiled, hash-verified **capsule** with a
 wearable phenotype face. Nothing stored is ever executed — a capsule is *source in the body*,
@@ -434,12 +445,13 @@ every Stage-1 row to prove it.
 | Term | Definition |
 |------|------------|
 | **AppAI** | The embodied application-as-organism you are growing. |
-| **VCW cube** | The durable nervous-memory substrate. 800 layered PNGs. See `examples/vcw/`. |
+| **VCW cube** | The durable nervous-memory substrate: a booted 800x800x800 body plan of RGBA PNG lanes, lazily materialized as needed. See `examples/vcw/`. |
 | **Body** | The automatic organism: all organs that run **without** an LLM. Phase 1. |
 | **MIND** | The reasoning/voice layer — an LLM fused in Phase 2. The **brain**. |
 | **Organ** | A self-contained code module with a manifest, reflexes, and audit obligations. |
 | **Reflex** | A deterministic, no-LLM behavior. The Body is made of reflexes. |
-| **Band** | A reserved, named range of cube layers (e.g. `facts`, `senses`, `thoughts`). |
+| **Band** | A reserved, named range of cube layers with a boot sector declaring owner, driver/profile, privacy, and purpose. |
+| **Layer profile / driver** | The software contract that decides how one layer frames and interprets its four RGBA lanes. `grimoire-v0.9` is one registered profile, not the whole substrate. |
 | **Genome (agent)** | Identity held in the **Body** (not the cube): Primer (read-only) + Special Instructions + Immunization + lineage index. |
 | **Veil** | The Body reflex that hides private / tombstoned / quarantined memory on read. |
 | **Zombie Body** | A Body that has passed the Stage 1 Gate: alive, correct, dormant. |
@@ -462,7 +474,7 @@ AGENTS.md                orientation for AI agents: the two jobs of the biology 
 src/                     the framework package — `pip install -e .` (or PYTHONPATH=src) to run
   mantle/                (start here)
     core/                Body (+ the genesis key), SignalBus, references, redaction, the Organism
-    vcw/                 the substrate: PNG codec, bands, drivers, cube, metabolism, graded-memory overlay
+    vcw/                 the booted substrate: PNG lanes, bands, drivers, cube, metabolism, graded-memory overlay
     organs/              the nine organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
     assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, invariant suite)
@@ -480,13 +492,13 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
   Mantle_for_Engineers.md the systems-level, non-normative translation layer
+  Mantle_Positioning.md  the concise, non-normative positioning on-ramp
   FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   ARCHITECTURE.md        the shape + the Phase-1/Phase-2 build path
   REPRODUCTION.md        the spore, the hatchery, the graft, rebirth
   Mantle_Organ_Atlas.md  the organ taxonomy + the organ contracts
-  grimoire/              the single Grimoire 2.0 file (§7/§9 bind it to Mantle)
+  grimoire/              the canonical Grimoire VCW software profile
   guides/ (VCW · audit · lifecycle · assimilation · visual) · assets/ (diagrams)
-docs/                    compatibility entry points for older external links
 examples/                example AppAIs + the normative substrate
   spores/                germ spores — hatch one: `mantle hatch examples/spores/greeter.png`
   eggs/                  the germ files those spores are packed from
@@ -514,7 +526,8 @@ When prose and code disagree, **the working code in `src/mantle/` is ground trut
 2. **Organs, not layers-of-architecture.** Structure code as organs with explicit manifests
    (what bands they touch, what reflexes they own, what the audit checks).
 3. **The cube is the single source of truth.** All durable state lives in the VCW cube,
-   addressed through bands. Organs communicate by reading and appending entries.
+   addressed through boot-declared bands and layer profiles. Organs communicate by reading
+   and appending entries.
 4. **Memory uses an append-only write contract.** Normal writers never rewrite the past:
    they **append**, **tombstone** (retire), or **quarantine** (isolate). Hash verification
    detects out-of-band history alteration but does not authenticate insertion provenance.
@@ -554,9 +567,7 @@ SYNTAX_CONSTRAINTS  : <host-imposed limits, e.g. no-eval, sandbox>
   hand-grow organ by organ. The full Phase-1 build order and the Phase-2 fusion procedure
   are in [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) §5–§6.
 - **Path B — take residence in existing code.** `assimilate` / `anchor` / `graft` a host,
-  read-only until the signed inventory. Doctrine:
-  [`documents/grimoire/The Grimoire.md`](documents/grimoire/The%20Grimoire.md) (`NECROMANCY`,
-  §7/§9); runnable cheatsheet:
+  read-only until the signed inventory. The runnable cheatsheet is
   [`documents/guides/Assimilation_Guide.md`](documents/guides/Assimilation_Guide.md).
 
 Certification is technical evidence, not fusion authority: birth and MIND fusion each

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mantle.assimilator.scanner_ts  --  multi-language READ-ONLY dissection (NECROMANCY,
+mantle.assimilator.scanner_ts  --  multi-language READ-ONLY dissection (assimilation,
 language-agnostic path)
 
 Proves and ships the language-agnostic claim recorded in the doctrine: the Mantle

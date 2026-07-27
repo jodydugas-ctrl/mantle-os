@@ -4,8 +4,9 @@ mantle.organs.genome  --  the Genome organ: identity, inheritance & lineage (Man
 
 The Genome is held in the BODY, not the cube. There are two distinct genomes: the *agent
 genome* (Primer + commandments + defining data -- this organ) lives in the Body; the
-*cube genome* (the band layout) is the cube boot sector. The cube is pure experiential
-memory; identity survives every rebirth because it never lived in any cube.
+*cube genome* (the booted band/layer/profile layout) is the cube boot sector. The cube is
+pure experiential memory; identity survives every rebirth because it never lived in any
+cube.
 
 Reflexes: boot-order (assemble Primer + Special + Immunization for a model), seal-primer
 (reject any post-birth Primer write -- enforced by the Body store itself), inherit (on

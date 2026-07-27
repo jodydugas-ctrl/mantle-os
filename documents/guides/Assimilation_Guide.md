@@ -1,15 +1,14 @@
 # Mantle OS - Assimilation Guide
 
-Runnable cheatsheet for Path B. The full doctrine lives in
-[`documents/grimoire/The Grimoire.md`](../grimoire/The%20Grimoire.md), in the
-NECROMANCY and Mantle OS binding sections. Prime directive: do no harm. The host runs
-exactly as before, plus a nervous system and memory.
+Runnable cheatsheet for Path B. The Grimoire now supplies the VCW semantic software
+profile; assimilation procedure lives in this guide and the runnable Mantle code. Prime
+directive: do no harm. The host runs exactly as before, plus a nervous system and memory.
 
 **Assimilation in one breath:** you are given a living host codebase. You do not
 rewrite its behavior. You grow organs around the existing tissue with additive,
 fail-open, reversible instrumentation. Nothing touches host code until the read-only
-Phase-0 App Inventory and Organ Map is produced and signed (`HF-B42`). NECROMANCY
-(assimilate/anchor/graft) and RESURGERE (reconstruct from a germ) share one substrate
+Phase-0 App Inventory and Organ Map is produced and signed (`HF-B42`). Assimilation
+(`assimilate` / `anchor` / `graft`) and reconstruction from a germ share one substrate
 model: discover the host first, then use or grow the scanner, adapter, verifier, and
 fail-open hook runtime that fits that host.
 

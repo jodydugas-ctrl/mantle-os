@@ -1,9 +1,9 @@
 # VCW Applet Bodies — APPLET-BODY-CAPSULE
 
-*Doctrine note. The Grimoire is one canonical Grimoire 2.0 file
-([`grimoire/`](grimoire/README.md)); per its Single Truth law this note lives beside the
-other app doctrine documents, not inside the Grimoire. It documents a lawful NECROMANCY
-subspell implemented in [`src/mantle/applet_body.py`](../src/mantle/applet_body.py).*
+*Doctrine note. The Grimoire is the canonical VCW software profile
+([`grimoire/`](grimoire/README.md)); applet-body procedure lives beside the other app
+doctrine documents because it is Mantle runtime behavior, not Grimoire lane semantics. The
+implementation is [`src/mantle/applet_body.py`](../src/mantle/applet_body.py).*
 
 ## The subspell
 
@@ -13,9 +13,9 @@ executable authority until trialed, calcified, or rendered through an approved h
 boundary.**
 
 A VCW Applet Body is a small app, tool, or project stored as app tissue inside a parent
-AppAI's VCW. It composes existing spells rather than inventing new ones: the NECROMANCY
-scanner dissects the project read-only (N1–N4, zero files modified, zero files executed);
-the organ map diagnoses it; the source is chunked into a private (veiled) data band with
+AppAI's VCW. It composes existing Mantle surfaces rather than inventing a separate runtime:
+the assimilation scanner dissects the project read-only (N1-N4, zero files modified, zero
+files executed); the organ map diagnoses it; the source is chunked into a private (veiled) data band with
 per-file SHA-256 hashes and OTHER provenance; the state passes the secret boundary
 (redaction) before it appends; and the face is an ordinary `mantle.phenotype` face —
 worn, shed, and rendered only through a host boundary, exactly like every other face.

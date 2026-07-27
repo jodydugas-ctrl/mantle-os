@@ -9,9 +9,11 @@ with the API that performs it. Everything before §10 runs with NO LLM.
 ## 1. Born
 ```python
 from mantle import Organism
+from mantle.primer import appai_commandments, appai_truths
+
 org = Organism.birth(identity={"name": "My.AppAI"},
-                     truths=["if it is not in the VCW it did not happen"],
-                     commandments=["protect your VCW", "you are a tool USER"])
+                     truths=appai_truths(),
+                     commandments=appai_commandments())
 ```
 The Primer (identity + truths + commandments) seals into the **Body** — immutable for
 life, outside every cube. The Commandments seed the Immunization working copy. The Prime

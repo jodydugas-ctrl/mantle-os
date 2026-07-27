@@ -20,6 +20,13 @@ AppAI: ONE GENERATION of everything it has sensed, done, learned, and thought.
   band   = a named, contiguous reserved RANGE of layers, self-described by a BOOT SECTOR
   entry  = one immutable record appended into a band; hashed over every non-volatile field
 
+Think of VCW as booted substrate hardware, and of Grimoire-style meaning as software that
+may ride on it. The standard cube is visualized as 800x800x800, but layers materialize only
+when a band needs them; 800 is the canonical soft cap/body plan, not a claim that every file
+pre-allocates 800 PNGs. RGBA are four addressable lanes. Their semantics are declared by the
+boot-selected driver/profile for the layer: log JSON, key-value data, spatial state, exec
+reflex payload, database/tool data, or a Grimoire profile such as atom/role/evidence/force.
+
 Identity (the Primer / commandments) is NOT in the cube. It lives in the BODY and
 survives every rebirth; the cube is pure experiential memory. (HF-B45: putting the
 Primer in the cube is a Stage-1 hard fail.)
