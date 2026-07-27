@@ -16,17 +16,56 @@ Tamper proofs (the harness must CATCH violations):
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 from ..core.organism import Organism
 from ..core.audit import make_row as _row, safe as _safe, print_row, PASS, FAIL, NA
 from ..primer import APPAI_COMMANDMENTS, APPAI_TRUTHS, appai_commandments, appai_truths
-from ..vcw.bands import standard_genome
+from ..resident import NATURAL_INTERVAL_SECONDS
+from ..vcw.bands import allocate_app_band, standard_genome
 from ..vcw.entry import make_entry, entry_hash
 from . import invariants as _inv
 
 ORGANS = ("heart", "genome", "nervous", "senses", "immune", "limbs", "memory",
           "brain", "reproduction")
+
+
+#: Turn evidence -- proof the resident has actually served a user.
+_TURN_KINDS = {"USER_MESSAGE", "MIND_RESPONSE"}
+_LEGACY_TURN_KINDS = {"user_message", "mind_response"}
+
+
+def scan_resident_heartbeats(org):
+    """Read a resident's own Prime VCW and return (canonical, legacy, turns).
+
+    Two heartbeat vocabularies are recognized. `canonical` is the shared contract from
+    `mantle.resident.protocol.heartbeat_pulse_event` (`kind=HEARTBEAT_PULSE` with a
+    `payload`). `legacy` is the pre-protocol dialect some residents still emit
+    (`kind=terminal_marker` wrapping `marker.kind=heartbeat_pulse`). The row measures the
+    property -- did this resident actually beat -- and names which dialect it accepted, so
+    a migration is visible rather than silently blessed or silently broken.
+    """
+    canonical, legacy, turns = [], [], 0
+    for entry in org.prime.read("events") or []:
+        content = entry.get("content", entry) if isinstance(entry, dict) else {}
+        if not isinstance(content, dict):
+            continue
+        kind = content.get("kind")
+        if kind == "HEARTBEAT_PULSE":
+            canonical.append(content.get("payload") or {})
+            continue
+        if kind in _TURN_KINDS:
+            turns += 1
+            continue
+        marker = content.get("marker")
+        if isinstance(marker, dict):
+            marker_kind = marker.get("kind")
+            if marker_kind == "heartbeat_pulse":
+                legacy.append(marker)
+            elif marker_kind in _LEGACY_TURN_KINDS:
+                turns += 1
+    return canonical, legacy, turns
 
 
 # ============================================================================
@@ -121,6 +160,46 @@ def audit_substrate(org):
                      PASS if (free_pool and purposed) else FAIL, None,
                      note="reuse pool + compact + dedupe present; all bands purposed"
                           if free_pool and purposed else "missing"))
+
+    # -- resident cognitive cadence (corrections log 90/91) ------------------
+    # A host resident must own a LIVE heartbeat, not merely inherit `Heart.beat()`.
+    # Two conditions gate the row, and both matter:
+    #   residency -- an organism that assimilated a host carries `host_inventory`;
+    #                a bare Body has no host to stay awake for.
+    #   experience -- a newborn resident has handled no turns yet, so it has nothing
+    #                to have been awake FOR. The failure this row exists to catch is a
+    #                resident that ANSWERS USERS while owning no pulse.
+    _B47 = "Resident owns a live cognitive heartbeat (600s cadence)"
+    if "host_inventory" not in org.prime.bands:
+        rows.append(_row("B-47", _B47, NA,
+                         note="not a host resident; cadence applies to residency"))
+    else:
+        try:
+            canonical, legacy, turns = scan_resident_heartbeats(org)
+        except Exception as e:  # noqa: BLE001 -- a check bug is a FAIL with evidence
+            rows.append(_row("B-47", _B47, FAIL, "HF-B47",
+                             note="check crashed: %s: %s" % (type(e).__name__, e)))
+        else:
+            pulses = canonical + legacy
+            if not turns and not pulses:
+                rows.append(_row("B-47", _B47, NA,
+                                 note="resident born but not yet run (0 turns); "
+                                      "cadence is proven on its first session"))
+            else:
+                cadence_ok = any(p.get("interval_seconds") == NATURAL_INTERVAL_SECONDS
+                                 for p in pulses)
+                metered = all(int(p.get("api_call_count") or 0) <= 1 for p in pulses)
+                vocab = ("canonical" if canonical and not legacy
+                         else "legacy-dialect" if legacy and not canonical
+                         else "mixed" if pulses else "none")
+                rows.append(_row("B-47", _B47,
+                                 PASS if (pulses and cadence_ok and metered) else FAIL,
+                                 "HF-B47",
+                                 note="turns=%d pulses=%d (canonical=%d legacy=%d) "
+                                      "cadence_%ds=%s one_call_per_pulse=%s vocab=%s"
+                                      % (turns, len(pulses), len(canonical), len(legacy),
+                                         NATURAL_INTERVAL_SECONDS, cadence_ok, metered,
+                                         vocab)))
 
     return rows
 
@@ -310,6 +389,54 @@ def demo_organism(break_hash=False, break_primer=False, break_seal=False):
     return org
 
 
+def resident_demo_organism():
+    """A deterministic host-resident profile with one canonical natural pulse."""
+    from ..resident.protocol import heartbeat_pulse_event
+
+    genome = standard_genome()
+    genome.append(allocate_app_band(
+        "host_inventory", 8, purpose="resident audit host census",
+        existing=genome,
+    ))
+    org = Organism.birth(
+        identity={"name": "Reference.Resident.AppAI"},
+        truths=appai_truths(),
+        commandments=appai_commandments(),
+        genome=genome,
+    )
+    org.memory.remember("events", heartbeat_pulse_event(
+        1, wake=None, provider_attempted=True, provider_ok=True,
+        command_stack=["assemble", "offline audit", "record receipt"],
+    ))
+    return org
+
+
+def _aggregate_profile_rows(profile_rows):
+    order, grouped = [], {}
+    for profile, rows in profile_rows.items():
+        for row in rows:
+            if row["code"] not in grouped:
+                order.append(row["code"])
+                grouped[row["code"]] = []
+            grouped[row["code"]].append((profile, row))
+    aggregate = []
+    for code in order:
+        observations = grouped[code]
+        failing = [(p, r) for p, r in observations if r["result"] == FAIL]
+        passing = [(p, r) for p, r in observations if r["result"] == PASS]
+        selected = (failing or passing or observations)[0][1]
+        result = FAIL if failing else PASS if passing else NA
+        outcomes = ", ".join(
+            "%s=%s" % (profile, "not-applicable" if row["result"] == NA else row["result"])
+            for profile, row in observations
+        )
+        aggregate.append(_row(
+            code, selected["requirement"], result, selected.get("hf"),
+            "%s; profiles: %s" % (selected.get("note", ""), outcomes),
+        ))
+    return aggregate
+
+
 def run(org=None, *, include_invariants=True):
     """Programmatic gate. Returns (passed, evidence). On pass, certifies the organism."""
     org = org or demo_organism()
@@ -342,6 +469,35 @@ def main(argv):
     skip_inv = "--fast" in flags
     passed, ev = run(org, include_invariants=not skip_inv)
     substrate_rows, mesh_rows, inv = ev["substrate_rows"], ev["mesh_rows"], ev["invariants"]
+    strict_reference = (
+        not args
+        and os.environ.get("MANTLE_REQUIRE_NO_SKIPS") == "1"
+        and not ({"--break-hash", "--break-primer", "--break-seal"} & flags)
+    )
+    if strict_reference:
+        resident = resident_demo_organism()
+        _resident_passed, resident_ev = run(resident, include_invariants=False)
+        substrate_rows = _aggregate_profile_rows({
+            "reborn": substrate_rows,
+            "resident": resident_ev["substrate_rows"],
+        })
+        mesh_rows = _aggregate_profile_rows({
+            "reborn": mesh_rows,
+            "resident": resident_ev["mesh_rows"],
+        })
+        aggregate_fails = [
+            row["code"] for row in substrate_rows + mesh_rows
+            if row["result"] == FAIL
+        ]
+        aggregate_gaps = [
+            row["code"] for row in substrate_rows + mesh_rows
+            if row["result"] == NA
+        ]
+        ev["fails"] = aggregate_fails + [
+            "uncovered:" + code for code in aggregate_gaps
+        ]
+        passed = not ev["fails"] and all(row["ok"] for row in inv)
+        source = "closed-world reference profiles (reborn + resident)"
 
     print("=" * 74)
     print("MANTLE OS — STAGE 1 (ZOMBIE BODY) GATE  ·  source: %s" % source)

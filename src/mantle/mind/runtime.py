@@ -15,22 +15,24 @@ exposes is mediated:
   learn         request skill cultivation; the Body trials, gates, and calcifies
   wonder        self-inquiry via the Inner Voice; answers stay INFERRED, never facts
 
-The runtime holds no privileged handles: every write it can cause goes through the same
-organ reflexes and containment gates as any other caller. An agent with this runtime can
-do everything an AppAI can do -- and nothing the Body forbids.
+The runtime exposes no public raw-organism handle.  It holds an ``OperatorPort`` whose
+enumerated methods route effects through the same organ reflexes and containment gates as
+other callers.  This is a least-authority API boundary, not a Python sandbox: the trusted
+port retains a private ``_org`` reference.
 """
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .mind import Mind, fuse
+from .mind import Mind
 from .inner_voice import InnerVoice
+from .port import OperatorPort, operator_port
 from .transport import stub_mind
 
 
 class AppAIRuntime:
     def __init__(self, organism: Any, model: Optional[Callable[[str], str]] = None) -> None:
-        self.org = organism
+        self.port: OperatorPort = operator_port(organism)
         self.model = model or stub_mind
         self._inner: Optional[InnerVoice] = None
 
@@ -38,51 +40,36 @@ class AppAIRuntime:
     def inspect_body(self) -> Dict[str, Any]:
         """The whole anatomy at a glance: identity, boot order, lineage, organ contracts,
         reflex surface, band map + pressures, certification state."""
-        prime = self.org.prime
-        return {
-            "identity": self.org.body.identity_name(),
-            "boot_order": self.org.body.boot_order(),
-            "prime_generation": prime.generation,
-            "lineage_index": self.org.body.lineage_index,
-            "stage1_certified": self.org.stage1_certified,
-            "mind_fused": self.org.brain.fused,
-            "organ_contracts": self.org.manifests(),
-            "reflex_surface": self.org.bus.reflex_surface(),
-            "bands": {name: {"head": boot["head"], "span": boot["span"],
-                             "encoding": boot["encoding"], "private": boot["private"],
-                             "purpose": boot["purpose"],
-                             "pressure": round(prime.pressure(name), 3)}
-                      for name, boot in prime.bands.items()},
-        }
+        return self.port.inspect()
 
     # ================= perceive: visible memory, through the veil ============
     def read_band(self, band: str) -> Any:
         """Visible entries only -- the veil, tombstones, and quarantine always apply.
         (Lifting the veil on `thoughts` is a MIND privilege exercised via cognition, not
         a runtime bypass.)"""
-        return self.org.prime.read(band)
+        return self.port.read(band)
 
     def resolve(self, ref: str) -> Any:
         """Resolve a `<...>` reference; a dangling reference becomes an immune event."""
-        return self.org.resolve(ref)
+        return self.port.resolve(ref)
 
     # ================= orient: the deterministic snapshot =====================
     def assemble_context(self) -> Dict[str, Any]:
-        return self.org.nervous.assemble()
+        return self.port.snapshot()
 
     # ================= act: through Limbs, with proofs ========================
     def sense(self, signal: Dict[str, Any]) -> str:
         """Feed an inbound signal through the ONLY inbound boundary (Senses)."""
-        return self.org.senses.inhale(signal)
+        return self.port.inhale(signal)
 
     def operate(self, control_id: str, value: Any) -> Dict[str, Any]:
         """Drive a mapped control through its ControlBridge (proof recorded)."""
-        return self.org.limbs.operate(control_id, value)
+        return self.port.operate(control_id, value)
 
     def invoke_skill(self, band: str, args: Dict[str, Any],
                      granted: Optional[Dict[str, Any]] = None) -> Any:
         """Run a calcified reflex through the Limb (gates + proof apply)."""
-        return self.org.limbs.invoke_reflex(band, args, granted)
+        return self.port.invoke_reflex(band, args, granted)
 
     # ================= plan ahead: schedule a future wake ======================
     def schedule_pulse(self, reason: str = "scheduled", after: Optional[int] = None,
@@ -92,11 +79,11 @@ class AppAIRuntime:
         (`after=N`) or a scheduled beat (`at=K`). The natural ten-minute MIND call remains
         unconditional; scheduling adds the bounded continuation stressor on the due beat.
         Returns the beat it will fire on."""
-        return self.org.heart.schedule_pulse(reason, after=after, at=at, band=band, ref=ref)
+        return self.port.schedule_pulse(reason, after=after, at=at, band=band, ref=ref)
 
     def scheduled_pulses(self) -> list:
         """Inspect the planning queue (future wakes not yet fired)."""
-        return self.org.heart.scheduled()
+        return self.port.scheduled_pulses()
 
     # ================= steer: propose; the Body applies ========================
     def propose_special_instruction(self, text: str) -> Dict[str, Any]:
@@ -104,7 +91,7 @@ class AppAIRuntime:
         visible: the proposal is authored MIND, the applied entry is authored BODY."""
         mind = self._require_mind()
         intent = mind.propose_special(text)
-        return self.org.limbs.apply_mind_special(intent)
+        return self.port.apply_mind_special(intent)
 
     # ================= learn: request cultivation; the Body gates ==============
     def request_skill(self, band: str, code: str, entry: str,
@@ -126,18 +113,18 @@ class AppAIRuntime:
         (or private thoughts for `oppose`) -- NEVER in facts."""
         self._require_mind()
         if self._inner is None:
-            self._inner = InnerVoice(self.org, self.model)
+            self._inner = InnerVoice(self.port.mind_port(), self.model)
         return self._inner.ask(question, mode)
 
     # ================= cognition plumbing ========================================
     def _require_mind(self) -> Mind:
-        if not self.org.brain.fused:
+        if not self.port.mind_fused():
             raise PermissionError("no MIND fused: certify Stage 1, then fuse() "
                                   "(audit before fusion)")
-        return self.org.brain.mind
+        return self.port.mind()
 
     def fuse_mind(self, model: Optional[Callable[[str], str]] = None, *,
                   authorization: Any = None, max_thoughts: int = 64) -> Mind:
         """Fuse only with Stage-1 evidence and explicit operator + guardian approval."""
-        return fuse(self.org, model or self.model, authorization=authorization,
-                    max_thoughts=max_thoughts)
+        return self.port.fuse(model or self.model, authorization=authorization,
+                              max_thoughts=max_thoughts)

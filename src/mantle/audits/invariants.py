@@ -29,9 +29,11 @@ from ..vcw.bands import standard_genome, make_band_boot
 from ..vcw.cube import Cube
 from ..vcw.entry import make_entry
 from ..vcw.drivers import (ExecDriver, CapabilityError, IntegrityError, TrustError,
-                           SandboxError, ProvenanceError, validate_calcify_payload,
+                           SandboxError, ProvenanceError, ResourceLimitError,
+                           ProtocolError, PythonExecRunner, validate_calcify_payload,
                            trial)
 from ..vcw.bands import code_hash
+from .registry import build_registry, by_concern
 
 _EXEC = ExecDriver()
 _CODE = "def f(x):\n    return x + 1\n"
@@ -136,8 +138,14 @@ def t_primer_immutable():
     """HF-B07: the Primer is sealed at birth; a second birth must be refused."""
     b = Body()
     b.birth(identity={"name": "X"}, truths=["t"], commandments=["c"])
-    return _expect_raise(lambda: b.birth(identity={"name": "Y"}, truths=["t2"],
-                                         commandments=["c2"]), PermissionError)
+    before = json.dumps(b.self_record()["primer"], sort_keys=True)
+    refused = _expect_raise(
+        lambda: b.birth(identity={"name": "Y"}, truths=["t2"],
+                        commandments=["c2"]),
+        PermissionError,
+    )[0]
+    unchanged = json.dumps(b.self_record()["primer"], sort_keys=True) == before
+    return refused and unchanged, "second birth refused before any Primer mutation"
 
 
 def t_identity_in_body():
@@ -353,6 +361,40 @@ def t_exec_trust_trusted_runs():
     return (got == 42), "trusted skill returned %r (expected 42)" % got
 
 
+def t_public_grant_cannot_mint_trust():
+    """EXEC-TRUST-1: public grants carry capabilities, never provenance authority.
+
+    The old ``allow_untrusted_local`` string is refused at the driver, Cube, Limb, and
+    operator runtime surfaces, while the private Body trial ceremony still works.
+    """
+    from ..mind.runtime import AppAIRuntime
+    old_bypass = {"allow_untrusted_local": True}
+    direct = _expect_raise(
+        lambda: _EXEC.execute(_exec_content({"author": "OTHER", "foreign": True}),
+                              {"x": 1}, old_bypass),
+        CapabilityError,
+    )[0]
+    genome = standard_genome() + [make_band_boot("rx", 600, "exec", purpose="probe")]
+    org = _born(genome=genome)
+    org.prime.calcify(
+        "rx", _CODE, "f", signature={"by": "test"}, capabilities={},
+        provenance={"author": "OTHER", "foreign": True},
+    )
+    cube = _expect_raise(
+        lambda: org.prime.invoke("rx", {"x": 1}, old_bypass), CapabilityError)[0]
+    limb = _expect_raise(
+        lambda: org.limbs.invoke_reflex("rx", {"x": 1}, old_bypass),
+        CapabilityError,
+    )[0]
+    runtime = _expect_raise(
+        lambda: AppAIRuntime(org).invoke_skill("rx", {"x": 1}, old_bypass),
+        CapabilityError,
+    )[0]
+    private_trial = trial(_CODE, "f", [({"x": 1}, 2)])
+    return (direct and cube and limb and runtime and private_trial["ok"],
+            "old trust key refused at driver/cube/limb/runtime; private trial still green")
+
+
 def t_calcify_requires_gates():
     """calcification REQUIRES hash + capability set + signature + provenance-with-
     author. Each missing piece is refused (ProvenanceError); the complete payload passes."""
@@ -394,6 +436,54 @@ def t_sandbox_import_refused():
     return _expect_raise(lambda: trial(evil, "f", [({"x": 1}, None)]), SandboxError)
 
 
+def t_exec_resource_limits():
+    """EXEC-LIMIT-1: trusted Python reflexes are bounded by child-process budgets."""
+    def invoke(code, args, limits=None):
+        content = {
+            "code": code,
+            "code_hash": code_hash(code),
+            "entry": "f",
+            "runner": "python",
+            "capabilities": {},
+            "signature": {"by": "test"},
+            "limits": {
+                "ms": 100,
+                "memory_bytes": 64 * 1024 * 1024,
+                "result_bytes": 16 * 1024,
+                "output_bytes": 32 * 1024,
+                **(limits or {}),
+            },
+            "provenance": {"author": "BODY"},
+        }
+        return ExecDriver().execute(content, args)
+
+    infinite = "def f(n):\n    while n > 0:\n        n += 1\n"
+    memory = "def f(n):\n    return [i for i in range(n)]\n"
+    recursion = "def f(n):\n    return f(n + 1)\n"
+    oversized = "def f(n):\n    return 'x' * n\n"
+
+    timed = _expect_raise(
+        lambda: invoke(infinite, {"n": 1}), ResourceLimitError
+    )[0]
+    memory_bounded = _expect_raise(
+        lambda: invoke(memory, {"n": 100_000_000}), ResourceLimitError
+    )[0]
+    recursion_bounded = _expect_raise(
+        lambda: invoke(recursion, {"n": 0}), RecursionError
+    )[0]
+    result_bounded = _expect_raise(
+        lambda: invoke(oversized, {"n": 100_000}), ResourceLimitError
+    )[0]
+    malformed_bounded = _expect_raise(
+        lambda: PythonExecRunner._decode_response(b"not-json"), ProtocolError
+    )[0]
+    return (
+        timed and memory_bounded and recursion_bounded
+        and result_bounded and malformed_bounded,
+        "time, memory, recursion, result-size, and malformed-protocol probes refused",
+    )
+
+
 # ============================================================================
 # 8. Entry immutability & authorship
 # ============================================================================
@@ -415,9 +505,9 @@ def t_authorship_in_hash():
 def t_mind_write_surface():
     """HF-M10: a fused MIND writes ONLY thoughts/brain; anything else is refused +
     immune-logged. (Imported lazily: this test alone touches mantle.mind.)"""
-    from ..mind import AppAIRuntime, Mind, stub_mind, WRITE_SURFACE
+    from ..mind import AppAIRuntime, Mind, MindPort, stub_mind, WRITE_SURFACE
     org = _born()
-    m = Mind(org, stub_mind)
+    m = Mind(MindPort(org), stub_mind)
     before = len(org.immune.log)
     try:
         m._guarded_write("facts", make_entry({"k": "x"}))
@@ -433,6 +523,76 @@ def t_mind_write_surface():
             and org.body.category("special") == special_before,
             "write to 'facts' refused + immune-logged; pre-fusion steering refused; "
             "surface=%s" % list(WRITE_SURFACE))
+
+
+def t_mind_public_raw_handle_absent():
+    """MIND-PORT-1: public wrappers expose capabilities, not raw Body handles.
+
+    This is API-structure defense in depth, not a Python sandbox.  The trusted port
+    necessarily retains ``_org`` and Python reflection can reach it.
+    """
+    from ..mind import AppAIRuntime, InnerVoice, Mind, MindPort, stub_mind
+
+    org = _born()
+    port = MindPort(org)
+    mind = Mind(port, stub_mind)
+    inner = InnerVoice(port, stub_mind)
+    runtime = AppAIRuntime(org, stub_mind)
+    holders = (mind, inner, runtime)
+    forbidden_public = ("org", "organism", "prime", "body", "limbs")
+
+    public_absent = all(
+        not hasattr(holder, name)
+        for holder in holders
+        for name in forbidden_public
+    )
+    raw_direct_absent = True
+    for holder in holders:
+        for name, value in vars(holder).items():
+            if name == "port":
+                continue
+            if value is org or value is org.prime:
+                raw_direct_absent = False
+            if getattr(value, "__self__", None) is org:
+                raw_direct_absent = False
+
+    mind_rejects_raw = _expect_raise(
+        lambda: Mind(org, stub_mind), TypeError
+    )[0]
+    inner_rejects_raw = _expect_raise(
+        lambda: InnerVoice(org, stub_mind), TypeError
+    )[0]
+    honest_boundary = object.__getattribute__(port, "_org") is org
+    return (
+        public_absent and raw_direct_absent and mind_rejects_raw
+        and inner_rejects_raw and honest_boundary,
+        "wrappers have no public/raw direct handle; constructors require MindPort; "
+        "trusted port retains documented private _org",
+    )
+
+
+def t_stage2_profile_coverage():
+    """STAGE2-PROFILE-1: N/A is covered by a real scenario PASS, never ignored."""
+    from ..core.audit import make_row, PASS, FAIL, NA
+    from .stage2 import _aggregate_stage1
+
+    covered = _aggregate_stage1({
+        "base": [make_row("X-1", "scenario property", NA)],
+        "scenario": [make_row("X-1", "scenario property", PASS)],
+    })
+    failed = _aggregate_stage1({
+        "base": [make_row("X-2", "must hold everywhere", PASS)],
+        "scenario": [make_row("X-2", "must hold everywhere", FAIL)],
+    })
+    uncovered = _aggregate_stage1({
+        "base": [make_row("X-3", "missing scenario", NA)],
+    })
+    return (
+        covered[0]["result"] == PASS
+        and failed[0]["result"] == FAIL
+        and uncovered[0]["result"] == NA,
+        "not-applicable plus PASS covers; any FAIL blocks; all-inapplicable remains a gap",
+    )
 
 
 def t_mind_no_self_promote():
@@ -555,12 +715,14 @@ def t_bugfix_runtime_boundaries():
         checks.append(("ask-stage1", calls["n"] == 0
                        and "Stage-1 gate refused" in result["thought"]))
 
-    code = "def f():\n    while True:\n        pass\n"
+    code = "def f(n):\n    while n > 0:\n        n += 1\n"
     content = {"code": code, "code_hash": code_hash(code), "entry": "f",
                "capabilities": {}, "signature": {"by": "test"},
                "limits": {"ms": 50}, "provenance": {"author": "MIND"}}
     started = _time.time()
-    timed_out = _expect_raise(lambda: ExecDriver().execute(content, {}), TimeoutError)[0]
+    timed_out = _expect_raise(
+        lambda: ExecDriver().execute(content, {"n": 1}), ResourceLimitError
+    )[0]
     checks.append(("exec-timeout", timed_out and (_time.time() - started) < 2.0))
 
     class Handler:
@@ -1918,7 +2080,8 @@ def t_ingest_distills():
 def t_doctor_checkup():
     """DOCTOR-1: the doctor passes a healthy organism and a docs-coherent repo, and CATCHES an
     unhealthy one (a tampered cube fails verify). Repository coherence includes derived
-    documentation claims and a static ban on imports of the removed mantle.egg module."""
+    documentation claims, the threat-model proof registry, and a static ban on imports of
+    the removed mantle.egg module."""
     from .. import doctor as _doc
     org = _born()
     org.memory.remember("facts", {"k": "v"})
@@ -1933,18 +2096,90 @@ def t_doctor_checkup():
         next(c for c in healthy["checks"] if c["check"] == "legacy-egg-imports")["ok"]
         if repository_checkout else True
     )
+    threat_model_ok = (
+        next(c for c in healthy["checks"] if c["check"] == "threat-model-codes")["ok"]
+        if repository_checkout else True
+    )
     with tempfile.TemporaryDirectory() as td:
         stale = os.path.join(td, "stale.py")
         with open(stale, "w", encoding="utf-8") as f:
             f.write("from mantle import egg\n")
         legacy_import_rejected = not _doc._legacy_egg_imports(td)["ok"]
+    header = (
+        "<!-- MANTLE-GUARANTEES:START -->\n"
+        "| ID | Property | Principal / threat | Verdict | Live proof | Notes |\n"
+        "| --- | --- | --- | --- | --- | --- |\n"
+    )
+    footer = "<!-- MANTLE-GUARANTEES:END -->\n"
+    live = sorted(_doc._live_invariant_codes())[0]
+    cases = {
+        "missing": None,
+        "dead-code": header + "| `TM-X` | x | p | `enforced` | `HF-NOPE-999` | n |\n" + footer,
+        "duplicate": header
+        + "| `TM-X` | x | p | `conventional` | — | n |\n"
+        + "| `TM-X` | y | p | `conventional` | — | n |\n" + footer,
+        "unbacked": header + "| `TM-X` | x | p | `detected` | — | n |\n" + footer,
+    }
+    table_rejections = []
+    for body in cases.values():
+        with tempfile.TemporaryDirectory() as td:
+            if body is not None:
+                with open(os.path.join(td, "THREAT_MODEL.md"), "w",
+                          encoding="utf-8") as f:
+                    f.write(body)
+            table_rejections.append(not _doc._threat_model_guarantees(td)["ok"])
+    with tempfile.TemporaryDirectory() as td:
+        with open(os.path.join(td, "THREAT_MODEL.md"), "w", encoding="utf-8") as f:
+            f.write(header + "| `TM-X` | x | p | `enforced` | `%s` | n |\n" % live
+                    + footer)
+        table_accepts_live = _doc._threat_model_guarantees(td)["ok"]
     idx = org.prime.band_layers["facts"][0]
     org.prime.layer_content(idx)[0]["content"] = {"k": "EVIL"}   # tamper the cube
     sick = _doc.checkup(org)
-    return (healthy["ok"] and coherence_ok and legacy_imports_ok
-            and legacy_import_rejected and not sick["ok"],
-            "doctor passed a healthy deployment%s; caught the tampered cube"
+    return (healthy["ok"] and coherence_ok and legacy_imports_ok and threat_model_ok
+            and legacy_import_rejected and all(table_rejections)
+            and table_accepts_live and not sick["ok"],
+            "doctor passed a healthy deployment%s; threat table rejected missing/dead/"
+            "duplicate/unbacked cases; caught the tampered cube"
             % (" + repository coherence" if repository_checkout else ""))
+
+
+def t_application_certification_receipt():
+    """CERTIFY-1: an actual saved nest gets deterministic target-bound evidence."""
+    from ..certify import CertificationError, certify_nest
+
+    with tempfile.TemporaryDirectory() as td:
+        nest = os.path.join(td, "healthy")
+        org = _born()
+        org.rebirth(reason="certificate ancestry fixture")
+        org.save(nest)
+        first = certify_nest(nest, include_invariants=False)
+        second = certify_nest(nest, include_invariants=False)
+        deterministic = (
+            first["receipt"]["sha256"] == second["receipt"]["sha256"]
+            and first["receipt"]["signature"] == second["receipt"]["signature"]
+        )
+        bound = (
+            first["subject"]["identity"] == "TestAppAI"
+            and first["target"]["fingerprint"].startswith("sha256:")
+            and first["implementation"]["invariant_registry"].startswith("sha256:")
+            and first["stage1"]["passed"] is True
+            and first["authority"]["mind_fusion_authorized"] is False
+            and bool(first["receipt"]["signature"])
+        )
+
+        broken = os.path.join(td, "broken")
+        org.save(broken)
+        with open(os.path.join(broken, "gen001.vcw"), "wb") as stream:
+            stream.write(b"not a VCW")
+        refused = _expect_raise(
+            lambda: certify_nest(broken, include_invariants=False),
+            CertificationError,
+        )[0]
+    return (
+        deterministic and bound and refused,
+        "healthy nest produced repeatable signed target/registry receipt; broken nest refused",
+    )
 
 
 # ============================================================================
@@ -2205,6 +2440,72 @@ def t_applet_secret_boundary_and_bands():
         return (redacted and flagged and gate_holds,
                 "state redacted before append; suspect source flagged to immune; "
                 "the validate_genome gate still refuses out-of-range heads")
+
+
+def t_applet_pinned_github_acquisition():
+    """SUPPLY-1: remote applet material is exact-commit pinned and receipted."""
+    from .. import applet_body as ab
+
+    sha = "a" * 40
+    url = "https://github.com/example/project"
+    no_consent = _expect_raise(
+        lambda: ab.clone_github(url, sha, "unused", allow_network=False),
+        ab.AppletError,
+    )[0]
+    short_ref = _expect_raise(
+        lambda: ab.clone_github(url, "main", "unused", allow_network=True),
+        ab.AppletError,
+    )[0]
+
+    import subprocess as _subprocess
+    calls = []
+    original_run = _subprocess.run
+
+    class _Result:
+        returncode = 0
+        stderr = ""
+
+        def __init__(self, stdout=""):
+            self.stdout = stdout
+
+    with tempfile.TemporaryDirectory() as td:
+        def fake_run(command, **_kwargs):
+            calls.append(list(command))
+            if "init" in command:
+                dest = command[-1]
+                os.makedirs(dest, exist_ok=True)
+                with open(os.path.join(dest, "README.md"), "w", encoding="utf-8") as f:
+                    f.write("pinned source\n")
+            if "rev-parse" in command:
+                return _Result(sha + "\n")
+            return _Result()
+
+        _subprocess.run = fake_run
+        try:
+            receipt = ab.clone_github(url, sha, td, allow_network=True)
+        finally:
+            _subprocess.run = original_run
+
+    flattened = [" ".join(call) for call in calls]
+    exact_fetch = any("fetch --depth 1 --no-tags origin " + sha in call
+                      for call in flattened)
+    detached = any("checkout --detach FETCH_HEAD" in call for call in flattened)
+    hooks_disabled = all(any(part.startswith("core.hooksPath=") for part in call)
+                         for call in calls)
+    no_moving_clone = all(" clone " not in (" " + call + " ")
+                          and "submodule" not in call for call in flattened)
+    receipted = (
+        receipt["commit"] == sha
+        and receipt["origin"] == url
+        and receipt["foreign"] is True
+        and receipt["tree_hash"].startswith("sha256:")
+    )
+    return (
+        no_consent and short_ref and exact_fetch and detached
+        and hooks_disabled and no_moving_clone and receipted,
+        "network requires consent; exact SHA fetched detached; hooks/submodules disabled; "
+        "commit and tree hash receipted",
+    )
 
 
 def t_core_status_adapter_current_vcw_api():
@@ -2486,6 +2787,172 @@ def t_resident_runtime_protocol_contract():
         [s["id"] for s in surfaces])
 
 
+def t_resident_heartbeat_scheduler():
+    """RESIDENT-HB-1: a fused resident owns ONE natural cadence (600s). Unscheduled wakes
+    ride on top of it and NEVER move the natural deadline; the stressor queue is bounded so
+    an event storm cannot become a provider storm; an overdue natural tick fires exactly
+    once instead of stacking every missed beat; and a failed beat is recorded rather than
+    raised -- the heart does not stop because one pulse could not reach a provider."""
+    from ..resident import NATURAL_INTERVAL_SECONDS, ResidentHeartbeat
+
+    now = {"t": 1000.0}
+    calls = []
+    markers = []
+
+    def clock():
+        return now["t"]
+
+    def pulse(wake, *, drift_seconds, source, forced):
+        calls.append({"wake": wake, "drift": drift_seconds,
+                      "source": source, "forced": forced})
+
+    def marker(kind, message, **fields):
+        markers.append(dict(fields, kind=kind, message=message))
+
+    hb = ResidentHeartbeat(pulse, marker=marker, queue_limit=2, clock=clock)
+    hb.start(thread=False)
+    opened = hb.seconds_until_next
+
+    # unscheduled wakes are delivered, but the natural deadline does not move
+    hb.wake({"reason": "user_submit"})
+    hb.wake({"reason": "distress"})
+    deadline_after_wakes = hb.seconds_until_next
+    now["t"] += 5.0
+    unscheduled = hb.poll()
+    natural_untouched = round(hb.seconds_until_next, 3) == NATURAL_INTERVAL_SECONDS - 5.0
+
+    # the stressor queue is bounded; overflow is counted, not silently lost
+    for i in range(5):
+        hb.wake({"reason": "flood", "i": i})
+    bounded = hb.pending_wakes == 2 and hb.dropped_wakes == 3
+    hb.poll()
+
+    # three intervals overdue must still be ONE beat
+    now["t"] += NATURAL_INTERVAL_SECONDS * 3
+    before = len(calls)
+    overdue = hb.poll()
+    natural_calls = [c for c in calls[before:] if c["wake"] is None]
+
+    # a beat that cannot reach its provider is receipted, never raised
+    def boom(wake, *, drift_seconds, source, forced):
+        raise RuntimeError("provider unreachable")
+
+    hb2 = ResidentHeartbeat(boom, marker=marker, clock=clock)
+    hb2.start(thread=False)
+    hb2.wake({"reason": "user_submit"})
+    delivered_after_failure = hb2.poll()
+    hb2.stop()
+    hb.stop()
+
+    ok = (
+        NATURAL_INTERVAL_SECONDS == 600
+        and opened == 600
+        and deadline_after_wakes == 600
+        and unscheduled == 2
+        and all(c["wake"] is not None and c["drift"] is None for c in calls[:2])
+        and natural_untouched
+        and bounded
+        and overdue == 1
+        and len(natural_calls) == 1
+        and natural_calls[0]["drift"] is not None
+        and hb.beats == 5
+        and delivered_after_failure == 0
+        and hb2.beats == 0
+        and hb2.last_error_type == "RuntimeError"
+        and any(m.get("provider_ok") is False for m in markers)
+        and hb.running is False
+    )
+    return ok, (
+        "cadence=%ds unscheduled=%d deadline_held=%s queue=(pending=2 dropped=3) "
+        "overdue_beats=%d failed_beat=%s" % (
+            NATURAL_INTERVAL_SECONDS, unscheduled, natural_untouched,
+            overdue, hb2.last_error_type))
+
+
+def t_stage1_resident_cadence_row():
+    """RESIDENT-HB-2: Stage-1 row B-47 binds the cadence law to RESIDENCY. A bare Body has
+    no host to stay awake for, so the row is N-A. A resident -- an organism carrying a
+    `host_inventory` band -- must show `HEARTBEAT_PULSE` receipts in its own Prime VCW at
+    the declared natural cadence, metered to at most one provider call per beat. This is
+    the row that would have caught corrections-log 90: a resident that answered users while
+    owning no live heartbeat."""
+    from ..core.audit import FAIL, NA, PASS
+    from ..resident import NATURAL_INTERVAL_SECONDS
+    from ..resident.protocol import heartbeat_pulse_event, resident_vcw_event
+    from ..vcw.bands import allocate_app_band, standard_genome
+    from . import stage1 as _s1
+
+    def _b47(org):
+        for row in _s1.audit_substrate(org):
+            if row["code"] == "B-47":
+                return row
+        return {"result": "MISSING", "note": ""}
+
+    # a bare Body: no host, no cadence obligation
+    bare = _b47(_born())
+
+    host_band = allocate_app_band("host_inventory", 8, purpose="assimilated host census",
+                                  existing=standard_genome())
+    resident_genome = standard_genome() + [host_band]
+
+    # a resident born but never run has served nobody; it owes no cadence yet
+    newborn = _b47(_born(resident_genome))
+
+    # a resident that has ANSWERED USERS while owning no pulse must be refused --
+    # this is precisely the corrections-log 90 defect
+    silent_org = _born(resident_genome)
+    for _ in range(3):
+        silent_org.memory.remember("events", resident_vcw_event(
+            "USER_MESSAGE", {"route": "mind_conversation"}, text="are you awake?"))
+    silent = _b47(silent_org)
+
+    # the same resident, once it actually beats, certifies
+    beating_org = _born(resident_genome)
+    beating_org.memory.remember("events", heartbeat_pulse_event(
+        1, wake=None, provider_attempted=True, provider_ok=True,
+        command_stack=["assemble", "call provider", "record receipt"]))
+    beating = _b47(beating_org)
+
+    # an unmetered beat -- more than one provider call in one pulse -- is refused
+    greedy_org = _born(resident_genome)
+    greedy_org.memory.remember("events", heartbeat_pulse_event(
+        1, wake=None, provider_attempted=True, provider_ok=True, api_call_count=3))
+    greedy = _b47(greedy_org)
+
+    # a resident that beats in the pre-protocol dialect still certifies, but the row
+    # names the drift so it can be migrated rather than silently blessed.
+    legacy_org = _born(resident_genome)
+    legacy_org.memory.remember("events", {
+        "kind": "terminal_marker",
+        "marker": {"kind": "heartbeat_pulse", "beat_number": 1,
+                   "interval_seconds": NATURAL_INTERVAL_SECONDS,
+                   "provider_attempted": False, "provider_ok": False},
+    })
+    legacy = _b47(legacy_org)
+
+    ok = (
+        bare["result"] == NA
+        and newborn["result"] == NA
+        and "not yet run" in newborn["note"]
+        and silent["result"] == FAIL
+        and "turns=3 pulses=0" in silent["note"]
+        and beating["result"] == PASS
+        and ("cadence_%ds=True" % NATURAL_INTERVAL_SECONDS) in beating["note"]
+        and "vocab=canonical" in beating["note"]
+        and greedy["result"] == FAIL
+        and "one_call_per_pulse=False" in greedy["note"]
+        and legacy["result"] == PASS
+        and "vocab=legacy-dialect" in legacy["note"]
+    )
+    def label(result):
+        return "not-applicable" if result == NA else result
+
+    return ok, ("bare=%s newborn=%s silent=%s beating=%s unmetered=%s legacy=%s"
+                % (label(bare["result"]), label(newborn["result"]),
+                   label(silent["result"]), label(beating["result"]),
+                   label(greedy["result"]), label(legacy["result"])))
+
+
 # ============================================================================
 # 22. The Reproduction organ (the ninth organ) + SPORE-DISTILLATION
 # ============================================================================
@@ -2711,7 +3178,22 @@ def t_spore_germ_round_trip():
             "the vault, spore back from spore_vault, key minted not derived")
 
 
-TESTS = [
+def t_invariant_registry_single_source():
+    """REGISTRY-1: all consumers derive from one typed, concern-indexed registry."""
+    names = [spec.name for spec in REGISTRY]
+    concern_specs = [spec for group in CONCERNS.values() for spec in group]
+    compatibility = [(spec.name, spec.runner) for spec in REGISTRY]
+    return (
+        len(names) == len(set(names))
+        and all(spec.code and spec.title and spec.guarantee_id and spec.added
+                and callable(spec.runner) for spec in REGISTRY)
+        and set(concern_specs) == set(REGISTRY)
+        and list(TESTS) == compatibility,
+        "typed specs complete; names unique; concern and compatibility views derive live",
+    )
+
+
+_INVARIANT_DEFINITIONS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
     ("HF-B07 primer-immutable",                t_primer_immutable),
@@ -2732,11 +3214,15 @@ TESTS = [
     ("HF-B48 exec-capability-gate",            t_exec_capability),
     ("HF-B50 exec-trust/foreign-refused",      t_exec_trust_foreign),
     ("HF-B50 exec-trust/trusted-runs",         t_exec_trust_trusted_runs),
+    ("EXEC-TRUST-1 public-grant-no-trust",      t_public_grant_cannot_mint_trust),
     ("HF-B52 calcify-requires-gates",          t_calcify_requires_gates),
     ("HF-B51 sandbox/escape-refused",          t_sandbox_escape_refused),
     ("HF-B51 sandbox/import-refused",          t_sandbox_import_refused),
+    ("EXEC-LIMIT-1 bounded-python-runner",      t_exec_resource_limits),
     ("HF-B29 authorship-in-hash",              t_authorship_in_hash),
     ("HF-M10 mind/write-surface",              t_mind_write_surface),
+    ("MIND-PORT-1 public-raw-handle-absent",    t_mind_public_raw_handle_absent),
+    ("STAGE2-PROFILE-1 closed-world-coverage",  t_stage2_profile_coverage),
     ("HF-M12 mind/no-self-promote",            t_mind_no_self_promote),
     ("HF-M15 fusion-requires-stage1",          t_fusion_requires_stage1),
     ("BUGFIX-1 runtime-boundaries",            t_bugfix_runtime_boundaries),
@@ -2788,6 +3274,7 @@ TESTS = [
     ("OR-CACHE-4 zero-cost-cache-hit",         t_meter_receipt_zero_cost_cache_hit),
     ("INGEST-1 conversation-distilled",        t_ingest_distills),
     ("DOCTOR-1 deployment-checkup",            t_doctor_checkup),
+    ("CERTIFY-1 application-nest-receipt",      t_application_certification_receipt),
     ("PHENO-1 self-open+integrity",            t_pheno_self_open_and_integrity),
     ("PHENO-2 other-cannot-read",              t_pheno_other_cannot_read),
     ("PHENO-3 wear-append-only",               t_pheno_wear_append_only),
@@ -2798,11 +3285,14 @@ TESTS = [
     ("APPLET-3 audit-catches-tamper",          t_applet_audit_catches_tamper),
     ("APPLET-4 html-face+wear",                t_applet_html_face_and_wear),
     ("APPLET-5 secret-boundary+band-gate",     t_applet_secret_boundary_and_bands),
+    ("SUPPLY-1 pinned-github-acquisition",      t_applet_pinned_github_acquisition),
     ("STATUS-1 organism-status-adapter",       t_core_status_adapter_current_vcw_api),
     ("APPBAND-1 safe-app-band-allocation",     t_app_band_allocator_reserves_atlas),
     ("ASSIM-1 substrate+artifact-boundary",    t_assimilator_substrate_gaps_and_outside_host_gate),
     ("ASSIM-2 gui-surface-nerve-coverage",     t_assimilator_gui_surface_nerve_coverage),
     ("RESIDENT-RT-1 runtime-protocol",          t_resident_runtime_protocol_contract),
+    ("RESIDENT-HB-1 natural-cadence+wakes",     t_resident_heartbeat_scheduler),
+    ("RESIDENT-HB-2 stage1-resident-cadence",   t_stage1_resident_cadence_row),
     ("REPRO-1 atlas+span-overlap-gate",        t_repro_atlas_overlap_gate),
     ("REPRO-2 ninth-organ+seed-carry",         t_repro_organ_and_seed_carry),
     ("REPRO-3 every-hatch-vaults-its-egg",     t_repro_every_hatch_vaults_its_egg),
@@ -2810,17 +3300,33 @@ TESTS = [
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
     ("SPORE-3 germ-round-trip (one artifact)", t_spore_germ_round_trip),
+    ("REGISTRY-1 typed-single-source",          t_invariant_registry_single_source),
 ]
+
+# One live, typed registry. TESTS remains a derived compatibility view for external
+# callers written against the pre-registry API; it cannot diverge from REGISTRY.
+REGISTRY = build_registry(_INVARIANT_DEFINITIONS)
+CONCERNS = by_concern(REGISTRY)
+TESTS = tuple((spec.name, spec.runner) for spec in REGISTRY)
 
 
 def run_all():
     results = []
-    for name, fn in TESTS:
+    for spec in REGISTRY:
         try:
-            ok, detail = fn()
+            ok, detail = spec.runner()
         except Exception as e:  # noqa: BLE001 -- the harness must not crash on a bad guard
             ok, detail = False, "test crashed: %s: %s" % (type(e).__name__, e)
-        results.append({"name": name, "ok": bool(ok), "detail": detail})
+        results.append({
+            "name": spec.name,
+            "code": spec.code,
+            "title": spec.title,
+            "guarantee_id": spec.guarantee_id,
+            "concern": spec.concern,
+            "added": spec.added,
+            "ok": bool(ok),
+            "detail": detail,
+        })
     return results
 
 

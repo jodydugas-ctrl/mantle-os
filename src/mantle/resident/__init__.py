@@ -2,6 +2,11 @@
 """Reusable resident AppAI runtime helpers."""
 from __future__ import annotations
 
+from .heartbeat import (
+    DEFAULT_QUEUE_LIMIT,
+    NATURAL_INTERVAL_SECONDS,
+    ResidentHeartbeat,
+)
 from .protocol import (
     RESIDENT_RUNTIME_POLICIES,
     classify_user_submit,
@@ -16,7 +21,10 @@ from .protocol import (
 )
 
 __all__ = [
+    "DEFAULT_QUEUE_LIMIT",
+    "NATURAL_INTERVAL_SECONDS",
     "RESIDENT_RUNTIME_POLICIES",
+    "ResidentHeartbeat",
     "classify_user_submit",
     "heartbeat_pulse_event",
     "parse_mind_body_directives",

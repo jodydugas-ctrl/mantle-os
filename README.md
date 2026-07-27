@@ -9,6 +9,11 @@
 *The organism re-certifies on every commit: the Stage-1 gate, the security invariant
 suite, the Stage-2 gate, and three tamper proofs that show the audit CATCHES violations.*
 
+**Scope:** this badge certifies the Mantle reference organism and repository gates; it
+does not certify an application that merely depends on Mantle. See the canonical
+implementation security claims in [`THREAT_MODEL.md`](THREAT_MODEL.md). Application
+certification is tracked as the future `mantle certify <path>` surface.
+
 **Current certification count:** run `python -m mantle prove` -- the count is derived
 from the code, never hardcoded in prose (the doctor's docs-vs-code gate enforces this).
 
@@ -50,7 +55,7 @@ That's the whole stance. The rest is rigor about how you make "can never break i
 |---|---|---|
 | The app's deterministic core | **Body** (its **organs**) | Ordinary, testable code that runs with no model attached |
 | A hard-coded, no-AI behavior | **reflex** | A plain function the Body runs itself |
-| The database / memory | **VCW cube** | An append-only log where each record is hashed; you add or retire records, never rewrite them. It's a normal ZIP of PNG files, so you can literally open the memory in an image viewer |
+| The database / memory | **VCW cube** | An append-only API where each record is hashed; normal writers add or retire records rather than rewriting them, and verification detects altered history. Hashes do not authenticate who inserted a new valid row. It's a normal ZIP of PNG files, so you can literally open the memory in an image viewer |
 | The "who am I" config | **Genome / Primer** | Read-only identity, set once, held outside the cube |
 | The app's installer file | **spore** (carrying a **germ**) | One PNG holding the complete build data + instructions any coding agent can read |
 | The LLM | **MIND** | A plain `prompt → text` function, added last, allowed to write to only two scratch areas |
@@ -67,10 +72,15 @@ one-line thesis: **design the containment boundary *before* you invite the auton
 component in.**
 
 **Honest limitations:** this is a reference implementation, not a production runtime; the
-hard-sandbox (`wasm`) runner is a prepared seam, not built (the Python runner is hardened
-with a static AST gate); scope is a *single* organism (no built-in multi-agent
+hard-sandbox (`wasm`) runner is a prepared seam, not built (the trusted-code Python runner
+uses a static AST gate plus child-process time, memory, and bounded-JSON result limits);
+scope is a *single* organism (no built-in multi-agent
 coordination); and the worldview is opinionated on purpose — you accept "body before brain"
 and the organism vocabulary, or the framework isn't for you.
+
+Certification can be reproduced in a pinned container or dev container; see
+[`REPRODUCE.md`](REPRODUCE.md). CI retains non-secret environment, strict-gate, and
+mutation receipts for each run.
 
 ---
 
@@ -83,7 +93,8 @@ then is a **MIND** (an LLM) fused — and it may only ever *extend* what already
 **Homeostatic.** The organism regulates itself. Capacity pressure triggers **metabolism** —
 compaction, deduplication, layer reuse — never a lossy reset. Every organ carries an enforced
 contract. Every failure becomes an immune event. Every generation of memory seals with a
-tamper-evident fingerprint.
+fingerprint that makes later history alteration detectable; it does not attest the
+provenance of a newly inserted valid row.
 
 Beyond the certified Body, an AppAI carries reproductive, symbiotic, and self-evolving tissue:
 a whole AppAI travelling as one **spore** (a PNG carrying its **germ** — the complete build
@@ -504,8 +515,10 @@ When prose and code disagree, **the working code in `src/mantle/` is ground trut
    (what bands they touch, what reflexes they own, what the audit checks).
 3. **The cube is the single source of truth.** All durable state lives in the VCW cube,
    addressed through bands. Organs communicate by reading and appending entries.
-4. **Memory is immutable and append-only.** You never rewrite the past. You **append**,
-   **tombstone** (retire), or **quarantine** (isolate). The Primer is immutable from genesis.
+4. **Memory uses an append-only write contract.** Normal writers never rewrite the past:
+   they **append**, **tombstone** (retire), or **quarantine** (isolate). Hash verification
+   detects out-of-band history alteration but does not authenticate insertion provenance.
+   The Primer is immutable from genesis.
 5. **Everything is provable.** Every organ carries audit obligations. "It probably works"
    is a failure.
 6. **Fail open, never fail silent.** Instrumentation must never crash the host organism,

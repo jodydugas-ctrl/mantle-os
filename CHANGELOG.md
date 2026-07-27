@@ -4,6 +4,13 @@ All notable release-level changes are documented here.
 
 ## [Unreleased]
 
+### Security — memory guarantees clarified
+
+- Separated **history integrity** from **insertion provenance** throughout the VCW
+  documentation. Entry hashes and generation seals detect rewritten history; they do not
+  authenticate which in-process organ inserted a new valid row. This is a documented
+  trust-boundary decision, not a new storage format or behavior change.
+
 ### Changed — documentation reorganization (no code changes; framework still 1.4.0)
 
 - **Two on-ramps for specialists.** Added `AGENTS.md` at the repo root — an orientation

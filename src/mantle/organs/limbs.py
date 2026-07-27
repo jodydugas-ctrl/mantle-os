@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .contract import Organ, OrganContract
-from ..vcw.drivers import trial
+from ..vcw.drivers import trial, validate_public_grant
 from ..vcw.entry import make_entry
 
 DISPATCH_PHASES = ("INTENTION", "DELEGATED", "NOTIFIED", "COMPLETED")
@@ -245,6 +245,7 @@ class Limbs(Organ):
         """Run a calcified exec-layer skill through the Limb (with a proof). Works with NO
         MIND; the substrate's hash/capability/provenance/trust gates apply unchanged."""
         try:
+            granted = validate_public_grant(granted)
             result = self.org.prime.invoke(band, args, granted)
             self._prove(band, attempted=True, ok=True, method="exec-reflex",
                         ref=band, reason="ok")

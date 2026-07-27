@@ -34,13 +34,25 @@ Mantle has a small number of load-bearing principles. Changes should respect the
   then run the gates:
 
   ```bash
-  pip install -e .            # or: export PYTHONPATH=src
-  python -m mantle check      # every gate, proof, demo, and test in one command
+  pip install -e ".[spore,multilang]"
+  python -m mantle check --strict  # closed-world certification; skips fail
   ```
 
   (`check` runs the Stage-1 gate, the three tamper proofs, the current invariant suite, the Stage-2
   gate, both demos, the assimilation dry-run, the standalone cube codec conformance, the
   SPORE purity gates, and the parity test — the same sequence CI runs.)
+
+  A plain `check` may produce a partial diagnostic when prerequisites are missing.
+  `check --fast` deliberately omits narrated rows and is never a certification. CI and
+  certification claims always use the full `--strict` profile: top-level skips, internal
+  unittest skips, and required `N/A` rows fail closed.
+
+- If a doctrine-critical guard changes, run `python tools/mutate.py`. The targeted
+  catalogue weakens security checks in isolated source copies and requires the named
+  live invariant to kill every mutant. A survivor blocks CI.
+
+- For clean-room reproduction and the evidence bundle CI retains, follow
+  [`REPRODUCE.md`](REPRODUCE.md).
 
 - Make sure `python -m mantle audit` still reports the **Stage 1 gate passed** (no open hard-fails).
 - Keep Phase 1 brain-free: Phase-1 organs must not depend on an LLM to function.

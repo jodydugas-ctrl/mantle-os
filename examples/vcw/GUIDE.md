@@ -21,6 +21,10 @@ cube is append-only, every entry is hashed, every read is veiled, every save is 
 before it can replace the previous truth, and every retired generation seals with a
 tamper-evident fingerprint.
 
+Here “tamper-evident” has a narrow meaning: changing an existing entry or sealed
+generation is detected. Hashing does not authenticate the organ that inserted a new,
+otherwise-valid row; that would require writer attestation outside this format.
+
 ## 2. The anatomy of a cube
 
 ```

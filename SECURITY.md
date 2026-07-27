@@ -25,6 +25,11 @@ Include:
 
 ## Security boundaries
 
+The canonical, implementation-scoped guarantee table is
+[`THREAT_MODEL.md`](THREAT_MODEL.md). It grades each claim as enforced, detected,
+conventional, or out of scope and distinguishes the declared `prompt -> text` MIND from
+trusted in-process Body/operator Python.
+
 - Stage-1, Stage-2, containment, and `READY` are technical evidence, not production fusion
   authority.
 - Production MIND fusion requires fresh resident-bound evidence plus distinct authenticated

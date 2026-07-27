@@ -26,7 +26,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..vcw.entry import make_entry
 from ..core.redact import redact
-from .containment import guarded_write
+from .port import MindPort, require_mind_port
 from .transport import stub_mind
 
 
@@ -35,16 +35,16 @@ def _h(text: str) -> str:
 
 
 class Mind:
-    def __init__(self, organism: Any, model: Callable[[str], str], *,
+    def __init__(self, port: MindPort, model: Callable[[str], str], *,
                  max_thoughts: int = 64) -> None:
-        self.org = organism
+        self.port = require_mind_port(port, "Mind")
         self.model = model                  # the pluggable transport: prompt -> text
         self.max_thoughts = max_thoughts    # the waste budget: the MIND cannot spiral
         self.thoughts_written = 0
 
     # ---- the bounded write surface (Body-enforced) -----------------------
     def _guarded_write(self, band: str, entry: Dict[str, Any]) -> Dict[str, Any]:
-        return guarded_write(self.org, band, entry)
+        return self.port.write(band, entry)
 
     def _trace(self, kind: str, detail: Dict[str, Any]) -> None:
         """Record a model call to the brain band (the Body authors the trace; secrets
@@ -57,8 +57,8 @@ class Mind:
     def think(self, snapshot: Dict[str, Any], question: Optional[str] = None
               ) -> Optional[str]:
         if self.thoughts_written >= self.max_thoughts:
-            self.org.immune_event("waste_guard",
-                                  {"organ": "mind", "limit": self.max_thoughts})
+            self.port.immune_event("waste_guard",
+                                   {"organ": "mind", "limit": self.max_thoughts})
             return None
         prompt = question or self._frame(snapshot)
         self._trace("REQUEST", {"prompt_hash": _h(prompt)})
@@ -79,14 +79,14 @@ class Mind:
                 "assembled deterministically (every reference already resolved, the private "
                 "`thoughts` band veiled). Reflect briefly; you may propose Body changes but "
                 "you do not apply them.\n\nCONTEXT:\n%s"
-                % (self.org.body.identity_name(),
+                % (self.port.identity_name(),
                    json.dumps(snapshot, default=str)[:4000]))
 
     # ---- propose Special Instructions (the Body applies) -----------------
     def propose_special(self, text: str) -> Dict[str, Any]:
         """The MIND may only PROPOSE. The returned intent is NOT written; the Body applies
         it via `body.apply_special`, keeping steering a Body action."""
-        return self.org.body.mind_propose_special(text)
+        return self.port.propose_special(text)
 
     # ---- cultivate a skill (the Body calcifies, only after trial) --------
     def cultivate(self, band: str, code: str, entry: str,
@@ -96,7 +96,7 @@ class Mind:
         """Learning -> instinct, under containment. The MIND cannot self-promote: the
         candidate must pass the static sandbox gate + `trial`; then the BODY calcifies
         (hash + signature + capability + provenance gates enforced by the substrate)."""
-        return self.org.limbs.cultivate_mind_skill(
+        return self.port.cultivate_skill(
             band, code, entry, cases, signature, capabilities
         )
 
@@ -105,14 +105,14 @@ class Mind:
         """One cognition pulse. The Heart passes the snapshot it already assembled; a
         direct call assembles one. Either way: fully resolved, veiled, deterministic."""
         if snapshot is None:
-            snapshot = self.org.nervous.assemble()
+            snapshot = self.port.snapshot()
         return self.think(snapshot)
 
 
 def fuse(organism: Any, model: Callable[[str], str] = stub_mind, *,
          authorization: Any = None, max_thoughts: int = 64) -> Mind:
     """Fuse only after Stage-1 evidence and target-bound dual authorization."""
-    mind = Mind(organism, model, max_thoughts=max_thoughts)
+    mind = Mind(MindPort(organism), model, max_thoughts=max_thoughts)
     organism.brain.fuse(
         mind,
         stage1_certified=organism.stage1_certified,

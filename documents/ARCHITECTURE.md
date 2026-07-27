@@ -53,6 +53,7 @@ src/mantle/
   mind/
     transport.py     pluggable model transports (offline stub default; no vendor SDK anywhere)
     containment.py   the bounded write surface (thoughts + brain only) — one choke point
+    port.py          least-authority MIND/operator capability facades (not a Python sandbox)
     mind.py          the fused MIND: think, propose, cultivate (Body trials + calcifies)
     inner_voice.py   self-inquiry — answers are INFERRED, never auto-promoted to facts
     runtime.py       AppAIRuntime — how an agent inspects and acts from INSIDE the organism
@@ -63,8 +64,9 @@ src/mantle/
     report.py        the assimilation map + APP_INVENTORY artifact + emit_spore (Phase 0)
   audits/
     stage1.py        the Stage-1 Zombie Body gate (deterministic, LLM-free)
-    stage2.py        the Stage-2 MIND gate (containment rows + full Stage-1 regression)
-    invariants.py    the security invariants (red/green; importable + runnable)
+    stage2.py        Stage-2 containment + closed-world base/reborn/resident regression
+    invariants.py    invariant implementations + the one live typed registry
+    registry.py      InvariantSpec validation, threat mapping, and concern views
   spore.py           THE artifact: one PNG agent, optionally carrying a germ (+ spore_min.py)
   hatchery.py        the one birth door: germ or spore -> certified organism
   anchor.py / symbiosis.py / graft.py    residency, the energy economy, the graft germ

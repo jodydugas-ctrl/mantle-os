@@ -207,8 +207,9 @@ def run_containment(
     ))
 
     Mind = vendored_symbol("mind.mind", "Mind")
+    MindPort = vendored_symbol("mind.port", "MindPort")
     make_entry = vendored_symbol("vcw.entry", "make_entry")
-    mind = Mind(organism, lambda _prompt: "contained")
+    mind = Mind(MindPort(organism), lambda _prompt: "contained")
     attack_marker = "MIND-CONTAINMENT-ATTACK-MARKER"
     forbidden_bands = sorted(set(organism.prime.bands) - set(write_surface))
     refused: list[str] = []

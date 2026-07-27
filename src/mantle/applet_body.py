@@ -33,7 +33,8 @@ Body. No stored source is ever executed, imported, or installed by any function 
     python -m mantle applet-export <organism-dir> <name> <dest-dir> [--overwrite]
     python -m mantle applet-wear   <organism-dir> <name>
     python -m mantle applet-audit  <organism-dir> <name>
-    python -m mantle applet-clone  <organism-dir> <https-github-url> <name>
+    python -m mantle applet-clone  <organism-dir> <https-github-url>@<commit> <name>
+                                    --allow-network
 """
 from __future__ import annotations
 
@@ -259,7 +260,8 @@ def create_applet_body(org: Any, source_dir: str, name: str, *,
                        face_source: Optional[str] = None, entry: str = "",
                        include_source: bool = True,
                        state: Optional[Dict[str, Any]] = None,
-                       metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                       metadata: Optional[Dict[str, Any]] = None,
+                       provenance: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Raise a local project into an APPLET-BODY-CAPSULE inside this organism's VCW.
 
     Deterministic and read-only toward the project: the assimilator scanner dissects it
@@ -294,8 +296,16 @@ def create_applet_body(org: Any, source_dir: str, name: str, *,
         org.immune_event("applet_source_secret_suspect",
                          {"applet": name, "paths": secret_suspects[:8]})
 
-    provenance = {"origin": os.path.abspath(source_dir), "foreign": True,
-                  "method": "applet-create", "author": "BODY"}
+    source_provenance = {
+        "origin": os.path.abspath(source_dir),
+        "foreign": True,
+        "method": "applet-create",
+        "author": "BODY",
+        **dict(provenance or {}),
+    }
+    # Acquired source remains OTHER regardless of caller-provided metadata.
+    source_provenance["foreign"] = True
+    source_provenance["author"] = "BODY"
 
     # 3. source into the veiled band, chunked (the phenotype chunking pattern)
     chunks_written = 0
@@ -308,7 +318,7 @@ def create_applet_body(org: Any, source_dir: str, name: str, *,
                     {"applet": name, "path": f["path"], "part": part, "of": len(parts),
                      "b64": chunk, "sha256": f["sha256"], "size": f["size"],
                      "mode": f["mode"], "lang": f["lang"], "encoding": "base64",
-                     "provenance": provenance},
+                     "provenance": source_provenance},
                     opcode=SOURCE_OPCODE, author="BODY", source="applet_body"))
                 chunks_written += 1
 
@@ -354,7 +364,8 @@ def create_applet_body(org: Any, source_dir: str, name: str, *,
                 "entry": entry, "face": face, "face_from": face_from,
                 "include_source": bool(include_source),
                 "secret_suspects": secret_suspects,
-                "metadata": redact(dict(metadata or {})), "provenance": provenance,
+                "metadata": redact(dict(metadata or {})),
+                "provenance": source_provenance,
                 "bands": list(APPLET_BANDS)}
     org.prime.append(MANIFEST_BAND, make_entry(manifest, opcode=MANIFEST_OPCODE,
                                                author="BODY", source="applet_body"))
@@ -368,7 +379,8 @@ def create_applet_body(org: Any, source_dir: str, name: str, *,
             "skipped": len(skipped), "role_counts": omap["role_counts"],
             "bands": list(APPLET_BANDS), "face": face, "face_from": face_from,
             "export_available": bool(include_source),
-            "secret_suspects": secret_suspects}
+            "secret_suspects": secret_suspects,
+            "provenance": source_provenance}
 
 
 # ----------------------------------------------------------------------------
@@ -611,20 +623,60 @@ def wear_applet_face(org: Any, name: str) -> Dict[str, Any]:
 # ----------------------------------------------------------------------------
 _GITHUB_RE = re.compile(r"^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+"
                         r"(\.git)?/?$")
+_COMMIT_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
-def clone_github(url: str, workdir: str) -> str:
-    """Shallow-clone an EXPLICIT https GitHub URL into a controlled workspace. No
-    install scripts run, no project code executes -- git transports bytes, nothing
-    more. Returns the clone directory; raises AppletError on any refusal."""
+def clone_github(url: str, commit: str, workdir: str, *,
+                 allow_network: bool = False) -> Dict[str, Any]:
+    """Fetch one exact GitHub commit into a detached, hook-disabled workspace.
+
+    Network access is an explicit operator choice.  Moving refs, abbreviated hashes,
+    submodules, and implicit checkout hooks are never used.  Returns acquisition
+    provenance including the verified commit and deterministic source-tree hash.
+    """
     if not _GITHUB_RE.match(url or ""):
         raise AppletError("only explicit https://github.com/<owner>/<repo> URLs are "
                           "accepted (got %r)" % url)
+    if not _COMMIT_RE.match(commit or ""):
+        raise AppletError("GitHub acquisition requires an exact 40-hex commit SHA")
+    commit = commit.lower()
+    if not allow_network:
+        raise AppletError("network acquisition refused without --allow-network")
     import subprocess
+    os.makedirs(workdir, exist_ok=True)
     dest = os.path.join(workdir, "clone")
-    proc = subprocess.run(["git", "-c", "core.longpaths=true", "clone", "--depth", "1",
-                           "--no-tags", url, dest],
-                          capture_output=True, text=True, timeout=300)
-    if proc.returncode != 0:
-        raise AppletError("git clone failed: %s" % (proc.stderr or "").strip()[-300:])
-    return dest
+    hooks = os.path.join(workdir, "disabled-hooks")
+    os.makedirs(hooks, exist_ok=True)
+
+    def git(args: List[str], label: str) -> str:
+        proc = subprocess.run(
+            ["git", "-c", "core.longpaths=true", "-c", "core.hooksPath=" + hooks]
+            + args,
+            capture_output=True, text=True, timeout=300,
+        )
+        if proc.returncode != 0:
+            raise AppletError("%s failed: %s"
+                              % (label, (proc.stderr or "").strip()[-300:]))
+        return (proc.stdout or "").strip()
+
+    git(["init", "--quiet", dest], "git init")
+    git(["-C", dest, "remote", "add", "origin", url], "git remote add")
+    git(["-C", dest, "-c", "protocol.file.allow=never", "fetch", "--depth", "1",
+         "--no-tags", "origin", commit], "git fetch pinned commit")
+    git(["-C", dest, "-c", "advice.detachedHead=false", "checkout", "--detach",
+         "FETCH_HEAD"], "git detached checkout")
+    actual = git(["-C", dest, "rev-parse", "HEAD"], "git verify commit").lower()
+    if actual != commit:
+        raise AppletError("pinned checkout mismatch: expected %s, got %s"
+                          % (commit, actual or "<empty>"))
+    files, _skipped = _collect_files(dest)
+    return {
+        "path": dest,
+        "origin": url,
+        "commit": actual,
+        "tree_hash": _bundle_hash(files),
+        "foreign": True,
+        "method": "applet-clone-pinned",
+        "submodules": "not-fetched",
+        "hooks": "disabled",
+    }

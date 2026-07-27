@@ -1,0 +1,6 @@
+# Exact optional/tooling dependencies used by the clean-room certification profile.
+cryptography==46.0.7
+pillow==12.2.0
+pyyaml==6.0.3
+tree_sitter==0.21.3
+tree_sitter_languages==1.10.2

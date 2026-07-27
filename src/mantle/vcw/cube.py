@@ -34,7 +34,8 @@ from .png import (LAYER_COUNT, MAX_PNG_BYTES, VCW_FORMAT, encode_png_rgba,
                   decode_png_rgba, build_layer_rgba, parse_layer_rgba)
 from .bands import get_driver, code_hash
 from . import drivers as _drivers  # noqa: F401 -- registers the drivers on import
-from .drivers import ExecDriver, validate_skill_code, validate_calcify_payload
+from .drivers import (ExecDriver, validate_skill_code, validate_calcify_payload,
+                      validate_public_grant)
 from .entry import entry_hash
 from .indexes import BandIndexes
 from . import metabolism
@@ -478,6 +479,7 @@ class Cube:
     def invoke(self, band: str, args: Dict[str, Any],
                granted: Optional[Dict[str, Any]] = None) -> Any:
         """Run a calcified reflex. Works with NO MIND -- a zombie-state capability."""
+        granted = validate_public_grant(granted)
         content = self.layer_content(self.primary_layer(band))
         if not content:
             raise ValueError("reflex band %r is empty (no skill calcified)" % band)

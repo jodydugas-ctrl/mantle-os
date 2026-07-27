@@ -102,6 +102,21 @@ cube.retrieve(band, address)    # one entry / key / coordinate — O(1) via the 
   fingerprint is recorded in the Body's lineage index; `verify_seal()` (run on load with
   `verify_seals=True`, and by the Stage-1 gate) detects any rewritten history.
 
+### Two different integrity properties
+
+The cube makes two claims that must not be collapsed:
+
+- **History integrity:** normal APIs append rather than overwrite, entry hashes detect a
+  changed record, and a sealed generation's fingerprint detects altered ancestral
+  content. This is enforced on normal writes and detected after out-of-band mutation.
+- **Insertion provenance:** a valid newly appended row is not cryptographic proof that an
+  authorized organ wrote it. An in-process caller can construct a well-formed hashed row;
+  that attacker is inside Mantle's trusted Body/operator boundary and is not defended
+  against by the VCW format.
+
+“Tamper-evident” means rewritten history becomes evident. It does not mean that every
+insertion has an authenticated writer. See [`THREAT_MODEL.md`](../../THREAT_MODEL.md).
+
 ## Exec layers (calcified skills)
 
 To become an instinct, code must pass, in order: the **static sandbox gate** (no imports,

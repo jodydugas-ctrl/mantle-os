@@ -9,6 +9,10 @@ can reason about the code quickly.
 
 When this file and source code disagree, the source code wins.
 
+For the implementation's exact security claims and threat principals, use the canonical
+[`THREAT_MODEL.md`](../THREAT_MODEL.md) guarantee table. This translation layer does not
+strengthen its verdicts.
+
 ## 1. System Summary
 
 Mantle OS is a Python reference implementation for deterministic application runtimes that
@@ -134,6 +138,13 @@ WRITE_SURFACE = ("thoughts", "brain")
 `PermissionError`. The Stage-2 audit verifies this by attempting a write to `facts` and
 expecting refusal plus immune logging.
 
+`Mind`, `InnerVoice`, and `AppAIRuntime` expose capability ports rather than public
+organism, cube, Body, or Limbs handles. `MindPort` carries only cognition capabilities;
+`OperatorPort` carries the larger operator surface used by the runtime. This removes the
+convenient public raw-handle bypass and makes authority reviewable at one API seam. It is
+not an in-process Python sandbox: each trusted port necessarily retains the organism in a
+private `_org` slot, and reflective Python running in the same trust domain can reach it.
+
 The model transport contract is `model(prompt: str) -> str`. The OpenAI-compatible adapter in
 `src/mantle/mind/transport.py` returns that callable shape. Usage, cache, generation, and
 request-hash data are sidecar attributes on the callable, not a tool-calling interface.
@@ -154,6 +165,12 @@ Nervous.assemble()
 The MIND may propose special instructions and candidate skills. The Body applies special
 instructions through `Limbs`, and candidate skills must pass the sandbox, trial, hash,
 signature, capability, and provenance gates before calcification.
+
+The trusted-code Python runner executes in a child process with a wall-clock timeout,
+POSIX address-space limits or a Windows Job Object memory limit, and capped JSON request,
+result, and response sizes. Obvious unbounded loops and literal allocations are also
+refused statically. These are availability controls; they do not turn Python into a hard
+sandbox. Foreign code still requires the prepared WASM runner seam.
 
 ## 7. Nociception and Scheduling
 
@@ -247,12 +264,23 @@ python -m mantle applet-show nest/ name
 python -m mantle applet-export nest/ name out/
 python -m mantle applet-wear nest/ name
 python -m mantle applet-audit nest/ name
-python -m mantle applet-clone nest/ https://github.com/owner/repo name
+python -m mantle applet-clone nest/ https://github.com/owner/repo@<40-hex-commit> name --allow-network
+python -m mantle certify nest/ --out=nest/certification.json
 ```
+
+`certify` evaluates the supplied persisted organism rather than the repository's reference
+fixture. Its deterministic receipt fingerprints the nest artifacts, Mantle source commit,
+and live invariant registry; when the Body has a genesis key, it signs the receipt. This is
+technical evidence only and never grants MIND-fusion authority.
 
 Run only commands whose required paths exist in your current workspace.
 
 ## 10. Verification Expectations
+
+The executable proof catalogue is a typed, concern-indexed single registry; see
+[`INVARIANT_REGISTRY.md`](INVARIANT_REGISTRY.md). Do not hard-code its population in
+documentation. `mantle prove` and certification receipts derive and fingerprint the live
+registry.
 
 For narrow source changes:
 

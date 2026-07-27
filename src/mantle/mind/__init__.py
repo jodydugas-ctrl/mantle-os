@@ -8,9 +8,11 @@ from .transport import stub_mind, openai_compatible_model, openrouter_model, loa
 from .containment import WRITE_SURFACE, guarded_write
 from .mind import Mind, fuse
 from .inner_voice import InnerVoice
+from .port import MindPort, OperatorPort
 from .runtime import AppAIRuntime
 from .usage import normalize_usage, stable_session_id
 
 __all__ = ["stub_mind", "openai_compatible_model", "openrouter_model", "load_keyfile",
-           "WRITE_SURFACE", "guarded_write", "Mind", "fuse", "InnerVoice", "AppAIRuntime"]
+           "WRITE_SURFACE", "guarded_write", "Mind", "fuse", "InnerVoice", "AppAIRuntime",
+           "MindPort", "OperatorPort"]
 __all__ += ["normalize_usage", "stable_session_id"]

@@ -80,4 +80,9 @@ class MultiLangParityTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(MultiLangParityTest)
+    result = unittest.TextTestRunner(verbosity=1).run(suite)
+    if os.environ.get("MANTLE_REQUIRE_NO_SKIPS") == "1" and result.skipped:
+        print("STRICT: %d multi-language test(s) did not execute" % len(result.skipped))
+        raise SystemExit(2)
+    raise SystemExit(0 if result.wasSuccessful() else 1)

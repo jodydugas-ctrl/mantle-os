@@ -502,7 +502,8 @@ class ResidentRuntime:
             )
             private_model = _PrivateMindModel(self._model)
             Mind = vendored_symbol("mind.mind", "Mind")
-            mind = Mind(organism, private_model, max_thoughts=1)
+            MindPort = vendored_symbol("mind.port", "MindPort")
+            mind = Mind(MindPort(organism), private_model, max_thoughts=1)
             try:
                 mind.think(snapshot, question=framed)
             except Exception:

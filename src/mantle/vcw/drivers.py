@@ -15,9 +15,10 @@ These prove the boot sector -- not hard-coded logic -- decides how a layer behav
 from __future__ import annotations
 
 import ast
-import base64
 import builtins
-import pickle
+import json
+import os
+import signal
 import subprocess
 import sys
 from datetime import date
@@ -30,8 +31,9 @@ from .entry import make_entry, visible
 __all__ = [
     "make_entry", "LogJsonDriver", "KeyValueDriver", "CalendarSpatialDriver", "ExecDriver",
     "CapabilityError", "IntegrityError", "TrustError", "SandboxError", "ProvenanceError",
+    "ResourceLimitError", "ProtocolError",
     "validate_skill_code", "validate_calcify_payload", "provenance_is_trusted", "trial",
-    "register_runner", "get_runner",
+    "validate_public_grant", "register_runner", "get_runner",
 ]
 
 
@@ -176,6 +178,14 @@ class TrustError(Exception):
     (HF-B50). Such code must run on the 'wasm' runner (hard sandbox) instead."""
 
 
+class ResourceLimitError(Exception):
+    """A cultivated skill exceeded an enforced time, memory, or result-size budget."""
+
+
+class ProtocolError(Exception):
+    """The isolated child returned data outside the bounded JSON response protocol."""
+
+
 _FORBIDDEN_NAMES = frozenset({
     "eval", "exec", "compile", "__import__", "open", "globals", "locals", "vars",
     "getattr", "setattr", "delattr", "input", "breakpoint", "memoryview", "exit", "quit",
@@ -199,6 +209,28 @@ def validate_skill_code(code: str) -> None:
                                % node.attr)
         if isinstance(node, ast.Name) and node.id in _FORBIDDEN_NAMES:
             raise SandboxError("skill may not reference %r" % node.id)
+        # These checks are intentionally conservative heuristics, not the resource
+        # boundary.  The child-process limits below remain authoritative.
+        if isinstance(node, ast.While) and isinstance(node.test, ast.Constant) \
+                and node.test.value is True \
+                and not any(isinstance(child, ast.Break) for child in ast.walk(node)):
+            raise SandboxError("skill contains an obvious unbounded while loop")
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) \
+                and node.func.id == "range" and node.args \
+                and all(isinstance(arg, ast.Constant) and isinstance(arg.value, int)
+                        for arg in node.args):
+            values = [arg.value for arg in node.args]
+            stop = values[0] if len(values) == 1 else values[1]
+            start = 0 if len(values) == 1 else values[0]
+            if abs(stop - start) > 1_000_000:
+                raise SandboxError("skill contains an oversized literal range")
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+            constants = [
+                side.value for side in (node.left, node.right)
+                if isinstance(side, ast.Constant) and isinstance(side.value, int)
+            ]
+            if constants and max(constants) > 1_000_000:
+                raise SandboxError("skill contains an oversized literal repetition")
 
 
 def validate_calcify_payload(content: Dict[str, Any]) -> None:
@@ -217,6 +249,25 @@ def validate_calcify_payload(content: Dict[str, Any]) -> None:
 
 
 TRUSTED_AUTHORS = frozenset({"MIND", "BODY"})
+_PUBLIC_GRANT_KEYS = frozenset({"reads", "writes", "limbs", "net"})
+_TRIAL_AUTHORITY = object()
+
+
+def validate_public_grant(granted: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Validate the public invocation grant schema.
+
+    A grant describes resource capabilities; it never grants provenance trust. Unknown
+    keys are refused so a caller cannot mint authority by discovering a magic string.
+    """
+    if granted is None:
+        return {}
+    if not isinstance(granted, dict):
+        raise CapabilityError("exec grant must be a dictionary")
+    unknown = set(granted) - _PUBLIC_GRANT_KEYS
+    if unknown:
+        raise CapabilityError("unknown/reserved exec grant key(s): %s"
+                              % ", ".join(sorted(map(str, unknown))))
+    return dict(granted)
 
 
 def provenance_is_trusted(provenance: Dict[str, Any]) -> bool:
@@ -256,12 +307,22 @@ class ExecRunner:
 
 @register_runner
 class PythonExecRunner(ExecRunner):
-    """The default runner: restricted namespace + wall-clock limit. NOT a hard sandbox --
-    untrusted skills must use the wasm runner."""
+    """Restricted child + enforced time/memory/result bounds. NOT a hard sandbox.
+
+    Trusted Python skills run in a separate process.  POSIX uses ``setrlimit`` and a
+    process group; Windows assigns the child to a kill-on-close Job Object with a
+    per-process memory cap.  The wire protocol is bounded JSON, never pickle.
+    """
     name = "python"
 
     def run(self, content, args, granted):
-        declared = max(1, int(content.get("limits", {}).get("ms", 200))) / 1000.0
+        limits = content.get("limits", {}) or {}
+        declared = max(1, int(limits.get("ms", 200))) / 1000.0
+        memory_bytes = max(16 * 1024 * 1024,
+                           int(limits.get("memory_bytes", 128 * 1024 * 1024)))
+        result_bytes = max(1024, int(limits.get("result_bytes", 256 * 1024)))
+        output_bytes = max(result_bytes + 1024,
+                           int(limits.get("output_bytes", 512 * 1024)))
         # The hard kill is applied to the child process as a whole. On Windows, process
         # startup itself can exceed the old in-thread 200 ms default, so keep a small
         # floor while preserving caller-requested larger budgets.
@@ -271,46 +332,215 @@ class PythonExecRunner(ExecRunner):
             "entry": content["entry"],
             "args": args,
             "safe_builtins": sorted(SAFE_BUILTINS),
+            "memory_bytes": memory_bytes,
+            "result_bytes": result_bytes,
+            "output_bytes": output_bytes,
         }
+        try:
+            request = json.dumps(payload, ensure_ascii=True,
+                                 separators=(",", ":")).encode("utf-8")
+        except (TypeError, ValueError) as exc:
+            raise ProtocolError("exec arguments are not JSON-safe: %s" % exc)
+        if len(request) > output_bytes:
+            raise ResourceLimitError("exec request exceeded its protocol-size budget")
         runner = r"""
-import base64
 import builtins
-import pickle
+import ctypes
+import json
+import os
 import sys
 
-payload = pickle.loads(base64.b64decode(sys.stdin.buffer.read()))
+def emit(value, cap):
+    data = json.dumps(value, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+    if len(data) > cap:
+        data = json.dumps({"ok": False, "limit": "output",
+                           "error_type": "ResourceLimitError",
+                           "error": "exec response exceeded output budget"},
+                          separators=(",", ":")).encode("utf-8")
+    sys.stdout.buffer.write(data)
+
+def apply_limits(memory_bytes):
+    if os.name == "posix":
+        import resource
+        resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
+        return None
+    if os.name != "nt":
+        raise RuntimeError("memory enforcement unavailable on this platform")
+
+    from ctypes import wintypes
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    JOB_OBJECT_LIMIT_ACTIVE_PROCESS = 0x00000008
+    JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x00000100
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+    JobObjectExtendedLimitInformation = 9
+
+    class IO_COUNTERS(ctypes.Structure):
+        _fields_ = [
+            ("ReadOperationCount", ctypes.c_ulonglong),
+            ("WriteOperationCount", ctypes.c_ulonglong),
+            ("OtherOperationCount", ctypes.c_ulonglong),
+            ("ReadTransferCount", ctypes.c_ulonglong),
+            ("WriteTransferCount", ctypes.c_ulonglong),
+            ("OtherTransferCount", ctypes.c_ulonglong),
+        ]
+
+    class BASIC_LIMITS(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_longlong),
+            ("PerJobUserTimeLimit", ctypes.c_longlong),
+            ("LimitFlags", wintypes.DWORD),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", wintypes.DWORD),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", wintypes.DWORD),
+            ("SchedulingClass", wintypes.DWORD),
+        ]
+
+    class EXTENDED_LIMITS(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", BASIC_LIMITS),
+            ("IoInfo", IO_COUNTERS),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel32.SetInformationJobObject.argtypes = [
+        wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD
+    ]
+    kernel32.SetInformationJobObject.restype = wintypes.BOOL
+    kernel32.AssignProcessToJobObject.argtypes = [
+        wintypes.HANDLE, wintypes.HANDLE
+    ]
+    kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
+    job = kernel32.CreateJobObjectW(None, None)
+    if not job:
+        raise OSError(ctypes.get_last_error(), "CreateJobObjectW failed")
+    info = EXTENDED_LIMITS()
+    info.BasicLimitInformation.LimitFlags = (
+        JOB_OBJECT_LIMIT_ACTIVE_PROCESS
+        | JOB_OBJECT_LIMIT_PROCESS_MEMORY
+        | JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    )
+    info.BasicLimitInformation.ActiveProcessLimit = 1
+    info.ProcessMemoryLimit = memory_bytes
+    if not kernel32.SetInformationJobObject(
+            job, JobObjectExtendedLimitInformation,
+            ctypes.byref(info), ctypes.sizeof(info)):
+        raise OSError(ctypes.get_last_error(), "SetInformationJobObject failed")
+    if not kernel32.AssignProcessToJobObject(job, kernel32.GetCurrentProcess()):
+        raise OSError(ctypes.get_last_error(), "AssignProcessToJobObject failed")
+    return job
+
+raw = sys.stdin.buffer.read()
+try:
+    payload = json.loads(raw.decode("utf-8"))
+except BaseException as e:
+    emit({"ok": False, "error_type": "ProtocolError",
+          "error": "malformed request: " + str(e)}, 4096)
+    raise SystemExit(0)
+
+try:
+    job_handle = apply_limits(int(payload["memory_bytes"]))
+except BaseException as e:
+    emit({"ok": False, "error_type": "ResourceLimitError",
+          "error": "memory limit setup failed: " + str(e)}, payload["output_bytes"])
+    raise SystemExit(0)
+
 safe = {name: getattr(builtins, name) for name in payload["safe_builtins"]}
 g = {"__builtins__": safe}
-loc = {}
 try:
-    exec(payload["code"], g, loc)
-    fn = loc.get(payload["entry"]) or g.get(payload["entry"])
+    exec(payload["code"], g, g)
+    fn = g.get(payload["entry"])
     if fn is None:
         raise NameError("entry %r not defined by exec layer" % payload["entry"])
-    out = {"ok": True, "result": fn(**payload["args"])}
+    result = fn(**payload["args"])
+    encoded_result = json.dumps(result, ensure_ascii=True,
+                                separators=(",", ":")).encode("utf-8")
+    if len(encoded_result) > payload["result_bytes"]:
+        out = {"ok": False, "limit": "result",
+               "error_type": "ResourceLimitError",
+               "error": "exec result exceeded result-size budget"}
+    else:
+        out = {"ok": True, "result": result}
 except BaseException as e:
     out = {"ok": False, "error_type": type(e).__name__, "error": str(e)}
-sys.stdout.buffer.write(base64.b64encode(pickle.dumps(out, protocol=4)))
+emit(out, payload["output_bytes"])
 """
+        kwargs = {
+            "stdin": subprocess.PIPE,
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+        }
+        if os.name == "posix":
+            kwargs["start_new_session"] = True
+        elif os.name == "nt":
+            kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        proc = subprocess.Popen(
+            [sys.executable, "-I", "-c", runner],
+            **kwargs,
+        )
         try:
-            proc = subprocess.run(
-                [sys.executable, "-I", "-c", runner],
-                input=base64.b64encode(pickle.dumps(payload, protocol=4)),
-                capture_output=True,
-                timeout=limit,
-                check=False,
-            )
+            stdout, stderr = proc.communicate(input=request, timeout=limit)
         except subprocess.TimeoutExpired:
-            raise TimeoutError("exec layer exceeded its time budget")
+            self._kill_tree(proc)
+            proc.communicate()
+            raise ResourceLimitError("exec layer exceeded its time budget")
+        if len(stdout) > output_bytes or len(stderr) > output_bytes:
+            raise ResourceLimitError("exec runner exceeded its output budget")
         if proc.returncode != 0:
-            raise RuntimeError("exec runner failed: %s" % proc.stderr.decode("utf-8", "replace"))
-        out = pickle.loads(base64.b64decode(proc.stdout))
+            raise ResourceLimitError(
+                "exec child terminated under a memory/process budget: %s"
+                % stderr[:1024].decode("utf-8", "replace")
+            )
+        out = self._decode_response(stdout)
         if out.get("ok"):
             return out.get("result")
+        if out.get("limit") or out.get("error_type") == "ResourceLimitError":
+            raise ResourceLimitError(out.get("error", "exec resource budget exceeded"))
+        if out.get("error_type") == "MemoryError":
+            raise ResourceLimitError("exec layer exceeded its memory budget")
+        if out.get("error_type") == "ProtocolError":
+            raise ProtocolError(out.get("error", "exec protocol failed"))
         exc = getattr(builtins, out.get("error_type", ""), RuntimeError)
         if not isinstance(exc, type) or not issubclass(exc, BaseException):
             exc = RuntimeError
         raise exc(out.get("error", "exec layer failed"))
+
+    @staticmethod
+    def _decode_response(raw: bytes) -> Dict[str, Any]:
+        try:
+            value = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ProtocolError("malformed exec child response: %s" % exc)
+        if not isinstance(value, dict) or not isinstance(value.get("ok"), bool):
+            raise ProtocolError("exec child response violates schema")
+        allowed = {"ok", "result", "error_type", "error", "limit"}
+        if set(value) - allowed:
+            raise ProtocolError("exec child response contains unknown fields")
+        if value["ok"] and "result" not in value:
+            raise ProtocolError("successful exec response has no result")
+        if not value["ok"] and not isinstance(value.get("error"), str):
+            raise ProtocolError("failed exec response has no error string")
+        return value
+
+    @staticmethod
+    def _kill_tree(proc: subprocess.Popen) -> None:
+        if proc.poll() is not None:
+            return
+        if os.name == "posix":
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        else:
+            # The child owns a KILL_ON_JOB_CLOSE Job Object. Terminating it closes
+            # that handle and tears down any descendants admitted by the job.
+            proc.kill()
 
 
 @register_runner
@@ -352,11 +582,15 @@ class ExecDriver(Driver):
 
     def execute(self, content: Dict[str, Any], args: Dict[str, Any],
                 granted: Dict[str, Any] = None) -> Any:
+        """Public execution path. Trust can never be minted through ``granted``."""
+        return self._execute(content, args, validate_public_grant(granted))
+
+    def _execute(self, content: Dict[str, Any], args: Dict[str, Any],
+                 granted: Dict[str, Any], *, trial_authority: Any = None) -> Any:
         # 1. integrity gate: code must match the hash it was promoted with
         if code_hash(content["code"]) != content["code_hash"]:
             raise IntegrityError("exec layer hash mismatch -- refusing to run")
         # 2. capability gate: the call may not exceed the declared capability set
-        granted = granted or {}
         caps = content.get("capabilities", {})
         for kind in ("reads", "writes", "limbs"):
             asked = set(granted.get(kind, []))
@@ -370,12 +604,12 @@ class ExecDriver(Driver):
         runner_name = content.get("runner", "python")
         if (runner_name != "wasm"
                 and not provenance_is_trusted(content.get("provenance", {}))
-                and not granted.get("allow_untrusted_local")):
+                and trial_authority is not _TRIAL_AUTHORITY):
             prov = content.get("provenance", {})
             raise TrustError(
                 "untrusted-provenance exec layer (author=%r, foreign=%r) refused on "
                 "non-isolating runner %r -- run it on the 'wasm' runner, or earn trust via "
-                "trial+calcify. Local override: granted={'allow_untrusted_local': True}."
+                "the private trial+calcify ceremony."
                 % (prov.get("author"), prov.get("foreign", False), runner_name))
         # 4. dispatch to the selected runner
         return get_runner(runner_name).run(content, args, granted)
@@ -388,13 +622,15 @@ def trial(code: str, entry: str, cases: List[Tuple[Dict[str, Any], Any]]) -> Dic
     validate_skill_code(code)
     drv = ExecDriver()
     candidate = {"code": code, "code_hash": code_hash(code), "entry": entry,
-                 "capabilities": {}, "limits": {"ms": 200}}
+                 "capabilities": {},
+                 "limits": {"ms": 200, "memory_bytes": 128 * 1024 * 1024,
+                            "result_bytes": 256 * 1024, "output_bytes": 512 * 1024}}
     passed = 0
     detail = []
     for args, expected in cases:
         try:
-            # trial IS the controlled proving step that earns trust (allow_untrusted_local)
-            got = drv.execute(candidate, args, {"allow_untrusted_local": True})
+            # Trial authority is a private object capability, not a public dictionary key.
+            got = drv._execute(candidate, args, {}, trial_authority=_TRIAL_AUTHORITY)
             ok = (got == expected)
         except Exception as e:                   # noqa: BLE001
             got, ok = "ERROR:%s" % e, False

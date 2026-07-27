@@ -30,6 +30,7 @@ mantle.cli  --  one command for the whole organism (Mantle OS)
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 from .primer import appai_commandments, appai_truths
@@ -43,8 +44,9 @@ _USAGE = ("usage: python -m mantle "
           "applet-create <dir> <source-dir> <name> [--entry=X] [--face=FILE] [--no-source] "
           "[--grow] | applet-list <dir> | applet-show <dir> <name> [--json] | "
           "applet-export <dir> <name> <dest> [--overwrite] | applet-wear <dir> <name> | "
-          "applet-audit <dir> <name> | applet-clone <dir> <https-github-url> <name> | "
-          "reproduce | spore <op> ... | ghost <op> ... | "
+          "applet-audit <dir> <name> | applet-clone <dir> <github-url>@<sha> <name> "
+          "--allow-network | "
+          "certify <nest> [--out=FILE] | reproduce | spore <op> ... | ghost <op> ... | "
           "demo | audit | prove | mind | audit-mind | "
           "check [--fast] | "
           "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png]]")
@@ -54,7 +56,7 @@ _COMMANDS = (
     "reproduce", "doctor", "teach", "face", "face-list", "face-save", "face-wear",
     "applet-create", "applet-list", "applet-show", "applet-export", "applet-wear",
     "applet-audit", "applet-clone", "demo", "audit", "prove", "mind", "audit-mind",
-    "assimilate", "check",
+    "assimilate", "check", "certify",
 )
 
 # every command answers to its hyphenated name and its underscore twin
@@ -427,7 +429,7 @@ def _applet_org(directory, create_if_missing=False, grow=False):
     return org, False
 
 
-def cmd_applet_create(argv):
+def cmd_applet_create(argv, provenance=None):
     args, flags = _split(argv)
     if len(args) < 3:
         print("usage: python -m mantle applet-create <organism-dir> <source-dir> <name> "
@@ -454,7 +456,8 @@ def cmd_applet_create(argv):
         receipt = ab.create_applet_body(
             org, source_dir, name, face_source=face_source,
             entry=flags.get("--entry", "") if isinstance(flags.get("--entry"), str) else "",
-            include_source=not flags.get("--no-source"), state=state)
+            include_source=not flags.get("--no-source"), state=state,
+            provenance=provenance)
     except ab.AppletError as e:
         print("\nAPPLET REFUSED: %s" % e)
         return 1
@@ -617,22 +620,34 @@ def cmd_applet_audit(argv):
 def cmd_applet_clone(argv):
     args, flags = _split(argv)
     if len(args) < 3:
-        print("usage: python -m mantle applet-clone <organism-dir> <https-github-url> "
-              "<name> [--grow]")
+        print("usage: python -m mantle applet-clone <organism-dir> "
+              "<https-github-url>@<40-hex-commit> <name> --allow-network [--grow]")
         return 2
     import shutil
     import tempfile
     from . import applet_body as ab
     workdir = tempfile.mkdtemp(prefix="mantle-applet-")
     try:
+        source = args[1]
+        if "@" not in source:
+            print("CLONE REFUSED: source must be <github-url>@<40-hex-commit>")
+            return 1
+        url, commit = source.rsplit("@", 1)
         try:
-            clone_dir = ab.clone_github(args[1], workdir)
+            acquisition = ab.clone_github(
+                url, commit, workdir,
+                allow_network=bool(flags.get("--allow-network")),
+            )
         except ab.AppletError as e:
             print("CLONE REFUSED: %s" % e)
             return 1
-        print("cloned %s (read-only; no install scripts, no execution)" % args[1])
-        rc = cmd_applet_create([args[0], clone_dir, args[2]]
-                               + [a for a in argv if a.startswith("--")])
+        print("fetched %s@%s (detached; hooks/submodules disabled; no execution)"
+              % (url, acquisition["commit"]))
+        rc = cmd_applet_create(
+            [args[0], acquisition["path"], args[2]]
+            + [a for a in argv if a.startswith("--")],
+            provenance={k: v for k, v in acquisition.items() if k != "path"},
+        )
         return rc
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
@@ -678,6 +693,29 @@ def _cmd_check(rest):
     return check.main(rest)
 
 
+def _cmd_certify(rest):
+    args, flags = _split(rest)
+    if len(args) != 1:
+        print("usage: python -m mantle certify <nest> [--out=FILE]")
+        return 2
+    from .certify import CertificationError, certify_nest, write_certificate
+    directory = args[0]
+    out = flags.get("--out")
+    if out is True or out is None:
+        out = os.path.join(directory, "certification.json")
+    try:
+        receipt = certify_nest(directory)
+        target = write_certificate(receipt, str(out))
+    except CertificationError as exc:
+        print("CERTIFICATION BLOCKED: %s" % exc)
+        return 1
+    print("APPLICATION CERTIFIED: %s" % receipt["subject"]["identity"])
+    print("  target fingerprint : %s" % receipt["target"]["fingerprint"])
+    print("  registry fingerprint: %s" % receipt["implementation"]["invariant_registry"])
+    print("  receipt             : %s" % target)
+    return 0
+
+
 _DISPATCH = {
     "anchor": cmd_anchor,
     "ask": cmd_ask,
@@ -709,6 +747,7 @@ _DISPATCH = {
     "audit-mind": _cmd_audit_mind,
     "assimilate": _cmd_assimilate,
     "check": _cmd_check,
+    "certify": _cmd_certify,
 }
 
 

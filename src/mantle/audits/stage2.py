@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import sys
 
-from ..core.audit import safe as _safe, print_row, PASS, FAIL
+from ..core.audit import safe as _safe, make_row as _row, print_row, PASS, FAIL, NA
 from ..core.organism import Organism
 from ..primer import appai_commandments, appai_truths
 from ..vcw.bands import standard_genome, make_band_boot
@@ -126,14 +126,35 @@ def audit_mind(org, mind):
     return rows
 
 
-def fused_demo():
+def fused_demo(profile="base"):
+    """Build and fuse one deterministic scenario profile.
+
+    ``base`` proves ordinary fusion, ``reborn`` exercises sealed ancestry, and
+    ``resident`` supplies canonical resident-heartbeat evidence when that Stage-1 row is
+    present.  No profile weakens a row; aggregation requires a real PASS somewhere and
+    refuses any FAIL anywhere.
+    """
     genome = standard_genome() + [make_band_boot("reflex_probe", 600, "exec",
                                                  purpose="skill cultivation probe")]
-    org = Organism.birth(identity={"name": "Fused.AppAI"},
+    if profile == "resident":
+        from ..vcw.bands import allocate_app_band
+        genome.append(allocate_app_band(
+            "host_inventory", 8, purpose="resident audit host census",
+            existing=genome,
+        ))
+    org = Organism.birth(identity={"name": "Fused.%s.AppAI" % profile.title()},
                          truths=appai_truths(),
                          commandments=appai_commandments(),
                          genome=genome)
     org.memory.remember("facts", {"k": "host", "v": "headless"})
+    if profile == "reborn":
+        org.rebirth(reason="Stage-2 sealed-ancestry profile")
+    elif profile == "resident":
+        from ..resident.protocol import heartbeat_pulse_event
+        org.memory.remember("events", heartbeat_pulse_event(
+            1, wake=None, provider_attempted=True, provider_ok=True,
+            command_stack=["assemble", "offline stub", "record receipt"],
+        ))
     # Technical gate and explicit offline audit authority are separate inputs.
     passed, _ = _stage1.run(org, include_invariants=False)
     if not passed:
@@ -144,15 +165,63 @@ def fused_demo():
     return org, mind
 
 
+def _aggregate_stage1(profile_rows):
+    """Closed-world row aggregation across profiles."""
+    order = []
+    by_code = {}
+    for profile, rows in profile_rows.items():
+        for row in rows:
+            code = row["code"]
+            if code not in by_code:
+                order.append(code)
+                by_code[code] = []
+            by_code[code].append((profile, row))
+
+    aggregate = []
+    for code in order:
+        observations = by_code[code]
+        template = observations[0][1]
+        failing = [(p, r) for p, r in observations if r["result"] == FAIL]
+        passing = [(p, r) for p, r in observations if r["result"] == PASS]
+        if failing:
+            result = FAIL
+            selected = failing[0][1]
+        elif passing:
+            result = PASS
+            selected = passing[0][1]
+        else:
+            result = NA
+            selected = template
+        outcomes = ", ".join(
+            "%s=%s" % (p, "not-applicable" if r["result"] == NA else r["result"])
+            for p, r in observations
+        )
+        note = "%s; profiles: %s" % (selected.get("note", ""), outcomes)
+        aggregate.append(_row(
+            code, template["requirement"], result, template.get("hf"), note
+        ))
+    return aggregate
+
+
 def main(argv):
     flags = {a for a in argv if a.startswith("--")}
-    org, mind = fused_demo()
+    profiles = {}
+    minds = {}
+    for profile in ("base", "reborn", "resident"):
+        org, mind = fused_demo(profile)
+        profiles[profile] = org
+        minds[profile] = mind
+    org, mind = profiles["base"], minds["base"]
 
     mind_rows = audit_mind(org, mind)
-    # Phase-1 regression: the fused organism must STILL pass every Stage-1 row.
-    substrate_rows = _stage1.audit_substrate(org)
-    mesh_rows = _stage1.audit_mesh(org)
-    stage1_rows = substrate_rows + mesh_rows
+    # Phase-1 regression: every fused profile must retain the Body, and each row must
+    # achieve a PASS in at least one applicable profile with no FAIL in any profile.
+    profile_rows = {
+        name: _stage1.audit_substrate(profile_org)
+        + _stage1.audit_mesh(profile_org)
+        for name, profile_org in profiles.items()
+    }
+    stage1_rows = _aggregate_stage1(profile_rows)
     invariants = [] if "--fast" in flags else _inv.run_all()
 
     print("=" * 74)
@@ -162,7 +231,7 @@ def main(argv):
     print("  Phase-2 containment rows:")
     for r in mind_rows:
         print_row(r, width, result_width=5)
-    print("\n  Phase-1 regression (the SAME Stage-1 gate, re-run after fusion):")
+    print("\n  Phase-1 regression (closed-world aggregate: base + reborn + resident):")
     for r in stage1_rows:
         print_row(r, width, result_width=5)
     if invariants:
@@ -172,11 +241,13 @@ def main(argv):
     all_rows = mind_rows + stage1_rows
     fails = [r for r in all_rows if r["result"] == FAIL]
     inv_ok = all(r["ok"] for r in invariants)
-    blocked = bool(fails) or not inv_ok
+    uncovered = [r for r in stage1_rows if r["result"] == NA]
+    blocked = bool(fails) or bool(uncovered) or not inv_ok
 
     print("\n" + "-" * 74)
     print("FUSED TEST-ORGANISM TECHNICAL REGRESSION (STAGE 2)")
     print("  AppAI name         : %s" % org.body.identity_name())
+    print("  Scenario profiles  : %s" % ", ".join(profiles))
     print("  MIND write surface : %s  (Body-enforced)" % list(WRITE_SURFACE))
     print("  Phase-2 rows       : %d / %d passed"
           % (sum(1 for r in mind_rows if r["result"] == PASS), len(mind_rows)))
@@ -190,10 +261,13 @@ def main(argv):
     if "--json" in flags:
         print("\nEVIDENCE_JSON:")
         print(json.dumps({"mind_rows": mind_rows, "stage1_rows": stage1_rows,
+                          "profiles": profile_rows,
                           "invariants": invariants}, indent=2))
 
     if blocked:
-        reasons = [r["code"] for r in fails] + ([] if inv_ok else ["security-invariants"])
+        reasons = ([r["code"] for r in fails]
+                   + ["uncovered:" + r["code"] for r in uncovered]
+                   + ([] if inv_ok else ["security-invariants"]))
         print("\nRESULT: STAGE-2 GATE BLOCKED — %s" % ", ".join(reasons))
         return 1
     print("\nRESULT: STAGE-2 TECHNICAL GATE PASSED (offline test MIND contained; "

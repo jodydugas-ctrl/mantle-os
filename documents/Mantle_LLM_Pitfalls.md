@@ -116,7 +116,8 @@ on a real cube file on disk. It checks:
 - That the cube was created with `Cube.genesis()`
 - That the Primer is present, immutable, and Body-resident
 - That bands match `RESERVED_BANDS` exactly
-- That all entries are hashed and immutable
+- That normal writes are append-only and entry hashes detect later alteration (not that
+  hashes authenticate the writer of a newly inserted valid row)
 - That the heartbeat ran with no LLM in any path
 
 None of these checks can be satisfied by a simulated cube.

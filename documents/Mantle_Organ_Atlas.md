@@ -214,7 +214,7 @@ genomes: the **agent genome** (who you are — the Genome organ here) lives in t
   *(v2.1: "hot/cold" is a RAM working-set flushed to the physical Prime cube — a write-back cache +
   delta compression — NOT inter-cube tiering. Every layer has a declared purpose; allocate only
   what's needed.)*
-- **Reflexes:** `remember` (append an immutable, hashed entry), `recall` (read visible entries
+- **Reflexes:** `remember` (append a hashed entry under the normal no-overwrite contract), `recall` (read visible entries
   through the veil), `summarize` (deterministic roll-ups into `identity`/`discoveries` — no LLM),
   `flush` (persist the hot working set; dual-flush on checkpoint + `atexit`), `allocate` (grow a
   band onto the next layer in its range only when the tail fills — preferring a freed layer from the
@@ -225,7 +225,8 @@ genomes: the **agent genome** (who you are — the Genome organ here) lives in t
   exec layers are never recycled while referenced (`src/mantle/vcw/cube.py::Cube.compact`).
 - **Phase 1:** active. **Phase 2:** the MIND may *request* a write, but the write is performed by a
   Body reflex into the correct band; metabolism stays pure Body.
-- **Audit:** entries are immutable + hashed; reads honor the veil; no organ rewrites history;
+- **Audit:** normal organ writes append rather than overwrite; hashes detect later record
+  alteration but do not attest insertion provenance; reads honor the veil; no organ rewrites history;
   capacity ≠ rebirth (reaching capacity compacts/reclaims, never triggers rebirth); overflow at
   0.75, emergency at 0.90; compaction preserves visible history.
 

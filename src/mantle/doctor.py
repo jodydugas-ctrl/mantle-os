@@ -15,6 +15,8 @@ a deterministic health check that catches those before they bite:
                         docs-vs-code-organs ties the README's organ count to ORGAN_ORDER
   legacy-egg-imports    no Python source imports the removed mantle.egg module; germ
                         loading and validation live in mantle.hatchery
+  threat-model-codes    the delimited security guarantee table has unique stable IDs;
+                        every cited proof is live; enforced/detected rows cite proof
 
 `checkup(org, repo_root=...)` returns {ok, checks:[...]}; `ok` is False if any check fails.
 """
@@ -138,6 +140,84 @@ def _legacy_egg_imports(repo_root: str) -> Dict[str, Any]:
     }
 
 
+_GUARANTEE_START = "<!-- MANTLE-GUARANTEES:START -->"
+_GUARANTEE_END = "<!-- MANTLE-GUARANTEES:END -->"
+_PROVED_VERDICTS = {"enforced", "detected"}
+_ALL_VERDICTS = _PROVED_VERDICTS | {"conventional", "out of scope"}
+
+
+def _live_invariant_codes() -> set:
+    """Return the proof codes published by the live invariant registry."""
+    from .audits.invariants import REGISTRY
+    return {spec.code for spec in REGISTRY}
+
+
+def _threat_model_guarantees(repo_root: str) -> Dict[str, Any]:
+    """Validate only the explicitly delimited guarantee table.
+
+    This is a drift check, not a semantic theorem: it proves stable IDs, verdict syntax,
+    and live proof references. Human review still decides whether a proof supports the
+    claim beside it.
+    """
+    path = os.path.join(repo_root, "THREAT_MODEL.md")
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError as exc:
+        return {"check": "threat-model-codes", "ok": False,
+                "detail": "THREAT_MODEL.md unavailable: %s" % exc}
+    if text.count(_GUARANTEE_START) != 1 or text.count(_GUARANTEE_END) != 1:
+        return {"check": "threat-model-codes", "ok": False,
+                "detail": "guarantee table delimiters missing or duplicated"}
+    body = text.split(_GUARANTEE_START, 1)[1].split(_GUARANTEE_END, 1)[0]
+    live = _live_invariant_codes()
+    code_re = re.compile(r"`([A-Z][A-Z0-9]*(?:-[A-Za-z0-9]+)+)`")
+    ids: List[str] = []
+    unknown: List[str] = []
+    unbacked: List[str] = []
+    bad_verdicts: List[str] = []
+    for line in body.splitlines():
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 6 or not cells[0].startswith("`TM-"):
+            continue
+        guarantee_id = cells[0].strip("`")
+        verdict = cells[3].strip("`").lower()
+        cited = code_re.findall(cells[4])
+        ids.append(guarantee_id)
+        if verdict not in _ALL_VERDICTS:
+            bad_verdicts.append("%s=%s" % (guarantee_id, verdict))
+        if verdict in _PROVED_VERDICTS and not cited:
+            unbacked.append(guarantee_id)
+        unknown.extend(code for code in cited if code not in live)
+    duplicates = sorted({item for item in ids if ids.count(item) > 1})
+    problems = []
+    if not ids:
+        problems.append("no guarantee rows parsed")
+    if duplicates:
+        problems.append("duplicate guarantee ID(s): %s" % ", ".join(duplicates))
+    if unknown:
+        problems.append("unknown proof code(s): %s" % ", ".join(sorted(set(unknown))))
+    if unbacked:
+        problems.append("unbacked enforced/detected row(s): %s" % ", ".join(unbacked))
+    if bad_verdicts:
+        problems.append("invalid verdict(s): %s" % ", ".join(bad_verdicts))
+    # A real repository check also proves that every executable invariant maps to a
+    # declared guarantee row. Tiny synthetic tables used by unit probes remain isolated.
+    if os.path.isfile(os.path.join(repo_root, "README.md")):
+        from .audits.invariants import REGISTRY
+        missing_guarantees = sorted({
+            spec.guarantee_id for spec in REGISTRY if spec.guarantee_id not in ids
+        })
+        if missing_guarantees:
+            problems.append("registry maps to unknown guarantee ID(s): %s"
+                            % ", ".join(missing_guarantees))
+    return {"check": "threat-model-codes", "ok": not problems,
+            "detail": ("guarantee IDs unique; cited proofs live; registry mapped"
+                       if not problems else " | ".join(problems))}
+
+
 def checkup(org: Any, repo_root: Optional[str] = None) -> Dict[str, Any]:
     """Run the deployment checkup. Pass `repo_root` to include the docs-vs-code gate."""
     checks: List[Dict[str, Any]] = []
@@ -159,5 +239,6 @@ def checkup(org: Any, repo_root: Optional[str] = None) -> Dict[str, Any]:
         checks.append(_docs_vs_code(repo_root))
         checks.append(_docs_vs_code_organs(repo_root))
         checks.append(_legacy_egg_imports(repo_root))
+        checks.append(_threat_model_guarantees(repo_root))
 
     return {"ok": all(c["ok"] for c in checks), "checks": checks}

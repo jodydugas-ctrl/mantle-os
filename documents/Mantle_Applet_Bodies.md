@@ -60,8 +60,10 @@ hatchery. Assimilated tissue never gets that shortcut.)
 ## The hard rules
 
 Stored or cloned project code is never executed, imported, or installed. `applet-clone`
-accepts only explicit `https://github.com/<owner>/<repo>` URLs, shallow-clones into a
-controlled workspace, runs no install scripts, and hands the bytes to the same
+accepts only explicit `https://github.com/<owner>/<repo>@<40-hex-commit>` sources and
+requires `--allow-network`. It fetches only that commit, checks it out detached in a
+controlled workspace with hooks and submodules disabled, receipts the commit plus a
+deterministic source-tree hash, and hands the bytes to the same
 `applet-create` path. SELF/OTHER is preserved: applet source carries foreign provenance
 and may only become SELF through the existing trial/calcify pathways. Secrets are
 redacted before state or reports append (HF-B20 holds for applet tissue); suspicious
@@ -85,7 +87,7 @@ python -m mantle applet-show   <organism-dir> <name>                # manifest, 
 python -m mantle applet-export <organism-dir> <name> <dest-dir> [--overwrite]
 python -m mantle applet-wear   <organism-dir> <name>                # phenotype boot manifest
 python -m mantle applet-audit  <organism-dir> <name>                # the capsule audit
-python -m mantle applet-clone  <organism-dir> <https-github-url> <name>
+python -m mantle applet-clone  <organism-dir> <https-github-url>@<40-hex-commit> <name> --allow-network
 ```
 
 The five dedicated bands sit in the free slice of the app-band range (550–749):

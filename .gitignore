@@ -42,3 +42,4 @@ dist/
 
 # local CI dependency checkout (mirrors .github/workflows/audit.yml)
 .ci/
+.artifacts/

@@ -24,7 +24,7 @@ import hashlib
 from typing import Callable, Optional, Tuple
 
 from ..vcw.entry import make_entry
-from .containment import guarded_write
+from .port import MindPort, require_mind_port
 
 _STANCE = {
     "neutral": "",
@@ -35,14 +35,15 @@ _STANCE = {
 
 
 class InnerVoice:
-    def __init__(self, organism, model: Callable[[str], str], max_calls: int = 8) -> None:
-        self.org = organism
+    def __init__(self, port: MindPort, model: Callable[[str], str],
+                 max_calls: int = 8) -> None:
+        self.port = require_mind_port(port, "InnerVoice")
         self.model = model
         self.max_calls = max_calls
         self.calls = 0
 
     def _frame(self, question: str, mode: str) -> str:
-        name = self.org.body.identity_name()
+        name = self.port.identity_name()
         return ("This is a Mantle AppAI named %s. %sI have the following question for "
                 "you: %s" % (name, _STANCE.get(mode, ""), question))
 
@@ -50,8 +51,8 @@ class InnerVoice:
         """Ask the inner voice. Returns (answer, band-it-landed-in) or None on the waste
         guard. The answer's provenance is always inferred; `facts` is never written."""
         if self.calls >= self.max_calls:
-            self.org.immune_event("waste_guard",
-                                  {"skill": "inner_voice", "limit": self.max_calls})
+            self.port.immune_event("waste_guard",
+                                   {"skill": "inner_voice", "limit": self.max_calls})
             return None
         self.calls += 1
 
@@ -59,7 +60,7 @@ class InnerVoice:
         answer = self.model(prompt)
 
         # trace the model call (hashes only; secrets would be redacted by the boundary)
-        guarded_write(self.org, "brain", make_entry(
+        self.port.write("brain", make_entry(
             {"MODEL.REQUEST": {"skill": "inner_voice", "mode": mode,
                                "prompt_hash": hashlib.sha256(prompt.encode()).hexdigest()[:16],
                                "answer_hash": hashlib.sha256(answer.encode()).hexdigest()[:16]}},
@@ -71,11 +72,11 @@ class InnerVoice:
             verified=False, confidence="inferred")
 
         if mode == "oppose":
-            guarded_write(self.org, "thoughts", record)       # private reflection
+            self.port.write("thoughts", record)       # private reflection
             band = "thoughts"
         else:
             # Discoveries are outside the direct MIND write surface. Limbs validates the
             # inferred proposal, asks Memory to append it as Body, and records a proof.
-            self.org.limbs.record_mind_discovery(record)
+            self.port.record_discovery(record)
             band = "discoveries"
         return answer, band

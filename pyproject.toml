@@ -18,7 +18,9 @@ version = "1.4.0"
 description = "Mantle OS: the Homeostatic AppAI Framework — grow software like a living organism, then give it a mind. Reproduction, symbiosis, and self-evolution on the certified Body."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
+# CI runs every admitted minor. Raise the ceiling only together with the certification
+# matrix after the new minor is available and green.
+requires-python = ">=3.10,<3.15"
 keywords = ["ai", "framework", "llm", "agents", "organic-coding", "vcw", "mantle"]
 authors = [{ name = "jodydugas-ctrl" }]
 dependencies = []
