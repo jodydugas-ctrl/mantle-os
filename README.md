@@ -1,6 +1,6 @@
 # Mantle OS
 
-**An organic coding framework — grow software like a living organism, then give it a mind.**
+**Mantle OS gives an application or hardware system an autonomic nervous system, enabling it to become a living digital agent—an AppAI.**
 
 > Mantle OS · The Homeostatic AppAI Framework (reproduction · symbiosis · self-evolution).
 
