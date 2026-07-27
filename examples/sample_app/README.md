@@ -7,7 +7,7 @@ map its surfaces to organs, and preserve host behavior while adding Mantle resid
 ## Why This Example Exists
 
 Use this example when an agent needs to learn the NECROMANCY / assimilation path from
-Grimoire 2.0:
+The Mantle Grimoire:
 
 ```bash
 $env:PYTHONPATH="src"

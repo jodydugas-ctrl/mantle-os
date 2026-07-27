@@ -21,8 +21,8 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 >
 > - **[`AGENTS.md`](AGENTS.md)** — for AI agents: what the biological framework is *for* (the
 >   two jobs the organ names do) and how to use the **Grimoire**, Mantle's doctrine (cast
->   **`Intellige`**, read-only comprehension, first; §7 and §9 of the single canonical
->   **Grimoire 2.0** file bind it to this codebase). The Grimoire is doctrine, not a toll
+>   **`Intellige`**, read-only comprehension, first; §7 and §9 of the single canonical,
+>   Mantle-versioned Grimoire file bind it to this codebase). The Grimoire is doctrine, not a toll
 >   booth — routine code reading and small fixes proceed from the docs and working code.
 > - **[`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md)** — for
 >   engineers and AI specialists who want the architecture before the metaphor: trust
@@ -479,13 +479,13 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     paths.py             repo-relative locations (examples/, eggs/, documents/) resolved in one place
 documents/               the books and the living doctrine
   Mantle_for_Engineers.md the systems-level, non-normative translation layer
+  Mantle_Positioning.md  the concise, non-normative positioning on-ramp
   FIELD_GUIDE.md         the runnable manual (19 chapters; `python -m mantle teach` runs 18 of them live)
   ARCHITECTURE.md        the shape + the Phase-1/Phase-2 build path
   REPRODUCTION.md        the spore, the hatchery, the graft, rebirth
   Mantle_Organ_Atlas.md  the organ taxonomy + the organ contracts
-  grimoire/              the single Grimoire 2.0 file (§7/§9 bind it to Mantle)
+  grimoire/              the Mantle-versioned Grimoire file (§7/§9 bind it to Mantle)
   guides/ (VCW · audit · lifecycle · assimilation · visual) · assets/ (diagrams)
-docs/                    compatibility entry points for older external links
 examples/                example AppAIs + the normative substrate
   spores/                germ spores — hatch one: `mantle hatch examples/spores/greeter.png`
   eggs/                  the germ files those spores are packed from

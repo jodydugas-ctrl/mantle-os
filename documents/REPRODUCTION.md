@@ -15,8 +15,8 @@ reproduce on its own. Everything else is a facet of those two acts.
 | **SEED** | spores | **Yes** — grows anywhere | a spore, hatched: `mantle hatch <spore.png>` |
 | **GRAFT** | a spore aimed at a host | **No** — lives inside a host | `anchor`, `symbiosis`, `graft` |
 
-The old split of *"grow from scratch (Path A)"* vs *"assimilate an existing app (Path B)"*
-is the **same axis**: a seed has no host; a graft lives in one. Both require the full
+The Seed/Graft axis replaces the scratch-vs-assimilate split: a seed has no host; a graft
+lives in one. Both require the full
 invariant suite as technical evidence, but that evidence never grants permission — a fresh,
 target-bound reproduction decision must independently authorize the act. The ceremonies
 live under the **Reproduction organ** (`src/mantle/organs/reproduction.py`).

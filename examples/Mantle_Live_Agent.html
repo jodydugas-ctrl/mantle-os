@@ -1384,8 +1384,8 @@ const initS = () => ({
   // Identity — HKDF-bound key derivation
   genesisHash: null,   // SHA-256 of genesis text (used for key derivation)
   agentIdHash: null,   // SHA-256(APP_ID+"|"+crystalName)
-  // ── Legacy compatibility ─────────────────────────────────────────
-  vcwEntries: [],      // Kept for Terminal display + backward compat
+  // ── VCW entry ledger ─────────────────────────────────────────────
+  vcwEntries: [],      // Active Terminal-visible append ledger
   nextId: 0,
   somaticForm: cp(DSF),
   prevForm: null,
@@ -1934,7 +1934,7 @@ const saveCrystalBlob = async (name, payload) => {
     const h = {};
     for (const d of payload.deltas || [])
       h["d" + d.seq] = await h256(String(d.seq) + d.ts + JSON.stringify(d.ops));
-    // Legacy: also hash vcwEntries for backward compat
+    // Hash the active VCW entry ledger alongside deltas.
     for (const e of payload.vcwEntries || [])
       h[e.id] = await h256(e.id + e.actor + e.opcode + e.payload);
     const blob = {
@@ -1977,7 +1977,7 @@ const loadCrystalBlob = async (name) => {
       if (!raw?.value) continue;
       const decKey = suffix ? SK + "bk" : SK;
       const loaded = await dec(raw.value, decKey);
-      // Crystal v1.0: accept either deltas or vcwEntries as valid crystal
+      // Crystal v1.0: accept either active ledger entries or deltas as valid crystal data.
       if (loaded && (loaded.vcwEntries || loaded.deltas))
         return { data: loaded, source: suffix ? "backup" : "primary" };
     } catch {
@@ -1998,7 +1998,7 @@ const verifyCrystalIntegrity = async (data) => {
     const computed = await h256(String(d.seq) + d.ts + JSON.stringify(d.ops));
     if (computed !== data.h[k]) { bad.push(k); d.quarantined = true; }
   }
-  // Legacy: verify vcwEntries hashes for backward compat
+  // Verify VCW entry ledger hashes.
   for (const e of data.vcwEntries || []) {
     if (!data.h[e.id]) continue;
     const computed = await h256(e.id + e.actor + e.opcode + e.payload);
@@ -2026,8 +2026,8 @@ const searchCrystals = async (
     if (cm.status === "active") continue; // don't search current crystal — it's in memory
     const loaded = await loadCrystalBlob(cm.name);
     if (!loaded?.data) continue;
-    // Crystal v1.0: search both delta ops and legacy vcwEntries
-    const legacyEntries = loaded.data.vcwEntries || [];
+    // Crystal v1.0: search both delta ops and active VCW ledger entries.
+    const ledgerEntries = loaded.data.vcwEntries || [];
     const deltaEntries = (loaded.data.deltas || []).map((d, i) => ({
       id: "d" + i,
       opcode: "DELTA." + i,
@@ -2035,7 +2035,7 @@ const searchCrystals = async (
       timestamp: d.ts,
       actor: "SYSTEM",
     }));
-    const allEntries = [...legacyEntries, ...deltaEntries];
+    const allEntries = [...ledgerEntries, ...deltaEntries];
     if (!allEntries.length) continue;
     for (const e of allEntries) {
       if (

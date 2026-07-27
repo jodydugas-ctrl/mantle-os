@@ -1,6 +1,6 @@
 # The Grimoire
 
-**Read this first.** The Grimoire is the doctrine behind Mantle OS: the constitutional
+**Read this first.** The Grimoire is the Mantle-versioned doctrine behind Mantle OS: the constitutional
 operating specification for bounded agent action and the source of truth for AppAI,
 Mantle OS, VCW, organs, SELF/OTHER, MIND containment, reproduction, and assimilation.
 
@@ -10,11 +10,11 @@ The Grimoire is exactly one canonical file:
 
 | Read | Document | Scope |
 | --- | --- | --- |
-| **1st** | [The Grimoire.md](The%20Grimoire.md) | Grimoire 2.0: Core law, runtime, spells, AppAI extension, and Mantle OS environment binding. |
+| **1st** | [The Grimoire.md](The%20Grimoire.md) | Mantle OS 1.4.0 doctrine: Core law, runtime, spells, AppAI extension, and Mantle OS environment binding. |
 
-Do not treat old split editions, summaries, companion chapters, or copied excerpts as
-canonical. If a task touches Mantle OS, load the AppAI and environment-binding sections
-from the same file instead of looking for a separate chapter.
+Do not add split editions, companion copies, or compatibility mirrors. If a task touches
+Mantle OS, load the AppAI and environment-binding sections from the same file instead of
+looking for a separate chapter.
 
 ## Loading
 
