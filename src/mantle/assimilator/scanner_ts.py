@@ -12,7 +12,7 @@ Emits the SAME record shape as scanner.scan_file: {module, symbols:[{symbol, kin
 line, role}]}. Read-only: opens files for reading; never writes to the host.
 
 Optional dependency:
-    pip install "tree_sitter==0.21.3" "tree_sitter_languages==1.10.2"
+    pip install "tree-sitter-language-pack==1.3.1"
 Without it, scan_project falls back to Python-only (no behavior change).
 """
 from __future__ import annotations
@@ -38,9 +38,12 @@ LANGS = {
 def available() -> bool:
     """True if the optional tree-sitter stack is installed."""
     try:
-        import tree_sitter_languages  # noqa: F401
+        import tree_sitter_language_pack  # noqa: F401
     except ImportError:
-        return False
+        try:
+            import tree_sitter_languages  # noqa: F401
+        except ImportError:
+            return False
     return True
 
 
@@ -50,7 +53,11 @@ def _norm(name: str) -> str:
 
 
 def _parser(lang: str):
-    from tree_sitter_languages import get_parser
+    try:
+        from tree_sitter_language_pack import get_parser
+    except ImportError:
+        # Compatibility for environments created before the cross-minor package switch.
+        from tree_sitter_languages import get_parser
     return get_parser(lang)
 
 

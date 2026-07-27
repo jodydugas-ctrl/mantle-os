@@ -16,8 +16,7 @@ PACKAGES = (
     "cryptography",
     "pillow",
     "pyyaml",
-    "tree-sitter",
-    "tree-sitter-languages",
+    "tree-sitter-language-pack",
 )
 
 
