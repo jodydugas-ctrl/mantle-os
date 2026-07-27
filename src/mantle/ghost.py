@@ -557,11 +557,11 @@ def hydrate(path: str, substrate: Optional[GhostSubstrate] = None) -> Dict[str, 
         source = "cache" if cached_latest >= _latest_id(state) else "cache+png"
         body = cached if source == "cache" else fossil
         return {"source": source, "rehydrated": False, "body": body,
-                "corrections": info["corrections"], "cache_key": pointer["cache_key"]}
+                "integrity": info["integrity"], "cache_key": pointer["cache_key"]}
 
     # COLD (or write-only): rebuild wholly from the PNG seed. The seed stayed dry.
     return {"source": "png", "rehydrated": True, "body": fossil,
-            "corrections": info["corrections"],
+            "integrity": info["integrity"],
             "cache_key": pointer["cache_key"] if pointer else None,
             "write_only": substrate.write_only}
 

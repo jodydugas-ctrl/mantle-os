@@ -72,12 +72,12 @@ ROLES: Dict[int, str] = {
 
 EVIDENCE: Dict[int, str] = {
     0x00: "INHERIT",
-    0x01: "OBSERVED",
+    0x01: "DIRECT",
     0x02: "MEASURED",
-    0x03: "DERIVED",
+    0x03: "CITED",
     0x04: "INFERRED",
-    0x05: "MISSING",
-    0x06: "UNVERIFIABLE",
+    0x05: "REMEMBERED",
+    0x06: "REPORTED",
     0x07: "ASSUMED",
     0x08: "STIPULATED",
     0x09: "UNKNOWN",
@@ -87,18 +87,18 @@ FORCE: Dict[int, str] = {
     0x00: "INHERIT",
     0x01: "LAW",
     0x02: "MUST",
-    0x03: "SHOULD",
+    0x03: "DUTY",
     0x04: "NEVER",
-    0x05: "MAY",
-    0x06: "BLOCK",
-    0x07: "STOP",
-    0x08: "REJECT",
-    0x09: "WARN",
+    0x05: "NEED",
+    0x06: "GATE",
+    0x07: "BOUND",
+    0x08: "RULE",
+    0x09: "RIGHT",
     0x0a: "POWER",
-    0x0b: "METHOD",
-    0x0c: "MEASURE",
-    0x0d: "RECEIPT",
-    0x0e: "OPEN",
+    0x0b: "CAN",
+    0x0c: "LET",
+    0x0d: "MAY",
+    0x0e: "WAY",
     0x0f: "QUOTE",
 }
 
@@ -140,16 +140,79 @@ def _xor(values: Iterable[int]) -> int:
     out = 0
     for value in values:
         out ^= int(value)
-    return 254 if out == 0 else out
+    return out
 
 
 def _parity(records: List[Tuple[int, int, int, int]]) -> Tuple[int, int, int]:
     non_parity = [rec for rec in records if rec[1] != 0x7f]
+    r = _xor(rec[0] for rec in non_parity)
     return (
-        _xor(rec[0] for rec in non_parity),
+        254 if r == 0 else r,
         _xor(rec[2] for rec in non_parity),
         _xor(rec[3] for rec in non_parity),
     )
+
+
+def parity_pixel(records: Iterable[Tuple[int, int, int, int]]) -> Tuple[int, int, int, int]:
+    """Return the G=PARITY control pixel for non-parity RGBA morphemes."""
+    materialized = [tuple(int(v) for v in rec) for rec in records]
+    if not materialized:
+        raise GrimoireDecodeError("cannot create PARITY for a blank statement")
+    if any(len(rec) != 4 for rec in materialized):
+        raise GrimoireDecodeError("a morpheme must contain four RGBA bytes")
+    if any(rec[1] == 0x7f for rec in materialized):
+        raise GrimoireDecodeError("input already contains a PARITY control pixel")
+    r, b, a = _parity(materialized)
+    return r, 0x7f, b, a
+
+
+def encode_quoted_bytes(data: bytes, *, evidence: int = 0x01,
+                        force: int = 0x0f) -> bytes:
+    """Encode inert bytes as one framed Grimoire QUOTE statement.
+
+    Each byte becomes two 1-based nibble atoms in one composed atom spelling. The
+    first atom is HEAD; every continuation is BLEND with B=A=0 inheritance. The
+    carrier frame ends at the generated G=0x7f PARITY control pixel.
+    """
+    if not isinstance(data, (bytes, bytearray)) or not data:
+        raise GrimoireDecodeError("quoted-byte statement requires non-empty bytes")
+    if evidence not in EVIDENCE or evidence == 0:
+        raise GrimoireDecodeError("quoted-byte HEAD needs nonzero known evidence")
+    if force not in FORCE or force == 0:
+        raise GrimoireDecodeError("quoted-byte HEAD needs nonzero known force")
+    nibbles: List[int] = []
+    for value in bytes(data):
+        nibbles.extend(((value >> 4) + 1, (value & 0x0f) + 1))
+    records: List[Tuple[int, int, int, int]] = [
+        (nibbles[0], 0x01, evidence, force)
+    ]
+    records.extend((value, 0x40, 0x00, 0x00) for value in nibbles[1:])
+    records.append(parity_pixel(records))
+    return b"".join(bytes(rec) for rec in records)
+
+
+def decode_quoted_bytes(raw: Any, *, frame_id: str = "quoted-frame") -> bytes:
+    """Validate and decode one statement produced by :func:`encode_quoted_bytes`."""
+    raw_bytes = parse_raw(raw)
+    decoded = decode_statement(raw_bytes, frame_id=frame_id)
+    records = _records(raw_bytes)
+    semantic = [rec for rec in records if rec[1] != 0x7f]
+    if not semantic or semantic[0][1:] != (0x01, 0x01, 0x0f):
+        raise GrimoireDecodeError(
+            "quoted-byte frame must start with HEAD/DIRECT/QUOTE")
+    if any(rec[1:] != (0x40, 0x00, 0x00) for rec in semantic[1:]):
+        raise GrimoireDecodeError(
+            "quoted-byte continuation must be BLEND with inherited B/A")
+    nibbles = []
+    for index, rec in enumerate(semantic):
+        if not 1 <= rec[0] <= 16:
+            raise GrimoireDecodeError(
+                "quoted-byte atom outside nibble map at pixel %d" % index)
+        nibbles.append(rec[0] - 1)
+    if len(nibbles) % 2:
+        raise GrimoireDecodeError("quoted-byte frame has an odd nibble count")
+    return bytes((nibbles[i] << 4) | nibbles[i + 1]
+                 for i in range(0, len(nibbles), 2))
 
 
 def raw_run_fingerprint(raw: bytes, frame_id: str) -> str:
@@ -199,10 +262,6 @@ def _morpheme(rec: Tuple[int, int, int, int], index: int,
     role = ROLES.get(g)
     if role is None:
         raise GrimoireDecodeError("unknown role 0x%02x at pixel %d" % (g, index))
-    if b not in EVIDENCE:
-        raise GrimoireDecodeError("unknown evidence 0x%02x at pixel %d" % (b, index))
-    if a not in FORCE:
-        raise GrimoireDecodeError("unknown force 0x%02x at pixel %d" % (a, index))
     if role == "PARITY":
         return {
             "index": index,
@@ -213,6 +272,10 @@ def _morpheme(rec: Tuple[int, int, int, int], index: int,
             "role": role,
             "parity": {"r": r, "b": b, "a": a},
         }
+    if b not in EVIDENCE:
+        raise GrimoireDecodeError("unknown evidence 0x%02x at pixel %d" % (b, index))
+    if a not in FORCE:
+        raise GrimoireDecodeError("unknown force 0x%02x at pixel %d" % (a, index))
     if role == "HEAD":
         if b == 0 or a == 0:
             raise GrimoireDecodeError("HEAD must carry nonzero evidence and force")

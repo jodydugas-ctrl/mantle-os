@@ -50,8 +50,8 @@ MEMORY_GRAMMAR = [
      "state grows by appending immutable records; append before overwrite"),
     ("integrity checks",
      "tampering with the store is detectable, not silent"),
-    ("repair signaling",
-     "local damage is repaired where possible and reported otherwise -- never invented"),
+    ("integrity signaling",
+     "statement or container damage is rejected rather than repaired or invented"),
     ("embedded boot instructions",
      "the substrate is self-describing: it carries how to read itself"),
     ("authority rules",
@@ -151,7 +151,7 @@ def audit(path: str) -> Conformance:
         # 4. integrity checks: broken magic must be refused -------------------
         q = os.path.join(d, "tamper.png")
         spore.create_spore("CONF", "integrity", path=q)
-        _set_pixel(q, 0, 0, (0, 0, 0, spore.compute_T(0, 0, 0)))  # wipe magic bytes
+        _set_pixel(q, 0, 0, (0, 0, 0, 0))
         refused = False
         try:
             spore.read_spore(q)
@@ -160,22 +160,49 @@ def audit(path: str) -> Conformance:
         c.prove("integrity checks", refused,
                 "magic + payload_checksum; a wiped header is REFUSED, not silently read")
 
-        # 5. repair signaling: 1-bit repaired, 2-bit reported -----------------
-        r = os.path.join(d, "repair.png")
-        spore.create_spore("CONF", "repair", path=r)
+        # 5. integrity signaling: statement + package mutations rejected -----
+        r = os.path.join(d, "integrity-signaling.png")
+        spore.create_spore("CONF", "integrity signaling", path=r)
         spore.append_turn(r, "user", "protect me")
-        rr, gg, bb, aa = spore._read_png(r).load()[4, 0]
-        _set_pixel(r, 4, 0, (rr ^ 0b100, gg, bb, aa))      # single-bit flip
-        one = spore.read_spore(r)["corrections"]
-        spore.create_spore("CONF", "repair2", path=r)
-        spore.append_turn(r, "user", "detect tampering")
-        rr, gg, bb, aa = spore._read_png(r).load()[7, 0]
-        _set_pixel(r, 7, 0, (rr ^ 0b11, gg, bb, aa))       # two-bit flip
-        two = spore.read_spore(r)["corrections"]
-        c.prove("repair signaling",
-                one["repaired"] >= 1 and one["corrupt"] == 0
-                and (two["corrupt"] >= 1 or two["notes"]),
-                "per-block Hamming SECDED in alpha: repair 1 bit, report 2 (never invent)")
+        raw_img = spore._read_png(r)
+        _, payload_start = spore._read_frame(raw_img.load(), 0, "conformance-header")
+        rr, gg, bb, aa = raw_img.load()[
+            payload_start % spore.VCW_W, payload_start // spore.VCW_W]
+        _set_pixel(r, payload_start % spore.VCW_W, payload_start // spore.VCW_W,
+                   (rr ^ 0b1, gg, bb, aa))
+        parity_refused = False
+        try:
+            spore.read_spore(r)
+        except ValueError as exc:
+            parity_refused = "PARITY" in str(exc)
+
+        spore.create_spore("CONF", "container fingerprint", path=r)
+        spore.append_turn(r, "user", "detect parity-preserving rewrite")
+        raw_img = spore._read_png(r)
+        data = bytearray(raw_img._rgba)
+        _, payload_start = spore._read_frame(raw_img.load(), 0, "conformance-header")
+        frame_raw, _ = spore._read_frame(
+            raw_img.load(), payload_start, "conformance-payload")
+        records = [list(frame_raw[i:i + 4]) for i in range(0, len(frame_raw), 4)]
+        records[0][0] = 1 if records[0][0] != 1 else 2
+        xr = xb = xa = 0
+        for atom, _role, evidence, force in records[:-1]:
+            xr ^= atom
+            xb ^= evidence
+            xa ^= force
+        records[-1] = [xr or 254, 0x7f, xb, xa]
+        rewritten = b"".join(bytes(record) for record in records)
+        start = payload_start * 4
+        data[start:start + len(rewritten)] = rewritten
+        spore._write_png(r, raw_img.size[0], raw_img.size[1], data, dict(raw_img.text))
+        fingerprint_refused = False
+        try:
+            spore.read_spore(r)
+        except ValueError as exc:
+            fingerprint_refused = "fingerprint mismatch" in str(exc)
+        c.prove("integrity signaling", parity_refused and fingerprint_refused,
+                "single-lane damage rejected by PARITY; parity-preserving rewrite "
+                "rejected by full-lane SHA-256")
 
         # 6. embedded boot instructions ---------------------------------------
         et_ok, et_detail = spore._check_embedded_tool(state)

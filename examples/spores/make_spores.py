@@ -4,7 +4,7 @@
 A germ spore is THE one artifact that births an AppAI: a single PNG carrying the
 complete build data (the germ) plus build instructions any coding agent can read.
 
-    python examples/spores/make_spores.py          # rewrites the PNGs beside this file
+    python examples/spores/make_spores.py          # recreates the PNGs beside this file
 
 Requires Pillow (pip install mantle-os[spore]).
 """
@@ -74,6 +74,8 @@ def main() -> int:
             _write_json(germ_path, germ)
             print("%s primer normalized from mantle.primer" % name)
         out = os.path.join(HERE, name.replace(".json", ".png"))
+        if os.path.exists(out):
+            os.remove(out)
         spore.pack_germ(germ, out)
         report = spore.verify_spore(out)
         status = "ok" if report["ok"] else "PROBLEMS: %s" % report["problems"]

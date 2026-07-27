@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 import subprocess
 import sys
 import tempfile
@@ -8,6 +9,7 @@ from pathlib import Path
 
 from mantle import spore
 from mantle.audits import stage1
+from mantle.core.organism import Organism
 from mantle.hatchery import hatch, validate_germ
 
 
@@ -45,6 +47,25 @@ def test_advertised_seed_spores_decode_verify_and_stage1_hatch():
             assert result["report"]["certified"] is True
             assert org.stage1_certified is True
             assert passed, "%s failed Stage-1: %s" % (path.name, evidence["fails"])
+
+            out = Path(out_dir)
+            report_path = out / "hatch_report.json"
+            portrait_path = out / "face.png"
+            assert report_path.is_file(), "%s hatch report was not persisted" % path.name
+            assert portrait_path.is_file(), "%s self-portrait was not persisted" % path.name
+            persisted_report = json.loads(report_path.read_text(encoding="utf-8"))
+            assert persisted_report["saved_to"] == out_dir
+            assert persisted_report["portrait"] == str(portrait_path)
+            assert persisted_report["spore_distillation"]["spore_sealed"] is True
+
+            reloaded = Organism.load(out_dir, verify_seals=True)
+            source_facts = [
+                entry.get("content") for entry in reloaded.memory.recall("facts")
+                if isinstance(entry.get("content"), dict)
+                and "sporeagent_source" in entry["content"]
+            ]
+            assert len(source_facts) == 1, (
+                "%s saved before its source lifecycle receipt" % path.name)
 
 
 def test_doctor_refuses_missing_and_malformed_organisms_without_traceback(tmp_path):

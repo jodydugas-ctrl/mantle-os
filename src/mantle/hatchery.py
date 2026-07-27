@@ -294,6 +294,18 @@ def incubate(germ: Dict[str, Any], *, warmup_beats: int = 3,
     return {"organism": org, "report": report}
 
 
+def _persist_hatch(org: Organism, report: Dict[str, Any], out_dir: str) -> None:
+    """Persist the complete birth state and the evidence promised by the hatch contract."""
+    os.makedirs(out_dir, exist_ok=True)
+    portrait = os.path.join(out_dir, "face.png")
+    report["saved_to"] = out_dir
+    report["portrait"] = portrait
+    org.save(out_dir)
+    _face.render(org, portrait)
+    with open(os.path.join(out_dir, "hatch_report.json"), "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, default=str)
+
+
 # ---------------------------------------------------------------------------
 # The spore path (SPORE-DISTILLATION; formerly organs.reproduction.hatch_from_spore)
 # ---------------------------------------------------------------------------
@@ -358,11 +370,6 @@ def hatch_from_spore(png_path: Optional[str] = None, *,
                                   "sealed": True, "chunks": rec["chunks"]},
                         opcode="OBSERVED", source="spore-distillation", verified=True)
 
-    if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
-        org.save(out_dir)
-        result["report"]["saved_to"] = out_dir
-
     source = sporeagent_source_receipt(state, source_receipt)
     org.memory.remember("facts", {"sporeagent_source": source},
                         opcode="OBSERVED", source="sporeagent-lifecycle",
@@ -384,6 +391,8 @@ def hatch_from_spore(png_path: Optional[str] = None, *,
                },
                "source": source}
     result["report"]["spore_distillation"] = receipt
+    if out_dir:
+        _persist_hatch(org, result["report"], out_dir)
     return {"organism": org, "report": result["report"], "receipt": receipt}
 
 
@@ -415,12 +424,5 @@ def hatch(path: str, out_dir: Optional[str] = None,
     result = incubate(germ, warmup_beats=warmup_beats)
     org, report = result["organism"], result["report"]
     if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
-        org.save(out_dir)
-        portrait = os.path.join(out_dir, "face.png")
-        _face.render(org, portrait)
-        with open(os.path.join(out_dir, "hatch_report.json"), "w") as f:
-            json.dump(report, f, indent=2, default=str)
-        report["saved_to"] = out_dir
-        report["portrait"] = portrait
+        _persist_hatch(org, report, out_dir)
     return {"organism": org, "report": report}

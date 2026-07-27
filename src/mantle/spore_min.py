@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-spore_min.py -- the SPORE-PNG v1 "tool embryo".
+spore_min.py -- the SPORE-PNG v2 "tool embryo".
 
 This is a small, self-contained reader/writer for a Spore PNG.  A base64+zlib
 copy of THIS file is embedded inside every Spore's own VCW payload (under
@@ -21,45 +21,60 @@ from PIL import Image, ImageDraw, ImageFont
 from PIL.PngImagePlugin import PngInfo
 
 MAGIC = b"SPOREPNG"
-FORMAT_VERSION = 1
-SPORE_FORMAT = "spore-png-v1"
+FORMAT_VERSION = 2
+SPORE_FORMAT = "spore-png-v2"
 CANVAS_W = CANVAS_H = 2000
 VCW_X, VCW_Y, VCW_W, VCW_H = 0, 0, 2000, 1000
 DISP_X, DISP_Y, DISP_W, DISP_H = 0, 1000, 2000, 1000
 BOOT_STRIP_H = 300
 VCW_BLOCKS = VCW_W * VCW_H
-VCW_CAPACITY_BYTES = VCW_BLOCKS * 3
+FRAME_PAYLOAD_BYTES = 1024
+MAX_HEADER_BYTES = 64 * 1024
+VCW_CAPACITY_BYTES = (VCW_BLOCKS - 1) // 2
 
 # NOTE: this string MUST be byte-identical to spore.py's BOOTLOADER_TEXT.
 BOOTLOADER_TEXT = (
-    "SPORE-PNG v1  -  this PNG is a self-contained AppAI agent.\n"
+    "SPORE-PNG v2  -  this PNG is a self-contained AppAI agent.\n"
     "MEMORY lives in the TOP HALF (y=0..999) as a VCW color field: read pixels\n"
-    "left-to-right, top-to-bottom. Each pixel = one block: R,G,B carry payload\n"
-    "bytes, ALPHA (T) is a Hamming SECDED byte that repairs one bad bit in that\n"
-    "block. The byte-stream starts with magic 'SPOREPNG', a 1-byte version, a\n"
-    "4-byte big-endian header length, then a JSON header, then the JSON payload.\n"
+    "left-to-right, top-to-bottom as Grimoire v0.9 RGBA statements. R is atom,\n"
+    "G is role, B is evidence, and A is force. Inert bytes are framed as QUOTE:\n"
+    "one HEAD, BLEND continuations with B=A=0 inheritance, then G=0x7f PARITY.\n"
+    "The first statement is a JSON manifest; following statements carry payload.\n"
+    "The manifest records a SHA-256 fingerprint over every raw payload RGBA lane\n"
+    "and frame boundary. Parity or fingerprint mismatch rejects the carrier.\n"
     "A minimal Python reader/writer is embedded in the payload (embedded_tools).\n"
     "Canonical spec ALSO lives in PNG iTXt metadata; metadata is canonical over\n"
     "THIS strip, but the VCW payload owns identity + conversation memory.\n"
     "KEEP THE SEED DRY: transfer the ORIGINAL .png only. Do NOT screenshot, resize,\n"
     "recompress, flatten transparency, or pass me through lossy image tools - that\n"
-    "destroys the alpha (T) repair layer and injures memory.\n"
+    "changes semantic lanes and causes a loud integrity rejection.\n"
     "To use me: open in a Spore app, or hand me to a Python-capable LLM and let\n"
     "Python (not eyeballs) decode the pixels. RULE: the LATEST PNG is the living copy."
 )
 
 QUICKSTART_CODE = (
     "# BOOT ME FROM THIS IMAGE ALONE - needs only: pip install pillow\n"
-    "from PIL import Image; import json, base64, zlib\n"
+    "from PIL import Image; import json, base64, zlib, hashlib\n"
     "px = Image.open('spore.png').convert('RGBA').load()\n"
-    "def rd(nbytes):                       # read N payload bytes from the VCW\n"
-    "    o = bytearray()\n"
-    "    for i in range((nbytes + 2) // 3):\n"
-    "        r, g, b, a = px[i % 2000, i // 2000]; o += bytes([r, g, b])\n"
-    "    return bytes(o)\n"
-    "n = int.from_bytes(rd(13)[9:13], 'big')            # header length\n"
-    "H = json.loads(rd(13+n)[13:13+n]); L = H['payload_length']\n"
-    "S = json.loads(rd(13+n+L)[13+n:13+n+L])            # S = my whole mind\n"
+    "i=0\n"
+    "def frame():\n"
+    "    global i\n"
+    "    rec=[]\n"
+    "    while True:\n"
+    "        p=px[i%2000,i//2000]; i+=1; rec.append(p)\n"
+    "        if p[1]==0x7f: break\n"
+    "    q=rec[-1]; body=rec[:-1]\n"
+    "    xr=xb=xa=0\n"
+    "    for r,g,b,a in body: xr^=r; xb^=b; xa^=a\n"
+    "    assert (q[0],q[2],q[3])==((xr or 254),xb,xa)\n"
+    "    n=[r-1 for r,g,b,a in body]\n"
+    "    return bytes((n[j]<<4)|n[j+1] for j in range(0,len(n),2)),bytes(sum((list(p) for p in rec),[]))\n"
+    "hb,_=frame(); H=json.loads(hb); chunks=[]; runs=[]\n"
+    "for _ in range(H['payload_frame_count']): c,r=frame(); chunks.append(c); runs.append(r)\n"
+    "h=hashlib.sha256(); h.update(b'SPORE-PNG-v2\\0')\n"
+    "for j,r in enumerate(runs): h.update(j.to_bytes(4,'big')+len(r).to_bytes(4,'big')+r)\n"
+    "assert 'sha256:'+h.hexdigest()==H['payload_fingerprint']\n"
+    "S=json.loads(b''.join(chunks)[:H['payload_length']])\n"
     "print(S['identity']['spore_name'], '-', S['identity']['task'])\n"
     "for e in S['conversation']: print(e['opcode'], ':', e['content'])\n"
     "# GROW ME: I carry my own reader/writer - extract and use it:\n"
@@ -76,80 +91,60 @@ ROLE_MAP = {
     "display": ("DISPLAY", "APP", "display"),
 }
 
-# --- Hamming SECDED per pixel (identical to spore.py) ----------------------
-_CW = 29
-_PARITY = (1, 2, 4, 8, 16)
-_DATA = [p for p in range(1, _CW + 1) if p not in _PARITY]
+# --- Grimoire v0.9 QUOTE framing (self-contained copy of the carrier law) ---
+
+def _parity(records):
+    xr = xb = xa = 0
+    for r, _g, b, a in records:
+        xr ^= r
+        xb ^= b
+        xa ^= a
+    return (xr or 254), 0x7f, xb, xa
 
 
-def _bits(r, g, b):
-    out = []
-    for v in (r, g, b):
-        for i in range(7, -1, -1):
-            out.append((v >> i) & 1)
-    return out
+def _encode_frame(data):
+    if not data:
+        raise ValueError("quoted-byte statement requires non-empty bytes")
+    nibbles = []
+    for value in bytes(data):
+        nibbles.extend(((value >> 4) + 1, (value & 0x0f) + 1))
+    records = [(nibbles[0], 0x01, 0x01, 0x0f)]
+    records.extend((value, 0x40, 0x00, 0x00) for value in nibbles[1:])
+    records.append(_parity(records))
+    return b"".join(bytes(record) for record in records)
 
 
-def _unbits(bits):
-    vals = []
-    for c in range(3):
-        v = 0
-        for i in range(8):
-            v = (v << 1) | bits[c * 8 + i]
-        vals.append(v)
-    return vals[0], vals[1], vals[2]
+def _decode_frame(raw):
+    if len(raw) < 8 or len(raw) % 4:
+        raise ValueError("invalid Grimoire frame length")
+    records = [tuple(raw[i:i + 4]) for i in range(0, len(raw), 4)]
+    if records[-1][1] != 0x7f or tuple(records[-1]) != _parity(records[:-1]):
+        raise ValueError("PARITY mismatch")
+    body = records[:-1]
+    if body[0][1:] != (0x01, 0x01, 0x0f):
+        raise ValueError("quoted frame must start HEAD/DIRECT/QUOTE")
+    if any(record[1:] != (0x40, 0x00, 0x00) for record in body[1:]):
+        raise ValueError("quoted continuation must inherit B/A")
+    nibbles = [record[0] - 1 for record in body]
+    if any(value < 0 or value > 15 for value in nibbles) or len(nibbles) % 2:
+        raise ValueError("invalid quoted-byte nibble map")
+    return bytes((nibbles[i] << 4) | nibbles[i + 1]
+                 for i in range(0, len(nibbles), 2))
 
 
-def compute_T(r, g, b):
-    data = _bits(r, g, b)
-    code = [0] * (_CW + 1)
-    for pos, bit in zip(_DATA, data):
-        code[pos] = bit
-    pb = []
-    for pp in _PARITY:
-        x = 0
-        for pos in range(1, _CW + 1):
-            if pos & pp:
-                x ^= code[pos]
-        code[pp] = x
-        pb.append(x)
-    overall = 0
-    for pos in range(1, _CW + 1):
-        overall ^= code[pos]
-    t = 0
-    for bit in pb + [overall, 0, 0]:
-        t = (t << 1) | bit
-    return t
+def _fingerprint(frames):
+    h = hashlib.sha256()
+    h.update(b"SPORE-PNG-v2\0")
+    for index, raw in enumerate(frames):
+        h.update(index.to_bytes(4, "big"))
+        h.update(len(raw).to_bytes(4, "big"))
+        h.update(raw)
+    return "sha256:" + h.hexdigest()
 
 
-def decode_T(r, g, b, t):
-    data = _bits(r, g, b)
-    code = [0] * (_CW + 1)
-    for pos, bit in zip(_DATA, data):
-        code[pos] = bit
-    stored = [(t >> (7 - i)) & 1 for i in range(6)]
-    syndrome = 0
-    for idx, pp in enumerate(_PARITY):
-        x = 0
-        for pos in _DATA:
-            if pos & pp:
-                x ^= code[pos]
-        code[pp] = stored[idx]
-        if x != stored[idx]:
-            syndrome |= pp
-    now = 0
-    for pos in range(1, _CW + 1):
-        now ^= code[pos]
-    mism = (now != stored[5])
-    if syndrome == 0:
-        return r, g, b, "ok"
-    if mism:
-        if syndrome in _DATA:
-            data[_DATA.index(syndrome)] ^= 1
-            nr, ng, nb = _unbits(data)
-            return nr, ng, nb, "repaired"
-        return r, g, b, "repaired"
-    return r, g, b, "corrupt"
+def _payload_frames(payload):
+    return [_encode_frame(payload[i:i + FRAME_PAYLOAD_BYTES])
+            for i in range(0, len(payload), FRAME_PAYLOAD_BYTES)]
 
 
 def _sha(data):
@@ -162,51 +157,79 @@ def _now():
 
 # --- stream <-> pixels -----------------------------------------------------
 
-def _read(px, count):
-    n = (count + 2) // 3
-    corr = {"ok": 0, "repaired": 0, "corrupt": 0}
-    out = bytearray()
-    for i in range(n):
-        x = VCW_X + (i % VCW_W)
-        y = VCW_Y + (i // VCW_W)
-        r, g, b, a = px[x, y]
-        r, g, b, st = decode_T(r, g, b, a)
-        corr[st] += 1
-        out += bytes([r, g, b])
-    return bytes(out), corr
+def _read_frame(px, start):
+    raw = bytearray()
+    for i in range(start, VCW_BLOCKS):
+        pixel = tuple(px[VCW_X + (i % VCW_W), VCW_Y + (i // VCW_W)])
+        if pixel == (0, 0, 0, 0):
+            raise ValueError("frame ended before PARITY")
+        raw.extend(pixel)
+        if pixel[1] == 0x7f:
+            return bytes(raw), i + 1
+    raise ValueError("frame exceeds VCW region")
 
 
 def decode_pixels(img):
     px = img.load()
-    pre, _ = _read(px, 13)
-    if pre[:8] != MAGIC:
+    header_raw, next_block = _read_frame(px, 0)
+    header_bytes = _decode_frame(header_raw)
+    if len(header_bytes) > MAX_HEADER_BYTES:
+        raise ValueError("header exceeds configured size limit")
+    header = json.loads(header_bytes.decode("utf-8"))
+    if header.get("magic") != MAGIC.decode("ascii"):
         raise ValueError("bad magic")
-    hlen = int.from_bytes(pre[9:13], "big")
-    if (13 + hlen + 2) // 3 > VCW_BLOCKS:
-        raise ValueError("header length exceeds VCW capacity (tampered header?)")
-    hm, _ = _read(px, 13 + hlen)
-    header = json.loads(hm[13:13 + hlen].decode("utf-8"))
-    total = 13 + hlen + header["payload_length"]
-    full, corr = _read(px, total)
-    payload = full[13 + hlen:total]
-    corr["notes"] = []
+    if header.get("format_version") != FORMAT_VERSION:
+        raise ValueError("unsupported format version")
+    if header.get("encoding") != "grimoire-v0.9-quoted-bytes":
+        raise ValueError("unsupported encoding")
+    if header.get("frame_payload_bytes") != FRAME_PAYLOAD_BYTES:
+        raise ValueError("unsupported frame size")
+    frame_count = header.get("payload_frame_count")
+    if (not isinstance(frame_count, int) or frame_count < 0
+            or frame_count > VCW_BLOCKS):
+        raise ValueError("invalid payload frame count")
+    payload_length = header.get("payload_length")
+    if (not isinstance(payload_length, int) or payload_length < 0
+            or payload_length > VCW_CAPACITY_BYTES):
+        raise ValueError("invalid payload length")
+    parts, raw_frames = [], []
+    for _ in range(frame_count):
+        raw, next_block = _read_frame(px, next_block)
+        parts.append(_decode_frame(raw))
+        raw_frames.append(raw)
+    actual = _fingerprint(raw_frames)
+    if actual != header.get("payload_fingerprint"):
+        raise ValueError("full-lane fingerprint mismatch")
+    payload = b"".join(parts)
+    if len(payload) != payload_length:
+        raise ValueError("payload length mismatch")
     if _sha(payload) != header.get("payload_checksum"):
-        corr["notes"].append("payload checksum mismatch")
-    if corr["corrupt"]:
-        corr["notes"].append(f"{corr['corrupt']} block(s) unrepairable")
-    return header, payload, corr
+        raise ValueError("payload checksum mismatch")
+    report = {
+        "statement_count": frame_count + 1,
+        "parity_status": "ok",
+        "fingerprint_status": "ok",
+        "full_lane_fingerprint": actual,
+        "used_pixels": next_block,
+    }
+    return header, payload, report
 
 
 def _header(state, payload):
     i = state["identity"]
+    frames = _payload_frames(payload)
     return {
         "magic": "SPOREPNG", "format_version": FORMAT_VERSION,
         "canvas": f"{CANVAS_W}x{CANVAS_H}",
         "vcw_region": [VCW_X, VCW_Y, VCW_W, VCW_H],
         "display_region": [DISP_X, DISP_Y, DISP_W, DISP_H],
         "boot_strip_region": [DISP_X, DISP_Y, DISP_W, BOOT_STRIP_H],
-        "encoding": "RGB+T", "payload_format": "stripped_appai_log",
+        "encoding": "grimoire-v0.9-quoted-bytes",
+        "payload_format": "stripped_appai_log",
         "payload_length": len(payload), "payload_checksum": _sha(payload),
+        "frame_payload_bytes": FRAME_PAYLOAD_BYTES,
+        "payload_frame_count": len(frames),
+        "payload_fingerprint": _fingerprint(frames),
         "entry_count": len(state.get("conversation", [])),
         "created_at": i.get("created_at"), "updated_at": i.get("updated_at"),
         "spore_name": i.get("spore_name"), "birth_marker": i.get("birth_marker"),
@@ -225,9 +248,10 @@ def _metadata(state, header):
         "VCW-Region": f"x={VCW_X},y={VCW_Y},w={VCW_W},h={VCW_H}",
         "Display-Region": f"x={DISP_X},y={DISP_Y},w={DISP_W},h={DISP_H}",
         "Boot-Strip-Region": f"x={DISP_X},y={DISP_Y},w={DISP_W},h={BOOT_STRIP_H}",
-        "Encoding": "RGB payload + T local repair (Hamming SECDED in alpha)",
+        "Encoding": "Grimoire v0.9 RGBA statements (A=force, G=0x7f parity)",
         "Payload-Format": "stripped Mantle/AppAI conversation log (JSON)",
         "Payload-Checksum": header["payload_checksum"],
+        "Full-Lane-Fingerprint": header["payload_fingerprint"],
         "Payload-Length": str(header["payload_length"]),
         "Entry-Count": str(header["entry_count"]),
         "Birth-Marker": i.get("birth_marker") or "", "Task": i.get("task", ""),
@@ -273,23 +297,22 @@ def _render(state, path, status="ACTIVE"):
     payload = json.dumps(state, separators=(",", ":"), sort_keys=True).encode("utf-8")
     header = _header(state, payload)
     hb = json.dumps(header, separators=(",", ":"), sort_keys=True).encode("utf-8")
-    stream = MAGIC + bytes([FORMAT_VERSION]) + len(hb).to_bytes(4, "big") + hb + payload
+    if len(hb) > MAX_HEADER_BYTES:
+        raise ValueError("spore manifest exceeds configured size limit")
+    stream = _encode_frame(hb) + b"".join(_payload_frames(payload))
 
     img = Image.new("RGBA", (CANVAS_W, CANVAS_H), (0, 0, 0, 255))
     px = img.load()
-    empty_T = compute_T(0, 0, 0)
     for y in range(VCW_Y, VCW_Y + VCW_H):          # strict fill
         for x in range(VCW_X, VCW_X + VCW_W):
-            px[x, y] = (0, 0, 0, empty_T)
-    n = (len(stream) + 2) // 3
+            px[x, y] = (0, 0, 0, 0)
+    n = len(stream) // 4
     if n > VCW_BLOCKS:
         raise ValueError("stream exceeds VCW capacity")
     for k in range(n):
-        c = stream[k * 3:k * 3 + 3]
-        r = c[0] if len(c) > 0 else 0
-        g = c[1] if len(c) > 1 else 0
-        b = c[2] if len(c) > 2 else 0
-        px[VCW_X + (k % VCW_W), VCW_Y + (k // VCW_W)] = (r, g, b, compute_T(r, g, b))
+        off = k * 4
+        px[VCW_X + (k % VCW_W), VCW_Y + (k // VCW_W)] = tuple(
+            stream[off:off + 4])
 
     d = ImageDraw.Draw(img)
     d.rectangle([DISP_X, DISP_Y, DISP_X + DISP_W - 1, DISP_Y + DISP_H - 1], fill=(248, 248, 250, 255))
@@ -316,10 +339,12 @@ def _render(state, path, status="ACTIVE"):
 
 def read(path):
     img = Image.open(path)
+    if img.mode != "RGBA":
+        raise ValueError("spore PNG must expose raw 8-bit RGBA lanes")
     meta = dict(img.text) if hasattr(img, "text") else {}
-    header, payload, corr = decode_pixels(img.convert("RGBA"))
+    header, payload, integrity = decode_pixels(img)
     state = json.loads(payload.decode("utf-8"))
-    return {"state": state, "header": header, "metadata": meta, "corrections": corr}
+    return {"state": state, "header": header, "metadata": meta, "integrity": integrity}
 
 
 def append(path, role, content):
@@ -338,8 +363,13 @@ def append(path, role, content):
     if op == "ASSISTANT" and not trial["identity"].get("birth_marker"):
         trial["identity"]["birth_marker"] = _sha(content.encode("utf-8"))[:8]
     payload = json.dumps(trial, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    if len(payload) > VCW_CAPACITY_BYTES:
+        _render(state, path, status="FULL")
+        return {"status": "FULL", "appended": False}
     hb = json.dumps(_header(trial, payload), separators=(",", ":"), sort_keys=True).encode("utf-8")
-    stream_blocks = (len(MAGIC) + 1 + 4 + len(hb) + len(payload) + 2) // 3
+    stream_blocks = (
+        len(_encode_frame(hb)) + sum(len(frame) for frame in _payload_frames(payload))
+    ) // 4
     if stream_blocks > VCW_BLOCKS:
         _render(state, path, status="FULL")
         return {"status": "FULL", "appended": False}
@@ -357,7 +387,7 @@ if __name__ == "__main__":
         info = read(sys.argv[2])
         print(json.dumps({"identity": info["state"]["identity"],
                           "entries": len(info["state"]["conversation"]),
-                          "corrections": info["corrections"]}, indent=2))
+                          "integrity": info["integrity"]}, indent=2))
     elif cmd == "append":
         print(json.dumps(append(sys.argv[2], sys.argv[3], sys.argv[4]), indent=2))
     else:

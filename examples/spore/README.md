@@ -6,13 +6,13 @@ file format** — and the spore proves the substrate can molt into a different m
 800-layer cube. *The PNG does not merely carry VCW-like data; it can **be** the VCW layer.* See
 [The VCW Substrate Guide](../../documents/guides/VCW_Guide.md#vcw-is-the-law--the-cube-is-one-body-plan-the-png-is-another)
 and the [VCW Substrate Guide](../../documents/guides/VCW_Guide.md) for the canonical
-regions, RGB+T repair rule, and display/memory boundary.
+regions, Grimoire v0.9 statement frames, and display/memory boundary.
 
-SPORE-PNG v1 is also the clearest example of why VCW lanes are profile-defined. Its
-physical alpha channel is a Hamming SECDED repair byte, not Grimoire force. A
-Grimoire-compatible spore carrier must declare how logical `grimoire-v0.9` lanes are
-serialized or mapped before feeding raw runs to the Grimoire decoder instead of reading
-repair alpha as semantic `A`.
+SPORE-PNG v2 maps its physical lanes directly to the `grimoire-v0.9` profile:
+`R=atom`, `G=role`, `B=evidence`, and `A=force`. Inert manifest and payload bytes are
+QUOTE statements. Every statement ends with a `G=0x7f` PARITY control pixel, and the
+manifest carries a SHA-256 fingerprint over all raw payload RGBA lanes and frame
+boundaries.
 
 It wears a second hat too: because it is a whole self-contained agent — identity, one task, one
 append-only conversation, and an embedded Python reader/writer inside its own pixels — it is also the

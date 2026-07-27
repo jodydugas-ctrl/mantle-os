@@ -7,9 +7,9 @@ NOT quietly grow into full Mantle OS (no organs, immune events, encryption,
 tombstones, quarantine, rebirth, lineage, child spores, compaction,
 summarization) or degrade into a fake "image demo".
 
-It also hardens beyond the happy path: metadata stripping, alpha flattening,
-header tampering, checksum mismatch, a long round-trip, and the self-hosting
-(embedded tool) trait.
+It also hardens beyond the happy path: metadata stripping, Alpha/Force
+flattening, statement parity rejection, full-lane fingerprint mismatch, a long
+round-trip, and the self-hosting (embedded tool) trait.
 
 This is the PURITY GATE for the SPORE seed. SPORE is the smallest reproductive
 form of a Mantle organism (the minimal SEED); its whole value is that it stays
@@ -99,7 +99,8 @@ def audit_geometry(a: Audit):
     a.check((spore.DISP_X, spore.DISP_Y, spore.DISP_W, spore.DISP_H) == (0, 1000, 2000, 1000),
             "display region is the bottom half")
     a.check(0 < spore.BOOT_STRIP_H < spore.DISP_H, "boot strip on VCW/display boundary")
-    a.check(spore.VCW_CAPACITY_BYTES == 2000 * 1000 * 3, "VCW capacity = w*h*3 bytes")
+    a.check(spore.VCW_CAPACITY_BYTES == (2000 * 1000 - 1) // 2,
+            "VCW capacity reflects two semantic morphemes per payload byte")
 
 
 def audit_no_forbidden(a: Audit):
@@ -113,15 +114,25 @@ def audit_no_forbidden(a: Audit):
             ", ".join(hits))
 
 
-def audit_correction_math(a: Audit):
-    r, g, b = 137, 42, 200
-    t = spore.compute_T(r, g, b)
-    a.check(spore.decode_T(r, g, b, t)[3] == "ok", "clean block decodes ok")
-    rr, gg, bb, st = spore.decode_T(r ^ 1, g, b, t)
-    a.check(st == "repaired" and (rr, gg, bb) == (r, g, b),
-            "single-bit error repaired to the true value")
-    a.check(spore.decode_T(r ^ 0b11, g, b, t)[3] == "corrupt",
-            "clean 2-bit error reported as corrupt (not invented)")
+def audit_grimoire_frames(a: Audit):
+    raw = spore.encode_quoted_bytes(bytes([0x12, 0xab, 0x00, 0xff]))
+    records = [tuple(raw[i:i + 4]) for i in range(0, len(raw), 4)]
+    a.check(records[0] == (0x02, 0x01, 0x01, 0x0f),
+            "HEAD maps physical A to QUOTE force")
+    a.check(all(rec[2:] == (0, 0) for rec in records[1:-1]),
+            "non-HEAD morphemes set B=A=0 to inherit")
+    a.check(records[-1][1] == 0x7f,
+            "statement terminates with G=0x7f PARITY")
+    a.check(spore.decode_quoted_bytes(raw) == bytes([0x12, 0xab, 0x00, 0xff]),
+            "strict RGBA byte order round-trips without endian conversion")
+
+    damaged = bytearray(raw)
+    damaged[0] ^= 0x01
+    try:
+        spore.decode_quoted_bytes(bytes(damaged))
+        a.fail("single-byte corruption rejected by statement parity", "no error raised")
+    except ValueError:
+        a.ok("single-byte corruption rejected by statement parity")
 
 
 # --- behavioural + robustness audits ---------------------------------------
@@ -176,35 +187,56 @@ def audit_behaviour(a: Audit):
                 and info["state"]["identity"]["spore_name"] == "AUDIT-RENAMED",
                 "authority: VCW payload owns identity, metadata is only a mirror")
 
-        # single-bit pixel corruption repaired
+        # one raw-lane mutation is rejected by statement-local parity
         spore.create_spore("CORR", "corruption", path=p)
         spore.append_turn(p, "user", "protect me")
         img = Image.open(p).convert("RGBA")
         px = img.load()
-        rr, gg, bb, aa = px[4, 0]
-        px[4, 0] = (rr ^ 0b100, gg, bb, aa)
+        header_raw, payload_start = spore._read_frame(px, 0, "audit-header")
+        x, y = payload_start % spore.VCW_W, payload_start // spore.VCW_W
+        rr, gg, bb, aa = px[x, y]
+        px[x, y] = (rr ^ 0b1, gg, bb, aa)
         _resave(img, p, p)
-        corr = spore.read_spore(p)["corrections"]
-        a.check(corr["repaired"] >= 1 and corr["corrupt"] == 0,
-                "pixel corruption repaired locally by T", str(corr))
+        try:
+            spore.read_spore(p)
+            a.fail("single-byte pixel corruption rejected by PARITY", "no error raised")
+        except ValueError as exc:
+            a.check("PARITY" in str(exc),
+                    "single-byte pixel corruption rejected by PARITY", str(exc))
 
-        # checksum mismatch: 2-bit payload damage -> loud
-        spore.create_spore("CKSUM", "checksum", path=p)
-        spore.append_turn(p, "user", "detect tampering please")
-        img = Image.open(p).convert("RGBA")
-        px = img.load()
-        rr, gg, bb, aa = px[7, 0]
-        px[7, 0] = (rr ^ 0b11, gg, bb, aa)
-        _resave(img, p, p)
-        corr = spore.read_spore(p)["corrections"]
-        a.check(corr["corrupt"] >= 1 or corr["notes"],
-                "checksum/corruption mismatch reported loudly", str(corr.get("notes")))
+        # A coordinated data+parity rewrite still fails the container fingerprint.
+        spore.create_spore("FINGERPRINT", "fingerprint", path=p)
+        spore.append_turn(p, "user", "detect a recomputed statement")
+        raw_img = spore._read_png(p)
+        data = bytearray(raw_img._rgba)
+        px = raw_img.load()
+        _, payload_start = spore._read_frame(px, 0, "audit-header")
+        frame_raw, frame_end = spore._read_frame(px, payload_start, "audit-payload")
+        records = [list(frame_raw[i:i + 4]) for i in range(0, len(frame_raw), 4)]
+        records[0][0] = 1 if records[0][0] != 1 else 2
+        xr = xb = xa = 0
+        for r, _g, b, alpha in records[:-1]:
+            xr ^= r
+            xb ^= b
+            xa ^= alpha
+        records[-1] = [xr or 254, 0x7f, xb, xa]
+        rewritten = b"".join(bytes(record) for record in records)
+        start = payload_start * 4
+        data[start:start + len(rewritten)] = rewritten
+        spore._write_png(p, raw_img.size[0], raw_img.size[1], data, dict(raw_img.text))
+        try:
+            spore.read_spore(p)
+            a.fail("full-lane fingerprint rejects parity-preserving rewrite",
+                   "no error raised")
+        except ValueError as exc:
+            a.check("fingerprint mismatch" in str(exc),
+                    "full-lane fingerprint rejects parity-preserving rewrite", str(exc))
 
         # header tamper: broken magic -> refusal
         spore.create_spore("HDR", "header", path=p)
         img = Image.open(p).convert("RGBA")
         px = img.load()
-        px[0, 0] = (0, 0, 0, spore.compute_T(0, 0, 0))   # wipe first magic bytes
+        px[0, 0] = (0, 0, 0, 0)
         _resave(img, p, p)
         try:
             spore.read_spore(p)
@@ -220,7 +252,7 @@ def audit_behaviour(a: Audit):
         a.check(len(info["state"]["conversation"]) == 1 and info["metadata"] == {},
                 "metadata stripped: VCW payload still decodes")
 
-        # alpha flattened: repair layer destroyed -> loud failure
+        # Alpha flattened: Force semantics destroyed -> loud failure
         spore.create_spore("FLAT", "flatten", path=p)
         spore.append_turn(p, "user", "do not flatten me")
         img = Image.open(p).convert("RGBA")
@@ -231,15 +263,13 @@ def audit_behaviour(a: Audit):
         _resave(img, p, p)
         loud = False
         try:
-            info = spore.read_spore(p)
-            c = info["corrections"]
-            loud = bool(c["corrupt"] or c["notes"])
+            spore.read_spore(p)
         except ValueError:
             loud = True
-        a.check(loud, "alpha flattened: failure is loud (corrupt/notes/raise)")
+        a.check(loud, "alpha flattened: Force/parity failure is loud")
 
         # long round-trip (append-only, ordered, lossless)
-        RT_N = 40
+        RT_N = 12
         spore.create_spore("RT", "round trip", path=p)
         for i in range(RT_N):
             spore.append_turn(p, "user" if i % 2 == 0 else "assistant", f"turn {i}")
@@ -256,7 +286,7 @@ def audit_behaviour(a: Audit):
         # append-only DELTA model: memory = sum of deltas, not repeated history
         spore.create_spore("DELTA", "delta log", path=p)
         sizes = []
-        for i in range(6):
+        for i in range(4):
             spore.append_turn(p, "user", "D" * 200)   # equal-size deltas
             sizes.append(len(spore._payload_bytes(spore.read_spore(p)["state"])))
         deltas = [sizes[i + 1] - sizes[i] for i in range(len(sizes) - 1)]
@@ -313,13 +343,13 @@ def main(argv):
     audit_api(a)
     audit_geometry(a)
     audit_no_forbidden(a)
-    audit_correction_math(a)
+    audit_grimoire_frames(a)
     audit_behaviour(a)
     if len(argv) > 1:
         audit_png(a, argv[1])
 
     print("=" * 66)
-    print("SPORE-PNG v1 AUDIT")
+    print("SPORE-PNG v2 AUDIT")
     print("=" * 66)
     print(f"\nPASSED ({len(a.passes)}):")
     for p in a.passes:

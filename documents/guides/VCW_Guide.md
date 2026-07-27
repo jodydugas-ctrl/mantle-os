@@ -47,8 +47,8 @@ Drivers live in the Body (trusted code); boot sectors are data that select them.
 That means RGBA is not globally "thought" and not globally "Grimoire." RGBA is the lane
 hardware. A layer profile declares framing, terminators, integrity, ordering, and lane
 meaning for that layer. One band can store four streams of semantic Grimoire morphemes;
-another can use those lanes as a compact database record; another can reserve alpha for
-repair, as SPORE-PNG v1 does.
+another can use those lanes as a compact database record. SPORE-PNG v2 declares the
+Grimoire mapping directly, including Alpha as force.
 
 ## VCW Hardware, Grimoire Software
 
@@ -88,10 +88,10 @@ A substrate *is* a VCW layer when it provides the nine properties of the memory 
 | The law (memory grammar) | The cube body plan | The SPORE-PNG body plan |
 | --- | --- | --- |
 | **addressable region** | bands over layers; `offset=(y·SIDE+x)·4` | the top-half VCW region; block index `i→(i%W, i//W)` |
-| **canonical payload** | driver-native content per layer, hashed entries | one JSON payload with a `payload_checksum` |
+| **canonical payload** | driver-native content per layer, hashed entries | one JSON payload serialized as Grimoire v0.9 QUOTE statements |
 | **append-only evolution** | `log-json` immutable entries, monotonic ids | append-only conversation, ids `0..n` |
-| **integrity checks** | staged save→verify, content signatures, seals | magic + `payload_checksum` (a wiped header is refused) |
-| **repair signaling** | coherence checks; a corrupt cube never replaces a healthy one | per-block Hamming SECDED in alpha: repair 1 bit, report 2 |
+| **integrity checks** | staged save→verify, content signatures, seals | G=0x7f statement PARITY + full-lane SHA-256 over payload frames |
+| **integrity signaling** | coherence checks; a corrupt cube never replaces a healthy one | a parity or package fingerprint mismatch rejects the carrier |
 | **embedded boot instructions** | band + cube boot sectors (self-describing) | magic/version/header + `BOOTLOADER` + a runnable embedded reader/writer |
 | **authority rules** | cube boot is the authoritative band map; the veil | `AUTHORITY` table: VCW payload canonical over metadata/strip |
 | **read/write protocol** | `read` / `retrieve` / `append` | `read_spore` / retrieve-by-index / `append_turn` |
@@ -175,16 +175,15 @@ band ownership: a band owns the half-open layer range `[head, head + span)` decl
 its boot sector. The standard genome owns identity, facts, events, discoveries, senses,
 immune, brain, and private thoughts bands. App bands live in 550-749, with
 framework-reserved ranges declared by `APP_BAND_ATLAS`; caller bands must be allocated
-only from gaps. Layers 750-799 are tail space. The spore body plan is `spore-png-v1`: a
+only from gaps. Layers 750-799 are tail space. The spore body plan is `spore-png-v2`: a
 2000x2000 RGBA PNG whose top half is the canonical VCW region and whose bottom half is
 display (the protected boot strip lives inside the display region); the regions must
 remain disjoint.
 
 **Lane and colour semantics.** RGBA are four substrate lanes. Content colour is payload
 only under the active layer profile: in a cube spatial layer, RGBA stores the spatial
-state directly (alpha 0 = free, 255 = occupied); in a spore, RGB stores payload bytes and
-alpha is the Hamming SECDED repair byte; in a Grimoire-semantic carrier, logical RGBA may
-map to atom, role, evidence, and force. Activity colour is status: the face/self-portrait
+state directly (alpha 0 = free, 255 = occupied); in a v2 spore, physical RGBA maps to
+atom, role, evidence, and force. Activity colour is status: the face/self-portrait
 uses colours for pressure, organ state, lineage, and immune ticks — diagnostic display
 signals, not canonical payload. A private band still owns coordinates; the veil controls
 what crosses the boundary.

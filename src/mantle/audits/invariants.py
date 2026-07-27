@@ -707,16 +707,24 @@ def t_bugfix_runtime_boundaries():
     checks.append(("mind-dispatch", refused_intent and e.get("authorship") == "MIND"
                    and e.get("content", {}).get("phase") == "DELEGATED"))
 
-    prefix = _spore.MAGIC + bytes([_spore.FORMAT_VERSION]) \
-        + (_spore.VCW_CAPACITY_BYTES).to_bytes(4, "big")
+    hostile_manifest = json.dumps({
+        "magic": _spore.MAGIC.decode("ascii"),
+        "format_version": _spore.FORMAT_VERSION,
+        "encoding": "grimoire-v0.9-quoted-bytes",
+        "frame_payload_bytes": _spore.FRAME_PAYLOAD_BYTES,
+        "payload_frame_count": _spore.VCW_BLOCKS + 1,
+        "payload_length": 0,
+        "payload_checksum": _spore._sha(b""),
+        "payload_fingerprint": _spore._full_lane_fingerprint([]),
+    }, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    hostile_raw = _spore.encode_quoted_bytes(hostile_manifest)
 
     class FakePixels:
         def __getitem__(self, xy):
             x, y = xy
             i = y * _spore.VCW_W + x
-            chunk = prefix[i * 3:i * 3 + 3].ljust(3, b"\0")
-            r, g, b = chunk
-            return r, g, b, _spore.compute_T(r, g, b)
+            off = i * 4
+            return tuple(hostile_raw[off:off + 4].ljust(4, b"\0"))
 
     class FakeImage:
         def load(self):

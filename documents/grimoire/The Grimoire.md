@@ -991,11 +991,11 @@ S11 BOOT CONFIG        VCW dimensions, band allocation, and carrier duties are
 S12 SPORE PROFILE      A spore PNG may itself be a VCW substrate. Spore files are
                        the primary beneficiary of this compact semantic encoding
                        because the Grimoire can be carried and decoded in pixels.
-S13 ALPHA POLICY       Current Mantle spore carriers use physical Alpha for error
-                       correction. That allocation is carrier policy and is not
-                       changed by this v0.9 edition. Until a future boot profile
-                       reassigns it, the carrier must serialize or map all four
-                       logical Grimoire lanes without reading repair Alpha as force.
+S13 ALPHA POLICY       Mantle SPORE-PNG v2 maps physical Alpha directly to logical
+                       force. HEAD carries a nonzero force, non-HEAD/non-PARITY
+                       morphemes use A=00 inheritance, and the PARITY control pixel
+                       stores the statement A-lane XOR. Legacy repair Alpha is not a
+                       v2 lane meaning; old carriers are regenerated from their germ.
 ```
 
 ---
@@ -1025,9 +1025,6 @@ B8  STRUCTURAL. This file contains the authoritative encoded BOOK, not the
     future proof path, not a current dependency.
 B9  STRUCTURAL. Human glosses in sections 5-6 are aids for audit. Decoders must
     use addresses and roles, not gloss wording, as canonical meaning.
-B10 STRUCTURAL. Current spore carriers reserve physical Alpha for error correction
-    while this grammar defines logical A as force. v0.9 requires a declared carrier
-    mapping and does not define the future physical-Alpha reassignment.
 ```
 
 Closed since v0.8: relation collapse cntn/name (75 DENOTES), corpus-derived
@@ -1037,4 +1034,5 @@ addressing (A8, R10), STEP order exception (ordinal roles), silent corruption
 Closed since v0.9: byte-order ambiguity (R0), frame ambiguity (A10, R2), END
 control status, PARITY inheritance conflict, BLEND/order contradiction (A11,
 R6, R7), VCW layer-band/software-lane confusion (S2), presentation-as-authority
-risk (R9, S8), and unstated role-lane integrity limits (A12, R12, B7).
+risk (R9, S8), unstated role-lane integrity limits (A12, R12, B7), and Mantle
+spore physical-Alpha ambiguity (S13; SPORE-PNG v2 maps A directly to force).

@@ -32,15 +32,14 @@ python -m mantle reproduce      # the whole map on one screen
 A spore is one **PNG that *is* an agent**: identity, one task, one append-only
 conversation, a bootloader, and — embedded in its own pixels — the minimal Python
 reader/writer needed to read and grow itself with no SDK beside it. Memory lives in the
-top-half **VCW** colour field; each pixel's RGB carries payload bytes and its alpha carries
-a Hamming SECDED byte that repairs a bad bit locally. The spore ships its own purity audit
+top-half **VCW** colour field as Grimoire v0.9 statements: physical `R/G/B/A` mean
+atom/role/evidence/force. Inert bytes are QUOTE frames with one HEAD, inherited B/A
+continuations, and a `G=0x7f` PARITY control pixel. The spore ships its own purity audit
 (`examples/spore/audit_spore.py`) that **refuses** feature creep in the seed itself.
 
-That RGB+T mapping is a spore carrier profile, not a global VCW law. VCW provides the
-addressable lanes and substrate duties; the registered `grimoire-v0.9` software profile
-defines logical `R/G/B/A` as atom/role/evidence/force, but SPORE-PNG v1 reserves physical
-alpha for repair. Any Grimoire-compatible spore must declare how those logical lanes are
-serialized or mapped before feeding raw runs to the `grimoire-v0.9` decoder.
+That v2 mapping is a spore carrier profile, not a global VCW law. Statement PARITY catches
+ordinary lane corruption. A SHA-256 package fingerprint covers every raw payload RGBA lane
+and frame boundary so a parity-preserving rewrite is still rejected.
 
 **A spore may additionally carry a GERM** — and then it is the complete birth package:
 
@@ -63,14 +62,14 @@ python -m mantle hatch my_app.png --out=nest/          # spore -> certified AppA
 
 > **The deeper truth: a spore is a custom VCW substrate.** The PNG *is* the VCW layer — it
 > satisfies the whole VCW memory grammar (addressable region, canonical payload,
-> append-only evolution, integrity, repair signaling, embedded boot, authority, a
+> append-only evolution, statement and container integrity, embedded boot, authority, a
 > read/write protocol, and a display surface separate from the substrate). **VCW is the
 > law; the cube is one body plan and the PNG is another.** That is proven, not asserted:
 > `python examples/spore/vcw_conformance.py`. See
 > [the VCW Substrate Guide](guides/VCW_Guide.md).
 
 > **Keep the seed dry.** Transfer the *original* `.png` only — never a screenshot, resize,
-> or recompress. Lossy image tools destroy the alpha repair layer and injure memory. The
+> or recompress. Image transformations alter semantic lanes and trigger integrity rejection. The
 > **latest** PNG is always the living copy.
 
 ---
