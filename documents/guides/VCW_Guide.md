@@ -250,3 +250,22 @@ raise the corresponding immune event and halt rather than continue undeclared. O
 move UP tiers as their environment matures (a booted Tier-3 blueprint becomes Tier 1);
 moving down mid-life is not valid — an organism that has a real cube does not lose it by
 declaration.
+
+## Optional context-ledger band
+
+Rolling MIND context uses an ordinary private `log-json` app band as a transport ledger.
+It does not change the VCW format or make the ledger authoritative over experiential
+memory. Its entries record canonical model-visible projections, exact request hashes,
+provider receipts, source cursors, and context-generation transitions.
+
+The band is deliberately absent from `standard_genome()`. A new genome may allocate it
+from the caller gaps with `context_band_boot(...)`; an existing Prime requires the explicit
+Body-authorized `install_context_band(...)` migration. Allocation respects
+`APP_BAND_ATLAS`, and the band remains outside ordinary Nervous snapshots, MIND writes,
+and its own projection.
+
+Context records follow the same append-only VCW entry wrapper while adding a full SHA-256
+record/chain layer. Tampering remains detectable even though the private veil hides the
+band from ordinary reads. Stored-ledger metabolism and model-window rollover are separate:
+rollover opens a new logical context generation; it does not rewrite or silently discard
+old ledger entries. See [`Rolling_Context_Guide.md`](Rolling_Context_Guide.md).

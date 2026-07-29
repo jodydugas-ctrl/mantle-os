@@ -133,6 +133,9 @@ those systems may encode into a VCW carrier; it does not carry a separate proced
   **Immune**. Append to memory; never overwrite (tombstone or quarantine instead).
 - Keep host assimilation **read-only** unless the operator explicitly asks for anchoring or
   grafting; keep instrumentation **fail-open**.
+- Keep MIND context **Body-owned**. `snapshot` remains the default; `rolling-prefix` requires
+  an explicit private context-band migration. Never advance a rolling source cursor before
+  the matching request, response, receipt, and commit are durably appended.
 - Don't hardcode invariant counts in docs — `python -m mantle prove` derives them.
 - Verify with the smallest command that matches the risk (`mantle audit` / `prove` →
   `audit-mind` → `check --fast` → `check`). The full rule set is

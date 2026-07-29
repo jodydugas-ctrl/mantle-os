@@ -4,6 +4,18 @@ All notable release-level changes are documented here.
 
 ## [Unreleased]
 
+### Added — Body-owned rolling context
+
+- Added opt-in `rolling-prefix` context with a private VCW ledger, canonical
+  model-visible envelopes, exact request hashes, commit-last source cursors, provider
+  usage/cache receipts, conservative token budgeting, deterministic generation rollover,
+  multi-lane keys, and corruption recovery. The historical snapshot prompt remains the
+  default and its bytes are unchanged.
+- Added explicit context-band migration, optional structured `ModelRequest` /
+  `ModelResponse` transport support behind the existing `model(prompt) -> text` contract,
+  focused unit tests, nine executable `CONTEXT-*` invariants, tamper proofs, and the
+  Rolling Context guide.
+
 ### Security — memory guarantees clarified
 
 - Separated **history integrity** from **insertion provenance** throughout the VCW

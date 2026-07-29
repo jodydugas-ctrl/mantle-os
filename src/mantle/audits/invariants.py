@@ -3314,6 +3314,216 @@ def t_invariant_registry_single_source():
     )
 
 
+def _rolling_context_fixture(**config_overrides):
+    from ..mind.context import (
+        ModelInfo,
+        RollingContextConfig,
+        RollingPrefixContextStrategy,
+        install_context_band,
+    )
+    org = _born()
+    install_context_band(org, authorized=True)
+    values = {"context_window_tokens": 16_000}
+    values.update(config_overrides)
+    strategy = RollingPrefixContextStrategy(
+        org, RollingContextConfig(**values)
+    )
+    return org, strategy, ModelInfo(provider="audit", model="audit/model")
+
+
+def t_context_body_owned():
+    """CONTEXT-BODY-OWNED: private ledger writes are Body-authored only."""
+    from ..mind import Mind, MindPort, stub_mind
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="audit", model_info=model_info
+    )
+    strategy.commit_success(prepared, answer="ok", usage={})
+    authored = all(
+        entry.get("author") == "BODY" and entry.get("authorship") == "BODY"
+        for entry in org.prime.read("context", reveal_private=True)
+    )
+    mind = Mind(MindPort(org), stub_mind, context_strategy=strategy)
+    before = len(org.immune.log)
+    refused = _expect_raise(
+        lambda: mind._guarded_write("context", {"forbidden": True}),
+        PermissionError,
+    )[0]
+    return (
+        authored and refused and len(org.immune.log) == before + 1,
+        "private ledger is Body-authored; direct MIND write refused + immune-logged",
+    )
+
+
+def t_context_no_self_inclusion():
+    """CONTEXT-NO-SELF-INCLUSION: the transport ledger never projects itself."""
+    from ..mind.context.projection import build_delta
+    from ..mind.context.types import SourceCursor
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="first", model_info=model_info
+    )
+    strategy.commit_success(prepared, answer="ok", usage={})
+    snapshot = org.nervous.assemble()
+    entries, _after, _ranges = build_delta(
+        dict(snapshot, context=org.prime.read("context", reveal_private=True)),
+        SourceCursor(),
+    )
+    return (
+        "context" not in snapshot
+        and all(entry["source_band"] != "context" for entry in entries),
+        "Nervous snapshot omits context; projection excludes injected context records",
+    )
+
+
+def t_context_canonical_bytes():
+    """CONTEXT-CANONICAL-BYTES: ordering and Unicode produce one stable envelope."""
+    from ..mind.context import canonical_json_bytes, render_entry
+    left = {"z": "é", "a": {"y": 2, "x": 1}}
+    right = {"a": {"x": 1, "y": 2}, "z": "é"}
+    stable = (
+        canonical_json_bytes(left) == canonical_json_bytes(right)
+        and render_entry(left) == render_entry(right)
+    )
+    rejected = _expect_raise(
+        lambda: canonical_json_bytes({"bad": float("nan")}), ValueError
+    )[0]
+    return stable and rejected, "insertion order is irrelevant; NaN is refused"
+
+
+def t_context_cursor_commit_after_success():
+    """CONTEXT-CURSOR-COMMIT-AFTER-SUCCESS: failure cannot consume a delta."""
+    org, strategy, model_info = _rolling_context_fixture()
+    org.memory.remember("facts", {"name": "pending"})
+    first = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="retry", model_info=model_info
+    )
+    strategy.commit_failure(first, error=TimeoutError("audit timeout"))
+    unchanged = strategy.ledger.latest_cursor().facts == 0
+    retry = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="retry", model_info=model_info
+    )
+    identical = retry.prompt_bytes == first.prompt_bytes
+    strategy.commit_success(retry, answer="ok", usage={})
+    return (
+        unchanged and identical and strategy.ledger.latest_cursor().facts == 1,
+        "timeout left cursor at 0; retry bytes matched; successful commit advanced to 1",
+    )
+
+
+def t_context_prefix_immutable():
+    """CONTEXT-PREFIX-IMMUTABLE: each successful round only appends bytes."""
+    from ..mind.context import render_entries
+    org, strategy, model_info = _rolling_context_fixture()
+    first = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="one", model_info=model_info
+    )
+    strategy.commit_success(first, answer="first answer", usage={})
+    stable = render_entries(strategy.ledger.visible_records())
+    second = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="two", model_info=model_info
+    )
+    return (
+        second.prompt_bytes.startswith(stable),
+        "the complete committed first-round prefix is byte-identical at round two",
+    )
+
+
+def t_context_rollover_before_limit():
+    """CONTEXT-ROLLOVER-BEFORE-HARD-LIMIT: large history checkpoints before send."""
+    org, strategy, model_info = _rolling_context_fixture(
+        context_window_tokens=2_600,
+        reserved_output_tokens=200,
+        safety_margin_tokens=200,
+        rollover_threshold=0.75,
+        checkpoint_entries_per_band=1,
+    )
+    for index in range(30):
+        org.memory.remember("facts", {
+            "index": index,
+            "text": "x" * 100,
+        })
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="summarize", model_info=model_info
+    )
+    rolled = any(
+        record["kind"] == "ROLLOVER" for record in strategy.ledger.records()
+    )
+    return (
+        rolled
+        and prepared.generation == 2
+        and prepared.estimated_prompt_tokens <= strategy.config.rollover_budget,
+        "candidate crossed threshold; generation 1 closed; bounded checkpoint fit generation 2",
+    )
+
+
+def t_context_private_veil():
+    """CONTEXT-PRIVATE-VEIL: exact persistence stays private and redacted."""
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(),
+        intent="api_key=sk-ABCDEFGHIJKLMNOPQRST",
+        model_info=model_info,
+    )
+    return (
+        org.prime.read("context") == []
+        and "sk-ABCDEFGHIJKLMNOPQRST" not in prepared.prompt,
+        "ordinary read is veiled and secret-shaped intent was masked before send/store",
+    )
+
+
+def t_context_request_hash_exact():
+    """CONTEXT-REQUEST-HASH-EXACT: the receipt covers the exact sent bytes."""
+    import hashlib
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="hash me", model_info=model_info
+    )
+    request = [
+        record for record in strategy.ledger.records()
+        if record["kind"] == "REQUEST"
+    ][-1]
+    exact = hashlib.sha256(prepared.prompt_bytes).hexdigest()
+    return (
+        request["request_hash"] == exact == prepared.request_hash,
+        "prepared bytes, durable request, and transport hash agree",
+    )
+
+
+def t_context_corruption_detected():
+    """CONTEXT-CORRUPTION-DETECTED: byte, cursor, and sequence tampering fail."""
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="one", model_info=model_info
+    )
+    strategy.commit_success(prepared, answer="ok", usage={})
+    physical = org.prime.read("context", reveal_private=True)
+    response = next(
+        entry for entry in physical
+        if entry["content"].get("kind") == "RESPONSE"
+    )
+    response["content"]["content"] = "tampered"
+    byte_caught = bool(strategy.ledger.verify())
+    response["content"]["content"] = "ok"
+    # The stale hashes remain valid again only if the exact original payload was restored.
+    commit = next(
+        entry for entry in physical
+        if entry["content"].get("kind") == "COMMIT"
+    )
+    commit["content"]["source_cursors"]["facts"] = 999
+    cursor_caught = any(
+        "beyond committed" in problem for problem in strategy.ledger.verify()
+    )
+    commit["content"]["sequence"] = 999
+    sequence_caught = any(
+        "sequence" in problem for problem in strategy.ledger.verify()
+    )
+    return (
+        byte_caught and cursor_caught and sequence_caught,
+        "stored-byte, cursor-ahead, and sequence tampering each produced audit failures",
+    )
+
+
 _INVARIANT_DEFINITIONS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -3422,6 +3632,17 @@ _INVARIANT_DEFINITIONS = [
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
     ("SPORE-3 germ-round-trip (one artifact)", t_spore_germ_round_trip),
+    ("CONTEXT-BODY-OWNED body-authored-ledger", t_context_body_owned),
+    ("CONTEXT-NO-SELF-INCLUSION projection-exclusion", t_context_no_self_inclusion),
+    ("CONTEXT-CANONICAL-BYTES stable-serialization", t_context_canonical_bytes),
+    ("CONTEXT-CURSOR-COMMIT-AFTER-SUCCESS durable-cursors",
+     t_context_cursor_commit_after_success),
+    ("CONTEXT-PREFIX-IMMUTABLE append-only-prefix", t_context_prefix_immutable),
+    ("CONTEXT-ROLLOVER-BEFORE-HARD-LIMIT bounded-generation",
+     t_context_rollover_before_limit),
+    ("CONTEXT-PRIVATE-VEIL private-redacted-ledger", t_context_private_veil),
+    ("CONTEXT-REQUEST-HASH-EXACT exact-sent-bytes", t_context_request_hash_exact),
+    ("CONTEXT-CORRUPTION-DETECTED tamper-proofs", t_context_corruption_detected),
     ("REGISTRY-1 typed-single-source",          t_invariant_registry_single_source),
 ]
 

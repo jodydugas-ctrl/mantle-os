@@ -27,7 +27,13 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from ..vcw.entry import make_entry
 from ..core.redact import redact
 from .port import MindPort, require_mind_port
-from .transport import stub_mind
+from .transport import complete_model, stub_mind
+from .context import (
+    ContextStrategy,
+    ModelRequest,
+    SnapshotContextStrategy,
+    model_info_from_transport,
+)
 
 
 def _h(text: str) -> str:
@@ -36,11 +42,16 @@ def _h(text: str) -> str:
 
 class Mind:
     def __init__(self, port: MindPort, model: Callable[[str], str], *,
-                 max_thoughts: int = 64) -> None:
+                 max_thoughts: int = 64,
+                 context_strategy: Optional[ContextStrategy] = None) -> None:
         self.port = require_mind_port(port, "Mind")
         self.model = model                  # the pluggable transport: prompt -> text
         self.max_thoughts = max_thoughts    # the waste budget: the MIND cannot spiral
         self.thoughts_written = 0
+        # SnapshotContextStrategy reproduces the historical prompt path exactly.
+        self.context_strategy = (
+            context_strategy or SnapshotContextStrategy(self._frame)
+        )
 
     # ---- the bounded write surface (Body-enforced) -----------------------
     def _guarded_write(self, band: str, entry: Dict[str, Any]) -> Dict[str, Any]:
@@ -60,10 +71,54 @@ class Mind:
             self.port.immune_event("waste_guard",
                                    {"organ": "mind", "limit": self.max_thoughts})
             return None
-        prompt = question or self._frame(snapshot)
-        self._trace("REQUEST", {"prompt_hash": _h(prompt)})
-        answer = self.model(prompt)                         # the side-channel MODEL call
-        usage = getattr(self.model, "last_usage", None)
+        prepared = self.context_strategy.prepare(
+            snapshot=snapshot,
+            intent=question,
+            model_info=model_info_from_transport(self.model),
+        )
+        self._trace("REQUEST", {
+            "prompt_hash": _h(prepared.prompt),
+            "request_hash": prepared.request_hash,
+            "context_generation": prepared.generation,
+            "context_sequence": prepared.sequence,
+            "estimated_prompt_tokens": prepared.estimated_prompt_tokens,
+        })
+        try:
+            response = complete_model(
+                self.model,
+                ModelRequest(
+                    prompt=prepared.prompt,
+                    metadata={
+                        "context_generation": prepared.generation,
+                        "context_sequence": prepared.sequence,
+                        "stable_prefix_hash": prepared.prefix_hash,
+                        "dynamic_suffix_hash": prepared.delta_hash,
+                        "request_hash": prepared.request_hash,
+                    },
+                ),
+            )
+        except Exception as exc:
+            self.context_strategy.commit_failure(prepared, error=exc)
+            self._trace("FAILURE", {
+                "request_hash": prepared.request_hash,
+                "error": type(exc).__name__,
+            })
+            raise
+        answer = response.text
+        usage = dict(response.usage or getattr(self.model, "last_usage", None) or {})
+        if prepared.generation:
+            usage.update({
+                "context_generation": prepared.generation,
+                "context_sequence": prepared.sequence,
+                "stable_prefix_hash": prepared.prefix_hash,
+                "dynamic_suffix_hash": prepared.delta_hash,
+                "context_request_hash": prepared.request_hash,
+            })
+        self.context_strategy.commit_success(
+            prepared,
+            answer=answer,
+            usage=usage or None,
+        )
         if usage:
             self._trace("USAGE", usage)
         self._trace("RESPONSE", {"answer_hash": _h(answer)})
@@ -110,9 +165,15 @@ class Mind:
 
 
 def fuse(organism: Any, model: Callable[[str], str] = stub_mind, *,
-         authorization: Any = None, max_thoughts: int = 64) -> Mind:
+         authorization: Any = None, max_thoughts: int = 64,
+         context_strategy: Optional[ContextStrategy] = None) -> Mind:
     """Fuse only after Stage-1 evidence and target-bound dual authorization."""
-    mind = Mind(MindPort(organism), model, max_thoughts=max_thoughts)
+    mind = Mind(
+        MindPort(organism),
+        model,
+        max_thoughts=max_thoughts,
+        context_strategy=context_strategy,
+    )
     organism.brain.fuse(
         mind,
         stage1_certified=organism.stage1_certified,

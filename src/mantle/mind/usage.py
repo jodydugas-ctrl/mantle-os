@@ -49,7 +49,13 @@ def sha16(data: Any) -> str:
 
 def canonical_json_bytes(payload: Dict[str, Any]) -> bytes:
     """Deterministic JSON for repeatable response-cache request bodies."""
-    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
 
 
 def stable_session_id(body_fingerprint: str, lane: str, task: str,

@@ -124,7 +124,9 @@ class AppAIRuntime:
         return self.port.mind()
 
     def fuse_mind(self, model: Optional[Callable[[str], str]] = None, *,
-                  authorization: Any = None, max_thoughts: int = 64) -> Mind:
+                  authorization: Any = None, max_thoughts: int = 64,
+                  context_strategy: Any = None) -> Mind:
         """Fuse only with Stage-1 evidence and explicit operator + guardian approval."""
         return self.port.fuse(model or self.model, authorization=authorization,
-                              max_thoughts=max_thoughts)
+                              max_thoughts=max_thoughts,
+                              context_strategy=context_strategy)

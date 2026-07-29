@@ -126,10 +126,11 @@ class OperatorPort(_Port):
         return MindPort(object.__getattribute__(self, "_org"))
 
     def fuse(self, model: Any, *, authorization: Any = None,
-             max_thoughts: int = 64) -> Any:
+             max_thoughts: int = 64, context_strategy: Any = None) -> Any:
         from .mind import fuse
         return fuse(object.__getattribute__(self, "_org"), model,
-                    authorization=authorization, max_thoughts=max_thoughts)
+                    authorization=authorization, max_thoughts=max_thoughts,
+                    context_strategy=context_strategy)
 
 
 def require_mind_port(value: Any, holder: str) -> MindPort:

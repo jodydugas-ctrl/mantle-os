@@ -15,6 +15,12 @@ import json
 import os
 from typing import Any, Callable, Dict, List, Optional
 
+from .context.types import (
+    ModelRequest,
+    ModelResponse,
+    ProviderCapabilities,
+)
+
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_GENERATION_URL = "https://openrouter.ai/api/v1/generation"
 
@@ -26,6 +32,41 @@ def stub_mind(prompt: str) -> str:
             "no Body change. (%d chars of context considered.)" % len(prompt))
 
 
+stub_mind.provider = "offline"  # type: ignore[attr-defined]
+stub_mind.model_name = "mantle/stub"  # type: ignore[attr-defined]
+stub_mind.capabilities = ProviderCapabilities()  # type: ignore[attr-defined]
+
+
+def complete_model(model: Any, request: ModelRequest) -> ModelResponse:
+    """Use optional structured completion while preserving ``prompt -> text``."""
+    complete = getattr(model, "complete", None)
+    if callable(complete):
+        response = complete(request)
+        if isinstance(response, ModelResponse):
+            return response
+        if isinstance(response, str):
+            return ModelResponse(
+                text=response,
+                usage=getattr(model, "last_usage", None),
+                generation_id=getattr(model, "last_generation_id", None),
+            )
+        if isinstance(response, dict) and isinstance(response.get("text"), str):
+            return ModelResponse(
+                text=response["text"],
+                usage=response.get("usage"),
+                generation_id=response.get("generation_id"),
+            )
+        raise TypeError("structured model transport returned an invalid response")
+    text = model(request.prompt)
+    if not isinstance(text, str):
+        raise TypeError("model transport must return text")
+    return ModelResponse(
+        text=text,
+        usage=getattr(model, "last_usage", None),
+        generation_id=getattr(model, "last_generation_id", None),
+    )
+
+
 def load_keyfile(path: str) -> str:
     """Read the single model credential from a keyfile (Phase 2 only). The value is a
     secret boundary: it is redacted everywhere it could surface in senses/immune logs."""
@@ -35,6 +76,7 @@ def load_keyfile(path: str) -> str:
 
 def openai_compatible_model(api_key: str, model: str, *, url: str = OPENROUTER_URL,
                             system: Optional[str] = None, max_tokens: int = 1024,
+                            context_window_tokens: Optional[int] = None,
                             timeout: int = 60,
                             extra_headers: Optional[Dict[str, str]] = None,
                             session_id: Optional[str] = None,
@@ -130,6 +172,18 @@ def openai_compatible_model(api_key: str, model: str, *, url: str = OPENROUTER_U
     _call.last_generation_id = None   # type: ignore[attr-defined]
     _call.last_request_hash = None    # type: ignore[attr-defined]
     _call.last_cache = None       # type: ignore[attr-defined]
+    _call.provider = "openai-compatible"  # type: ignore[attr-defined]
+    _call.model_name = model      # type: ignore[attr-defined]
+    _call.reserved_output_tokens = max_tokens  # type: ignore[attr-defined]
+    _call.context_window_tokens = context_window_tokens  # type: ignore[attr-defined]
+    _call.capabilities = ProviderCapabilities(  # type: ignore[attr-defined]
+        prefix_cache=bool(cache_control),
+        explicit_cache_breakpoints=bool(cache_control),
+        response_cache=response_cache,
+        reports_cached_tokens=True,
+        reports_context_limit=False,
+        structured_messages=True,
+    )
     return _call
 
 

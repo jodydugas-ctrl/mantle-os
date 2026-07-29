@@ -376,6 +376,19 @@ and the prompt/response-cache proof receipts — are documented in full in
 no dependencies, no network, no keys (the one optional Phase-2 module, `mantle.ghost_http`,
 is imported by nothing else).
 
+### Rolling context and provider prefix caches
+
+The default MIND context policy is still `snapshot`. Phase 2 may explicitly opt into
+`rolling-prefix`: a private, Body-owned VCW transport ledger keeps the committed
+model-visible prefix byte-stable, appends only newly eligible redacted memory, records exact
+request and provider-usage hashes, and rolls to a deterministic checkpoint before the
+configured model window is exhausted. Failed calls do not advance source cursors.
+
+Rolling mode preserves the `model(prompt) -> text` interface, never includes its own ledger,
+and never adds the context band to an existing organism without an explicit Body-authorized
+migration. Provider cache hits are observed facts, not guarantees. See
+[`documents/guides/Rolling_Context_Guide.md`](documents/guides/Rolling_Context_Guide.md).
+
 ```python
 from mantle import Organism
 from mantle.primer import appai_commandments, appai_truths
@@ -477,6 +490,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     vcw/                 the booted substrate: PNG lanes, bands, drivers, cube, metabolism, graded-memory overlay
     organs/              the nine organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
+      context/           optional rolling-prefix ledger, canonical bytes, budgets + rollover
     assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, invariant suite)
     reproduction.py      the two-method seam — SEED vs GRAFT (routes to the modules below)
     spore.py spore_min.py THE artifact — one PNG agent, optionally carrying a germ (+ its embryo)

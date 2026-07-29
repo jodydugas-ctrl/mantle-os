@@ -181,6 +181,31 @@ result, and response sizes. Obvious unbounded loops and literal allocations are 
 refused statically. These are availability controls; they do not turn Python into a hard
 sandbox. Foreign code still requires the prepared WASM runner seam.
 
+### 6.1 Optional rolling context
+
+`Mind` accepts an optional `ContextStrategy`. The default
+`SnapshotContextStrategy` preserves the historical prompt bytes. The opt-in
+`RollingPrefixContextStrategy` projects visible VCW source entries into a private
+Body-owned context band, using monotonic source IDs rather than timestamps.
+
+The rolling lifecycle is `prepare -> transport -> commit_success|commit_failure`.
+`prepare` writes an exact request receipt but does not advance source cursors. A successful
+commit appends the projected delta, intent, redacted response, provider receipt, and final
+cursor commit. A failed transport appends a failure receipt and leaves the delta eligible
+for an identical retry.
+
+Canonical UTF-8 envelopes keep the committed prefix byte-stable. Full SHA-256 record and
+chain hashes cover generation-local sequences and prior-record linkage. Token accounting
+uses an injectable `TokenCounter`, with a conservative byte estimator as the dependency-free
+fallback. Before the input budget reaches its configured threshold, the Body closes the
+generation and opens a deterministic bounded checkpoint.
+
+The context band is private, excluded from Nervous snapshots, and outside the MIND write
+surface. Existing cubes require an explicit `install_context_band(..., authorized=True)`
+migration. Exact restart continuity is available only in `durable-exact` mode; the other
+persistence modes open a new generation after restart. See
+[`guides/Rolling_Context_Guide.md`](guides/Rolling_Context_Guide.md).
+
 ## 7. Nociception and Scheduling
 
 Nociception is not a repeated-fault heuristic. It is implemented by explicit event wiring:
