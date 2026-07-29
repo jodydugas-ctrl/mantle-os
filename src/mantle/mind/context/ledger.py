@@ -203,6 +203,8 @@ class ContextLedger:
     def model_visible(record: Mapping[str, Any]) -> Dict[str, Any]:
         excluded = {
             "previous_context_hash", "record_hash", "chain_hash",
+            # `request_prompt` is no longer written; the entry stays so a ledger
+            # from a build that did write it can never render it into a prefix.
             "request_hash", "request_prompt", "error", "sequence",
         }
         return {key: value for key, value in record.items() if key not in excluded}

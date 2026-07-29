@@ -103,8 +103,10 @@ The private ledger uses `mantle-context-v1` records:
 
 - `OPEN` freezes the model, provider, renderer, tokenizer, policy, persistence mode, lane,
   task, budget, and starting cursors for one generation.
-- `REQUEST` stores hashes, estimates, cursors before/after, and—in `durable-exact`—the
-  exact prepared prompt.
+- `REQUEST` stores hashes, estimates, and cursors before/after. It deliberately does not
+  store a copy of the prompt: in `durable-exact` the exact sent bytes are reproduced by
+  re-rendering the generation's committed visible chain, so a per-round copy would
+  duplicate the whole prefix every round and grow the ledger quadratically.
 - `DELTA`, `INTENT`, and `RESPONSE` become model-visible only after a matching `COMMIT`.
   Outside `durable-exact` the exact content stays in process memory and the ledger keeps a
   `DELTA_RECEIPT` / `INTENT_RECEIPT` / `RESPONSE_RECEIPT` instead. A delta receipt still

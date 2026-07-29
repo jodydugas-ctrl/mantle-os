@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import tempfile
 import unittest
@@ -19,6 +20,7 @@ from mantle.mind.context import (
     SourceCursor,
     canonical_json_bytes,
     install_context_band,
+    render_entries,
     render_entry,
 )
 from mantle.primer import appai_commandments, appai_truths
@@ -164,13 +166,49 @@ class RollingContextTests(unittest.TestCase):
         mind = Mind(MindPort(org), model, context_strategy=strategy)
         mind.think(org.nervous.assemble(), "account")
         request = next(r for r in strategy.ledger.records() if r["kind"] == "REQUEST")
+        # The durable hash covers the bytes the transport actually received, and
+        # the ledger stores the hash rather than another copy of the prompt.
         self.assertEqual(
             request["request_hash"],
-            hashlib.sha256(request["request_prompt"].encode("utf-8")).hexdigest(),
+            hashlib.sha256(model.prompts[-1].encode("utf-8")).hexdigest(),
         )
+        self.assertNotIn("request_prompt", request)
         receipt = next(r for r in strategy.ledger.records() if r["kind"] == "RECEIPT")
         self.assertEqual(receipt["generation_id"], "g-1")
         self.assertIn("estimation_error", receipt)
+
+    def test_ledger_grows_linearly_not_with_the_resent_prefix(self):
+        """The ledger stores each byte once, so a round costs the same at any depth."""
+        org = born()
+        model = CountingModel()
+        strategy = self.strategy(org, context_window_tokens=200_000)
+        mind = Mind(MindPort(org), model, context_strategy=strategy)
+        sizes = []
+        for index in range(12):
+            org.memory.remember("facts", {"index": index, "text": "z" * 200})
+            mind.think(org.nervous.assemble(), "round %d" % index)
+            sizes.append(len(json.dumps(
+                org.prime.read("context", reveal_private=True)
+            )))
+        growth = [later - earlier for earlier, later in zip(sizes, sizes[1:])]
+        # Each round re-sends the whole prefix. Storing a copy of the prompt per
+        # request would make the ledger grow quadratically, so a late round would
+        # cost far more than an early one.
+        self.assertLess(growth[-1], 1.5 * growth[0])
+        self.assertEqual(strategy.ledger.verify(), [])
+
+    def test_exact_sent_bytes_are_reconstructible_from_the_committed_chain(self):
+        org = born()
+        model = CountingModel()
+        strategy = self.strategy(org)
+        mind = Mind(MindPort(org), model, context_strategy=strategy)
+        org.memory.remember("facts", {"name": "alpha"})
+        mind.think(org.nervous.assemble(), "first")
+        # Re-rendering the committed visible chain reproduces the prefix the
+        # next round builds on, without any stored prompt copy.
+        rebuilt = render_entries(strategy.ledger.visible_records())
+        mind.think(org.nervous.assemble(), "second")
+        self.assertTrue(model.prompts[-1].encode("utf-8").startswith(rebuilt))
 
     def test_corruption_is_detected_and_next_generation_recovers(self):
         org = born()

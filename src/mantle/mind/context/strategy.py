@@ -338,8 +338,10 @@ class RollingPrefixContextStrategy:
             "source_cursors_before": cursor.as_dict(),
             "source_cursors_after": after.as_dict(),
         }
-        if self.config.persistence_mode == "durable-exact":
-            request_data["request_prompt"] = prompt
+        # A REQUEST carries hashes only.  In `durable-exact` the sent bytes are
+        # already reproducible by re-rendering this generation's committed
+        # visible chain, so storing the whole prompt here would duplicate the
+        # entire prefix once per round and grow the ledger quadratically.
         request = self.ledger.append(
             "REQUEST", generation, request_data, sequence=request_sequence
         )
