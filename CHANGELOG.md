@@ -30,7 +30,7 @@ All notable release-level changes are documented here.
   authenticate which in-process organ inserted a new valid row. This is a documented
   trust-boundary decision, not a new storage format or behavior change.
 
-### Changed — documentation reorganization (no code changes; framework still 1.4.0)
+### Changed — documentation reorganization (no code changes; historical 1.4.0 entry)
 
 - **Two on-ramps for specialists.** Added `AGENTS.md` at the repo root — an orientation
   file for AI agents that explains the two jobs the biological framework does (it draws a
