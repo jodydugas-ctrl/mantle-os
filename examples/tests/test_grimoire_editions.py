@@ -19,6 +19,9 @@ def test_unknown_profile_is_refused():
         get_edition("grimoire-v9.9")
 
 
-def test_v010_decoder_is_not_available_before_g03():
-    with pytest.raises(GrimoireEditionError, match="not implemented"):
-        decode_statement(b"\x01\x01\x01\x0f", profile="grimoire-v0.10")
+def test_v010_decoder_is_registered():
+    decoded = decode_statement(
+        "9a010801 212a0000 13400000 947f5c03",
+        profile="grimoire-v0.10", frame_id="registry",
+    )
+    assert decoded["profile"] == "grimoire-v0.10"
