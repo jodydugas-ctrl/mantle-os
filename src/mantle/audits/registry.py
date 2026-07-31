@@ -35,6 +35,8 @@ _GUARANTEE_BY_CODE: Dict[str, str] = {
 
 
 def _guarantee(code: str) -> str:
+    if code.startswith("GRIMOIRE-V010-"):
+        return "TM-GRIMOIRE-EDITION"
     if code in _GUARANTEE_BY_CODE:
         return _GUARANTEE_BY_CODE[code]
     if code in {"HF-B07", "HF-B45", "HF-B02"}:

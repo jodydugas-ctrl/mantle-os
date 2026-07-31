@@ -120,6 +120,76 @@ MUTANTS = [
         "WRITE_SURFACE = (\"thoughts\", \"brain\", \"facts\")",
         "t_mind_write_surface",
     ),
+    Mutant(
+        "grimoire-zero-head",
+        "src/mantle/vcw/grimoire_editions/v010.py",
+        "    procedure = not heads",
+        "    procedure = False",
+        "t_grimoire_v010_step_only",
+    ),
+    Mutant(
+        "grimoire-any-zero-head",
+        "src/mantle/vcw/grimoire_editions/v010.py",
+        "    if procedure and any(role not in STEP_ROLES for role in lead_roles):",
+        "    if False and any(role not in STEP_ROLES for role in lead_roles):",
+        "t_grimoire_v010_step_only",
+    ),
+    Mutant(
+        "grimoire-default-force-law",
+        "src/mantle/vcw/grimoire_editions/v010.py",
+        "        effective_force = \"INHERIT\"",
+        "        effective_force = \"LAW\"",
+        "t_grimoire_v010_missing_container",
+    ),
+    Mutant(
+        "grimoire-assumed-inferred",
+        "src/mantle/vcw/grimoire_editions/v010.py",
+        "EVIDENCE = legacy.EVIDENCE\nFORCE = legacy.FORCE",
+        "EVIDENCE = dict(legacy.EVIDENCE)\nEVIDENCE[0x07] = \"INFERRED\"\nFORCE = legacy.FORCE",
+        "t_grimoire_v010_evidence_label",
+    ),
+    Mutant(
+        "grimoire-placement-adoption",
+        "src/mantle/vcw/grimoire_editions/v010.py",
+        "    governing = adoption_policy == \"adopted\" and not unknowns",
+        "    governing = True",
+        "t_grimoire_v010_quote_inert",
+    ),
+    Mutant(
+        "grimoire-v09-current-default",
+        "src/mantle/vcw/grimoire_editions/registry.py",
+        "    edition = get_edition(profile)",
+        "    edition = get_edition(\"grimoire-v0.10\")",
+        "t_grimoire_v010_v09_frozen",
+    ),
+    Mutant(
+        "grimoire-measured-without-fingerprint",
+        "src/mantle/vcw/grimoire_editions/v010.py",
+        "    elif claim_tamper_evidence:\n        fingerprint_status = \"missing\"\n        full_lane_integrity = \"unmeasured\"",
+        "    elif claim_tamper_evidence:\n        fingerprint_status = \"missing\"\n        full_lane_integrity = \"measured\"",
+        "t_grimoire_v010_integrity",
+    ),
+    Mutant(
+        "grimoire-skip-independent-compare",
+        "tools/grimoire_tool.py",
+        "    production = json.loads(proc.stdout)",
+        "    production = []",
+        "t_grimoire_v010_independent_compare",
+    ),
+    Mutant(
+        "grimoire-book-parity-byte",
+        "documents/grimoire/editions/grimoire-v0.10.md",
+        "76010808 30210000 85400000 5b2c0000 da7f2b0a",
+        "76010808 30210000 85400000 5b2c0000 da7f2b0b",
+        "t_grimoire_v010_independent_compare",
+    ),
+    Mutant(
+        "grimoire-composition-count",
+        "documents/grimoire/editions/grimoire-v0.10.md",
+        "This edition composes 295 named concept rows.",
+        "This edition composes 296 named concept rows.",
+        "t_grimoire_v010_counts",
+    ),
 ]
 
 
@@ -179,6 +249,10 @@ def run(selected: List[Mutant], timeout: int) -> List[dict]:
         with tempfile.TemporaryDirectory(prefix="mantle-mutant-") as td:
             scratch = Path(td)
             shutil.copytree(ROOT / "src", scratch / "src")
+            for name in ("tools", "documents"):
+                source = ROOT / name
+                if source.exists():
+                    shutil.copytree(source, scratch / name)
             try:
                 result = _challenge(mutant, scratch, timeout)
             except Exception as exc:  # configuration errors are not killed mutants

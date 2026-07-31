@@ -14,7 +14,9 @@ NO INVARIANT IS EVER WEAKENED TO MAKE A TEST PASS.
 from __future__ import annotations
 
 import json
+import inspect
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -33,6 +35,10 @@ from ..vcw.drivers import (ExecDriver, CapabilityError, IntegrityError, TrustErr
                            ProtocolError, PythonExecRunner, validate_calcify_payload,
                            trial)
 from ..vcw.grimoire import GrimoireDecodeError, raw_run_fingerprint
+from ..vcw.grimoire_editions import GrimoireEditionError, decode_statement as decode_profiled
+from ..vcw.grimoire_editions import get_edition, known_editions
+from ..vcw.grimoire_editions import v010 as grimoire_v010
+from ..vcw.grimoire_editions import v09 as grimoire_v09
 from ..vcw.bands import code_hash
 from .registry import build_registry, by_concern
 
@@ -435,6 +441,133 @@ def t_grimoire_v09_profile_driver_integrity():
             and wrong_fingerprint and parity_refused,
             "grimoire-v0.9 boots as a driver; raw/parity/fingerprint/provenance/"
             "adoption paths are executable")
+
+
+def _grimoire_v010_checks():
+    raw = grimoire_v010.SELFTEST_VECTORS[0]
+    procedure = grimoire_v010.SELFTEST_VECTORS[3]
+    checks = {}
+    signature = inspect.signature(decode_profiled)
+    checks["explicit-profile"] = (
+        "profile" in signature.parameters and signature.parameters["profile"].default is inspect.Parameter.empty,
+        "persistent decoder requires an explicit profile",
+    )
+    try:
+        get_edition("grimoire-v9.9")
+        checks["unknown-edition"] = (False, "unknown edition was resolved")
+    except GrimoireEditionError:
+        checks["unknown-edition"] = (True, "unknown edition refused")
+    try:
+        decode_profiled(procedure, profile="grimoire-v0.9", frame_id="v09-wall")
+        v09_ok = False
+    except GrimoireDecodeError:
+        v09_ok = True
+    checks["v09-frozen"] = (v09_ok and "grimoire-v0.9" in known_editions(), "v0.9 rejects the v0.10 zero-HEAD procedure")
+    try:
+        decode_profiled("9e600000 212a0000", profile="grimoire-v0.10",
+                        frame_id="non-step", allow_parity_absent=True)
+        step_only = False
+    except grimoire_v010.GrimoireDecodeError:
+        step_only = True
+    checks["step-only"] = (step_only, "v0.10 zero-HEAD frames require STEP lead roles")
+    missing = decode_profiled(procedure, profile="grimoire-v0.10", frame_id="missing")
+    checks["missing-container"] = (
+        missing["unknowns"] == ["container_evidence", "container_force"]
+        and not missing["governing"]
+        and missing["effective_evidence"] == "INHERIT"
+        and missing["effective_force"] == "INHERIT",
+        "missing procedure metadata remains unresolved and non-governing",
+    )
+    quote = decode_profiled(raw, profile="grimoire-v0.10", frame_id="quote", adoption_policy="quote")
+    adopted = decode_profiled(raw, profile="grimoire-v0.10", frame_id="adopted", adoption_policy="adopted")
+    checks["quote-inert"] = (not quote["governing"], "QUOTE is inert")
+    checks["adoption-policy"] = (
+        adopted["governing"] and adopted["adoption"]["authority"] == "boot-policy",
+        "adoption requires explicit boot policy",
+    )
+    container = decode_profiled(
+        procedure, profile="grimoire-v0.10", frame_id="container",
+        container_evidence="STIPULATED", container_force="WAY",
+    )
+    checks["container-labels"] = (
+        container["effective_evidence"] == "STIPULATED"
+        and container["effective_force"] == "WAY"
+        and container["evidence_source"] == "container"
+        and container["force_source"] == "container",
+        "container metadata is carried as the exact effective labels",
+    )
+    checks["raw-retained"] = (missing["raw"] == procedure.replace(" ", ""), "raw run is retained")
+    unmeasured = decode_profiled(raw, profile="grimoire-v0.10", frame_id="integrity",
+                                 claim_tamper_evidence=True)
+    checks["integrity"] = (
+        unmeasured["fingerprint_status"] == "missing"
+        and unmeasured["full_lane_integrity"] == "unmeasured",
+        "parity does not become full-lane integrity",
+    )
+    checks["provenance"] = (
+        missing["profile"] == "grimoire-v0.10"
+        and "v0.9" not in missing["atom_address_provenance"]["source"],
+        "v0.10 provenance names the selected edition",
+    )
+    checks["evidence-label"] = (
+        grimoire_v010.EVIDENCE[0x07] == "ASSUMED",
+        "ASSUMED remains distinct from INFERRED",
+    )
+
+    source_path = os.path.join(paths.REPO_ROOT, "documents", "grimoire", "editions",
+                               "grimoire-v0.10.md")
+    source = open(source_path, encoding="utf-8").read()
+    declared_compositions = int(re.search(r"composes (\d+) named concept rows", source).group(1))
+    declared_statements = int(re.search(r"^(\d+) statements\.", source, re.M).group(1))
+    section9 = source.split("## 9 SELFTEST", 1)[1].split("## 10 BOOK", 1)[0]
+    section10 = source.split("## 10 BOOK", 1)[1].split("## 11 ", 1)[0]
+    vector_re = re.compile(r"[0-9a-f]{8}(?:[ \t]+[0-9a-f]{8})+")
+    code_compositions = grimoire_v010.COMPOSITION_COUNT
+    code_statements = grimoire_v010.STATEMENT_COUNT
+    checks["counts"] = (
+        declared_compositions == code_compositions == 295
+        and declared_statements == code_statements == len(vector_re.findall(section10))
+        and len(vector_re.findall(section9)) == len(grimoire_v010.SELFTEST_VECTORS),
+        "source counts match code-derived edition values",
+    )
+    compare = subprocess.run(
+        [sys.executable, os.path.join(paths.REPO_ROOT, "tools", "grimoire_tool.py"),
+         "compare", source_path, "--profile", "grimoire-v0.10", "--json"],
+        cwd=paths.REPO_ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, env=dict(os.environ, PYTHONIOENCODING="utf-8"), timeout=120,
+    )
+    try:
+        comparison = json.loads(compare.stdout)
+    except (TypeError, ValueError):
+        comparison = {}
+    checks["independent-compare"] = (
+        compare.returncode == 0 and comparison.get("status") == "PASS"
+        and comparison.get("differences") == []
+        and comparison.get("compared") == comparison.get("vectors"),
+        "independent verifier and runtime agree on every covered run",
+    )
+    return checks
+
+
+def _grimoire_v010_check(name):
+    result = _grimoire_v010_checks().get(name)
+    return result if result is not None else (False, "missing Grimoire v0.10 check %s" % name)
+
+
+def t_grimoire_v010_explicit_profile(): return _grimoire_v010_check("explicit-profile")
+def t_grimoire_v010_unknown_edition(): return _grimoire_v010_check("unknown-edition")
+def t_grimoire_v010_v09_frozen(): return _grimoire_v010_check("v09-frozen")
+def t_grimoire_v010_step_only(): return _grimoire_v010_check("step-only")
+def t_grimoire_v010_missing_container(): return _grimoire_v010_check("missing-container")
+def t_grimoire_v010_quote_inert(): return _grimoire_v010_check("quote-inert")
+def t_grimoire_v010_adoption_policy(): return _grimoire_v010_check("adoption-policy")
+def t_grimoire_v010_container_labels(): return _grimoire_v010_check("container-labels")
+def t_grimoire_v010_raw_retained(): return _grimoire_v010_check("raw-retained")
+def t_grimoire_v010_integrity(): return _grimoire_v010_check("integrity")
+def t_grimoire_v010_provenance(): return _grimoire_v010_check("provenance")
+def t_grimoire_v010_evidence_label(): return _grimoire_v010_check("evidence-label")
+def t_grimoire_v010_counts(): return _grimoire_v010_check("counts")
+def t_grimoire_v010_independent_compare(): return _grimoire_v010_check("independent-compare")
 
 
 # ============================================================================
@@ -3542,6 +3675,20 @@ _INVARIANT_DEFINITIONS = [
     ("B-CAP capacity->metabolism-not-rebirth", t_capacity_metabolism_not_rebirth),
     ("B-LZ  lazy-load-equivalence",            t_lazy_load_equivalence),
     ("GRIMOIRE-1 v0.9-driver+integrity",       t_grimoire_v09_profile_driver_integrity),
+    ("GRIMOIRE-V010-01 explicit-profile-boundary", t_grimoire_v010_explicit_profile),
+    ("GRIMOIRE-V010-02 unknown-edition-refused",   t_grimoire_v010_unknown_edition),
+    ("GRIMOIRE-V010-03 v09-frozen",                t_grimoire_v010_v09_frozen),
+    ("GRIMOIRE-V010-04 step-only-procedure",       t_grimoire_v010_step_only),
+    ("GRIMOIRE-V010-05 missing-container-unresolved", t_grimoire_v010_missing_container),
+    ("GRIMOIRE-V010-06 quote-inert",               t_grimoire_v010_quote_inert),
+    ("GRIMOIRE-V010-07 adoption-policy-required",  t_grimoire_v010_adoption_policy),
+    ("GRIMOIRE-V010-08 raw-run-retained",          t_grimoire_v010_raw_retained),
+    ("GRIMOIRE-V010-09 parity-not-transport",      t_grimoire_v010_integrity),
+    ("GRIMOIRE-V010-10 container-labels",          t_grimoire_v010_container_labels),
+    ("GRIMOIRE-V010-11 edition-provenance",        t_grimoire_v010_provenance),
+    ("GRIMOIRE-V010-12 evidence-labels",           t_grimoire_v010_evidence_label),
+    ("GRIMOIRE-V010-13 source-counts",             t_grimoire_v010_counts),
+    ("GRIMOIRE-V010-14 independent-compare",       t_grimoire_v010_independent_compare),
     ("HF-B47 exec-integrity-gate",             t_exec_integrity),
     ("HF-B48 exec-capability-gate",            t_exec_capability),
     ("HF-B50 exec-trust/foreign-refused",      t_exec_trust_foreign),

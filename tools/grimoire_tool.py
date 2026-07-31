@@ -668,6 +668,7 @@ def compare(path, profile):
     return {
         "profile": profile,
         "vectors": len(vectors),
+        "compared": len(production),
         "differences": differences,
         "status": "PASS" if not differences else "FAIL",
         "limitations": [
@@ -678,6 +679,12 @@ def compare(path, profile):
 
 
 def main(argv=None):
+    # Keep diagnostic failures machine-readable on Windows consoles whose legacy
+    # code page cannot represent a decoded Grimoire glyph.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="backslashreplace")
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] not in {"verify", "decode", "atom", "compare"}:
         argv.insert(0, "verify")

@@ -74,6 +74,7 @@ equivalent. Reviewers remain responsible for that mapping.
 | `TM-PHASE1-MODEL-FREE` | Phase-1 behavior depends on a model | Body implementation | `enforced` | `HF-B08` | Static and clean-interpreter proofs keep certified Phase 1 model-free. |
 | `TM-REFERENCE-CERT` | Repository reference-organism regression is detected | framework change | `detected` | `HF-B08`, `DOCTOR-1`, `STAGE2-PROFILE-1` | Stage 2 aggregates base, reborn, and resident fixtures: every row must PASS somewhere, no profile may FAIL, and all-N/A remains a blocking gap. Repository gates still do not certify arbitrary dependent applications. |
 | `TM-APPLICATION-CERT` | A dependent application's own nest is certified | user application | `enforced` | `CERTIFY-1` | `mantle certify <path>` loads the actual nest, runs applicable Stage-1 rows plus repository invariants, fingerprints target artifacts and the invariant registry, and emits a Body-signed deterministic receipt. |
+| `TM-GRIMOIRE-EDITION` | Grimoire editions, procedure metadata, or verifier agreement drift | VCW profile data and decoder | `enforced` | `GRIMOIRE-V010-01` .. `GRIMOIRE-V010-14` | Edition selection is explicit; v0.9 remains frozen; zero-HEAD procedures remain non-governing without container metadata; parity is not transport integrity; the independent verifier must agree with runtime BOOK semantics. |
 <!-- MANTLE-GUARANTEES:END -->
 
 ## 6. Residual risks
