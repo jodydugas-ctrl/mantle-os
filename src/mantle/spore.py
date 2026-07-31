@@ -447,6 +447,58 @@ def _parse_itxt(payload: bytes) -> tuple[str, str] | None:
         return None
 
 
+def _unfilter_rgba(raw: bytes, width: int, height: int) -> bytes:
+    """Reconstruct non-interlaced 8-bit RGBA scanlines without per-byte filter dispatch."""
+    stride = width * 4
+    expected = (stride + 1) * height
+    if len(raw) != expected:
+        raise ValueError("PNG decoded data length %d != expected %d" % (len(raw), expected))
+    bpp = 4
+    rgba = bytearray(stride * height)
+    prev = bytearray(stride)
+    src = 0
+    dst = 0
+    abs_ = abs
+    for _y in range(height):
+        filt = raw[src]
+        src += 1
+        row = bytearray(raw[src:src + stride])
+        src += stride
+        if filt == 0:
+            pass
+        elif filt == 1:
+            for i in range(bpp, stride):
+                row[i] = (row[i] + row[i - bpp]) & 0xff
+        elif filt == 2:
+            for i in range(stride):
+                row[i] = (row[i] + prev[i]) & 0xff
+        elif filt == 3:
+            for i in range(bpp):
+                row[i] = (row[i] + (prev[i] // 2)) & 0xff
+            for i in range(bpp, stride):
+                row[i] = (row[i] + ((row[i - bpp] + prev[i]) // 2)) & 0xff
+        elif filt == 4:
+            # With no left byte, Paeth(0, up, 0) always selects up.
+            for i in range(bpp):
+                row[i] = (row[i] + prev[i]) & 0xff
+            for i in range(bpp, stride):
+                a = row[i - bpp]
+                b = prev[i]
+                c = prev[i - bpp]
+                p = a + b - c
+                pa = abs_(p - a)
+                pb = abs_(p - b)
+                pc = abs_(p - c)
+                predictor = a if pa <= pb and pa <= pc else (b if pb <= pc else c)
+                row[i] = (row[i] + predictor) & 0xff
+        else:
+            raise ValueError("unsupported PNG filter %d" % filt)
+        rgba[dst:dst + stride] = row
+        dst += stride
+        prev = row
+    return bytes(rgba)
+
+
 def _read_png(path: str) -> _RawPng:
     with open(path, "rb") as f:
         data = f.read()
@@ -488,35 +540,8 @@ def _read_png(path: str) -> _RawPng:
     if bit_depth != 8 or color_type != 6 or interlace != 0:
         raise ValueError("spore PNG must be non-interlaced 8-bit RGBA")
     raw = zlib.decompress(bytes(idat))
-    stride = width * 4
-    bpp = 4
-    rgba = bytearray(width * height * 4)
-    prev = bytearray(stride)
-    src = 0
-    dst = 0
-    for _y in range(height):
-        filt = raw[src]
-        src += 1
-        row = bytearray(raw[src:src + stride])
-        src += stride
-        for i in range(stride):
-            left = row[i - bpp] if i >= bpp else 0
-            up = prev[i]
-            up_left = prev[i - bpp] if i >= bpp else 0
-            if filt == 1:
-                row[i] = (row[i] + left) & 0xff
-            elif filt == 2:
-                row[i] = (row[i] + up) & 0xff
-            elif filt == 3:
-                row[i] = (row[i] + ((left + up) // 2)) & 0xff
-            elif filt == 4:
-                row[i] = (row[i] + _paeth(left, up, up_left)) & 0xff
-            elif filt != 0:
-                raise ValueError("unsupported PNG filter %d" % filt)
-        rgba[dst:dst + stride] = row
-        dst += stride
-        prev = row
-    return _RawPng(width, height, bytes(rgba), meta)
+    rgba = _unfilter_rgba(raw, width, height)
+    return _RawPng(width, height, rgba, meta)
 
 
 def encode_pixels(stream: bytes, img: Image.Image) -> None:

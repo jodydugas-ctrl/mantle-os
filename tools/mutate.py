@@ -190,6 +190,55 @@ MUTANTS = [
         "This edition composes 296 named concept rows.",
         "t_grimoire_v010_counts",
     ),
+    Mutant(
+        "spore-png-filter-zero",
+        "src/mantle/spore.py",
+        "        if filt == 0:\n            pass",
+        "        if filt == 0:\n            row[0] ^= 1",
+        "t_spore_png_filter_decoder",
+    ),
+    Mutant(
+        "spore-png-filter-sub",
+        "src/mantle/spore.py",
+        "                row[i] = (row[i] + row[i - bpp]) & 0xff",
+        "                row[i] = row[i]",
+        "t_spore_png_filter_decoder",
+    ),
+    Mutant(
+        "spore-png-filter-up",
+        "src/mantle/spore.py",
+        "                row[i] = (row[i] + prev[i]) & 0xff\n        elif filt == 3:",
+        "                row[i] = row[i]\n        elif filt == 3:",
+        "t_spore_png_filter_decoder",
+    ),
+    Mutant(
+        "spore-png-filter-average",
+        "src/mantle/spore.py",
+        "                row[i] = (row[i] + ((row[i - bpp] + prev[i]) // 2)) & 0xff",
+        "                row[i] = (row[i] + row[i - bpp]) & 0xff",
+        "t_spore_png_filter_decoder",
+    ),
+    Mutant(
+        "spore-png-filter-paeth",
+        "src/mantle/spore.py",
+        "                predictor = a if pa <= pb and pa <= pc else (b if pb <= pc else c)",
+        "                predictor = a",
+        "t_spore_png_filter_decoder",
+    ),
+    Mutant(
+        "spore-png-decoded-length",
+        "src/mantle/spore.py",
+        "    if len(raw) != expected:\n        raise ValueError(\"PNG decoded data length %d != expected %d\" % (len(raw), expected))",
+        "    if False and len(raw) != expected:\n        raise ValueError(\"PNG decoded data length %d != expected %d\" % (len(raw), expected))",
+        "t_spore_png_filter_decoder",
+    ),
+    Mutant(
+        "spore-png-unknown-filter",
+        "src/mantle/spore.py",
+        "        else:\n            raise ValueError(\"unsupported PNG filter %d\" % filt)",
+        "        else:\n            pass",
+        "t_spore_png_filter_decoder",
+    ),
 ]
 
 

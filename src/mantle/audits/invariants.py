@@ -3293,6 +3293,64 @@ def t_repro_anchor_births_through_hatchery():
             "its own resident-egg in the vault")
 
 
+def t_spore_png_filter_decoder():
+    """SPORE-PNG-1: the canonical stdlib decoder reconstructs every PNG filter exactly
+    and refuses malformed row lengths or unknown filters before semantic decoding."""
+    from .. import spore as _spore
+
+    width, height, bpp = 9, 5, 4
+    stride = width * bpp
+    rows = []
+    for y in range(height):
+        rows.append(bytes(
+            ((x * 37) + (y * 53) + (channel * 71) + (x * y * 3)) & 0xff
+            for x in range(width) for channel in range(bpp)
+        ))
+    encoded = bytearray()
+    previous = bytes(stride)
+    for filt, row in enumerate(rows):
+        encoded.append(filt)
+        for i, value in enumerate(row):
+            left = row[i - bpp] if i >= bpp else 0
+            up = previous[i]
+            up_left = previous[i - bpp] if i >= bpp else 0
+            if filt == 0:
+                predictor = 0
+            elif filt == 1:
+                predictor = left
+            elif filt == 2:
+                predictor = up
+            elif filt == 3:
+                predictor = (left + up) // 2
+            else:
+                predictor = _spore._paeth(left, up, up_left)
+            encoded.append((value - predictor) & 0xff)
+        previous = row
+    decoded = _spore._unfilter_rgba(bytes(encoded), width, height)
+    all_filters = decoded == b"".join(rows)
+
+    malformed = []
+    for candidate in (encoded[:-1], encoded + b"\0"):
+        try:
+            _spore._unfilter_rgba(bytes(candidate), width, height)
+        except ValueError:
+            malformed.append(True)
+        else:
+            malformed.append(False)
+    unknown = bytearray(encoded)
+    unknown[0] = 5
+    try:
+        _spore._unfilter_rgba(bytes(unknown), width, height)
+    except ValueError as exc:
+        unknown_refused = "unsupported PNG filter" in str(exc)
+    else:
+        unknown_refused = False
+    return (
+        all_filters and all(malformed) and unknown_refused,
+        "filters 0..4 reconstructed byte-exactly; short, extra, and unknown-filter rows refused",
+    )
+
+
 def t_spore_distillation_key_law():
     """SPORE-1 (THE KEY LAW): a spore distills into the primer and the memories of the
     body it births; the spore is sealed as SELF tissue and opens only for SELF; and the
@@ -3776,6 +3834,7 @@ _INVARIANT_DEFINITIONS = [
     ("REPRO-2 ninth-organ+seed-carry",         t_repro_organ_and_seed_carry),
     ("REPRO-3 every-hatch-vaults-its-egg",     t_repro_every_hatch_vaults_its_egg),
     ("REPRO-4 anchor-births-through-hatchery", t_repro_anchor_births_through_hatchery),
+    ("SPORE-PNG-1 stdlib-filter-decoder",      t_spore_png_filter_decoder),
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
     ("SPORE-3 germ-round-trip (one artifact)", t_spore_germ_round_trip),
