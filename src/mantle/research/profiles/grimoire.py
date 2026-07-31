@@ -128,6 +128,8 @@ class GrimoireDualEditionEvaluator(ImmutableEvaluator):
 
     @staticmethod
     def _candidate_hash(candidate: Any) -> str:
+        if hasattr(candidate, "tree_hash"):
+            return str(candidate.tree_hash)
         if isinstance(candidate, dict):
             return str(candidate.get("tree_hash") or candidate.get("candidate_hash") or "dry-run")
         return "dry-run"
