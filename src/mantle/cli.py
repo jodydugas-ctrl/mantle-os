@@ -48,7 +48,7 @@ _USAGE = ("usage: python -m mantle "
           "--allow-network | "
           "certify <nest> [--out=FILE] | reproduce | spore <op> ... | ghost <op> ... | "
           "demo | audit | prove | mind | audit-mind | "
-          "check [--fast] | "
+          "check [--fast] | research-init/propose/trial/report/authorize/adopt | "
           "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png]]")
 
 _COMMANDS = (
@@ -56,7 +56,9 @@ _COMMANDS = (
     "reproduce", "doctor", "teach", "face", "face-list", "face-save", "face-wear",
     "applet-create", "applet-list", "applet-show", "applet-export", "applet-wear",
     "applet-audit", "applet-clone", "demo", "audit", "prove", "mind", "audit-mind",
-    "assimilate", "check", "certify",
+    "assimilate", "check", "certify", "research-init", "research-baseline",
+    "research-propose", "research-trial", "research-report", "research-authorize",
+    "research-adopt",
 )
 
 # every command answers to its hyphenated name and its underscore twin
@@ -728,6 +730,231 @@ def _cmd_certify(rest):
     return 0
 
 
+# ---------------------------------------------------------------------------
+# bounded research lifecycle (JSON-only operator/automation surface)
+# ---------------------------------------------------------------------------
+def _research_json(value):
+    print(json.dumps(value, ensure_ascii=False, sort_keys=True, default=str))
+
+
+def _research_error(exc):
+    _research_json({"status": "REFUSED", "error": str(exc), "automatic": False})
+    return 1
+
+
+def _research_root():
+    return os.path.abspath(os.environ.get("MANTLE_RESEARCH_ROOT", os.getcwd()))
+
+
+def _research_paths(protocol_path):
+    protocol_path = os.path.abspath(protocol_path)
+    return (protocol_path + ".ledger.vcw", protocol_path + ".proposals.jsonl")
+
+
+def _load_research_protocol(path):
+    from .research import load_protocol
+    return load_protocol(path)
+
+
+def _research_evaluator(protocol, root):
+    if protocol.profile != "grimoire-dual-edition":
+        raise ValueError("CLI profile %r is not implemented in the initial serial surface" %
+                         protocol.profile)
+    from .research.profiles.grimoire import GrimoireDualEditionEvaluator
+    return GrimoireDualEditionEvaluator(root, protocol=protocol)
+
+
+def _research_budget(protocol):
+    from .research import ProcessBudget
+    b = protocol.resource_budget
+    return ProcessBudget(float(b.get("wall_seconds", 30)), int(b.get("cpu_seconds", 10)),
+                         int(b.get("memory_bytes", 268435456)), int(b.get("output_bytes", 262144)),
+                         int(b["file_count"]) if b.get("file_count") is not None else None)
+
+
+def _research_ledger(protocol_path):
+    from .core.body import Body
+    from .research import ResearchLedger
+    from .vcw.cube import Cube
+    state_path, _ = _research_paths(protocol_path)
+    body = Body()
+    if os.path.exists(state_path):
+        return body, ResearchLedger(body, Cube.load(state_path)), state_path
+    return body, ResearchLedger.new(body), state_path
+
+
+def _save_research_ledger(ledger, state_path):
+    parent = os.path.dirname(state_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    ledger.cube.save(state_path)
+
+
+def _cmd_research_init(rest):
+    args, flags = _split(rest)
+    if len(args) != 1:
+        print("usage: python -m mantle research-init <profile> [--out=protocol.json]\n"
+              "research does not self-adopt candidates")
+        return 2
+    from .research.profiles.grimoire import _default_protocol
+    try:
+        if args[0] != "grimoire-dual-edition":
+            raise ValueError("unknown initial research profile %r" % args[0])
+        protocol = _default_protocol()
+        out = flags.get("--out")
+        out = os.path.abspath("research-%s.json" % args[0]) if out in (None, True) else os.path.abspath(out)
+        from .research import save_protocol
+        save_protocol(protocol, out)
+        _research_json(dict(protocol.to_dict(), path=out, digest=protocol.digest))
+        return 0
+    except (OSError, ValueError, TypeError) as exc:
+        return _research_error(exc)
+
+
+def _cmd_research_baseline(rest):
+    args, _flags = _split(rest)
+    if len(args) != 1:
+        print("usage: python -m mantle research-baseline <protocol.json>\n"
+              "research does not self-adopt candidates")
+        return 2
+    try:
+        path = os.path.abspath(args[0])
+        protocol = _load_research_protocol(path)
+        evaluation = _research_evaluator(protocol, _research_root()).baseline({"tree_hash": "baseline"})
+        with open(path + ".baseline.json", "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(evaluation.to_dict(), handle, ensure_ascii=False, sort_keys=True, indent=2)
+            handle.write("\n")
+        _research_json(evaluation.to_dict())
+        return 0
+    except (OSError, ValueError, TypeError, RuntimeError) as exc:
+        return _research_error(exc)
+
+
+def _cmd_research_propose(rest):
+    args, _flags = _split(rest)
+    if len(args) != 2:
+        print("usage: python -m mantle research-propose <protocol.json> <proposal.json>\n"
+              "research does not self-adopt candidates")
+        return 2
+    try:
+        protocol_path = os.path.abspath(args[0])
+        protocol = _load_research_protocol(protocol_path)
+        with open(args[1], encoding="utf-8") as handle:
+            proposal = json.load(handle)
+        if not isinstance(proposal, dict):
+            raise ValueError("proposal must be a JSON object")
+        if not proposal.get("experiment_id"):
+            raise ValueError("proposal requires experiment_id")
+        proposal_id = "proposal-" + __import__("hashlib").sha256(
+            json.dumps(proposal, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()[:16]
+        record = {"proposal_id": proposal_id, "status": "PROPOSED", "author": "MIND",
+                  "protocol_hash": protocol.digest, "proposal": proposal}
+        _, proposals_path = _research_paths(protocol_path)
+        with open(proposals_path, "a", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+        _research_json(record)
+        return 0
+    except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+        return _research_error(exc)
+
+
+def _find_research_proposal(protocol_path, proposal_id):
+    _, proposals_path = _research_paths(protocol_path)
+    if not os.path.exists(proposals_path):
+        raise ValueError("proposal ledger does not exist")
+    found = None
+    with open(proposals_path, encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                row = json.loads(line)
+                if row.get("proposal_id") == proposal_id:
+                    found = row
+    if found is None:
+        raise ValueError("unknown proposal id %r" % proposal_id)
+    return found["proposal"]
+
+
+def _cmd_research_trial(rest):
+    args, flags = _split(rest)
+    if len(args) != 2:
+        print("usage: python -m mantle research-trial <protocol.json> <proposal-id>\n"
+              "research does not self-adopt candidates")
+        return 2
+    if "--network" in flags or "--allow-network" in flags:
+        return _research_error(ValueError("research CLI has no network flag"))
+    try:
+        protocol_path = os.path.abspath(args[0])
+        protocol = _load_research_protocol(protocol_path)
+        proposal = _find_research_proposal(protocol_path, args[1])
+        if proposal.get("network") or proposal.get("require_network_isolation"):
+            raise ValueError("network is not available in the initial research CLI")
+        from .research import (BoundedProcessRunner, CandidateChamber, ResearchGanglion,
+                               SourceWorktreeAdapter)
+        root = _research_root()
+        paths = protocol.mutable_surface.get("paths", [])
+        adapter = SourceWorktreeAdapter(root, allowlist=paths)
+        body, ledger, state_path = _research_ledger(protocol_path)
+        ganglion = ResearchGanglion(
+            body=body, ledger=ledger, protocol=protocol,
+            evaluator=_research_evaluator(protocol, root),
+            chamber=CandidateChamber(adapter), runner=BoundedProcessRunner(
+                allowed_env=set((proposal.get("env") or {}).keys())),
+            budget=_research_budget(protocol), energy=lambda: float("inf"),
+        )
+        result = ganglion.pulse(proposal)
+        _save_research_ledger(ledger, state_path)
+        if result.get("artifact") is not None:
+            artifact = result["artifact"]
+            result["artifact"] = {"workspace": str(artifact.workspace),
+                                   "tree_hash": artifact.tree_hash,
+                                   "mutable_surface": artifact.mutable_surface}
+        _research_json(result)
+        return 0 if result.get("status") not in {"REFUSED", "CRASHED", "STOPPED", "INCONCLUSIVE"} else 1
+    except (OSError, ValueError, TypeError, RuntimeError) as exc:
+        return _research_error(exc)
+
+
+def _cmd_research_report(rest):
+    args, _flags = _split(rest)
+    if len(args) != 1:
+        print("usage: python -m mantle research-report <protocol.json> [--json]\n"
+              "research does not self-adopt candidates")
+        return 2
+    try:
+        protocol = _load_research_protocol(os.path.abspath(args[0]))
+        _body, ledger, _state_path = _research_ledger(os.path.abspath(args[0]))
+        _research_json({"protocol": protocol.to_dict(), "ledger": ledger.snapshot(),
+                        "automatic_adoption": False})
+        return 0
+    except (OSError, ValueError, TypeError, RuntimeError) as exc:
+        return _research_error(exc)
+
+
+def _operator_command(rest, *, adopt=False):
+    args, flags = _split(rest)
+    label = "research-adopt" if adopt else "research-authorize"
+    if len(args) != 1 or not isinstance(flags.get("--operator-receipt"), str):
+        print("usage: python -m mantle %s <experiment-id> --operator-receipt=receipt.json" % label)
+        return 2
+    try:
+        with open(flags["--operator-receipt"], encoding="utf-8") as handle:
+            receipt = json.load(handle)
+        protocol_path = receipt.get("protocol")
+        if not protocol_path:
+            raise ValueError("operator receipt must name the protocol path")
+        protocol_path = os.path.abspath(protocol_path)
+        _load_research_protocol(protocol_path)
+        _body, ledger, state_path = _research_ledger(protocol_path)
+        event = ledger.adopt(args[0], receipt) if adopt else ledger.authorize(args[0], receipt)
+        _save_research_ledger(ledger, state_path)
+        _research_json({"status": event["status"], "experiment_id": args[0],
+                        "automatic": False, "receipt_hash": event["receipt_hash"]})
+        return 0
+    except (OSError, ValueError, TypeError, RuntimeError) as exc:
+        return _research_error(exc)
+
+
 _DISPATCH = {
     "anchor": cmd_anchor,
     "ask": cmd_ask,
@@ -760,6 +987,13 @@ _DISPATCH = {
     "assimilate": _cmd_assimilate,
     "check": _cmd_check,
     "certify": _cmd_certify,
+    "research-init": _cmd_research_init,
+    "research-baseline": _cmd_research_baseline,
+    "research-propose": _cmd_research_propose,
+    "research-trial": _cmd_research_trial,
+    "research-report": _cmd_research_report,
+    "research-authorize": lambda rest: _operator_command(rest, adopt=False),
+    "research-adopt": lambda rest: _operator_command(rest, adopt=True),
 }
 
 

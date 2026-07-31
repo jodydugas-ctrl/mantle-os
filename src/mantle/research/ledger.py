@@ -134,6 +134,28 @@ class ResearchLedger:
         return self._append({"event": "stop", "status": "STOPPED", "reason": reason,
                              **fields})
 
+    @staticmethod
+    def _operator_receipt(receipt: Dict[str, Any]) -> Dict[str, Any]:
+        if not isinstance(receipt, dict) or receipt.get("operator_authorized") is not True:
+            raise ResearchLedgerError("operator authorization receipt is required")
+        return dict(receipt)
+
+    def authorize(self, experiment_id: str, receipt: Dict[str, Any]) -> Dict[str, Any]:
+        receipt = self._operator_receipt(receipt)
+        if self._current(experiment_id) != "ELIGIBLE":
+            raise ResearchLedgerError("only ELIGIBLE experiments may be authorized")
+        return self._append({"event": "transition", "experiment_id": experiment_id,
+                             "status": "AUTHORIZED", "authority": "operator",
+                             "operator_receipt": receipt, "automatic": False})
+
+    def adopt(self, experiment_id: str, receipt: Dict[str, Any]) -> Dict[str, Any]:
+        receipt = self._operator_receipt(receipt)
+        if self._current(experiment_id) != "AUTHORIZED":
+            raise ResearchLedgerError("only separately AUTHORIZED experiments may be adopted")
+        return self._append({"event": "transition", "experiment_id": experiment_id,
+                             "status": "ADOPTED", "authority": "operator",
+                             "operator_receipt": receipt, "automatic": False})
+
     def snapshot(self) -> Dict[str, Any]:
         history = self.history()
         return {
