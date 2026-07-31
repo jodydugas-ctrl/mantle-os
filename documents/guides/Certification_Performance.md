@@ -33,4 +33,3 @@ Always finish optimization work with the governing command:
 ```bash
 python -m mantle check --strict
 ```
-

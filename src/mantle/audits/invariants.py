@@ -3527,7 +3527,7 @@ def t_spore_germ_round_trip():
 def t_certification_invariant_receipt():
     """CERT-RECEIPT-1: top-level invariant evidence is complete, ordered, current-run,
     source-bound, and wholly green; timing or location cannot make it authoritative."""
-    from ..check import _validate_invariant_receipt
+    from ..check import _steps, _validate_invariant_receipt
 
     expected = ("A-1", "B-2")
     nonce = "current-run"
@@ -3545,14 +3545,23 @@ def t_certification_invariant_receipt():
     missing = dict(base, results=base["results"][:1])
     reordered = dict(base, results=list(reversed(base["results"])))
     red = dict(base, results=[base["results"][0], {"code": "B-2", "ok": False}])
+    commands = [command for _name, command, _cwd, _expect, _skip in _steps(False)]
+    stage1_rows_only = any(command[-2:] == ["audit", "--rows-only"] for command in commands)
+    stage2_rows_only = any(command[-2:] == ["audit-mind", "--rows-only"]
+                           for command in commands)
+    invariant_commands = [command for command in commands if "prove" in command]
+    one_complete_suite = (
+        len(invariant_commands) == 1 and invariant_commands[0][-2:] == ["prove", "--json"]
+    )
     return (
         accepted(base)
         and not accepted(missing)
         and not accepted(reordered)
         and not accepted(red)
         and not accepted(base, use_nonce="another-run")
-        and not accepted(base, use_source="sha256:" + ("b" * 64)),
-        "complete current-run receipt accepted; missing, reordered, red, replayed, and stale refused",
+        and not accepted(base, use_source="sha256:" + ("b" * 64))
+        and stage1_rows_only and stage2_rows_only and one_complete_suite,
+        "one complete suite bound between stage rows; missing, reordered, red, replayed, and stale refused",
     )
 
 

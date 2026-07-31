@@ -197,6 +197,17 @@ def main(argv=None):
             print("  [SKIP] %-45s %s" % (name, skip_reason))
             results.append({"name": name, "status": "SKIP", "detail": skip_reason})
             continue
+        try:
+            step_identity = _repository_identity()
+        except (OSError, RuntimeError) as exc:
+            step_identity = None
+            identity_detail = str(exc)
+        else:
+            identity_detail = "tracked certification surface changed before this gate"
+        if step_identity != source_identity:
+            print("  [FAIL] %-45s %s" % (name, identity_detail))
+            results.append({"name": name, "status": "FAIL", "detail": identity_detail})
+            break
         t0 = time.time()
         proc = subprocess.run(
             cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
@@ -210,6 +221,14 @@ def main(argv=None):
                 run_nonce, source_identity,
             )
             failed = not receipt_ok
+        try:
+            gate_identity = _repository_identity()
+        except (OSError, RuntimeError) as exc:
+            gate_identity = None
+            receipt_detail = str(exc)
+        if gate_identity != source_identity:
+            failed = True
+            receipt_detail = "tracked certification surface changed during this gate"
         gap = None if expect_fail else _internal_gap(output)
         status = "FAIL" if failed else ("SKIP" if gap else "PASS")
         print("  [%s] %-45s %5.1fs%s" % (
