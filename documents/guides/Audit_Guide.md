@@ -12,6 +12,13 @@ Exit code 0 = gate passed. ANY failing row or red invariant blocks (exit 1). The
 fold the invariants in; `--fast` skips them for a quick row-only run; `--json` appends a
 machine-readable evidence record.
 
+The closed-world `python -m mantle check --strict` orchestrator executes the complete invariant
+suite once. Stage 1 and Stage 2 still produce separate row verdicts, while a current-run nonce
+and tracked-source digest bind the complete, ordered invariant receipt between them. Missing,
+red, reordered, replayed, or stale evidence blocks certification. Standalone `audit` and
+`audit-mind` remain complete by default; the internal `--rows-only` mode explicitly reports that
+it is not a standalone certification.
+
 ## Stage 1 — the Zombie Body gate (`src/mantle/audits/stage1.py`)
 
 Substrate rows: cube verify healthy (B-01) · Primer present (B-02/HF-B02) · canonical

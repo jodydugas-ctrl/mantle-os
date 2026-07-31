@@ -13,18 +13,80 @@ and is never labeled a certification because it deliberately omits the narrated 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import os
 import re
+import secrets
 import subprocess
 import sys
 import time
 
-from .paths import EXAMPLES_DIR, SAMPLE_APP_DIR, SRC_DIR
+from .paths import EXAMPLES_DIR, REPO_ROOT, SAMPLE_APP_DIR, SRC_DIR
 
 _LINE = "=" * 74
 _INTERNAL_GAP = re.compile(
     r"(?im)^\s*(?:\[SKIP\].*|.*\bN/A\b.*|OK\s+\(skipped=\d+\).*)$"
 )
+_INVARIANT_EVIDENCE_MARKER = "MANTLE_INVARIANT_EVIDENCE_JSON:"
+
+
+def _repository_identity() -> str:
+    """Hash every tracked byte plus the interpreter used by this closed-world run."""
+    proc = subprocess.run(
+        ["git", "ls-files", "-z"], cwd=REPO_ROOT,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+    )
+    if proc.returncode != 0:
+        detail = proc.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError("cannot enumerate tracked certification surface: %s" % detail)
+    digest = hashlib.sha256()
+    count = 0
+    for encoded in sorted(item for item in proc.stdout.split(b"\0") if item):
+        relative = encoded.decode("utf-8")
+        filename = os.path.join(REPO_ROOT, relative)
+        if not os.path.isfile(filename):
+            raise RuntimeError("tracked certification input is missing: %s" % relative)
+        with open(filename, "rb") as stream:
+            data = stream.read()
+        digest.update(len(encoded).to_bytes(4, "big"))
+        digest.update(encoded)
+        digest.update(len(data).to_bytes(8, "big"))
+        digest.update(data)
+        count += 1
+    runtime = "%s|%s|%d" % (sys.executable, sys.version, count)
+    digest.update(runtime.encode("utf-8"))
+    return "sha256:" + digest.hexdigest()
+
+
+def _invariant_evidence(output: str):
+    for line in reversed(output.splitlines()):
+        if line.startswith(_INVARIANT_EVIDENCE_MARKER):
+            try:
+                return json.loads(line[len(_INVARIANT_EVIDENCE_MARKER):])
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
+def _validate_invariant_receipt(payload, expected_codes, run_nonce, source_identity):
+    if not isinstance(payload, dict):
+        return False, "missing or malformed invariant receipt"
+    if payload.get("schema") != "mantle-invariant-evidence-v1":
+        return False, "unknown invariant receipt schema"
+    if payload.get("run_nonce") != run_nonce:
+        return False, "invariant receipt nonce is missing, stale, or replayed"
+    if payload.get("source_identity") != source_identity:
+        return False, "invariant receipt source identity is stale"
+    rows = payload.get("results")
+    if not isinstance(rows, list):
+        return False, "invariant receipt has no result list"
+    codes = [row.get("code") for row in rows if isinstance(row, dict)]
+    if codes != list(expected_codes):
+        return False, "invariant receipt rows are missing, duplicated, or reordered"
+    if not all(row.get("ok") is True for row in rows):
+        return False, "invariant receipt contains a red or malformed result"
+    return True, "complete content-bound invariant receipt"
 
 
 def _has_pillow() -> bool:
@@ -54,12 +116,14 @@ def _steps(fast: bool):
     no_multilang = None if _has_multilang() else \
         "tree-sitter stack not installed (pip install 'mantle-os[multilang]')"
 
-    yield ("Stage-1 Zombie Body gate", mantle + ["audit"], None, False, None)
+    yield ("Stage-1 Zombie Body gate", mantle + ["audit", "--rows-only"],
+           None, False, None)
     for flag in ("--break-hash", "--break-primer", "--break-seal"):
         yield ("tamper proof %s (must be CAUGHT)" % flag,
                mantle + ["audit", flag, "--fast"], None, True, None)
-    yield ("security invariants", mantle + ["prove"], None, False, None)
-    yield ("Stage-2 MIND gate", mantle + ["audit-mind"], None, False, None)
+    yield ("security invariants", mantle + ["prove", "--json"], None, False, None)
+    yield ("Stage-2 MIND gate", mantle + ["audit-mind", "--rows-only"],
+           None, False, None)
     if not fast:
         yield ("narrated Phase-1 demo", mantle + ["demo"], None, False, None)
         yield ("narrated Phase-2 fusion", mantle + ["mind"], None, False, None)
@@ -99,6 +163,14 @@ def _internal_gap(output: str) -> str | None:
 
 def main(argv=None):
     args = _args(argv)
+    try:
+        source_identity = _repository_identity()
+    except (OSError, RuntimeError) as exc:
+        print("CERTIFICATION BLOCKED: %s" % exc)
+        return 1
+    run_nonce = secrets.token_hex(24)
+    from .audits.invariants import REGISTRY
+    expected_invariant_codes = tuple(spec.code for spec in REGISTRY)
     env = dict(os.environ)
     env["PYTHONPATH"] = SRC_DIR + os.pathsep + env.get("PYTHONPATH", "")
     # Child output is parsed as UTF-8 on every platform. Force that encoding so a Windows
@@ -106,6 +178,8 @@ def main(argv=None):
     env["PYTHONUTF8"] = "1"
     env["PYTHONIOENCODING"] = "utf-8"
     env["MANTLE_REQUIRE_NO_SKIPS"] = "1" if args.strict else "0"
+    env["MANTLE_CERTIFICATION_RUN_NONCE"] = run_nonce
+    env["MANTLE_CERTIFICATION_SOURCE_IDENTITY"] = source_identity
 
     labels = []
     if args.fast:
@@ -129,14 +203,35 @@ def main(argv=None):
         )
         output = proc.stdout.decode("utf-8", errors="replace")
         failed = (proc.returncode == 0) if expect_fail else (proc.returncode != 0)
+        receipt_detail = ""
+        if name == "security invariants" and not failed:
+            receipt_ok, receipt_detail = _validate_invariant_receipt(
+                _invariant_evidence(output), expected_invariant_codes,
+                run_nonce, source_identity,
+            )
+            failed = not receipt_ok
         gap = None if expect_fail else _internal_gap(output)
         status = "FAIL" if failed else ("SKIP" if gap else "PASS")
         print("  [%s] %-45s %5.1fs%s" % (
-            status, name, time.time() - t0, "  " + gap if gap else ""))
+            status, name, time.time() - t0,
+            "  " + (gap or receipt_detail) if (gap or receipt_detail) else ""))
         if failed:
             for line in output.splitlines()[-12:]:
                 print("         | " + line)
-        results.append({"name": name, "status": status, "detail": gap or ""})
+        results.append({"name": name, "status": status,
+                        "detail": gap or receipt_detail or ""})
+
+    try:
+        final_identity = _repository_identity()
+    except (OSError, RuntimeError) as exc:
+        final_identity = None
+        drift_detail = str(exc)
+    else:
+        drift_detail = "tracked certification surface changed during the run"
+    if final_identity != source_identity:
+        print("  [FAIL] %-45s %s" % ("closed-world source identity", drift_detail))
+        results.append({"name": "closed-world source identity", "status": "FAIL",
+                        "detail": drift_detail})
 
     passed = sum(item["status"] == "PASS" for item in results)
     skipped = [item for item in results if item["status"] == "SKIP"]

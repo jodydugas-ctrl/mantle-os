@@ -466,7 +466,8 @@ def main(argv):
                             break_seal="--break-seal" in flags)
         source = "demo organism (in-memory)"
 
-    skip_inv = "--fast" in flags
+    rows_only = "--rows-only" in flags
+    skip_inv = "--fast" in flags or rows_only
     passed, ev = run(org, include_invariants=not skip_inv)
     substrate_rows, mesh_rows, inv = ev["substrate_rows"], ev["mesh_rows"], ev["invariants"]
     strict_reference = (
@@ -547,6 +548,10 @@ def main(argv):
             reasons.append("security-invariants")
         print("\nRESULT: GATE BLOCKED — %s" % ", ".join(reasons))
         return 1
+    if rows_only:
+        print("\nRESULT: STAGE-1 ROWS GREEN — NOT A STANDALONE CERTIFICATION; "
+              "the top-level check must bind the complete invariant receipt.")
+        return 0
     print("\nRESULT: STAGE-1 ZOMBIE BODY GATE PASSED (technical evidence only; "
           "eligible for separate readiness and dual authorization).")
     return 0

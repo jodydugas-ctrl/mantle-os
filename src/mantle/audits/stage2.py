@@ -205,6 +205,7 @@ def _aggregate_stage1(profile_rows):
 
 def main(argv):
     flags = {a for a in argv if a.startswith("--")}
+    rows_only = "--rows-only" in flags
     profiles = {}
     minds = {}
     for profile in ("base", "reborn", "resident"):
@@ -222,7 +223,7 @@ def main(argv):
         for name, profile_org in profiles.items()
     }
     stage1_rows = _aggregate_stage1(profile_rows)
-    invariants = [] if "--fast" in flags else _inv.run_all()
+    invariants = [] if "--fast" in flags or rows_only else _inv.run_all()
 
     print("=" * 74)
     print("MANTLE OS — STAGE 2 (MIND) GATE  ·  model: offline stub (provider-agnostic)")
@@ -270,6 +271,10 @@ def main(argv):
                    + ([] if inv_ok else ["security-invariants"]))
         print("\nRESULT: STAGE-2 GATE BLOCKED — %s" % ", ".join(reasons))
         return 1
+    if rows_only:
+        print("\nRESULT: STAGE-2 ROWS GREEN — NOT A STANDALONE CERTIFICATION; "
+              "the top-level check must bind the complete invariant receipt.")
+        return 0
     print("\nRESULT: STAGE-2 TECHNICAL GATE PASSED (offline test MIND contained; "
           "Phase-1 reflexes intact; no deployment fusion authority granted).")
     return 0

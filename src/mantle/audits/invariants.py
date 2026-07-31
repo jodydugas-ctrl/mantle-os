@@ -3524,6 +3524,38 @@ def t_spore_germ_round_trip():
             "the vault, spore back from spore_vault, key minted not derived")
 
 
+def t_certification_invariant_receipt():
+    """CERT-RECEIPT-1: top-level invariant evidence is complete, ordered, current-run,
+    source-bound, and wholly green; timing or location cannot make it authoritative."""
+    from ..check import _validate_invariant_receipt
+
+    expected = ("A-1", "B-2")
+    nonce = "current-run"
+    source = "sha256:" + ("a" * 64)
+    base = {
+        "schema": "mantle-invariant-evidence-v1",
+        "run_nonce": nonce,
+        "source_identity": source,
+        "results": [{"code": "A-1", "ok": True}, {"code": "B-2", "ok": True}],
+    }
+
+    def accepted(payload, use_nonce=nonce, use_source=source):
+        return _validate_invariant_receipt(payload, expected, use_nonce, use_source)[0]
+
+    missing = dict(base, results=base["results"][:1])
+    reordered = dict(base, results=list(reversed(base["results"])))
+    red = dict(base, results=[base["results"][0], {"code": "B-2", "ok": False}])
+    return (
+        accepted(base)
+        and not accepted(missing)
+        and not accepted(reordered)
+        and not accepted(red)
+        and not accepted(base, use_nonce="another-run")
+        and not accepted(base, use_source="sha256:" + ("b" * 64)),
+        "complete current-run receipt accepted; missing, reordered, red, replayed, and stale refused",
+    )
+
+
 def t_invariant_registry_single_source():
     """REGISTRY-1: all consumers derive from one typed, concern-indexed registry."""
     names = [spec.name for spec in REGISTRY]
@@ -3883,6 +3915,7 @@ _INVARIANT_DEFINITIONS = [
     ("CONTEXT-PRIVATE-VEIL private-redacted-ledger", t_context_private_veil),
     ("CONTEXT-REQUEST-HASH-EXACT exact-sent-bytes", t_context_request_hash_exact),
     ("CONTEXT-CORRUPTION-DETECTED tamper-proofs", t_context_corruption_detected),
+    ("CERT-RECEIPT-1 content-bound-invariant-evidence", t_certification_invariant_receipt),
     ("REGISTRY-1 typed-single-source",          t_invariant_registry_single_source),
 ]
 
@@ -3939,6 +3972,7 @@ def run_all():
 
 
 def main(argv=None):
+    argv = list(argv or [])
     results = run_all()
     width = max(len(r["name"]) for r in results)
     for r in results:
@@ -3946,8 +3980,19 @@ def main(argv=None):
                                    r["detail"]))
     passed = sum(r["ok"] for r in results)
     print("\n%d/%d invariants green" % (passed, len(results)))
+    if "--json" in argv:
+        from ..check import _repository_identity
+        payload = {
+            "schema": "mantle-invariant-evidence-v1",
+            "run_nonce": os.environ.get("MANTLE_CERTIFICATION_RUN_NONCE"),
+            "source_identity": _repository_identity(),
+            "results": results,
+        }
+        print("MANTLE_INVARIANT_EVIDENCE_JSON:" + json.dumps(
+            payload, sort_keys=True, separators=(",", ":")
+        ))
     return 0 if passed == len(results) else 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

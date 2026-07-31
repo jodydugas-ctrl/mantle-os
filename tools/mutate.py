@@ -239,6 +239,27 @@ MUTANTS = [
         "        else:\n            pass",
         "t_spore_png_filter_decoder",
     ),
+    Mutant(
+        "cert-receipt-replay",
+        "src/mantle/check.py",
+        "    if payload.get(\"run_nonce\") != run_nonce:\n        return False, \"invariant receipt nonce is missing, stale, or replayed\"",
+        "    if False and payload.get(\"run_nonce\") != run_nonce:\n        return False, \"invariant receipt nonce is missing, stale, or replayed\"",
+        "t_certification_invariant_receipt",
+    ),
+    Mutant(
+        "cert-receipt-source",
+        "src/mantle/check.py",
+        "    if payload.get(\"source_identity\") != source_identity:\n        return False, \"invariant receipt source identity is stale\"",
+        "    if False and payload.get(\"source_identity\") != source_identity:\n        return False, \"invariant receipt source identity is stale\"",
+        "t_certification_invariant_receipt",
+    ),
+    Mutant(
+        "cert-receipt-red-row",
+        "src/mantle/check.py",
+        "    if not all(row.get(\"ok\") is True for row in rows):",
+        "    if False and not all(row.get(\"ok\") is True for row in rows):",
+        "t_certification_invariant_receipt",
+    ),
 ]
 
 
