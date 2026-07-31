@@ -101,9 +101,8 @@ def _cases(suites: Iterable[str]) -> List[Tuple[str, List[str], Path, bool]]:
             "r=f(); assert r and all(ok for ok, _ in r.values())"
         )
         wrappers = (
-            "from mantle.audits.invariants import REGISTRY; "
-            "r=[s.runner() for s in REGISTRY if s.code.startswith('GRIMOIRE-V010-')]; "
-            "assert r and all(ok for ok, _ in r)"
+            "from mantle.audits.invariants import _run_grimoire_v010_invariants as f; "
+            "r=f(); assert r and all(row['ok'] for row in r)"
         )
         cases.append(("grimoire:bundle", [py, "-c", bundle], ROOT, False))
         cases.append(("grimoire:wrappers", [py, "-c", wrappers], ROOT, False))
@@ -235,4 +234,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -13,6 +13,8 @@ NO INVARIANT IS EVER WEAKENED TO MAKE A TEST PASS.
 """
 from __future__ import annotations
 
+from contextvars import ContextVar
+import hashlib
 import json
 import inspect
 import os
@@ -20,6 +22,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from types import MappingProxyType
 
 from .. import paths
 from ..core.body import Body
@@ -44,6 +47,9 @@ from .registry import build_registry, by_concern
 
 _EXEC = ExecDriver()
 _CODE = "def f(x):\n    return x + 1\n"
+_ACTIVE_GRIMOIRE_V010_FIXTURE = ContextVar(
+    "mantle_active_grimoire_v010_fixture", default=None
+)
 
 
 def _born(genome=None):
@@ -549,8 +555,36 @@ def _grimoire_v010_checks():
     return checks
 
 
+def _grimoire_v010_evidence_identity():
+    """Bind one suite-local fixture to every source that determines its verdicts."""
+    files = [
+        os.path.abspath(__file__),
+        os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions", "common.py"),
+        os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions", "registry.py"),
+        os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions", "v09.py"),
+        os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions", "v010.py"),
+        os.path.join(paths.REPO_ROOT, "documents", "grimoire", "editions",
+                     "grimoire-v0.10.md"),
+        os.path.join(paths.REPO_ROOT, "tools", "grimoire_tool.py"),
+    ]
+    digest = hashlib.sha256()
+    for filename in files:
+        relative = os.path.relpath(filename, paths.REPO_ROOT).replace("\\", "/")
+        with open(filename, "rb") as stream:
+            data = stream.read()
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative.encode("utf-8"))
+        digest.update(len(data).to_bytes(8, "big"))
+        digest.update(data)
+    runtime = "%s|%s|%s" % (sys.executable, sys.version, "grimoire-v0.10")
+    digest.update(runtime.encode("utf-8"))
+    return "sha256:" + digest.hexdigest()
+
+
 def _grimoire_v010_check(name):
-    result = _grimoire_v010_checks().get(name)
+    fixture = _ACTIVE_GRIMOIRE_V010_FIXTURE.get()
+    checks = fixture["checks"] if fixture is not None else _grimoire_v010_checks()
+    result = checks.get(name)
     return result if result is not None else (False, "missing Grimoire v0.10 check %s" % name)
 
 
@@ -3859,24 +3893,49 @@ CONCERNS = by_concern(REGISTRY)
 TESTS = tuple((spec.name, spec.runner) for spec in REGISTRY)
 
 
-def run_all():
+def _run_specs(specs):
+    identity = _grimoire_v010_evidence_identity()
+    fixture = MappingProxyType({
+        "identity": identity,
+        "checks": MappingProxyType(dict(_grimoire_v010_checks())),
+    })
+    token = _ACTIVE_GRIMOIRE_V010_FIXTURE.set(fixture)
     results = []
-    for spec in REGISTRY:
-        try:
-            ok, detail = spec.runner()
-        except Exception as e:  # noqa: BLE001 -- the harness must not crash on a bad guard
-            ok, detail = False, "test crashed: %s: %s" % (type(e).__name__, e)
-        results.append({
-            "name": spec.name,
-            "code": spec.code,
-            "title": spec.title,
-            "guarantee_id": spec.guarantee_id,
-            "concern": spec.concern,
-            "added": spec.added,
-            "ok": bool(ok),
-            "detail": detail,
-        })
+    try:
+        for spec in specs:
+            try:
+                ok, detail = spec.runner()
+            except Exception as e:  # noqa: BLE001 -- a bad guard must not crash the harness
+                ok, detail = False, "test crashed: %s: %s" % (type(e).__name__, e)
+            results.append({
+                "name": spec.name,
+                "code": spec.code,
+                "title": spec.title,
+                "guarantee_id": spec.guarantee_id,
+                "concern": spec.concern,
+                "added": spec.added,
+                "ok": bool(ok),
+                "detail": detail,
+            })
+    finally:
+        _ACTIVE_GRIMOIRE_V010_FIXTURE.reset(token)
+    if _grimoire_v010_evidence_identity() != identity:
+        for result in results:
+            if result["code"].startswith("GRIMOIRE-V010-"):
+                result["ok"] = False
+                result["detail"] = "Grimoire evidence source drifted during invariant execution"
     return results
+
+
+def _run_grimoire_v010_invariants():
+    """Run the named v0.10 rows against one immutable, content-bound fixture."""
+    return _run_specs(
+        tuple(spec for spec in REGISTRY if spec.code.startswith("GRIMOIRE-V010-"))
+    )
+
+
+def run_all():
+    return _run_specs(REGISTRY)
 
 
 def main(argv=None):
