@@ -88,6 +88,10 @@ class ResearchLedger:
                 current = event.get("status")
         return current
 
+    def status(self, experiment_id: str) -> Optional[str]:
+        """Return the latest state without opening a second mutable write path."""
+        return self._current(experiment_id)
+
     def _append(self, event: Dict[str, Any]) -> Dict[str, Any]:
         event = dict(event)
         event.setdefault("author", "BODY")
@@ -122,6 +126,13 @@ class ResearchLedger:
         event = {"event": "transition", "experiment_id": experiment_id,
                  "status": status, **fields}
         return self._append(event)
+
+    def record_stop(self, reason: str, **fields: Any) -> Dict[str, Any]:
+        """Record a Body-owned stop decision; it is never a candidate state transition."""
+        if not isinstance(reason, str) or not reason:
+            raise ResearchLedgerError("stop receipt requires a reason")
+        return self._append({"event": "stop", "status": "STOPPED", "reason": reason,
+                             **fields})
 
     def snapshot(self) -> Dict[str, Any]:
         history = self.history()

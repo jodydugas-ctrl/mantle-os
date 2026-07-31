@@ -10,6 +10,7 @@ from .chamber import (
 from .evaluator import Evaluation, EvaluatorError, ImmutableEvaluator
 from .protocol import GATE_ORDER, ResearchProtocol, ResearchProtocolError, load_protocol, save_protocol
 from .port import ResearchPort, ResearchPortError
+from .ganglion import ResearchGanglion, ResearchGanglionError
 
 __all__ = ["ResearchLedger", "ResearchLedgerError", "research_band_boot",
            "BoundedProcessError", "BoundedProcessRunner", "ProcessBudget", "ProcessResult",
@@ -18,4 +19,5 @@ __all__ = ["ResearchLedger", "ResearchLedgerError", "research_band_boot",
            "GenomeProposalAdapter", "GraftWorkspaceAdapter", "SkillTrialAdapter",
            "SourceWorktreeAdapter", "Evaluation", "EvaluatorError", "ImmutableEvaluator",
            "GATE_ORDER", "ResearchProtocol", "ResearchProtocolError", "load_protocol",
-           "save_protocol", "ResearchPort", "ResearchPortError"]
+           "save_protocol", "ResearchPort", "ResearchPortError", "ResearchGanglion",
+           "ResearchGanglionError"]
