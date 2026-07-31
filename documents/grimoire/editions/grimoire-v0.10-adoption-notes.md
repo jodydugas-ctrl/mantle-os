@@ -1,0 +1,30 @@
+# Grimoire v0.10 adoption notes
+
+This file records the reconciliation decisions for the operator-approved
+experimental v0.10 source. It is not itself a governing Grimoire edition.
+
+## Decisions
+
+- Normal statements retain the exactly-one-HEAD rule. Zero HEAD is permitted only
+  for procedures whose lead semantic morphemes are all STEP roles.
+- Procedure evidence and force are container metadata. Missing metadata leaves a
+  structurally decoded, unresolved, non-governing result; it is never defaulted.
+- The source and independent codec both derive 295 composition rows. The alleged
+  297-versus-295 conflict is not present in the operator-approved source: no 297
+  declaration occurs. It is recorded as not reproduced rather than invented.
+- The independent census finds two shared atom-strings: 止 has halt/k77/stop
+  owners, and 門 has k169/ward owners. The source wording was corrected from
+  “three” to “two”.
+- v0.9 references that describe historical measurements, prior behavior, or the
+  legacy carrier policy remain explicitly historical. Accidental “v0.9 edition”
+  wording in the v0.10 normative sections and embedded codec identity was removed.
+- Toolcraft statements remain normative source material but outside blind semantic
+  measurement until G-07 completes. Composition boundaries remain UNMEASURED and
+  are not inferred by runtime code.
+
+## Authority boundary
+
+The file is proposed source until the edition registry, runtime conformance,
+independent comparison, strict certification, and an explicit operator adoption
+receipt all succeed. Payload presence, filename, path, layer, score, or decoded
+quotation cannot grant authority.
