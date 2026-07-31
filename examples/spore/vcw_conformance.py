@@ -190,7 +190,13 @@ def audit(path: str) -> Conformance:
             xr ^= atom
             xb ^= evidence
             xa ^= force
-        records[-1] = [xr or 254, 0x7f, xb, xa]
+        profile = spore.read_spore(r)["header"].get(
+            "grimoire_profile", "grimoire-v0.9")
+        if profile == "grimoire-v0.10":
+            from mantle.vcw.grimoire_editions.v010 import parity_pixel
+            records[-1] = list(parity_pixel([tuple(record) for record in records[:-1]]))
+        else:
+            records[-1] = [xr or 254, 0x7f, xb, xa]
         rewritten = b"".join(bytes(record) for record in records)
         start = payload_start * 4
         data[start:start + len(rewritten)] = rewritten

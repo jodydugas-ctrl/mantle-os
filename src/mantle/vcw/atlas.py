@@ -58,8 +58,8 @@ def _spore_regions() -> Dict[str, Any]:
         "vcw_region": vcw,
         "display_region": display,
         "boot_strip_region": boot_strip,
-        "payload_encoding": "grimoire-v0.9-quoted-bytes",
-        "statement_integrity": "G=0x7f PARITY over R/B/A",
+        "payload_encoding": "grimoire-v0.10-quoted-bytes (v0.9 legacy accepted)",
+        "statement_integrity": "profile-specific G=0x7f PARITY over RGBA",
         "container_integrity": "SHA-256 over raw payload RGBA lanes and frame boundaries",
         "alpha_lane": "force (HEAD=QUOTE; non-HEAD semantic morphemes inherit with A=0)",
         "address_formula": "pixel_index -> (VCW_X + i % VCW_W, VCW_Y + i // VCW_W)",
@@ -151,7 +151,7 @@ def verify_atlas() -> List[str]:
     if app_ranges != APP_BAND_ATLAS:
         problems.append("reserved app-band atlas drift")
     spore = atlas["spore"]
-    if (spore["payload_encoding"] != "grimoire-v0.9-quoted-bytes"
+    if ("grimoire-v0.10-quoted-bytes" not in spore["payload_encoding"]
             or spore["alpha_lane"] !=
             "force (HEAD=QUOTE; non-HEAD semantic morphemes inherit with A=0)"
             or "G=0x7f PARITY" not in spore["statement_integrity"]

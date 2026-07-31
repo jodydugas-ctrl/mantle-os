@@ -94,6 +94,41 @@ def parity_pixel(records: list[tuple[int, int, int, int]]) -> tuple[int, int, in
     return (0xFE if pr == 0 else pr, PARITY, pb, pa)
 
 
+def encode_quoted_bytes(data: bytes, *, evidence: int = 0x01,
+                        force: int = 0x0F) -> bytes:
+    """Encode inert bytes as a v0.10 QUOTE frame with v0.10 parity."""
+    if not isinstance(data, (bytes, bytearray)) or not data:
+        raise GrimoireDecodeError("quoted-byte statement requires non-empty bytes")
+    if evidence not in EVIDENCE or evidence == 0:
+        raise GrimoireDecodeError("quoted-byte HEAD needs nonzero known evidence")
+    if force not in FORCE or force == 0:
+        raise GrimoireDecodeError("quoted-byte HEAD needs nonzero known force")
+    nibbles: list[int] = []
+    for value in bytes(data):
+        nibbles.extend(((value >> 4) + 1, (value & 0x0F) + 1))
+    records = [(nibbles[0], HEAD, evidence, force)]
+    records.extend((value, BLEND, 0, 0) for value in nibbles[1:])
+    records.append(parity_pixel(records))
+    return b"".join(bytes(record) for record in records)
+
+
+def decode_quoted_bytes(raw: Any, *, frame_id: str = "quoted-frame") -> bytes:
+    """Validate and decode one v0.10 QUOTE frame."""
+    raw_bytes = parse_raw(raw)
+    decode_statement(raw_bytes, frame_id=frame_id)
+    records = _records(raw_bytes)
+    semantic = [rec for rec in records if rec[1] != PARITY]
+    if not semantic or semantic[0][1:] != (HEAD, 0x01, 0x0F):
+        raise GrimoireDecodeError("quoted-byte frame must start with HEAD/DIRECT/QUOTE")
+    if any(rec[1:] != (BLEND, 0, 0) for rec in semantic[1:]):
+        raise GrimoireDecodeError("quoted-byte continuation must be BLEND with inherited B/A")
+    nibbles = [rec[0] - 1 for rec in semantic]
+    if any(value < 0 or value > 15 for value in nibbles) or len(nibbles) % 2:
+        raise GrimoireDecodeError("quoted-byte frame has an invalid nibble map")
+    return bytes((nibbles[i] << 4) | nibbles[i + 1]
+                 for i in range(0, len(nibbles), 2))
+
+
 def _value(value: Any, table: dict[int, str], label: str, *, nonzero: bool = False) -> int:
     if isinstance(value, str):
         reverse = {name: number for number, name in table.items()}

@@ -4,6 +4,13 @@ All notable release-level changes are documented here.
 
 ## [Unreleased]
 
+### Added — Grimoire v0.10 adoption for new tissue
+
+- Added concurrent v0.9 compatibility and v0.10 Grimoire drivers, explicit profile
+  persistence, profile-aware new spores, and an operator-authorized Body-owned adoption
+  receipt. Existing v0.9 carriers are never reinterpreted; research and adoption remain
+  separate authority events.
+
 ### Added — Body-owned rolling context
 
 - Added opt-in `rolling-prefix` context with a private VCW ledger, canonical

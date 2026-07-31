@@ -14,6 +14,10 @@ The Grimoire is a versioned family of immutable edition files:
 | v0.9 compatibility | [editions/grimoire-v0.9.md](editions/grimoire-v0.9.md) | Frozen legacy carrier contract. |
 | v0.10 | [editions/grimoire-v0.10.md](editions/grimoire-v0.10.md) | Proposed/adoptable edition with explicit procedure-container semantics. |
 
+After the explicit adoption receipt, newly created Grimoire tissue defaults to v0.10.
+The v0.9 edition and v0.9 spore carriers remain readable compatibility data and are not
+silently migrated.
+
 Do not infer an edition from a path or visual placement. If a task touches Grimoire semantics,
 load the explicitly selected edition file. If a task touches Mantle runtime
 behavior, use the runnable code and the Mantle docs that own that behavior.
