@@ -2,7 +2,8 @@
 
 The bounded serial pilot completed on 2026-07-31 against Mantle OS 1.5.0.
 
-Machine report: `.artifacts/research-pilot/grimoire-dual-edition-report.json`  
+Machine report: `.artifacts/research-pilot/grimoire-dual-edition-report.json`
+
 Report SHA-256: `4a8ae7cd1ae2dd36abc095a5d0285a40645dfb58a2a02d7d02df0df87acfd932`
 
 Protocol
