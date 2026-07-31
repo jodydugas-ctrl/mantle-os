@@ -7,10 +7,14 @@ from .chamber import (
     CandidateChamber, CandidateChamberError, GenomeProposalAdapter, GraftWorkspaceAdapter,
     SkillTrialAdapter, SourceWorktreeAdapter,
 )
+from .evaluator import Evaluation, EvaluatorError, ImmutableEvaluator
+from .protocol import GATE_ORDER, ResearchProtocol, ResearchProtocolError, load_protocol, save_protocol
 
 __all__ = ["ResearchLedger", "ResearchLedgerError", "research_band_boot",
            "BoundedProcessError", "BoundedProcessRunner", "ProcessBudget", "ProcessResult",
            "AppletBodyAdapter", "ArtifactRef", "BaselineArtifact", "CandidateAdapter",
            "CandidateArtifact", "CandidateChamber", "CandidateChamberError",
            "GenomeProposalAdapter", "GraftWorkspaceAdapter", "SkillTrialAdapter",
-           "SourceWorktreeAdapter"]
+           "SourceWorktreeAdapter", "Evaluation", "EvaluatorError", "ImmutableEvaluator",
+           "GATE_ORDER", "ResearchProtocol", "ResearchProtocolError", "load_protocol",
+           "save_protocol"]
