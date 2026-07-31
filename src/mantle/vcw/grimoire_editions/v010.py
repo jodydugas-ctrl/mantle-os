@@ -166,6 +166,9 @@ def decode_statement(
     parities = [i for i, rec in enumerate(records) if rec[1] == PARITY]
     if len(parities) > 1:
         raise GrimoireDecodeError("statement must contain at most one PARITY")
+    if any(records[i][1] == BLEND and i and records[i - 1][1] == PARITY
+           for i in range(len(records))):
+        raise GrimoireDecodeError("BLEND group was interrupted and resumed")
     if parities and parities[0] != len(records) - 1:
         raise GrimoireDecodeError("PARITY must be the terminal control pixel")
     if not parities and not allow_parity_absent:

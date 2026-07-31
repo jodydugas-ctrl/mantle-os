@@ -62,6 +62,8 @@ def test_control_and_domain_errors_are_refused():
         decode_statement("01400000", frame_id="leading-blend", allow_parity_absent=True)
     with pytest.raises(GrimoireDecodeError, match="PARITY must"):
         decode_statement("9a010801 947f5c03 212a0000", frame_id="interrupted", allow_parity_absent=True)
+    with pytest.raises(GrimoireDecodeError, match="interrupted and resumed"):
+        decode_statement("9a010801 947f5c03 13400000", frame_id="resumed", allow_parity_absent=True)
     with pytest.raises(GrimoireDecodeError, match="unknown role"):
         decode_statement("9a010801 217e0000", frame_id="unknown-role", allow_parity_absent=True)
     with pytest.raises(GrimoireDecodeError, match="unknown evidence"):

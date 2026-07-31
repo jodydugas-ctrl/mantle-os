@@ -12,6 +12,9 @@ experimental v0.10 source. It is not itself a governing Grimoire edition.
 - The source and independent codec both derive 295 composition rows. The alleged
   297-versus-295 conflict is not present in the operator-approved source: no 297
   declaration occurs. It is recorded as not reproduced rather than invented.
+- The approved document's BOOK derives 209 runs, not 218. Its original BOOK had
+  legacy parity residues and non-canonical group order; G-04 regenerated all 209
+  BOOK runs with v0.10 R11 and R14. The independent verifier now checks all 209.
 - The independent census finds two shared atom-strings: 止 has halt/k77/stop
   owners, and 門 has k169/ward owners. The source wording was corrected from
   “three” to “two”.
