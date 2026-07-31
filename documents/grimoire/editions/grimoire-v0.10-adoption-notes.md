@@ -21,9 +21,10 @@ experimental v0.10 source. It is not itself a governing Grimoire edition.
 - v0.9 references that describe historical measurements, prior behavior, or the
   legacy carrier policy remain explicitly historical. Accidental “v0.9 edition”
   wording in the v0.10 normative sections and embedded codec identity was removed.
-- Toolcraft statements remain normative source material but outside blind semantic
-  measurement until G-07 completes. Composition boundaries remain UNMEASURED and
-  are not inferred by runtime code.
+- The approved source contains no B11/B12 clauses or labeled nine-statement toolcraft
+  corpus. The measurement status therefore remains explicitly UNMEASURED in
+  `documents/grimoire/measurements/v0.10-toolcraft.json`; no plausible interpretation is
+  promoted to a confirmed result.
 
 ## Authority boundary
 
