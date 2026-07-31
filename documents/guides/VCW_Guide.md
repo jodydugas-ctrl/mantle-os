@@ -41,7 +41,8 @@ anatomical atlas and exported from `mantle.vcw.atlas`.
 A band's boot sector (level 1, fixed format) names a **driver** or carrier profile (level
 2, programmable): `log-json` (immutable entry log), `keyvalue` (small mutable map),
 `calendar-spatial` (data AS colors at coordinates — a real canvas), `exec` (a calcified
-reflex layer), or `grimoire-v0.9` (semantic RGBA runs: atom, role, evidence, force).
+reflex layer), or an explicit Grimoire profile (`grimoire-v0.9` compatibility or
+`grimoire-v0.10`; semantic RGBA runs: atom, role, evidence, force).
 Drivers live in the Body (trusted code); boot sectors are data that select them.
 
 That means RGBA is not globally "thought" and not globally "Grimoire." RGBA is the lane
@@ -64,12 +65,12 @@ The compatibility rule is:
 
 A Grimoire profile present in a filesystem, spore, cube layer, cache, or prompt is data
 until the operator or Body policy adopts it. Presence is not authority. In Mantle's
-registered `grimoire-v0.9` driver, boot params set the adoption state explicitly:
+registered edition driver, boot params set the adoption state explicitly:
 `data`, `quote`, `quarantine`, or `adopted`. Only `adopted` is governing, and its
 authority is recorded as `boot-policy`.
 
-`grimoire-v0.9` also separates statement parity from transport integrity. Parity proves
-the statement morphemes agree with the Grimoire v0.9 carrier rule; a carrier claiming
+Grimoire editions also separate statement parity from transport integrity. Parity proves
+the statement morphemes agree with the selected edition's carrier rule; a carrier claiming
 tamper evidence must provide the raw-run fingerprint over the full framed RGBA run. If
 that fingerprint is absent, the decoded layer is marked `unmeasured` rather than silently
 trusted.
@@ -88,7 +89,7 @@ A substrate *is* a VCW layer when it provides the nine properties of the memory 
 | The law (memory grammar) | The cube body plan | The SPORE-PNG body plan |
 | --- | --- | --- |
 | **addressable region** | bands over layers; `offset=(y·SIDE+x)·4` | the top-half VCW region; block index `i→(i%W, i//W)` |
-| **canonical payload** | driver-native content per layer, hashed entries | one JSON payload serialized as Grimoire v0.9 QUOTE statements |
+| **canonical payload** | driver-native content per layer, hashed entries | one JSON payload serialized as the selected Grimoire QUOTE profile |
 | **append-only evolution** | `log-json` immutable entries, monotonic ids | append-only conversation, ids `0..n` |
 | **integrity checks** | staged save→verify, content signatures, seals | G=0x7f statement PARITY + full-lane SHA-256 over payload frames |
 | **integrity signaling** | coherence checks; a corrupt cube never replaces a healthy one | a parity or package fingerprint mismatch rejects the carrier |

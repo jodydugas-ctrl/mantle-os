@@ -11,7 +11,7 @@ from typing import Any
 from .. import grimoire as legacy
 
 PROFILE = "grimoire-v0.9"
-DOCUMENT_PATH = "documents/grimoire/The Grimoire.md"
+DOCUMENT_PATH = "documents/grimoire/editions/grimoire-v0.9.md"
 SELFTEST_VECTORS = tuple(legacy.SELFTEST_VECTORS)
 COMPOSITION_COUNT = 295
 STATEMENT_COUNT = len(SELFTEST_VECTORS)

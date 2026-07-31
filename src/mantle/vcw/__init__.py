@@ -11,6 +11,7 @@ from .bands import (make_band_boot, make_cube_boot, standard_genome, code_hash,
                     Driver, register, get_driver, registered_encodings,
                     OVERFLOW_THRESHOLD, EMERGENCY_THRESHOLD, APP_BAND_RANGE, TAIL_RANGE)
 from .drivers import (LogJsonDriver, KeyValueDriver, CalendarSpatialDriver, ExecDriver,
+                      GrimoireV09Driver, GrimoireV010Driver,
                       CapabilityError, IntegrityError, TrustError, SandboxError,
                       ProvenanceError, validate_skill_code, validate_calcify_payload,
                       provenance_is_trusted, trial, register_runner, get_runner)
@@ -26,6 +27,7 @@ __all__ = [
     "Driver", "register", "get_driver", "registered_encodings",
     "OVERFLOW_THRESHOLD", "EMERGENCY_THRESHOLD", "APP_BAND_RANGE", "TAIL_RANGE",
     "LogJsonDriver", "KeyValueDriver", "CalendarSpatialDriver", "ExecDriver",
+    "GrimoireV09Driver", "GrimoireV010Driver",
     "CapabilityError", "IntegrityError", "TrustError", "SandboxError", "ProvenanceError",
     "validate_skill_code", "validate_calcify_payload", "provenance_is_trusted", "trial",
     "register_runner", "get_runner", "Cube", "CapacityError", "SealError", "metabolism",
