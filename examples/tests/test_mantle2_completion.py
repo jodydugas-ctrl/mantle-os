@@ -180,7 +180,7 @@ def test_application_certification_names_failed_repository_invariant(tmp_path: P
         "name": "SPORE-2 sporeagent-lifecycle-receipt", "ok": False,
         "detail": "Pillow missing",
     }])
-    with pytest.raises(CertificationError, match="SPORE-2 sporeagent-lifecycle-receipt"):
+    with pytest.raises(CertificationError, match="SPORE-2.*Pillow missing"):
         certification.certify_nest(str(nest))
 
 
