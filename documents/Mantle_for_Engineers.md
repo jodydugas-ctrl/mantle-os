@@ -268,11 +268,14 @@ python -m mantle graft examples/spores/notes_graft.png examples/sample_app
 Interactive resident adapters should route slash input through
 `BodyCommandDispatcher`; non-slash text stays in the MIND conversation lane. The shared
 Body commands are `/key`, `/model`, `/offline`, `/status`, and `/help`, with
-`openrouter/free` as the default model. `/key` without an argument returns a typed
+`openrouter/free` as the default model; `/mind` is a compatibility alias for `/model`.
+`/key` without an argument returns a typed
 `needs_secret` result so the adapter can use hidden input and call
 `dispatch("/key", secret_input=value)`. Every outcome is written as a redacted Prime VCW
 event; successful configuration mutations additionally emit
 `body_configuration_changed` on the organism bus.
+The transport records requested and provider-reported model identifiers separately, and
+resident adapters sanitize untrusted provider output before terminal display or storage.
 
 Applet capsule commands:
 

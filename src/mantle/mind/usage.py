@@ -87,9 +87,26 @@ def normalize_usage(response: Optional[Dict[str, Any]] = None, *,
     hdr = _headers(headers)
     gen = (generation or {}).get("data", generation or {}) or {}
     gen_id = (hdr.get("x-generation-id") or response.get("id") or gen.get("id"))
+    requested_model = model
+    response_model = response.get("model")
+    generation_model = gen.get("model")
+    resolved_model = response_model or generation_model or requested_model
+    model_evidence = (
+        "provider_response" if response_model else
+        "generation_receipt" if generation_model else
+        "requested_only" if requested_model else
+        "unknown"
+    )
 
     receipt: Dict[str, Any] = {
-        "model": model or response.get("model") or gen.get("model"),
+        # Keep `model` request-oriented for compatibility, while preserving the
+        # provider-reported route result as separate observed evidence.
+        "model": requested_model or resolved_model,
+        "requested_model": requested_model,
+        "response_model": response_model,
+        "generation_model": generation_model,
+        "resolved_model": resolved_model,
+        "model_evidence": model_evidence,
         "provider_name": gen.get("provider_name"),
         "router": gen.get("router"),
         "session_id": session_id or gen.get("session_id"),

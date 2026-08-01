@@ -340,6 +340,7 @@ The canonical session commands are:
 /key                 securely request an API key (terminal adapters use hidden input)
 /model               show the selected model
 /model provider/id   select a model (`free` aliases to `openrouter/free`)
+/mind provider/id    compatibility alias for `/model`
 /offline             forget the session key
 /status              show redacted provider/model state
 /help                list Body commands, including host extensions
@@ -351,6 +352,11 @@ event; configuration changes use `BODY_CONFIGURATION_CHANGED`, enter Prime VCW, 
 the live `body_configuration_changed` bus signal. Hosts add application-specific commands
 through `mantle.resident.BodyCommandDispatcher.register(...)` without changing the
 conversation lane.
+
+Provider receipts distinguish the requested route from the provider-reported resolved
+model. Provider text is untrusted input: resident adapters should pass it through
+`sanitize_visible_text(...)` before printing or recording it so ANSI, control, and
+bidirectional-formatting characters cannot manipulate the terminal display.
 
 ### Reproduction — one artifact, two methods
 

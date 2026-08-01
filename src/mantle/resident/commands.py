@@ -25,6 +25,9 @@ MODEL_ALIASES = {
     "free": DEFAULT_MODEL,
     "auto": "openrouter/auto",
 }
+COMMAND_ALIASES = {
+    "/mind": "/model",
+}
 _MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/+@-]{0,199}$")
 _COMMAND_RE = re.compile(r"^/[a-z][a-z0-9_-]{0,31}$")
 
@@ -153,6 +156,7 @@ class BodyCommandDispatcher:
         self.organism = organism
         self.state = state or ResidentSessionState()
         self._commands: Dict[str, BodyCommandSpec] = {}
+        self._aliases = dict(COMMAND_ALIASES)
         self.register("/help", "list Body maintenance commands", self._help)
         self.register("/key", "configure an API key in session memory", self._key,
                       accepts_secret=True)
@@ -176,6 +180,10 @@ class BodyCommandDispatcher:
     def commands(self) -> Iterable[BodyCommandSpec]:
         return tuple(self._commands[name] for name in sorted(self._commands))
 
+    def aliases(self) -> Dict[str, str]:
+        """Return compatibility spellings mapped to canonical Body commands."""
+        return dict(self._aliases)
+
     def dispatch(self, text: str, *, secret_input: Optional[str] = None) -> BodyCommandResult:
         raw = str(text or "")
         stripped = raw.strip()
@@ -183,10 +191,11 @@ class BodyCommandDispatcher:
             raise ValueError("non-slash text belongs to MIND conversation")
         command, _separator, argument = stripped.partition(" ")
         command = command.lower()
+        canonical_command = self._aliases.get(command, command)
         sanitized = sanitize_user_submit(raw)
         self._sense(command, sanitized)
 
-        spec = self._commands.get(command)
+        spec = self._commands.get(canonical_command)
         if spec is None:
             result = BodyCommandResult(
                 command, False, "refused",
@@ -214,6 +223,13 @@ class BodyCommandDispatcher:
                     details={"reason_code": "body_command_exception",
                              "error_type": type(exc).__name__},
                 )
+
+        if command != canonical_command:
+            result = replace(
+                result,
+                command=command,
+                details={**result.details, "canonical_command": canonical_command},
+            )
 
         result = self._redact_result(result)
         self._record(result, sanitized)
@@ -275,10 +291,15 @@ class BodyCommandDispatcher:
     # -- canonical Body commands ------------------------------------------
     def _help(self, _argument: str, _secret: Optional[str]) -> BodyCommandResult:
         rows = ["%s — %s" % (spec.name, spec.help) for spec in self.commands()]
+        rows.extend(
+            "%s - compatibility alias for %s" % (alias, canonical)
+            for alias, canonical in sorted(self._aliases.items())
+        )
         return BodyCommandResult(
             "/help", True, "executed",
             "Body maintenance commands:\n" + "\n".join(rows),
-            details={"commands": [spec.name for spec in self.commands()]},
+            details={"commands": [spec.name for spec in self.commands()],
+                     "aliases": self.aliases()},
         )
 
     def _key(self, argument: str, secret: Optional[str]) -> BodyCommandResult:
@@ -340,6 +361,7 @@ class BodyCommandDispatcher:
 
 
 __all__ = [
+    "COMMAND_ALIASES",
     "DEFAULT_MODEL",
     "DEFAULT_PROVIDER",
     "MODEL_ALIASES",

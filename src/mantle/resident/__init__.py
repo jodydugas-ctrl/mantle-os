@@ -8,6 +8,7 @@ from .heartbeat import (
     ResidentHeartbeat,
 )
 from .commands import (
+    COMMAND_ALIASES,
     DEFAULT_MODEL,
     DEFAULT_PROVIDER,
     MODEL_ALIASES,
@@ -27,10 +28,12 @@ from .protocol import (
     render_recent_vcw_context,
     resident_vcw_event,
     sanitize_user_submit,
+    sanitize_visible_text,
     text_commit_event,
 )
 
 __all__ = [
+    "COMMAND_ALIASES",
     "DEFAULT_QUEUE_LIMIT",
     "DEFAULT_MODEL",
     "DEFAULT_PROVIDER",
@@ -50,6 +53,7 @@ __all__ = [
     "render_recent_vcw_context",
     "resident_vcw_event",
     "sanitize_user_submit",
+    "sanitize_visible_text",
     "text_commit_event",
     "normalize_model",
 ]

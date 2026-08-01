@@ -19,6 +19,10 @@ Mantle now supplies a shared Body control plane in
 `mantle.resident.BodyCommandDispatcher`. Its canonical commands are `/key`,
 `/model`, `/offline`, `/status`, and `/help`; host residents register additional
 Body commands on the same dispatcher. The default model is `openrouter/free`.
+`/mind` is a compatibility alias for `/model`, because a failed real-user attempt
+showed that the older spelling was discoverable enough to be expected. Help identifies
+the alias instead of expanding an unknown-command response into an oversized command
+dump.
 `/key` supports a terminal-owned hidden-input handoff, and the credential remains
 only in `ResidentSessionState` process memory.
 
@@ -38,6 +42,23 @@ only in `ResidentSessionState` process memory.
 - App working surfaces remain host-specific. The universal maintenance command
   set does not imply that every host has tabs, documents, menus, or other app
   controls.
+
+## Provider Identity and Terminal Output
+
+**Failure seen:** a resident retained only the configured OpenRouter route and discarded
+the model name returned by the provider. When asked which model was running, the MIND
+could only say it had no sensory evidence. The same captured session contained a C0
+control byte in provider prose, rendered by the terminal as `^A`.
+
+**Fix:** normalized usage receipts now preserve `requested_model`, `response_model`,
+`generation_model`, `resolved_model`, and `model_evidence`. A provider-reported model is
+observed routing evidence, not a verified claim about hidden infrastructure. Resident
+protocol helpers redact output and neutralize ANSI, C0/C1, and bidirectional-formatting
+controls before display or VCW storage.
+
+**Prevention:** fake-transport tests must use different requested and returned model IDs
+and assert both survive. Every provider output boundary must sanitize visible text before
+printing, persisting, or assembling it into later context.
 
 ## Body Nerves and Surface Truth
 

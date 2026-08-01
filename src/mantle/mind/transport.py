@@ -54,7 +54,8 @@ def openai_compatible_model(api_key: str, model: str, *, url: str = OPENROUTER_U
 
     The callable contract stays `model(prompt) -> text`. Usage/cache facts are exposed as
     sidecar attributes (`last_usage`, `last_headers`, `last_generation_id`,
-    `last_request_hash`) so MIND callers do not need a new interface.
+    `last_request_hash`, `last_requested_model`, `last_response_model`, and
+    `last_resolved_model`) so MIND callers do not need a new interface.
     """
     if session_id is not None and len(session_id) > 256:
         raise ValueError("session_id must be at most 256 characters")
@@ -118,6 +119,10 @@ def openai_compatible_model(api_key: str, model: str, *, url: str = OPENROUTER_U
         _call.last_headers = resp_headers
         _call.last_generation_id = receipt.get("generation_id")
         _call.last_request_hash = receipt.get("request_hash")
+        _call.last_requested_model = receipt.get("requested_model")
+        _call.last_response_model = receipt.get("response_model")
+        _call.last_resolved_model = receipt.get("resolved_model")
+        _call.last_model_evidence = receipt.get("model_evidence")
         _call.last_cache = {
             "status": receipt.get("response_cache_status"),
             "cached_tokens": receipt.get("cached_tokens", 0),
@@ -129,6 +134,10 @@ def openai_compatible_model(api_key: str, model: str, *, url: str = OPENROUTER_U
     _call.last_headers = None     # type: ignore[attr-defined]
     _call.last_generation_id = None   # type: ignore[attr-defined]
     _call.last_request_hash = None    # type: ignore[attr-defined]
+    _call.last_requested_model = model  # type: ignore[attr-defined]
+    _call.last_response_model = None    # type: ignore[attr-defined]
+    _call.last_resolved_model = None    # type: ignore[attr-defined]
+    _call.last_model_evidence = "requested_only"  # type: ignore[attr-defined]
     _call.last_cache = None       # type: ignore[attr-defined]
     return _call
 

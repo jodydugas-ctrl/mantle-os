@@ -17,9 +17,14 @@ import json
 import re
 from typing import Any, Dict, Iterable, List, Tuple
 
+from ..core.redact import redact, redact_str
+
 
 VCW_TEXT_LIMIT = 8000
 BODY_DIRECTIVE_RE = re.compile(r"<APPAI_BODY>(.*?)</APPAI_BODY>", re.DOTALL)
+ANSI_ESCAPE_RE = re.compile(
+    r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\))"
+)
 SECRET_COMMANDS = {"/key", "/secret", "/token", "/password", "/credential"}
 TOKEN_STOP_WORDS = frozenset(
     "a an and are as at be can do for from how i in is it me my of on or "
@@ -100,16 +105,34 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def sanitize_visible_text(text: str, *, limit: int = VCW_TEXT_LIMIT) -> str:
+    """Redact and neutralize terminal-control text from an untrusted source."""
+    if limit <= 0:
+        raise ValueError("visible text limit must be positive")
+    cleaned = ANSI_ESCAPE_RE.sub("", redact_str(str(text or "")))
+    bidi_controls = {0x061C, 0x200E, 0x200F, *range(0x202A, 0x202F),
+                     *range(0x2066, 0x206A)}
+    safe = "".join(
+        char if (
+            char in "\n\r\t" or
+            (ord(char) >= 0x20 and not 0x7F <= ord(char) <= 0x9F and
+             ord(char) not in bidi_controls)
+        ) else "\ufffd"
+        for char in cleaned
+    )
+    return safe[:limit]
+
+
 def sanitize_user_submit(text: str) -> str:
     """Redact secret-bearing command payloads before durable logging."""
     raw = str(text or "")
     stripped = raw.strip()
     if not stripped.startswith("/"):
-        return raw
+        return sanitize_visible_text(raw)
     command = stripped.split(None, 1)[0].lower()
     if command in SECRET_COMMANDS:
         return "%s [REDACTED_SECRET]" % command
-    return raw
+    return sanitize_visible_text(raw)
 
 
 def classify_user_submit(text: str) -> Dict[str, Any]:
@@ -172,7 +195,7 @@ def parse_mind_body_directives(text: str) -> Tuple[str, List[Dict[str, Any]], Li
             })
         return ""
 
-    visible = BODY_DIRECTIVE_RE.sub(repl, source).strip()
+    visible = sanitize_visible_text(BODY_DIRECTIVE_RE.sub(repl, source)).strip()
     return visible, requests, errors
 
 
@@ -189,7 +212,7 @@ def resident_vcw_event(kind: str,
         "source": source,
         "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "policy": RESIDENT_RUNTIME_POLICIES["transcript_vcw_policy"],
-        "payload": dict(payload or {}),
+        "payload": redact(dict(payload or {})),
     }
     if ok is not None:
         event["ok"] = bool(ok)

@@ -2040,6 +2040,10 @@ def t_or_cache_usage_receipt():
           and rec["total_cost"] == 0.012 and rec["cache_discount"] == 0.004
           and rec["response_cache_status"] == "MISS"
           and rec["generation_id"] == "gen-header"
+          and rec["requested_model"] is None
+          and rec["response_model"] == "openrouter/test"
+          and rec["resolved_model"] == "openrouter/test"
+          and rec["model_evidence"] == "provider_response"
           and "HUGE PROMPT" not in json.dumps(rec))
     return ok, "receipt normalized cache/cost/session fields; session_id len=%d" % len(sid)
 
@@ -2077,7 +2081,7 @@ def t_or_transport_sidecars_and_canonical_body():
     try:
         _urlreq.urlopen = fake_urlopen
         model = openai_compatible_model(
-            "sk-test", "fake/model", url="https://example.invalid/chat",
+            "sk-test", "openrouter/auto", url="https://example.invalid/chat",
             system="stable laws", session_id="mantle:body:planner:task",
             response_cache=True, response_cache_ttl=300, lane="planner")
         answer = model("dynamic question")
@@ -2094,8 +2098,12 @@ def t_or_transport_sidecars_and_canonical_body():
           and headers.get("x-openrouter-cache-ttl") == "300"
           and rec["response_cache_status"] == "HIT"
           and rec["generation_id"] == "gen-hit"
-          and rec["request_hash"] == model.last_request_hash)
-    return ok, "transport sidecars captured cache HIT + canonical request body"
+          and rec["request_hash"] == model.last_request_hash
+          and model.last_requested_model == "openrouter/auto"
+          and model.last_response_model == "fake/model"
+          and model.last_resolved_model == "fake/model"
+          and model.last_model_evidence == "provider_response")
+    return ok, "transport captured requested/resolved models + canonical body"
 
 
 def t_or_ghost_http_receipt():
@@ -2815,6 +2823,7 @@ def t_resident_runtime_protocol_contract():
         relevant_surface_slice,
         render_recent_vcw_context,
         resident_vcw_event,
+        sanitize_visible_text,
         text_commit_event,
     )
 
@@ -2830,6 +2839,12 @@ def t_resident_runtime_protocol_contract():
         {"route": prose["kind"]},
         text="/key sk-or-v1-secret-test",
         ok=True,
+    )
+    unsafe = sanitize_visible_text("ok\x1b[31mred\x1b[0m\x01\u202e")
+    payload_secret = "sk-or-v1-payload-secret-123456"
+    protected_event = resident_vcw_event(
+        "PROVIDER_OUTPUT", {"api_key": payload_secret},
+        text="Bearer " + payload_secret,
     )
     committed = text_commit_event(
         "editor.main",
@@ -2887,6 +2902,9 @@ def t_resident_runtime_protocol_contract():
         and bad_errors and bad_errors[0]["ok"] is False
         and event["text"] == "/key [REDACTED_SECRET]"
         and event["redacted"] is True
+        and "red" in unsafe
+        and "\x1b" not in unsafe and "\x01" not in unsafe and "\u202e" not in unsafe
+        and payload_secret not in json.dumps(protected_event)
         and "Sidecar logs are mirrors only" in event["policy"]
         and committed["kind"] == "HOST_TEXT_COMMIT"
         and committed["payload"]["commit_policy"] == "submit_or_blur"
@@ -2930,8 +2948,10 @@ def t_resident_body_command_control_plane():
     secret = "sk-or-v1-resident-command-secret-123456789"
     accepted = commands.dispatch("/key", secret_input=secret)
     model = commands.dispatch("/model free")
+    mind_alias = commands.dispatch("/mind auto")
     selected = commands.dispatch("/model openai/gpt-5")
     status = commands.dispatch("/status")
+    help_result = commands.dispatch("/help")
     refused = commands.dispatch("/does-not-exist")
 
     extension_calls = []
@@ -2951,8 +2971,9 @@ def t_resident_body_command_control_plane():
         "events": org.prime.read("events"),
         "snapshot": state.snapshot(),
         "repr": repr(state),
-        "results": [prompt.to_dict(), accepted.to_dict(), selected.to_dict(),
-                    status.to_dict(), refused.to_dict(), extended.to_dict()],
+        "results": [prompt.to_dict(), accepted.to_dict(), mind_alias.to_dict(),
+                    selected.to_dict(), status.to_dict(), help_result.to_dict(),
+                    refused.to_dict(), extended.to_dict()],
     }, sort_keys=True)
     events = org.prime.read("events")
     opcodes = [entry.get("opcode") for entry in events]
@@ -2964,6 +2985,9 @@ def t_resident_body_command_control_plane():
         and prompt.needs_secret is True
         and accepted.ok is True
         and state.key_configured is True
+        and mind_alias.command == "/mind"
+        and mind_alias.details["canonical_command"] == "/model"
+        and "/mind" in help_result.details["aliases"]
         and selected.details["model"] == "openai/gpt-5"
         and status.details["credential_configured"] is True
         and refused.status == "refused"
@@ -2972,7 +2996,7 @@ def t_resident_body_command_control_plane():
         and secret not in serialized
         and "BODY_CONFIGURATION_CHANGED" in opcodes
         and "BODY_COMMAND_REFUSED" in opcodes
-        and len(changes) == 3
+        and len(changes) == 4
         and all(change.get("event_kind") == "BODY_CONFIGURATION_CHANGED"
                 for change in changes)
         and any(entry.get("opcode") == "BODY_CONFIGURATION_CHANGED"
