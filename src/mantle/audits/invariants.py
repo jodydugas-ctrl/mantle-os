@@ -2724,11 +2724,12 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and "plain-English host-surface requests" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
             and "mapped SELF/body evidence" in evidence.get("consultation_contract", {}).get("effectful_action_policy", "")
             and "host-specific anatomy" in evidence.get("consultation_contract", {}).get("working_surface_policy", "")
-            and "not universal predefined slash commands" in evidence.get("consultation_contract", {}).get("working_surface_policy", "")
+            and "not implied by Mantle's universal Body maintenance commands" in evidence.get("consultation_contract", {}).get("working_surface_policy", "")
             and "creative/generative content must be authored by the resident MIND" in evidence.get("consultation_contract", {}).get("creative_work_policy", "")
             and "never by Body reflexes" in evidence.get("consultation_contract", {}).get("creative_work_policy", "")
             and "explicit maintenance commands" in evidence.get("consultation_contract", {}).get("reset_policy", "")
             and "Only slash-prefixed input" in evidence.get("runtime_policies", {}).get("command_channel_policy", "")
+            and "deterministic Body" in evidence.get("runtime_policies", {}).get("body_command_policy", "")
             and "hidden MIND-authored Body request" in evidence.get("runtime_policies", {}).get("mind_body_lane_policy", "")
             and "Sidecar logs are mirrors only" in evidence.get("runtime_policies", {}).get("transcript_vcw_policy", "")
             and "complete surface map" in evidence.get("runtime_policies", {}).get("surface_retrieval_policy", "")
@@ -2906,6 +2907,82 @@ def t_resident_runtime_protocol_contract():
     return ok, "prose=%s key=%s directives=%d bad_errors=%d surfaces=%s" % (
         prose["kind"], key["sanitized_text"], len(requests), len(bad_errors),
         [s["id"] for s in surfaces])
+
+
+def t_resident_body_command_control_plane():
+    """RESIDENT-CMD-1: canonical slash commands execute in the Body, default to
+    openrouter/free, keep credentials session-only, and leave redacted VCW change
+    receipts that the next Context Assembly can observe."""
+    from ..resident import (
+        DEFAULT_MODEL,
+        BodyCommandDispatcher,
+        BodyCommandResult,
+        ResidentSessionState,
+    )
+
+    org = _born()
+    changes = []
+    org.bus.subscribe("body_configuration_changed", changes.append, organ="memory")
+    state = ResidentSessionState()
+    commands = BodyCommandDispatcher(org, state=state)
+
+    prompt = commands.dispatch("/key")
+    secret = "sk-or-v1-resident-command-secret-123456789"
+    accepted = commands.dispatch("/key", secret_input=secret)
+    model = commands.dispatch("/model free")
+    selected = commands.dispatch("/model openai/gpt-5")
+    status = commands.dispatch("/status")
+    refused = commands.dispatch("/does-not-exist")
+
+    extension_calls = []
+
+    def host_command(argument, _secret):
+        extension_calls.append(argument)
+        return BodyCommandResult(
+            "/host-mode", True, "executed", "Host mode changed.",
+            changed_fields=("host_mode",), details={"mode": argument},
+        )
+
+    commands.register("/host-mode", "select a host-owned mode", host_command)
+    extended = commands.dispatch("/host-mode careful")
+
+    serialized = json.dumps({
+        "senses": org.prime.read("senses"),
+        "events": org.prime.read("events"),
+        "snapshot": state.snapshot(),
+        "repr": repr(state),
+        "results": [prompt.to_dict(), accepted.to_dict(), selected.to_dict(),
+                    status.to_dict(), refused.to_dict(), extended.to_dict()],
+    }, sort_keys=True)
+    events = org.prime.read("events")
+    opcodes = [entry.get("opcode") for entry in events]
+    assembled = org.nervous.assemble()
+    ok = (
+        DEFAULT_MODEL == "openrouter/free"
+        and model.details["model"] == "openrouter/free"
+        and prompt.status == "needs_secret"
+        and prompt.needs_secret is True
+        and accepted.ok is True
+        and state.key_configured is True
+        and selected.details["model"] == "openai/gpt-5"
+        and status.details["credential_configured"] is True
+        and refused.status == "refused"
+        and extension_calls == ["careful"]
+        and extended.changed_fields == ("host_mode",)
+        and secret not in serialized
+        and "BODY_CONFIGURATION_CHANGED" in opcodes
+        and "BODY_COMMAND_REFUSED" in opcodes
+        and len(changes) == 3
+        and all(change.get("event_kind") == "BODY_CONFIGURATION_CHANGED"
+                for change in changes)
+        and any(entry.get("opcode") == "BODY_CONFIGURATION_CHANGED"
+                for entry in assembled["events"])
+        and all(change.get("public_state", {}).get("credential_storage") ==
+                "session-memory-only" for change in changes)
+    )
+    return ok, "default=%s events=%d changes=%d secret_absent=%s" % (
+        DEFAULT_MODEL, len(events), len(changes), secret not in serialized,
+    )
 
 
 def t_resident_heartbeat_scheduler():
@@ -3413,6 +3490,7 @@ _INVARIANT_DEFINITIONS = [
     ("ASSIM-1 substrate+artifact-boundary",    t_assimilator_substrate_gaps_and_outside_host_gate),
     ("ASSIM-2 gui-surface-nerve-coverage",     t_assimilator_gui_surface_nerve_coverage),
     ("RESIDENT-RT-1 runtime-protocol",          t_resident_runtime_protocol_contract),
+    ("RESIDENT-CMD-1 body-command-control",     t_resident_body_command_control_plane),
     ("RESIDENT-HB-1 natural-cadence+wakes",     t_resident_heartbeat_scheduler),
     ("RESIDENT-HB-2 stage1-resident-cadence",   t_stage1_resident_cadence_row),
     ("REPRO-1 atlas+span-overlap-gate",        t_repro_atlas_overlap_gate),

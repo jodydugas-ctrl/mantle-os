@@ -209,6 +209,7 @@ The following descriptions are summarized from module docstrings and source:
 | `reproduction.py` | Routes the two reproduction methods: independent seed spores and dependent graft/anchor residency paths. |
 | `organs/reproduction.py` | Runtime organ for seed/graft verbs, seed vault reconstruction, spore heirlooms, and lineage carry across rebirth. |
 | `anchor.py` | Read-only host dissection followed by additive `.mantle/` resident creation; verifies host files are unchanged. |
+| `resident/commands.py` | Reusable deterministic slash-command dispatcher and session-only provider state; records redacted Body command/change receipts without invoking the MIND. |
 | `graft.py` | Validates graft germs and applies them to a workspace copy of a named host; live weaving uses fail-open reversible wrappers. |
 | `symbiosis.py` | Append-only credits ledger for model-call metering; records grants, spends, value, and starvation refusal. |
 | `mem.py` | Keyless knowledge cube for sharing inferred knowledge and microcode-as-data; foreign microcode must be sandbox-tested and re-derived. |
@@ -263,6 +264,15 @@ python -m mantle feed path/to/host --credits=20 --key=provider-name
 python -m mantle vitals path/to/host
 python -m mantle graft examples/spores/notes_graft.png examples/sample_app
 ```
+
+Interactive resident adapters should route slash input through
+`BodyCommandDispatcher`; non-slash text stays in the MIND conversation lane. The shared
+Body commands are `/key`, `/model`, `/offline`, `/status`, and `/help`, with
+`openrouter/free` as the default model. `/key` without an argument returns a typed
+`needs_secret` result so the adapter can use hidden input and call
+`dispatch("/key", secret_input=value)`. Every outcome is written as a redacted Prime VCW
+event; successful configuration mutations additionally emit
+`body_configuration_changed` on the organism bus.
 
 Applet capsule commands:
 

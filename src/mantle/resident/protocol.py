@@ -32,6 +32,12 @@ RESIDENT_RUNTIME_POLICIES = {
         "Non-slash user prose is conversation for the resident MIND, never a "
         "deterministic Body/reflex parser input."
     ),
+    "body_command_policy": (
+        "Slash-prefixed maintenance/configuration commands are handled by the "
+        "deterministic Body, never the MIND. Mantle residents share a small canonical "
+        "command set and may register host-specific Body commands. Every command "
+        "outcome and configuration change is redacted and appended to Prime VCW."
+    ),
     "mind_body_lane_policy": (
         "Effectful host mutation flows through a hidden MIND-authored Body request "
         "lane. User prose may ask; MIND selects mapped Body nerves; Body executes "

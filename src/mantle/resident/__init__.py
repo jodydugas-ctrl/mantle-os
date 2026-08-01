@@ -7,6 +7,16 @@ from .heartbeat import (
     NATURAL_INTERVAL_SECONDS,
     ResidentHeartbeat,
 )
+from .commands import (
+    DEFAULT_MODEL,
+    DEFAULT_PROVIDER,
+    MODEL_ALIASES,
+    BodyCommandDispatcher,
+    BodyCommandResult,
+    BodyCommandSpec,
+    ResidentSessionState,
+    normalize_model,
+)
 from .protocol import (
     RESIDENT_RUNTIME_POLICIES,
     classify_user_submit,
@@ -22,9 +32,16 @@ from .protocol import (
 
 __all__ = [
     "DEFAULT_QUEUE_LIMIT",
+    "DEFAULT_MODEL",
+    "DEFAULT_PROVIDER",
+    "MODEL_ALIASES",
     "NATURAL_INTERVAL_SECONDS",
     "RESIDENT_RUNTIME_POLICIES",
+    "BodyCommandDispatcher",
+    "BodyCommandResult",
+    "BodyCommandSpec",
     "ResidentHeartbeat",
+    "ResidentSessionState",
     "classify_user_submit",
     "heartbeat_pulse_event",
     "parse_mind_body_directives",
@@ -34,4 +51,5 @@ __all__ = [
     "resident_vcw_event",
     "sanitize_user_submit",
     "text_commit_event",
+    "normalize_model",
 ]

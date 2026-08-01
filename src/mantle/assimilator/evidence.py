@@ -192,6 +192,7 @@ def build_host_evidence_index(amap: Dict[str, Any],
             ),
             "missing_evidence_policy": "name the gap instead of guessing",
             "command_channel_policy": RESIDENT_RUNTIME_POLICIES["command_channel_policy"],
+            "body_command_policy": RESIDENT_RUNTIME_POLICIES["body_command_policy"],
             "mind_body_lane_policy": RESIDENT_RUNTIME_POLICIES["mind_body_lane_policy"],
             "directive_fail_closed_policy": RESIDENT_RUNTIME_POLICIES["directive_fail_closed_policy"],
             "transcript_vcw_policy": RESIDENT_RUNTIME_POLICIES["transcript_vcw_policy"],
@@ -210,7 +211,7 @@ def build_host_evidence_index(amap: Dict[str, Any],
                 "active documents, tabs, panels, canvases, sheets, routes, and other "
                 "working surfaces are host-specific anatomy discovered from GUI "
                 "coverage or live Body evidence and recorded into the VCW; they are "
-                "not universal predefined slash commands"
+                "not implied by Mantle's universal Body maintenance commands"
             ),
             "systematic_body_test_policy": (
                 "after Body birth, every mapped user surface is systematically probed "

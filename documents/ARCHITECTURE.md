@@ -185,6 +185,14 @@ never assembles its own); it **thinks** into the private `thoughts` band; it **i
 by authoring `INTENTION`/`DELEGATED` in the `brain` band; it **does nothing else
 directly** — all effecting happens through Body reflexes, with proofs the Body records.
 
+Resident maintenance is also Body tissue. `resident/commands.py` supplies the shared
+slash-command dispatcher and ephemeral provider state. `/key`, `/model`, `/offline`,
+`/status`, `/help`, and registered host extensions execute without consulting the MIND.
+Senses receives a sanitized command, Memory appends the redacted outcome, and each
+configuration mutation emits `body_configuration_changed`. The default routed model is
+`openrouter/free`; the credential remains session-only and is absent from Context
+Assembly.
+
 The fusion sequence: the pre-fusion gate (a Body that is not Stage-1 certified refuses
 fusion) → keyfile & model selection (one keyfile; the transport is a pluggable
 `model(prompt) → text`, no vendor SDK) → the Awakening Ceremony → the bounded write

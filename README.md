@@ -330,6 +330,28 @@ python examples/vcw/vcw_cube.py selftest      # every format rule proven in one 
 python examples/vcw/interop.py                # standalone <-> engine: identical bytes
 ```
 
+### Resident Body commands
+
+Mantle residents share a deterministic slash-command control plane. Slash commands are
+handled by the **Body**, never sent to the MIND. Plain text remains MIND conversation.
+The canonical session commands are:
+
+```text
+/key                 securely request an API key (terminal adapters use hidden input)
+/model               show the selected model
+/model provider/id   select a model (`free` aliases to `openrouter/free`)
+/offline             forget the session key
+/status              show redacted provider/model state
+/help                list Body commands, including host extensions
+```
+
+The default model is `openrouter/free`. Credentials remain in process memory and never
+enter VCW or disk. Every accepted, refused, or incomplete command creates a redacted
+event; configuration changes use `BODY_CONFIGURATION_CHANGED`, enter Prime VCW, and emit
+the live `body_configuration_changed` bus signal. Hosts add application-specific commands
+through `mantle.resident.BodyCommandDispatcher.register(...)` without changing the
+conversation lane.
+
 ### Reproduction — one artifact, two methods
 
 An AppAI travels as **ONE artifact — the spore** — and reproduces in exactly **two** ways

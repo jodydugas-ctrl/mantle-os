@@ -15,6 +15,13 @@ always a user message to the MIND. When plain text asks the resident to act on i
 host, the MIND interprets intent against SELF/body evidence and emits a hidden
 Body directive; the user does not need to type slash commands for app work.
 
+Mantle now supplies a shared Body control plane in
+`mantle.resident.BodyCommandDispatcher`. Its canonical commands are `/key`,
+`/model`, `/offline`, `/status`, and `/help`; host residents register additional
+Body commands on the same dispatcher. The default model is `openrouter/free`.
+`/key` supports a terminal-owned hidden-input handoff, and the credential remains
+only in `ResidentSessionState` process memory.
+
 **Prevention:** certify every resident with a command-boundary test:
 
 - `/key`, `/help`, `/memory`, `/reset-vcw`, and other maintenance verbs require
@@ -23,6 +30,14 @@ Body directive; the user does not need to type slash commands for app work.
   the conversation lane and may only invoke Body through a MIND-to-Body plan.
 - A fallback or offline answer may report a missing Body nerve, but must not
   expose internal directive syntax as the expected user interface.
+- Slash commands must not call the provider or consume MIND energy. Accepted,
+  refused, failed, and incomplete commands all append a redacted VCW receipt.
+- A configuration mutation must append `BODY_CONFIGURATION_CHANGED` and emit
+  `body_configuration_changed`; the event contains public state and changed field
+  names, never the credential value.
+- App working surfaces remain host-specific. The universal maintenance command
+  set does not imply that every host has tabs, documents, menus, or other app
+  controls.
 
 ## Body Nerves and Surface Truth
 
@@ -192,6 +207,9 @@ and invariant audits.
 Minimum regression set for these issues:
 
 - `RESIDENT-RT-1 runtime-protocol` invariants pass.
+- `RESIDENT-CMD-1 body-command-control` proves Body-only routing, the
+  `openrouter/free` default, extension registration, change visibility, refusal
+  receipts, and secret absence.
 - GUI coverage reports include text commit policy and body test plan entries.
 - Text-surface audits require `HOST_TEXT_COMMIT` coverage.
 - Surface maps include app-local aliases and refusal boundaries.
