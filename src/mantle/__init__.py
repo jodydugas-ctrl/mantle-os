@@ -28,6 +28,8 @@ _LAZY = {
     "ResidentRuntime": ("mantle.contracts", "ResidentRuntime"),
     "HostAdapter": ("mantle.contracts", "HostAdapter"),
     "CertificationStatus": ("mantle.contracts", "CertificationStatus"),
+    "ActionExecutionProof": ("mantle.proofs", "ActionExecutionProof"),
+    "MutationClass": ("mantle.proofs", "MutationClass"),
     "Organism": ("mantle.core", "Organism"),
     "Body": ("mantle.core", "Body"),
     "SignalBus": ("mantle.core", "SignalBus"),

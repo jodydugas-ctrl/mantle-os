@@ -83,6 +83,22 @@ def validate_authorization(auth: LifecycleAuthorization, action: LifecycleAction
         raise LifecycleAuthorizationError("authorization expiry is invalid")
 
 
+def authorization_from_dict(data: Dict[str, Any]) -> LifecycleAuthorization:
+    try:
+        return LifecycleAuthorization(
+            schema_version=str(data["schema_version"]),
+            action=LifecycleAction(str(data["action"])),
+            artifact_sha256=str(data["artifact_sha256"]),
+            target_id=str(data["target_id"]),
+            operator_approved=bool(data["operator_approved"]),
+            issued_at=str(data["issued_at"]),
+            expires_at=str(data["expires_at"]),
+            nonce=str(data["nonce"]),
+        )
+    except (KeyError, ValueError, TypeError) as exc:
+        raise LifecycleAuthorizationError("malformed lifecycle authorization") from exc
+
+
 @dataclass
 class LifecycleJournal:
     path: str
