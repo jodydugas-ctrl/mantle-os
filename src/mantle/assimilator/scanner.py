@@ -154,5 +154,10 @@ def scan_project(root: str) -> Dict[str, Any]:
                 files.append(scan_file(full, os.path.relpath(full, root)))
             elif multilang and os.path.splitext(fn)[1].lower() in scanner_ts.LANGS:
                 files.append(scanner_ts.scan_file(full, os.path.relpath(full, root)))
+            elif os.path.splitext(fn)[1].lower() == ".rs":
+                # Rust remains inspectable when tree-sitter is unavailable; the
+                # fallback reports its limitations explicitly in the result.
+                from . import scanner_rust
+                files.append(scanner_rust.scan_file(full, os.path.relpath(full, root)))
     return {"root": os.path.abspath(root), "python_files": py_count, "files": files,
             "read_only": True, "multilang": multilang, "substrate": substrate}
