@@ -83,6 +83,15 @@ class RollingContextTests(unittest.TestCase):
         mind.think(snapshot)
         self.assertEqual(model.prompts, [expected])
 
+    def test_snapshot_strategy_keeps_context_when_intent_is_supplied(self):
+        org = born()
+        model = CountingModel()
+        mind = Mind(MindPort(org), model)
+        snapshot = org.nervous.assemble()
+        expected = "%s\n\nINTENT:\nhello" % mind._frame(snapshot)
+        mind.think(snapshot, "hello")
+        self.assertEqual(model.prompts, [expected])
+
     def test_prefix_is_immutable_and_delta_advances_once(self):
         org = born()
         org.memory.remember("facts", {"name": "alpha"})
@@ -333,9 +342,12 @@ class RollingContextTests(unittest.TestCase):
         org = born()
         model = Structured()
         mind = Mind(MindPort(org), model)
-        self.assertEqual(mind.think(org.nervous.assemble(), "hello"),
-                         "structured-answer")
-        self.assertEqual(model.request.prompt, "hello")
+        snapshot = org.nervous.assemble()
+        self.assertEqual(mind.think(snapshot, "hello"), "structured-answer")
+        self.assertEqual(
+            model.request.prompt,
+            "%s\n\nINTENT:\nhello" % mind._frame(snapshot),
+        )
 
 
 if __name__ == "__main__":
