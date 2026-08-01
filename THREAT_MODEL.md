@@ -92,6 +92,10 @@ equivalent. Reviewers remain responsible for that mapping.
   current runtime authority.
 - A raw in-process caller can reach internal Python state; this is inside the trust
   boundary even when public façades remove convenient handles.
+- Windows fallback persistence refuses traversal plus pre-existing root, artifact, and
+  nested symlinks, but Python exposes no descriptor-relative rename there. A privileged
+  actor concurrently replacing a validated parent during the final rename is outside the
+  trusted-operator boundary; POSIX runs retain the live descriptor-swap proof.
 - `durable-exact` rolling continuity retains exact redacted projected context and responses;
   confidentiality at rest depends on host storage encryption and access control.
 - A provider may ignore, evict, partition, or misreport its cache. Mantle records observed

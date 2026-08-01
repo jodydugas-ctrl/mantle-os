@@ -165,6 +165,7 @@ FRICTION = {
     25: "application certification hid a missing Spore extra",
     26: "GitHub CI inspector used a locale-dependent decoder",
     27: "top-level help returned usage error and local smoke masked it",
+    28: "Windows runner exposed a POSIX-only descriptor-swap claim",
 }
 
 

@@ -1350,7 +1350,7 @@ def t_organism_save_atomic_owner_only():
         linked_nest_created, note = _try_symlink(
             outside, linked_nest, target_is_directory=True
         )
-        if linked_nest_created:
+        if linked_nest_created and persist_module._secure_dirfd_available():
             symlink_root_refused = _expect_raise(
                 lambda: org.save(linked_nest), OSError
             )[0]
@@ -1456,7 +1456,10 @@ def t_organism_save_atomic_owner_only():
                 os.path.join(race_outside, "checkpoint.json")
             )
         else:
-            fixture_notes.append("parent-swap symlink unavailable")
+            fixture_notes.append(
+                "descriptor-relative parent-swap proof unavailable on this platform; "
+                "pre-existing root/artifact/nested symlinks remain refused"
+            )
             race_contained = True
 
         checks = {
@@ -1478,7 +1481,8 @@ def t_organism_save_atomic_owner_only():
             not failed_checks,
             "nest=0700; artifacts=0600; failed staging preserves prior bytes; "
             "root/artifact/nested symlinks and descriptor '..' escape refused; "
-            "descriptor-backed write passed; parent-swap remained descriptor-contained; "
+            "descriptor-backed write passed where available; parent-swap proof is "
+            "platform-scoped; "
             f"fixture_notes={fixture_notes}; failed_checks={failed_checks}",
         )
 

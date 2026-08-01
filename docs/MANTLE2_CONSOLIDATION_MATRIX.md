@@ -143,6 +143,7 @@ Allowed statuses are `already_verified`, `superseded`, `historical_only`, and
 | FRICTION-025 | application certification hid a missing Spore extra | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
 | FRICTION-026 | GitHub CI inspector used a locale-dependent decoder | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
 | FRICTION-027 | top-level help returned usage error and local smoke masked it | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-028 | Windows runner exposed a POSIX-only descriptor-swap claim | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
 
 ## Doctrine reconciliation
 
