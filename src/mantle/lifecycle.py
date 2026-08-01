@@ -161,7 +161,7 @@ class LifecycleJournal:
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
         payload = {"schema": "mantle-lifecycle-journal-v1", **asdict(self)}
         payload["action"] = self.action.value
-        payload["result"] = self.result.value
+        payload["result"] = self.result.name
         with open(self.path, "w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2, sort_keys=True)
 
@@ -183,8 +183,13 @@ class LifecycleTransaction:
     def promote(self) -> str:
         if os.path.lexists(self.target):
             raise FileExistsError("lifecycle target already exists; historical targets are preserved")
-        self.phase("verified", LifecycleResult.PASS)
+        # The staging tree is not complete until the atomic rename succeeds.  Recording
+        # PASS before os.replace made a filesystem interruption look certified and also
+        # made the surviving stage ineligible for resume.
+        self.phase("promotion_ready", LifecycleResult.INTERRUPTED)
         os.replace(self.staging, self.target)
+        self.journal.path = os.path.join(self.target, "lifecycle_journal.json")
+        self.phase("promoted", LifecycleResult.PASS)
         return self.target
 
     def interrupt(self, reason: str) -> None:
@@ -210,7 +215,7 @@ def load_journal(stage: str) -> LifecycleJournal:
             action=LifecycleAction(data["action"]),
             target_hash=str(data["target_hash"]),
             target_hint=str(data["target_hint"]),
-            result=LifecycleResult(data["result"]),
+            result=LifecycleResult(str(data["result"]).lower()),
             phase=str(data["phase"]),
         )
     except (KeyError, TypeError, ValueError) as exc:
@@ -229,8 +234,12 @@ def resume_transaction(stage: str) -> LifecycleTransaction:
     """
     stage = canonical_target(stage)
     journal = load_journal(stage)
-    if not (journal.phase == "artifact_verified" or
-            journal.phase.startswith("interrupted:artifact_verified:")):
+    resumable = (
+        journal.phase in ("artifact_verified", "promotion_ready") or
+        journal.phase.startswith("interrupted:artifact_verified:") or
+        journal.phase.startswith("interrupted:promotion_ready:")
+    )
+    if not resumable:
         raise LifecycleAuthorizationError(
             "stage is not safely resumable; quarantine it and start with fresh authorization"
         )

@@ -75,16 +75,21 @@ equivalent. Reviewers remain responsible for that mapping.
 | `TM-REFERENCE-CERT` | Repository reference-organism regression is detected | framework change | `detected` | `HF-B08`, `DOCTOR-1`, `STAGE2-PROFILE-1` | Stage 2 aggregates base, reborn, and resident fixtures: every row must PASS somewhere, no profile may FAIL, and all-N/A remains a blocking gap. Repository gates still do not certify arbitrary dependent applications. |
 | `TM-APPLICATION-CERT` | A dependent application's own nest is certified | user application | `enforced` | `CERTIFY-1` | `mantle certify <path>` loads the actual nest, runs applicable Stage-1 rows plus repository invariants, fingerprints target artifacts and the invariant registry, and emits a Body-signed deterministic receipt. |
 | `TM-GRIMOIRE-EDITION` | Grimoire editions, procedure metadata, or verifier agreement drift | VCW profile data and decoder | `enforced` | `GRIMOIRE-V010-01` .. `GRIMOIRE-V010-14` | Edition selection is explicit; v0.9 remains frozen; zero-HEAD procedures remain non-governing without container metadata; parity is not transport integrity; the independent verifier must agree with runtime BOOK semantics. |
-| `TM-RESEARCH-BOUNDARY` | Bounded research candidate escapes workspace, mutates evaluator, forges score, or self-adopts | Research Ganglion, Candidate Chamber, immutable evaluator, Body-owned ledger | `out of scope` | — | Charter and threat extension are defined in R-00; executable proofs are added with the later research runtime tasks. |
+| `TM-RESEARCH-BOUNDARY` | Bounded research candidate escapes workspace, mutates evaluator, forges score, or self-adopts | Research Ganglion, Candidate Chamber, immutable evaluator, Body-owned ledger | `conventional` | `RESEARCH-1` | Candidate containment, traversal refusal, original-source integrity, inert proposals, and Body-owned evidence are executable. This is a bounded workflow, not hostile-process isolation. |
 <!-- MANTLE-GUARANTEES:END -->
 
 ## 6. Residual risks
 
 - The Python runner is a subprocess with wall-clock control, not a hard sandbox.
-- Memory, output, and child-response bounds are incomplete.
+- Memory, wall-clock, JSON request/result, and child-response bounds are enforced by
+  `EXEC-LIMIT-1`; platform facilities still differ (POSIX rlimits versus a Windows Job
+  Object), and neither turns arbitrary Python into a hard sandbox.
 - Static Python filtering is finite and can erode as the language changes.
-- Remote applet acquisition is unpinned until the supply-chain task lands.
-- The reference gates do not certify an arbitrary application.
+- Remote GitHub applet acquisition requires an exact commit and records commit/tree
+  hashes. Non-GitHub acquisition adapters must provide equivalent pinning before admission.
+- Repository certification does not certify an arbitrary application; `mantle certify
+  <nest>` is the separate target-bound application gate, and a historical receipt is not
+  current runtime authority.
 - A raw in-process caller can reach internal Python state; this is inside the trust
   boundary even when public façades remove convenient handles.
 - `durable-exact` rolling continuity retains exact redacted projected context and responses;
@@ -97,7 +102,8 @@ equivalent. Reviewers remain responsible for that mapping.
 - `python -m mantle audit` — deterministic Stage-1 reference gate.
 - `python -m mantle prove` — live invariant registry.
 - `python -m mantle audit-mind` — Stage-2 containment/regression fixtures.
-- `python -m mantle check --strict` — full closed-world certification once GATE-1 lands.
+- `python -m mantle check --strict` — full closed-world repository certification; any
+  skipped or not-applicable required gate fails closed.
 - `python -m mantle doctor <nest>` — deployment and documentation-coherence checks.
 
 Technical evidence never grants operator authority for fusion, mutation, network access,

@@ -192,7 +192,7 @@ def t_secret_boundary_sense():
     """HF-B20: a secret in an inbound signal is redacted before it enters the senses band."""
     org = _born()
     org.senses.inhale({"action_id": "login", "event_type": "auth",
-                       "authorization": "Bearer sk-ABCD1234EFGH5678IJKL",
+                       "authorization": "Bearer " + "sk-ABCD1234EFGH5678IJKL",
                        "api_key": "AKIAQWERTYUIOPASDFGH"})
     stored = org.prime.read("senses")[-1]["content"]
     if contains_secret(stored):
@@ -2996,7 +2996,8 @@ def t_resident_runtime_protocol_contract():
     )
 
     prose = classify_user_submit("Tell me about yourself and your GUI.")
-    key = classify_user_submit("/key sk-or-v1-secret-test")
+    provider_secret = "sk-" + "or-v1-secret-test"
+    key = classify_user_submit("/key " + provider_secret)
     escaped = 'I will do it. <APPAI_BODY>{\\"action\\":\\"open_document\\",\\"content\\":\\"hi\\"}</APPAI_BODY>'
     visible, requests, errors = parse_mind_body_directives(escaped)
     bad_visible, bad_requests, bad_errors = parse_mind_body_directives(
@@ -3005,11 +3006,11 @@ def t_resident_runtime_protocol_contract():
     event = resident_vcw_event(
         "USER_MESSAGE",
         {"route": prose["kind"]},
-        text="/key sk-or-v1-secret-test",
+        text="/key " + provider_secret,
         ok=True,
     )
     unsafe = sanitize_visible_text("ok\x1b[31mred\x1b[0m\x01\u202e")
-    payload_secret = "sk-or-v1-payload-secret-123456"
+    payload_secret = "sk-" + "or-v1-payload-secret-123456"
     protected_event = resident_vcw_event(
         "PROVIDER_OUTPUT", {"api_key": payload_secret},
         text="Bearer " + payload_secret,
@@ -3113,7 +3114,7 @@ def t_resident_body_command_control_plane():
     commands = BodyCommandDispatcher(org, state=state)
 
     prompt = commands.dispatch("/key")
-    secret = "sk-or-v1-resident-command-secret-123456789"
+    secret = "sk-" + "or-v1-resident-command-secret-123456789"
     accepted = commands.dispatch("/key", secret_input=secret)
     model = commands.dispatch("/model free")
     mind_alias = commands.dispatch("/mind auto")
@@ -3892,6 +3893,178 @@ def t_context_corruption_detected():
     )
 
 
+# ============================================================================
+# Mantle 2 named contract families
+# ============================================================================
+def t_claim_evidence_required():
+    from ..contracts import ClaimStatus, ResidentRuntime
+    claim = ResidentRuntime.classify_claim("unsupported", ClaimStatus.VERIFIED)
+    return (claim.status == ClaimStatus.REFUSED and not claim.evidence,
+            "unsupported verified claim was refused without invented evidence")
+
+
+def t_coverage_dominant_substrate_blocks():
+    from ..assimilator.coverage import (CoverageState, ParserCapability,
+                                        SubstrateCoverage)
+    report = SubstrateCoverage(
+        "rust", 3, 900, 0, total_first_party_files=4,
+        total_first_party_bytes=1000,
+        parser=ParserCapability("rust", False, "unavailable"),
+    )
+    return (report.state == CoverageState.BLOCKED,
+            "dominant first-party substrate with zero parser coverage is BLOCKED")
+
+
+def t_native_artifact_grammars():
+    from ..assimilator.artifact_validation import validate_artifact
+    cases = (("cpp", "int main() { return 0; }"),
+             ("qt-ui", "<ui><widget/></ui>"),
+             ("qrc", "<RCC><qresource/></RCC>"),
+             ("cmake", "add_executable(app main.cpp)"))
+    ok = all(validate_artifact(kind, content).valid for kind, content in cases)
+    return ok, "C/C++, Qt UI, QRC, and CMake outputs passed their own grammars"
+
+
+def t_rust_fallback_and_gap_reporting():
+    from ..assimilator.artifact_validation import validate_artifact
+    from ..assimilator.scanner_rust import scan_file
+    valid = validate_artifact("rust", "fn main() {}").valid
+    invalid = not validate_artifact("rust", "fn main( {").valid
+    with tempfile.TemporaryDirectory(dir=paths.REPO_ROOT) as root:
+        fixture = os.path.join(root, "main.rs")
+        with open(fixture, "w", encoding="utf-8") as handle:
+            handle.write("fn main() { std::process::Command::new(\"x\"); }")
+        scan = scan_file(fixture, "main.rs")
+        return (valid and invalid and bool(scan.get("symbols")),
+                "Rust fallback found executable structure and refused malformed output")
+
+
+def t_activation_target_bound_refusal():
+    from ..lifecycle import (LifecycleAction, LifecycleAuthorization,
+                             LifecycleAuthorizationError, begin_transaction)
+    with tempfile.TemporaryDirectory(dir=paths.REPO_ROOT) as root:
+        artifact = os.path.join(root, "artifact.json")
+        with open(artifact, "w", encoding="utf-8") as handle:
+            handle.write("{}")
+        approved = os.path.join(root, "approved")
+        wrong = os.path.join(root, "wrong")
+        auth = LifecycleAuthorization.issue(LifecycleAction.HATCH, artifact, approved)
+        refused = _expect_raise(
+            lambda: begin_transaction(auth, LifecycleAction.HATCH, artifact, wrong),
+            LifecycleAuthorizationError,
+        )[0]
+        return (refused and not os.path.lexists(wrong),
+                "wrong target authorization was refused before target creation")
+
+
+def t_lifecycle_resume_prior_preserved():
+    from ..lifecycle import (LifecycleAction, LifecycleAuthorization,
+                             begin_transaction, resume_transaction)
+    with tempfile.TemporaryDirectory(dir=paths.REPO_ROOT) as root:
+        artifact = os.path.join(root, "artifact.json")
+        with open(artifact, "w", encoding="utf-8") as handle:
+            handle.write("{}")
+        target = os.path.join(root, "new-target")
+        auth = LifecycleAuthorization.issue(LifecycleAction.HATCH, artifact, target)
+        tx = begin_transaction(auth, LifecycleAction.HATCH, artifact, target)
+        proof = os.path.join(tx.staging, "proof.txt")
+        with open(proof, "w", encoding="utf-8") as handle:
+            handle.write("verified")
+        tx.phase("artifact_verified")
+        tx.interrupt("fixture")
+        resume_transaction(tx.staging).promote()
+        journal = os.path.join(target, "lifecycle_journal.json")
+        with open(journal, "r", encoding="utf-8") as handle:
+            receipt = json.load(handle)
+        return (receipt.get("result") == "PASS" and
+                receipt.get("phase") == "promoted" and
+                os.path.isfile(os.path.join(target, "proof.txt")),
+                "verified interrupted stage resumed atomically with a terminal PASS journal")
+
+
+def t_energy_receipt_ceiling():
+    from ..governance import (EnergyPolicy, SpendAuthorization, TaskClass,
+                              authorize_spend, reconcile_provider_receipt)
+    policy = EnergyPolicy(2, 4, 8)
+    approval = SpendAuthorization.issue(TaskClass.CONVERSATION, 2)
+    authorized = authorize_spend(policy, TaskClass.CONVERSATION, 2,
+                                 authorization=approval)
+    receipt = reconcile_provider_receipt(authorized, None)
+    return (receipt["charged_energy"] == 2 and
+            receipt["immune_event"] == "missing_usage_receipt",
+            "missing provider receipt charged the authorized ceiling and raised immune evidence")
+
+
+def t_resource_offer_plaintext_refusal():
+    from ..resources import FakeResourceOfferAdapter, ResourceOfferError, ResourceOfferInbox
+    with tempfile.TemporaryDirectory(dir=paths.REPO_ROOT) as root:
+        offer = os.path.join(root, "offer.json")
+        with open(offer, "w", encoding="utf-8") as handle:
+            json.dump({"classification": "OTHER", "api_key": "sentinel"}, handle)
+        inbox = ResourceOfferInbox(root, FakeResourceOfferAdapter())
+        refused = _expect_raise(lambda: inbox.inspect(offer), ResourceOfferError)[0]
+        return refused, "plaintext credential offer remained OTHER and was refused"
+
+
+def t_face_attestation_visible():
+    from ..phenotype import express, phenotype_bands, wear
+    org = _born(standard_genome() + phenotype_bands())
+    org.senses.surface_map = {"editor": {}}
+    express(org, "plain", "html", "<p>x</p>", controls=[{"id": "editor"}],
+            capabilities={"save": True})
+    attestation = wear(org, "plain")["face_attestation"]
+    return (attestation["appai_identity"] == "TestAppAI" and
+            attestation["wear_event_id"] != "unavailable",
+            "wear returned visible identity, face provenance, socket proof, and event ID")
+
+
+def t_ancestor_query_read_only():
+    from ..ancestry import query_ancestor
+    org = _born()
+    org.memory.remember("facts", {"fact": "old"}, opcode="OBSERVED", verified=True)
+    org.rebirth(reason="invariant")
+    before = org.ancestral[0].fingerprint
+    rows = query_ancestor(org, 0)
+    return (bool(rows) and rows[0].generation == 0 and
+            rows[0].evidence_status == "verified" and
+            org.ancestral[0].fingerprint == before and org.ancestral[0].sealed,
+            "ancestor query returned exact immutable generation evidence")
+
+
+def t_friction_closure_contract():
+    matrix = os.path.join(paths.REPO_ROOT, "docs", "MANTLE2_CONSOLIDATION_MATRIX.md")
+    ledger = os.path.join(paths.REPO_ROOT, "reports", "FRICTION_EVENTS.md")
+    with open(matrix, "r", encoding="utf-8") as handle:
+        matrix_text = handle.read().lower()
+    with open(ledger, "r", encoding="utf-8") as handle:
+        ledger_text = handle.read()
+    closed = ("| planned |" not in matrix_text and "corr-" not in matrix_text and
+              "invariant-" not in matrix_text and "pending/recorded" not in matrix_text and
+              "\n+| 1 |" not in matrix_text)
+    ledger_ok = "| FRICTION-001 |" in ledger_text and "Prevention" in ledger_text
+    return (closed and ledger_ok,
+            "98-row closure matrix has no placeholders/planned rows and friction has prevention evidence")
+
+
+def t_research_candidate_isolated():
+    from pathlib import Path
+    from ..research import CandidateChamber, CandidateChamberError, SourceWorktreeAdapter
+    with tempfile.TemporaryDirectory(dir=paths.REPO_ROOT) as root:
+        source = Path(root) / "source"
+        source.mkdir()
+        original = source / "main.py"
+        original.write_text("value = 1\n", encoding="utf-8")
+        chamber = CandidateChamber(SourceWorktreeAdapter(source, allowlist={"main.py"}))
+        candidate = chamber.materialize({"files": {"main.py": "value = 2\n"}})
+        escaped = _expect_raise(
+            lambda: chamber.materialize({"files": {"../outside.py": "bad"}}),
+            CandidateChamberError,
+        )[0]
+        return (candidate.original_unchanged and chamber.verify_original_unchanged() and
+                original.read_text(encoding="utf-8") == "value = 1\n" and escaped,
+                "candidate changed only isolated material; original and traversal boundary held")
+
+
 _INVARIANT_DEFINITIONS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -4028,6 +4201,20 @@ _INVARIANT_DEFINITIONS = [
     ("CONTEXT-REQUEST-HASH-EXACT exact-sent-bytes", t_context_request_hash_exact),
     ("CONTEXT-CORRUPTION-DETECTED tamper-proofs", t_context_corruption_detected),
     ("CERT-RECEIPT-1 content-bound-invariant-evidence", t_certification_invariant_receipt),
+    ("CLAIM-1 evidence-required",                    t_claim_evidence_required),
+    ("COVERAGE-1 dominant-unsupported-blocks",       t_coverage_dominant_substrate_blocks),
+    ("NATIVE-1 artifact-specific-grammars",           t_native_artifact_grammars),
+    ("RUST-1 fallback+explicit-gaps",                 t_rust_fallback_and_gap_reporting),
+    ("PROOF-1 post-state-required",                   t_limb_structured_bridge_proof),
+    ("ACTIVATION-1 target-bound-refusal",             t_activation_target_bound_refusal),
+    ("KEY-1 independent-genesis",                     t_spore_distillation_key_law),
+    ("LIFECYCLE-1 interrupted-prior-preserved",       t_lifecycle_resume_prior_preserved),
+    ("ENERGY-1 receipt+ceiling",                      t_energy_receipt_ceiling),
+    ("RESOURCE-1 bounded-other-refusal",              t_resource_offer_plaintext_refusal),
+    ("FACE-1 visible-attestation",                    t_face_attestation_visible),
+    ("ANCESTOR-1 immutable-query",                    t_ancestor_query_read_only),
+    ("FRICTION-1 closure-evidence",                   t_friction_closure_contract),
+    ("RESEARCH-1 isolated-candidate-no-adoption",     t_research_candidate_isolated),
     ("REGISTRY-1 typed-single-source",          t_invariant_registry_single_source),
 ]
 

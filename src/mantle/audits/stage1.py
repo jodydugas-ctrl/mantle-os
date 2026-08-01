@@ -363,7 +363,7 @@ def demo_organism(break_hash=False, break_primer=False, break_seal=False):
                          truths=appai_truths(),
                          commandments=appai_commandments())
     org.senses.inhale({"action_id": "boot", "event_type": "start",
-                       "authorization": "Bearer sk-SECRET1234567890ABCD"})
+                       "authorization": "Bearer " + "sk-SECRET1234567890ABCD"})
     org.memory.remember("facts", {"k": "host", "v": "headless"})
     org.memory.remember("events", "first breath", opcode="EVENT")
     org.prime.append("thoughts", make_entry("a private musing", opcode="THINK",

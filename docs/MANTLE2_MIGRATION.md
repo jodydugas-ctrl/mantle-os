@@ -1,7 +1,7 @@
-# MantleOS 2.0 local migration guide
+# MantleOS 2.0 migration guide
 
-This branch is a deliberately breaking `2.0.0rc1` candidate. It is local-only and
-does not replace historical residents or lifecycle evidence.
+`2.0.0rc1` is a deliberately breaking candidate. Migration always writes a distinct
+artifact or nest and never replaces historical residents, spores, or lifecycle evidence.
 
 ## Resident protocol
 
@@ -15,20 +15,19 @@ commands. Every successful configuration mutation emits `BODY_CONFIGURATION_CHAN
 
 Use `mantle.contracts` for claims and answers. Verified claims require an
 `EvidenceRef`; user statements, model interpretations, and proposals retain their
-own statuses. Historical certification is not current runtime authority. Spore
-inspection is safe and inert by default:
+own statuses. Repository certification, application certification, historical receipts,
+and current runtime authority are separate.
+
+Spore inspection is safe and inert by default:
 
 ```text
 python -m mantle spore inspect <spore.png>
 python -m mantle spore inspect <spore.png> --include-conversation
 ```
 
-External hatch/graft activation must use a fresh target-bound
-`LifecycleAuthorization`; SELF-vault reconstruction retains its Body-owned recovery
-birthright. Genesis keys remain independently minted and are never derived from a
-spore.
-
-The CLI makes the approval explicit and one-shot:
+External hatch/graft activation requires a fresh target-bound `LifecycleAuthorization`;
+SELF-vault reconstruction retains its Body-owned recovery birthright. Genesis keys remain
+independently minted and are never derived from a spore.
 
 ```text
 python -m mantle lifecycle authorize hatch seed.png new-nest --approve --out=hatch-auth.json
@@ -38,16 +37,48 @@ python -m mantle lifecycle authorize graft patch.png workspace/host --approve --
 python -m mantle graft patch.png host --workspace=workspace --auth=graft-auth.json
 ```
 
-Authorization binds the action, artifact SHA-256, normalized target, expiry, and
-nonce. Mantle validates and consumes it before target creation, builds in a unique
-same-parent staging directory, writes a phase journal, verifies Stage 1 and required
-artifacts, then atomically promotes. Interrupted staging remains inspectable with
-`mantle lifecycle status` and can be moved aside with `mantle lifecycle quarantine`.
+Authorization binds the action, artifact SHA-256, normalized target, expiry, and nonce.
+Mantle consumes it before target creation, builds in a unique same-parent stage, journals
+each phase, verifies required artifacts and gates, and atomically promotes. Inspect with
+`mantle lifecycle status`. Resume an artifact-verified interruption with `mantle lifecycle
+resume`; quarantine any earlier stage and restart under fresh authorization.
 
-The shared native scanner now covers conservative C/C++ declarations and bodies,
-constructor initializer lists, balanced Qt connects and helper-wired actions, Qt UI
-widgets/actions/connections, QRC resources, CMake targets/sources, and Rust fallback
-structure. Every fallback emits `mantle-host-evidence-v3` coverage and parser gaps.
+## Explicit inert migration and rebind
+
+Migration changes format declarations but never activates its output:
+
+```text
+python -m mantle migrate-germ old-germ.json --out=germ-v2.json
+python -m mantle migrate-spore old-spore.png --out=spore-v2.png
+python -m mantle migrate-resident old-nest --out=resident-v2
+python -m mantle rebind host --preserve-old --out=resident-v2 --certify
+```
+
+Resident migration uses a same-parent staging tree and `migration_journal.json`. Rebind
+requires `--preserve-old`; certification applies to the new nest only. Migration or failed
+certification cannot modify the source resident or historical receipt.
+
+## Assimilation coverage
+
+The shared scanner covers conservative C/C++ declarations and bodies, constructor
+initializer lists, balanced Qt connects and helper-wired actions, Qt UI widgets/actions/
+connections, QRC resources, CMake targets/sources, and Rust fallback structure. Reports
+emit `mantle-host-evidence-v3`, `InsertionState`, runtime verification separately, and
+explicit parser gaps. Dominant unsupported first-party substrates are `BLOCKED`.
+
+## Result and gate semantics
+
+Lifecycle and gate results use `PASS`, `PARTIAL`, `FAIL`, `REFUSED`, or `INTERRUPTED`.
+Exit status `0` means PASS, `1` means FAIL/REFUSED, `2` means CLI usage error, and `3`
+means PARTIAL. `python -m mantle check --json` adds a machine-readable terminal result;
+only a full strict PASS is repository certification.
+
+## Bounded Body additions
+
+Mantle 2 adds receipt-backed `EnergyPolicy`/`SpendAuthorization`, disabled and fake
+`ResourceOfferInbox` adapters, visible `FaceAttestation`, optional non-authorizing
+`LineageAttestation`, and deterministic read-only ancestor queries. Real credential-store
+adapters are future optional platform work; plaintext credential files remain refused.
 
 ## Compatibility
 

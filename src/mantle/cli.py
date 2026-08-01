@@ -861,7 +861,19 @@ def cmd_lifecycle(argv):
         target = os.path.join(os.path.dirname(stage),
                               ".mantle-quarantine-" + uuid.uuid4().hex)
         os.replace(stage, target)
-        print("interrupted staging quarantined: %s" % target)
+        quarantined_journal = os.path.join(target, "lifecycle_journal.json")
+        try:
+            with open(quarantined_journal, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+            payload["phase"] = "quarantined"
+            payload["result"] = "REFUSED"
+            from .core.persist import atomic_write_json
+            atomic_write_json(quarantined_journal, payload)
+        except (OSError, ValueError):
+            # Quarantine already achieved its safety purpose.  The existing journal is
+            # retained even when its terminal annotation cannot be updated.
+            pass
+        print(json.dumps({"result": "REFUSED", "quarantine": target}, sort_keys=True))
         return 0
     print("unknown lifecycle subcommand %r" % sub)
     return 2

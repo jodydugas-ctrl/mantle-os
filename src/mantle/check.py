@@ -153,6 +153,8 @@ def _args(argv):
                         help="omit narrated demos; always diagnostic, never certification")
     parser.add_argument("--strict", action="store_true",
                         help="treat every skip or N/A as a failure")
+    parser.add_argument("--json", action="store_true",
+                        help="also emit a machine-readable terminal gate result")
     return parser.parse_args(list(argv or []))
 
 
@@ -268,18 +270,34 @@ def main(argv=None):
             print("  DID NOT EXECUTE: %s — %s" % (item["name"], item["detail"]))
 
     if failures or (args.strict and skipped):
+        if args.json:
+            print(json.dumps({"result": "FAIL", "passed": passed,
+                              "partial": len(skipped), "failed": len(failures),
+                              "steps": results}, sort_keys=True))
         print("CERTIFICATION BLOCKED.")
         print(_LINE)
         return 1
     if args.fast:
+        if args.json:
+            print(json.dumps({"result": "PASS", "scope": "gates-only",
+                              "passed": passed, "partial": 0, "failed": 0,
+                              "steps": results}, sort_keys=True))
         print("GATES-ONLY DIAGNOSTIC GREEN — NOT A CERTIFICATION.")
         print(_LINE)
         return 0
     if skipped:
+        if args.json:
+            print(json.dumps({"result": "PARTIAL", "passed": passed,
+                              "partial": len(skipped), "failed": 0,
+                              "steps": results}, sort_keys=True))
         print("PARTIAL: required work did not execute — NOT A CERTIFICATION.")
         print("Re-run with --strict to make every gap fail closed.")
         print(_LINE)
         return 3
+    if args.json:
+        print(json.dumps({"result": "PASS", "scope": "repository-certification",
+                          "passed": passed, "partial": 0, "failed": 0,
+                          "steps": results}, sort_keys=True))
     print("EVERY REQUIRED GATE EXECUTED AND GREEN. The reference organism is certified.")
     print(_LINE)
     return 0

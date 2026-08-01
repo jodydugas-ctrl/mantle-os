@@ -34,6 +34,21 @@ def _sha256(path: str) -> str:
         return hashlib.sha256(handle.read()).hexdigest()
 
 
+def _migration_phase(staging: str, kind: str, source: str, out: str,
+                     phase: str, result: str = "INTERRUPTED") -> None:
+    """Persist a non-activating migration journal before each material stage."""
+    atomic_write_json(os.path.join(staging, "migration_journal.json"), {
+        "schema": "mantle-migration-journal-v1",
+        "kind": kind,
+        "source_sha256": _tree_fingerprint(source),
+        "target_hash": hashlib.sha256(out.encode("utf-8")).hexdigest(),
+        "target_hint": os.path.basename(out),
+        "phase": phase,
+        "result": result,
+        "activated": False,
+    })
+
+
 def migrate_germ(source: str, out: str) -> Dict[str, Any]:
     source, out = _new_target(source, out)
     with open(source, "r", encoding="utf-8") as handle:
@@ -78,14 +93,18 @@ def migrate_resident(source: str, out: str) -> Dict[str, Any]:
         raise ValueError("source is not a persisted Mantle resident")
     staging = tempfile.mkdtemp(prefix=".mantle-migrate-resident-", dir=os.path.dirname(out))
     try:
+        _migration_phase(staging, "resident", source, out, "staging_created")
         shutil.copytree(source, staging, dirs_exist_ok=True)
+        _migration_phase(staging, "resident", source, out, "source_copied")
         atomic_write_json(os.path.join(staging, "resident_protocol.json"), {
             "schema": "mantle-resident-protocol-declaration-v1",
             "protocol": RESIDENT_PROTOCOL,
             "migrated_from_sha256": _tree_fingerprint(source),
             "historical_source_preserved": True,
         })
+        _migration_phase(staging, "resident", source, out, "promotion_ready")
         os.replace(staging, out)
+        _migration_phase(out, "resident", source, out, "promoted", "PASS")
     except Exception:
         # Preserve the interrupted stage for inspection; do not damage source/out.
         raise

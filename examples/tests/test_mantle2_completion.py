@@ -132,6 +132,21 @@ def test_lifecycle_resume_only_promotes_verified_stage(tmp_path: Path):
     resumed = resume_transaction(tx.staging)
     assert resumed.promote() == canonical_target(str(target))
     assert (target / "proof.txt").read_text() == "verified"
+    journal = json.loads((target / "lifecycle_journal.json").read_text())
+    assert journal["result"] == "PASS" and journal["phase"] == "promoted"
+
+
+def test_resident_migration_is_journaled_and_preserves_source(tmp_path: Path):
+    from mantle.migration import migrate_resident
+    source = tmp_path / "source"
+    born().save(str(source))
+    original = (source / "organism.json").read_bytes()
+    out = tmp_path / "migrated"
+    result = migrate_resident(str(source), str(out))
+    assert result["result"] == "PASS" and result["activated"] is False
+    assert (source / "organism.json").read_bytes() == original
+    journal = json.loads((out / "migration_journal.json").read_text())
+    assert journal["result"] == "PASS" and journal["phase"] == "promoted"
 
 
 def test_artifact_grammars_and_assimilation_report_emit_actual_state(tmp_path: Path):

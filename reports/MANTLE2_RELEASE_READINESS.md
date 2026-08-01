@@ -1,59 +1,68 @@
-# MantleOS 2.0.0rc1 local release readiness
+# MantleOS 2.0.0rc1 release readiness
 
-## Repositories
+## Scope and authority
 
-- MantleOS branch: `codex/mantle-2-platform-consolidation`
-- MantleOS base: `c9d6274c6c2e562fd8c1630dd9395197fe60ad6e`
-- MantleOS scanner/lifecycle implementation commit: `dcfef68`
-- Organize.AppAI branch: `codex/organize-appai-mantle2`
-- Organize.AppAI base: `8ef42a4dbe1991d197c65862825634b0c252af16`
-- Organize.AppAI final implementation commit: `861efe8`
+This report describes the reference-platform candidate. Repository certification,
+application certification, immutable historical receipts, and current runtime authority
+are separate. The release manifest binds the final source commit and distribution hashes;
+it does not grant a resident permission to act.
 
-MantleOS was reconciled with the then-current GitHub `main` before publication. The
-separate Organize.AppAI repository remains local because its configured `origin` is a
-pristine filesystem clone rather than a GitHub remote.
+## Implemented release contract
 
-## Verification
+- Canonical `ResidentRuntime`, Body command dispatcher, Prime-VCW conversation recovery,
+  typed hidden Body requests, sanitized provider output, receipts, and deterministic fallback.
+- Mandatory `mantle-resident-v2` declaration for maintained resident certification.
+- Grounded claim/evidence firewall and post-state `ActionExecutionProof` requirement.
+- Native C/C++/Qt/CMake and Rust fallback scanning, typed coverage states, actual insertion
+  state, GUI nerve coverage v3, and artifact-kind-specific validators.
+- Germ v2, inert inspection/migration, target-bound one-shot hatch/graft authorization,
+  transactional lifecycle journals, resume/quarantine, preserved rebind, and independent keys.
+- Receipt-backed energy governance, bounded resource offers, face attestations, and immutable
+  ancestor queries.
+- Distinct NotepadNext Mantle 2 candidate and shared-runtime Organize.AppAI migration; all
+  historical NotepadNext residents, spores, and audits remain untouched.
+- Windows contract CI, distribution build/install smoke, artifact hashing, and release-content
+  scans in addition to the Ubuntu Python 3.10-3.14 certification matrix.
 
-| Check | Result |
-| --- | --- |
-| Mantle compileall | PASS |
-| Mantle contract regression script | PASS (6 checks) |
-| `python -m mantle prove` | PASS (134/134 after current-main reconciliation) |
-| `python -m mantle audit` | PASS |
-| `python -m mantle audit-mind` | PASS |
-| Mantle full pytest suite | PASS (78 passed, 2 skipped, 3 subtests) |
-| `python -m mantle check` | PARTIAL (13 passed, 1 skipped, 0 failed; not a certification) |
-| Authorized hatch/graft CLI end-to-end | PASS (atomic targets; original sample host unchanged) |
-| Organize source compilation | PASS |
-| Organize full dependency suite | PASS (299 passed, 4 skipped) |
+## Tracked closure evidence
 
-## Delivered
+- `docs/MANTLE2_CONSOLIDATION_MATRIX.md` contains all 98 actual corrections and 22 friction
+  events with implementation symbols, executable tests, maintained examples, and commit IDs.
+- `python -m mantle prove` reports 148/148, including every named Mantle 2 invariant family
+  and the matrix/friction closure check.
+- Organize.AppAI commit `896a9597b89ba899cd82a5b841424ab9204ad2c9` passed 299 tests with
+  four declared optional skips and its complete fake/offline demo.
+- NotepadNext candidate commit `e09b61c` produces germ-v2 lifecycle evidence, independently
+  minted keys, and refuses to call observed hooks applied or runtime-verified.
 
-- Shared evidence/claim contracts and GroundedAnswer boundary.
-- Canonical Mantle resident protocol v2 command surface, including `/mind`,
-  `/provider-test`, and `/evidence`.
-- Typed fusion authorization builder.
-- Safe inert spore inspection with explicit raw-conversation opt-in.
-- Target-bound lifecycle authorization/journal primitives.
-- Body action execution proof type requiring post-state verification.
-- Explicit substrate coverage states and a pure-stdlib Rust fallback scanner.
-- Shared native/Qt fallback scanner covering C/C++ bodies, constructor initializer
-  lists, balanced Qt connections, helper-wired actions, UI XML, QRC resources, and
-  CMake topology.
-- Target-bound, one-shot lifecycle authorization enforced at external hatch and
-  graft boundaries, with staged journals and atomic promotion.
-- Organize terminal migration to the shared dispatcher with deterministic fallback.
-- Organize assist GroundedAnswer projection and Mantle 2 status fields.
-- Tracked consolidation matrix and friction ledger.
+## Final publication gates
 
-## Known limitations / blockers
+Final evidence is generated after the tracked documentation commit and stored in the
+non-self-referential release manifest or GitHub Actions, not retrofitted into this file:
 
-This is a release-preparation candidate, not a certification claim. The final full Mantle
-check is `PARTIAL` because its B-47 resident-host scenario is not applicable to the
-repository fixture used by the gate. Native C/C++ prefers installed tree-sitter evidence
-and retains a pure-stdlib fallback; unsupported or truncated constructs remain explicit
-coverage gaps. Real resource-offer credential adapters, face attestation, lifecycle
-resume, and complete NotepadNext migration remain matrix work. Exact final local commit
-IDs are written after the tracked report commit to the untracked local gate manifest
-under `work/`.
+```text
+python -m compileall -q src
+python -m mantle prove
+python -m mantle audit
+python -m mantle audit-mind
+python -m mantle check --fast
+python -m mantle check --strict --json
+python -m pytest -q
+python examples/spore/vcw_conformance.py
+python tools/release_scan.py
+python -m build
+python -m twine check dist/*
+```
+
+Publication is ready only if every command passes, a clean-environment wheel smoke succeeds,
+CI is green, both worktrees are clean, and artifact hashes match the release manifest.
+
+## Deliberate non-goals and residual risks
+
+- The cultivated Python runner is bounded but is not a hard WASM sandbox.
+- Hostile operators, malicious in-process Body code, arbitrary tool-calling MINDs, and
+  multi-agent coordination remain outside this release threat boundary.
+- Pure-stdlib native/Rust scanners are conservative and report unsupported syntax as gaps.
+- Core ships disabled/fake resource-offer adapters; real OS credential stores are future
+  optional integrations.
+- PyPI publication remains a separate explicit operator decision.

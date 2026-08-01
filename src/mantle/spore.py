@@ -1324,7 +1324,7 @@ def _demo(path: str = "example_spore.png") -> str:
 def main(argv):
     if len(argv) < 2:
         print(_USAGE)
-        return 1
+        return 2
     cmd = argv[1]
     try:
         if cmd == "create":
@@ -1361,7 +1361,7 @@ def main(argv):
         elif cmd == "verify":
             rep = verify_spore(argv[2])
             print(json.dumps(rep, indent=2))
-            return 0 if rep["ok"] else 2
+            return 0 if rep["ok"] else 1
         elif cmd == "extract":
             out = argv[3] if len(argv) > 3 else "spore_min.py"
             extract_embedded_tool(argv[2], out)
@@ -1371,7 +1371,7 @@ def main(argv):
             print("demo spore written")
         else:
             print(_USAGE)
-            return 1
+            return 2
     except (IndexError, ValueError) as e:
         print(f"error: {e}\n\n{_USAGE}")
         return 1

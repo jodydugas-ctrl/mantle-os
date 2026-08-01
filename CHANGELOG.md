@@ -23,11 +23,24 @@ All notable release-level changes are documented here.
   CMake/UI/QRC topology, Rust fallback scanning, and explicit parser-gap evidence.
 - Added target-bound one-shot lifecycle authorization for external hatch and graft,
   same-parent staging journals, symlink-escape refusal, Stage-1 verification, and
-  atomic promotion.
+  atomic promotion, plus deterministic resume/quarantine and preserved rebind.
 - Added safe inert spore inspection and Mantle 2 migration guidance while preserving
   independently minted genesis keys and separating integrity from activation authority.
-- Migrated the Organize.AppAI integration locally to the shared resident contracts;
-  its product repository remains separate from this MantleOS release.
+- Added receipt-backed energy ceilings, bounded disabled/fake resource-offer adapters,
+  visible face attestations, optional non-authorizing lineage attestations, and immutable
+  ancestor queries.
+- Added Windows contract CI, wheel/sdist build and clean-install smoke, artifact manifests,
+  and tracked-content credential/private-path scanning.
+- Migrated maintained NotepadNext and Organize.AppAI candidates to the shared resident
+  contracts while preserving every historical resident and receipt.
+
+### Breaking changes
+
+- `mantle-germ-v2` is the only germ schema accepted for Mantle 2 activation. Legacy germs,
+  spores, and residents remain inspectable and must use the explicit inert `migrate-*`
+  commands before activation or certification.
+- Maintained residents must declare `mantle-resident-v2`; legacy command/event dialects
+  are refused by Mantle 2 certification.
 
 ### Changed — faster certification evidence paths
 
