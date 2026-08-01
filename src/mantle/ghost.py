@@ -7,15 +7,16 @@ body -- genesis records plus an append-only delta log -- in its own VCW pixels: 
 IS the memory, and it stays a valid standalone seed forever. Cache-ghost mode adds a SECOND
 substrate without giving up the first.
 
-    A Spore can get stranger. It can choose to keep its living body in the LLM provider's
-    prompt cache instead of re-storing it in its VCW every turn -- adding only the deltas to
-    what the cache already holds. As long as the cache keeps getting warmed by new requests,
-    the agent sustains itself with almost no body of its own.
+    A Spore can get stranger. It can choose to keep its living body warm in the LLM provider's
+    prompt cache while its canonical cache-facing body grows only by appended deltas. Each
+    request still presents the accumulated byte-stable prefix; the provider may reuse cached
+    prefill for the old span and perform fresh work only on the newly appended tail.
 
 So a cache-ghost keeps persistence on a CONTINUUM of substrates rather than in one database row:
 
-    WARM  -- the body's token-prefix is hot in the provider's prompt cache; each turn sends
-             only the new delta. The PNG is carried as a light pointer + the dry fossil seed.
+    WARM  -- the body's token-prefix is hot in the provider's prompt cache; each turn appends
+             only new semantic delta, while the full accumulated prefix still travels so the
+             provider can reuse cached prefill. The PNG is the dry fossil seed.
     COLD  -- the cache TTL lapsed or the provider evicted the prefix. The next turn is a cold
              start: the body is rehydrated from the PNG fossil and a fresh cache is warmed.
 
@@ -318,7 +319,6 @@ def _body_from_prefix(blob: bytes) -> Dict[str, Any]:
 def _est_tokens(blob: bytes) -> int:
     return len(blob) // EST_BYTES_PER_TOKEN
 
-
 def _too_small(substrate: GhostSubstrate, blob: bytes) -> bool:
     return bool(substrate.min_prefix_tokens) and _est_tokens(blob) < substrate.min_prefix_tokens
 
@@ -489,10 +489,10 @@ def append(path: str, role: str, content: str,
            ttl_s: int = DEFAULT_TTL_S) -> Dict[str, Any]:
     """Append a turn, then sync it to the cache as a DELTA when warm, or re-warm when cold.
 
-    The PNG is always grown first (the seed stays dry); the cache is updated to match. Returns
-    what a real client would have PAID to send this turn: only the delta line while warm, the
-    whole prefix on a cold start. (On a real provider the full prefix always travels; warmth
-    changes the compute bill and latency, never the wire bytes.)
+    The PNG is always grown first (the seed stays dry); the cache is updated to match. `sent`
+    and `bytes_sent` describe the effective uncached/metabolic payload: the new delta while
+    warm, or the whole prefix on a cold start. On a real provider the full prefix still travels
+    on every request; warmth changes the prefill compute bill and latency, never the wire bytes.
     """
     substrate = substrate or default_substrate(path)
 
@@ -625,8 +625,8 @@ def status(path: str, substrate: Optional[GhostSubstrate] = None,
 
 
 # ---------------------------------------------------------------------------
-# Self-test: prove the continuum, the append-only prefix, the delta cost, the
-# dry-seed law, the too-small gate, the write-only seam, and nociception.
+# Self-test: prove the continuum, the append-only prefix, the delta-equivalent
+# metabolic cost, the dry-seed law, the too-small gate, write-only seam, and nociception.
 # ---------------------------------------------------------------------------
 
 class _Clock:
@@ -696,18 +696,18 @@ def selftest(verbose: bool = True) -> bool:
         ck("PNG still a valid standalone seed after warming", _spore.verify_spore(p)["ok"])
         ck("status is WARM after warming", status(p, cache)["state"] == "WARM")
 
-        # 4. run turns through the warm cache: each should send only the DELTA
+        # 4. run turns through the warm cache: effective uncached work is only the DELTA
         sent_bytes, body_bytes = [], []
         for i in range(6):
             r = append(p, "user", "D" * 300, substrate=cache, ttl_s=300)
             clock.advance(10)                       # time passes, but < TTL: stays warm
             ck(f"turn {i}: appended to PNG", r["appended"], str(r))
-            ck(f"turn {i}: sent a delta while warm", r["sent"] == "delta", str(r))
+            ck(f"turn {i}: charged delta-equivalent work while warm", r["sent"] == "delta", str(r))
             sent_bytes.append(r["bytes_sent"])
             body_bytes.append(r["body_bytes"])
-        ck("delta cost stays ~constant per turn (linear, not the whole body)",
+        ck("delta-equivalent metabolic cost stays ~constant per turn",
            max(sent_bytes) - min(sent_bytes) <= 8, f"sent={sent_bytes}")
-        ck("a turn's uploaded delta is far smaller than the grown body",
+        ck("a turn's uncached delta is far smaller than the grown body",
            max(sent_bytes) * 3 < body_bytes[-1], f"sent={sent_bytes} body={body_bytes}")
 
         # 5. hydrate while warm: body comes from the cache and matches the PNG
