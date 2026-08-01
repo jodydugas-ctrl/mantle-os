@@ -167,6 +167,7 @@ class BodyCommandDispatcher:
         self.register("/provider-test", "test provider configuration without sending content",
                       self._provider_test)
         self.register("/evidence", "show bounded Body evidence and receipts", self._evidence)
+        self.register("/quit", "close the resident terminal", self._quit)
         if organism is not None:
             organism.senses.mark_routine("resident.body_command", "submit")
 
@@ -397,6 +398,12 @@ class BodyCommandDispatcher:
             "Bounded Body evidence is available below (credentials and raw content redacted).",
             details={"resident_protocol": RESIDENT_PROTOCOL_VERSION,
                      "event_count": len(safe), "events": safe},
+        )
+
+    def _quit(self, _argument: str, _secret: Optional[str]) -> BodyCommandResult:
+        return BodyCommandResult(
+            "/quit", True, "executed", "Resident terminal close requested.",
+            details={"exit_requested": True},
         )
 
 
