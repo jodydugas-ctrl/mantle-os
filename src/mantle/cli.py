@@ -1190,12 +1190,15 @@ _DISPATCH = {
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     raw_cmd = argv[0] if argv else "teach"
+    if raw_cmd in ("-h", "--help", "help"):
+        print(_USAGE)
+        return 0
     cmd = _COMMAND_ALIASES.get(raw_cmd, raw_cmd)
     handler = _DISPATCH.get(cmd)
     if handler is not None:
         return handler(argv[1:])
     print(_USAGE)
-    return 2 if raw_cmd in ("-h", "--help", "help") else 1
+    return 1
 
 
 if __name__ == "__main__":

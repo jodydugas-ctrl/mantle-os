@@ -163,6 +163,8 @@ FRICTION = {
     23: "package stderr and deprecated license metadata",
     24: "PowerShell process-redirection argument parsing",
     25: "application certification hid a missing Spore extra",
+    26: "GitHub CI inspector used a locale-dependent decoder",
+    27: "top-level help returned usage error and local smoke masked it",
 }
 
 

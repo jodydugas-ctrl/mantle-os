@@ -182,3 +182,10 @@ def test_application_certification_names_failed_repository_invariant(tmp_path: P
     }])
     with pytest.raises(CertificationError, match="SPORE-2 sporeagent-lifecycle-receipt"):
         certification.certify_nest(str(nest))
+
+
+def test_top_level_help_is_a_successful_read_only_command(capsys):
+    from mantle.cli import main
+    assert main(["--help"]) == 0
+    assert "usage: python -m mantle" in capsys.readouterr().out
+    assert main(["definitely-not-a-command"]) == 1
