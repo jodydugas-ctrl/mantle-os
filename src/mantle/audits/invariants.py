@@ -2698,9 +2698,9 @@ def t_app_band_allocator_reserves_atlas():
 
 
 def t_assimilator_substrate_gaps_and_outside_host_gate():
-    """ASSIM-1: Phase-0 first discovers the host substrate, reports unsupported
-    native/Qt coverage explicitly, emits a resident evidence index, and refuses to
-    write inventory artifacts inside the host tree."""
+    """ASSIM-1: Phase-0 scans native/Qt with shared fallback parsers, reports
+    per-file gaps, emits a resident evidence index, and refuses to write inventory
+    artifacts inside the host tree."""
     from ..assimilator import answer_from_host_evidence, dry_run, write_artifacts
     with tempfile.TemporaryDirectory() as td:
         host = os.path.join(td, "NativeQt")
@@ -2724,8 +2724,9 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             "native-c-family" in substrate["languages"]
             and "qt-resource-ui" in substrate["languages"]
             and "cmake" in substrate["languages"]
-            and substrate["coverage"]["requires_adaptive_native_tools"] == 2
-            and len(substrate["unsupported"]) == 2
+            and substrate["coverage"]["requires_adaptive_native_tools"] == 0
+            and len(substrate["unsupported"]) == 0
+            and all(row["parser"]["available"] for row in substrate["coverage"]["states"])
             and "Substrate coverage" in inventory
             and evidence.get("kind") == "HOST_EVIDENCE_INDEX"
             and evidence.get("local_first_consultation") is True
@@ -2745,7 +2746,7 @@ def t_assimilator_substrate_gaps_and_outside_host_gate():
             and "600-second cadence" in evidence.get("runtime_policies", {}).get("heartbeat_scheduler_policy", "")
             and "Resident runtime contract" in inventory
             and "Resident host evidence index" in inventory
-            and "adaptive parser/observer/verifier" in answer
+            and "Known host evidence limits" in answer
             and os.path.exists(paths["inventory"])
             and inside_refused
         )

@@ -59,18 +59,6 @@ def discover(root: str) -> Dict[str, Any]:
         languages.append("cmake")
 
     unsupported = []
-    if native_count:
-        unsupported.append({
-            "substrate": "native-c-family",
-            "files": native_count,
-            "reason": "requires native parser/adapter before signed organ insertion",
-        })
-    if qt_count:
-        unsupported.append({
-            "substrate": "qt-resource-ui",
-            "files": qt_count,
-            "reason": "requires Qt UI/resource graph extraction before signed organ insertion",
-        })
 
     total_bytes = 0
     try:
@@ -86,8 +74,8 @@ def discover(root: str) -> Dict[str, Any]:
     coverage_rows = []
     for language, count, bytes_hint, parser_available, parser_name in (
         ("python", python_count, 0, True, "stdlib-ast"),
-        ("native-c-family", native_count, 0, False, "none"),
-        ("qt-resource-ui", qt_count, 0, False, "none"),
+        ("native-c-family", native_count, 0, True, "native-stdlib-fallback"),
+        ("qt-resource-ui", qt_count, 0, True, "qt-xml-stdlib"),
         ("rust", counts.get(".rs", 0), 0, True, "stdlib-rust-fallback"),
     ):
         if not count:
@@ -97,7 +85,11 @@ def discover(root: str) -> Dict[str, Any]:
             total_first_party_files=first_party_files,
             total_first_party_bytes=total_bytes,
             material_gaps=() if parser_available else ("parser unavailable",),
-            parser=ParserCapability(language, parser_available, parser_name),
+            parser=ParserCapability(
+                language, parser_available, parser_name,
+                ("conservative fallback; per-file gaps are authoritative",)
+                if "fallback" in parser_name else (),
+            ),
         )
         coverage_rows.append(row.to_dict())
 
@@ -114,7 +106,7 @@ def discover(root: str) -> Dict[str, Any]:
         "coverage": {
             "python_ast": python_count,
             "tree_sitter_optional": tree_sitter_count,
-            "requires_adaptive_native_tools": native_count + qt_count,
+            "requires_adaptive_native_tools": 0,
             "states": coverage_rows,
             "blocked": any(row["state"] == CoverageState.BLOCKED.value for row in coverage_rows),
         },
