@@ -50,7 +50,8 @@ _USAGE = ("usage: python -m mantle "
           "demo | audit | prove | mind | audit-mind | "
           "check [--fast] | research-init/propose/trial/report/authorize/adopt | "
           "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png] | "
-          "resident <nest> | lifecycle <authorize|status|quarantine> ...]")
+          "resident <nest> | lifecycle <authorize|status|resume|quarantine> ... | "
+          "migrate-germ/migrate-resident/migrate-spore ... | rebind <host> ...]")
 
 _COMMANDS = (
     "anchor", "ask", "feed", "vitals", "hatch", "graft", "spore", "ghost",
@@ -60,7 +61,8 @@ _COMMANDS = (
     "assimilate", "check", "certify", "research-init", "research-baseline",
     "research-propose", "research-trial", "research-report", "research-authorize",
     "research-adopt",
-    "resident", "lifecycle",
+    "resident", "lifecycle", "migrate-germ", "migrate-resident", "migrate-spore",
+    "rebind",
 )
 
 # every command answers to its hyphenated name and its underscore twin
@@ -770,12 +772,8 @@ def cmd_resident(argv):
         except (EOFError, KeyboardInterrupt):
             print()
             break
-        if line.strip().lower() in ("/quit", "/exit"):
-            break
-        if line.strip().lower() == "/help":
-            result = dispatcher.dispatch("/help")
-            print(result.message)
-            continue
+        if line.strip().lower() == "/exit":
+            line = "/quit"
         if line.strip().lower() == "/key":
             import getpass
             secret = getpass.getpass("API key (hidden; blank cancels): ")
@@ -785,6 +783,8 @@ def cmd_resident(argv):
         try:
             result = runtime.turn(line)
             print(result.visible_output)
+            if line.strip().lower() == "/quit":
+                break
         except Exception as exc:
             print("Body fallback: conversation unavailable (%s)." % type(exc).__name__)
     return 0
@@ -794,7 +794,7 @@ def cmd_lifecycle(argv):
     """Operator-facing authorization and interrupted-stage inspection tools."""
     args, flags = _split(argv)
     if not args:
-        print("usage: python -m mantle lifecycle <authorize|status|quarantine> ...")
+        print("usage: python -m mantle lifecycle <authorize|status|resume|quarantine> ...")
         return 2
     sub = args[0]
     if sub == "authorize":
@@ -824,10 +824,26 @@ def cmd_lifecycle(argv):
         journal = os.path.join(os.path.abspath(args[1]), "lifecycle_journal.json")
         try:
             with open(journal, "r", encoding="utf-8") as handle:
-                print(json.dumps(json.load(handle), indent=2, sort_keys=True))
+                payload = json.load(handle)
+                print(json.dumps(payload, indent=2, sort_keys=True))
         except OSError as exc:
             print("LIFECYCLE STATUS UNAVAILABLE: %s" % exc)
             return 1
+        result = str(payload.get("result", "fail")).lower()
+        return 3 if result == "partial" else (0 if result == "pass" else 1)
+    if sub == "resume":
+        if len(args) != 2:
+            print("usage: python -m mantle lifecycle resume <interrupted-stage-dir>")
+            return 2
+        from .lifecycle import LifecycleAuthorizationError, resume_transaction
+        try:
+            transaction = resume_transaction(args[1])
+            target = transaction.promote()
+        except (LifecycleAuthorizationError, FileExistsError, OSError) as exc:
+            print("LIFECYCLE RESUME REFUSED: %s" % exc)
+            return 1
+        print(json.dumps({"result": "PASS", "target": target,
+                          "source_stage_preserved": False}, sort_keys=True))
         return 0
     if sub == "quarantine":
         if len(args) != 2:
@@ -845,10 +861,59 @@ def cmd_lifecycle(argv):
         target = os.path.join(os.path.dirname(stage),
                               ".mantle-quarantine-" + uuid.uuid4().hex)
         os.replace(stage, target)
-        print("interrupted staging quarantined: %s" % target)
+        quarantined_journal = os.path.join(target, "lifecycle_journal.json")
+        try:
+            with open(quarantined_journal, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+            payload["phase"] = "quarantined"
+            payload["result"] = "REFUSED"
+            from .core.persist import atomic_write_json
+            atomic_write_json(quarantined_journal, payload)
+        except (OSError, ValueError):
+            # Quarantine already achieved its safety purpose.  The existing journal is
+            # retained even when its terminal annotation cannot be updated.
+            pass
+        print(json.dumps({"result": "REFUSED", "quarantine": target}, sort_keys=True))
         return 0
     print("unknown lifecycle subcommand %r" % sub)
     return 2
+
+
+def _cmd_migration(kind, argv):
+    args, flags = _split(argv)
+    if len(args) != 1 or not isinstance(flags.get("--out"), str):
+        print("usage: python -m mantle migrate-%s <source> --out=<new-artifact>" % kind)
+        return 2
+    from .migration import migrate_germ, migrate_resident, migrate_spore
+    operation = {"germ": migrate_germ, "resident": migrate_resident,
+                 "spore": migrate_spore}[kind]
+    try:
+        result = operation(args[0], str(flags["--out"]))
+    except (OSError, ValueError) as exc:
+        print("MIGRATION REFUSED: %s" % exc)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_rebind(argv):
+    args, flags = _split(argv)
+    if len(args) != 1 or not flags.get("--preserve-old"):
+        print("usage: python -m mantle rebind <host> --preserve-old [--certify] [--out=DIR]")
+        return 2
+    source = os.path.realpath(os.path.abspath(args[0]))
+    out = flags.get("--out")
+    if not isinstance(out, str):
+        out = source.rstrip("/\\") + "-mantle2-rebound"
+    from .certify import CertificationError
+    from .migration import rebind
+    try:
+        result = rebind(source, out, certify=bool(flags.get("--certify")))
+    except (OSError, ValueError, CertificationError) as exc:
+        print("REBIND REFUSED: %s" % exc)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
 # ---------------------------------------------------------------------------
 # bounded research lifecycle (JSON-only operator/automation surface)
 # ---------------------------------------------------------------------------
@@ -1108,6 +1173,10 @@ _DISPATCH = {
     "certify": _cmd_certify,
     "resident": cmd_resident,
     "lifecycle": cmd_lifecycle,
+    "migrate-germ": lambda rest: _cmd_migration("germ", rest),
+    "migrate-resident": lambda rest: _cmd_migration("resident", rest),
+    "migrate-spore": lambda rest: _cmd_migration("spore", rest),
+    "rebind": cmd_rebind,
     "research-init": _cmd_research_init,
     "research-baseline": _cmd_research_baseline,
     "research-propose": _cmd_research_propose,
@@ -1121,12 +1190,15 @@ _DISPATCH = {
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     raw_cmd = argv[0] if argv else "teach"
+    if raw_cmd in ("-h", "--help", "help"):
+        print(_USAGE)
+        return 0
     cmd = _COMMAND_ALIASES.get(raw_cmd, raw_cmd)
     handler = _DISPATCH.get(cmd)
     if handler is not None:
         return handler(argv[1:])
     print(_USAGE)
-    return 2 if raw_cmd in ("-h", "--help", "help") else 1
+    return 1
 
 
 if __name__ == "__main__":

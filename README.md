@@ -352,8 +352,8 @@ commands are:
 /quit                close the resident terminal
 ```
 
-`/quit` belongs to the interactive terminal adapter; the other entries are supplied by
-the shared Body dispatcher (`/mind` is an alias for `/model`).
+All entries are defined by the shared Body dispatcher (`/mind` is an alias for `/model`);
+the interactive terminal merely treats the successful `/quit` result as its stop signal.
 
 The default model is `openrouter/free`. Credentials remain in process memory and never
 enter VCW or disk. Every accepted, refused, or incomplete command creates a redacted
@@ -410,6 +410,20 @@ python -m mantle lifecycle authorize graft examples/spores/notes_graft.png works
 python -m mantle graft examples/spores/notes_graft.png examples/sample_app --workspace=workspace --auth=graft-auth.json
 python -m mantle doctor nest/                  # deployment checkup (incl. docs-vs-code coherence)
 ```
+
+Safe inspection and explicit format migration never activate their output:
+
+```bash
+python -m mantle spore inspect seed.png
+python -m mantle migrate-germ old.json --out=germ-v2.json
+python -m mantle migrate-spore old.png --out=spore-v2.png
+python -m mantle migrate-resident old-nest --out=new-nest
+python -m mantle lifecycle resume .mantle-stage-<id>
+python -m mantle rebind path/to/host --preserve-old --out=new-nest --certify
+```
+
+Lifecycle and gate JSON use `PASS`, `PARTIAL`, `FAIL`, `REFUSED`, or `INTERRUPTED`.
+Exit codes are `0=PASS`, `1=FAIL/REFUSED`, `2=usage`, and `3=PARTIAL`.
 
 The deeper mechanics — the **cache-ghost** substrate (a spore that lives in an LLM prompt
 cache under four hard laws that keep the PNG the durable source), the per-module facet map,

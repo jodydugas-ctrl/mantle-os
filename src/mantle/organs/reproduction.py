@@ -157,7 +157,7 @@ def distill_germ(state: Dict[str, Any]) -> Dict[str, Any]:
     if task:
         truths.append("my task: %s" % task)
     return {
-        "germ_format": "mantle-germ-v1",
+        "schema": "mantle-germ-v2",
         "identity": {"name": name, "purpose": task or "hatched from a spore",
                      "born_of": "spore-png"},
         "truths": truths,

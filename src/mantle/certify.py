@@ -50,7 +50,7 @@ def _source_commit() -> str:
 
 
 def _target_files(directory: str) -> List[Dict[str, Any]]:
-    names = ["body.json", "organism.json", "self_seal.json"]
+    names = ["body.json", "organism.json", "self_seal.json", "resident_protocol.json"]
     names.extend(sorted(
         name for name in os.listdir(directory)
         if name.startswith("gen") and name.endswith(".vcw")
@@ -92,6 +92,16 @@ def certify_nest(directory: str, *, include_invariants: bool = True) -> Dict[str
         raise CertificationError("not a Mantle nest; missing %s"
                                  % ", ".join(missing))
     target_files = _target_files(directory)
+    protocol_path = os.path.join(directory, "resident_protocol.json")
+    try:
+        with open(protocol_path, "r", encoding="utf-8") as handle:
+            protocol = json.load(handle).get("protocol")
+    except (OSError, ValueError, AttributeError):
+        protocol = None
+    if protocol != "mantle-resident-v2":
+        raise CertificationError(
+            "resident protocol drift: explicit mantle-resident-v2 declaration required"
+        )
     try:
         org = Organism.load(directory, verify_seals=True)
     except Exception as exc:
@@ -106,6 +116,13 @@ def certify_nest(directory: str, *, include_invariants: bool = True) -> Dict[str
     stage1_rows = evidence["substrate_rows"] + evidence["mesh_rows"]
     invariant_rows = _inv.run_all() if include_invariants else []
     invariant_ok = all(row["ok"] for row in invariant_rows)
+    invariant_failures = []
+    for row in invariant_rows:
+        if row.get("ok"):
+            continue
+        name = str(row.get("name") or row.get("code") or "unknown")
+        detail = " ".join(str(row.get("detail") or "no detail").split())[:320]
+        invariant_failures.append("%s [%s]" % (name, detail))
     verify_problems = org.prime.verify()
     failed_codes = [row["code"] for row in stage1_rows if row["result"] == FAIL]
     if preexisting_integrity_events:
@@ -113,7 +130,8 @@ def certify_nest(directory: str, *, include_invariants: bool = True) -> Dict[str
     if verify_problems:
         failed_codes.append("prime-verify")
     if include_invariants and not invariant_ok:
-        failed_codes.append("repository-invariants")
+        failed_codes.extend("repository-invariant:%s" % name
+                            for name in invariant_failures)
 
     unsigned = {
         "schema": SCHEMA,

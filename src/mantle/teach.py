@@ -420,7 +420,7 @@ def ch_ganglia_vault(org: Organism) -> bool:
 
     prog = _g.Ganglion(worker, "arm").run(task, 4).join().progress()
     telemetry = len(prog) == 4 and not worker.brain.fused
-    seed = {"germ_format": "mantle-germ-v1", "identity": {"name": "Worker.Reborn"},
+    seed = {"schema": "mantle-germ-v2", "identity": {"name": "Worker.Reborn"},
             "truths": appai_truths(),
             "commandments": appai_commandments()}
     _v.store_seed(worker, seed)

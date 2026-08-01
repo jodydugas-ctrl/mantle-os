@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import base64
 import json
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional
 
 from .vcw.bands import make_band_boot, code_hash
@@ -53,6 +54,22 @@ CHUNK_BYTES = 1_200_000
 class PhenotypeError(Exception):
     """A face could not be saved, opened, or worn -- a duplicate/second-default, an OTHER-sealed
     or tampered face, foreign provenance, or a control with no socket to plug into."""
+
+
+@dataclass(frozen=True)
+class FaceAttestation:
+    schema_version: str
+    appai_identity: str
+    public_self_fingerprint: str
+    face_name: str
+    face_source_hash: str
+    face_provenance: Dict[str, Any]
+    declared_capabilities: Dict[str, Any]
+    verified_socket_capabilities: List[str]
+    wear_event_id: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
 
 # ----------------------------------------------------------------------------
@@ -208,11 +225,30 @@ def wear(org: Any, name: str, strict_socket: bool = True) -> Dict[str, Any]:
             raise PhenotypeError("face %r declares control(s) %s with no socket in this nervous "
                                  "system -- a face may only plug into controls the body can drive"
                                  % (name, missing))
-    org.prime.append(WEAR_BAND, make_entry({"wear": name}, opcode=WEAR_OPCODE,
-                                           author="BODY", source="phenotype"))
+    wear_event = org.prime.append(
+        WEAR_BAND,
+        make_entry({"wear": name}, opcode=WEAR_OPCODE,
+                   author="BODY", source="phenotype"),
+    )
+    verified_sockets = sorted(
+        str(control.get("id")) for control in manifest.get("controls", [])
+        if control.get("id") in _socket(org)
+    )
+    attestation = FaceAttestation(
+        "mantle-face-attestation-v1",
+        str(org.body.identity_name()),
+        str(org.body.key_fingerprint),
+        name,
+        str(manifest["source_hash"]),
+        dict(manifest.get("provenance") or {}),
+        dict(manifest.get("capabilities") or {}),
+        verified_sockets,
+        str(wear_event.get("hash") or wear_event.get("id") or "unavailable"),
+    )
     return {"name": name, "kind": manifest["kind"], "entry": manifest["entry"],
             "source": manifest["source"], "controls": manifest["controls"],
-            "capabilities": manifest["capabilities"]}
+            "capabilities": manifest["capabilities"],
+            "face_attestation": attestation.to_dict()}
 
 
 def active_face(org: Any) -> Optional[str]:

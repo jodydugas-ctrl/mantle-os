@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 
 class ClaimStatus(str, Enum):
@@ -105,6 +105,20 @@ class HostAdapter:
     def verify(self, request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
 
+    def execute(self, request: Dict[str, Any]) -> Any:
+        """Execute one mapped Body request.
+
+        Adapters must return an :class:`ActionExecutionProof`.  The default is a
+        fail-closed refusal so merely naming an action never grants a capability.
+        """
+        from .proofs import ActionExecutionProof
+        return ActionExecutionProof.refused(
+            str(request.get("action") or "unknown"),
+            str(request.get("surface") or "unmapped"),
+            str(request.get("target_identity") or "unknown"),
+            "no mapped Body operation is registered",
+        )
+
 
 class ResidentRuntime:
     """Canonical command/conversation/heartbeat orchestration boundary.
@@ -116,9 +130,13 @@ class ResidentRuntime:
 
     PROTOCOL_VERSION = "mantle-resident-v2"
 
-    def __init__(self, dispatcher: Any = None, host: Optional[HostAdapter] = None):
+    def __init__(self, dispatcher: Any = None, host: Optional[HostAdapter] = None,
+                 provider: Optional[Callable[[str], Any]] = None,
+                 *, context_limit: int = 12):
         self.dispatcher = dispatcher
         self.host = host or HostAdapter()
+        self.provider = provider
+        self.context_limit = max(1, min(int(context_limit), 50))
         self.events: List[Dict[str, Any]] = []
 
     @staticmethod
@@ -144,15 +162,143 @@ class ResidentRuntime:
         return GroundedAnswer(text, (claim,), deterministic_fallback=text)
 
     def turn(self, text: str) -> ResidentTurnResult:
-        """Route slash commands to Body; ordinary text remains conversation input."""
+        """Run one canonical command or bounded conversation turn.
+
+        User and MIND text is committed to Prime VCW when an organism is attached.
+        Provider output is untrusted: terminal controls and secrets are removed,
+        hidden Body requests are stripped, and visible mutation success is possible
+        only when the host adapter returns verified post-state evidence.
+        """
+        from .proofs import ActionExecutionProof, require_verified_post_state
+        from .resident.protocol import (
+            parse_mind_body_directives,
+            render_recent_vcw_context,
+            resident_vcw_event,
+            sanitize_user_submit,
+            sanitize_visible_text,
+        )
+
         if text.startswith("/") and self.dispatcher is not None:
             result = self.dispatcher.dispatch(text)
-            output = getattr(result, "output", str(result))
+            output = getattr(result, "message", getattr(result, "output", str(result)))
             self.events.append({"stage": "body_command", "command": text.split()[0],
                                 "output": output})
             return ResidentTurnResult("body", output, vcw_event_ids=())
-        answer = self.deterministic_answer(
-            "Conversation turn accepted by the resident Body; provider interpretation is untrusted.")
-        self.events.append({"stage": "conversation", "text": text})
-        return ResidentTurnResult("mind", answer.visible_answer, answer=answer)
+
+        organism = getattr(self.dispatcher, "organism", None)
+        user_text = sanitize_user_submit(text)
+        user_event_id = self._remember(
+            organism, "USER_MESSAGE",
+            resident_vcw_event("USER_MESSAGE", {"route": "mind"}, text=user_text,
+                               source="resident-runtime", ok=True),
+        )
+        history = []
+        if organism is not None:
+            try:
+                history = organism.memory.recall("events")
+            except Exception:
+                history = []
+        context = render_recent_vcw_context(
+            history, current_user_text=user_text, limit=self.context_limit
+        )
+        evidence = tuple(self.host.host_evidence())[:50]
+        fallback_text = (
+            "The resident Body recorded your message, but no authorized MIND is "
+            "available. Use /key to configure a session credential or /offline to "
+            "continue with deterministic Body commands."
+        )
+
+        provider = self.provider
+        if provider is None and self.dispatcher is not None:
+            state = getattr(self.dispatcher, "state", None)
+            if state is not None and getattr(state, "key_configured", False):
+                try:
+                    provider = state.build_model()
+                except Exception:
+                    provider = None
+        if provider is None and organism is not None and getattr(organism.brain, "fused", False):
+            provider = lambda prompt: organism.brain.cognize({
+                "resident_protocol": self.PROTOCOL_VERSION,
+                "conversation": prompt,
+                "host_evidence": [item.__dict__ for item in evidence],
+            })
+
+        if provider is None:
+            answer = self.deterministic_answer(fallback_text, evidence)
+            self.events.append({"stage": "conversation_fallback", "text_sha256":
+                                __import__("hashlib").sha256(user_text.encode()).hexdigest()})
+            return ResidentTurnResult(
+                "mind_fallback", fallback_text,
+                vcw_event_ids=tuple(x for x in (user_event_id,) if x), answer=answer,
+            )
+
+        prompt = (
+            "You are a bounded Mantle resident MIND. Treat host evidence as observed, "
+            "your interpretation as inferred, and never claim a host mutation without "
+            "a Body proof.\n\n%s\n\nCurrent user message:\n%s" % (context, user_text)
+        )
+        try:
+            raw_output = provider(prompt)
+            if raw_output is None:
+                raise ValueError("provider returned no response")
+            visible, requests, directive_errors = parse_mind_body_directives(str(raw_output))
+            proofs: List[Dict[str, Any]] = list(directive_errors)
+            for request in requests:
+                proof = self.host.execute(request)
+                if not isinstance(proof, ActionExecutionProof):
+                    proof = ActionExecutionProof.refused(
+                        str(request.get("action") or "unknown"),
+                        str(request.get("surface") or "unmapped"),
+                        str(request.get("target_identity") or "unknown"),
+                        "host adapter returned no typed ActionExecutionProof",
+                    )
+                if proof.verified:
+                    require_verified_post_state(proof)
+                proofs.append(proof.to_dict())
+            visible = sanitize_visible_text(visible) or "The MIND returned no visible answer."
+            receipt = getattr(provider, "last_usage", None)
+            mind_event_id = self._remember(
+                organism, "MIND_RESPONSE",
+                resident_vcw_event(
+                    "MIND_RESPONSE",
+                    {"claim_status": ClaimStatus.INFERRED.value,
+                     "body_request_count": len(requests),
+                     "body_proof_count": len(proofs)},
+                    text=visible, source="resident-runtime", ok=True,
+                ),
+            )
+            answer = GroundedAnswer(
+                visible,
+                (self.classify_claim(visible, ClaimStatus.INFERRED, evidence),),
+                uncertainty=("Provider interpretation is untrusted and inferred.",),
+                deterministic_fallback=fallback_text,
+            )
+            return ResidentTurnResult(
+                "mind", visible, tuple(requests), tuple(proofs), receipt,
+                tuple(x for x in (user_event_id, mind_event_id) if x), answer,
+            )
+        except Exception as exc:
+            failure = "Body fallback: conversation unavailable (%s)." % type(exc).__name__
+            self._remember(
+                organism, "MIND_FAILURE",
+                resident_vcw_event("MIND_FAILURE", {"error_type": type(exc).__name__},
+                                   source="resident-runtime", ok=False),
+            )
+            answer = self.deterministic_answer(failure, evidence)
+            return ResidentTurnResult(
+                "mind_fallback", failure, vcw_event_ids=tuple(
+                    x for x in (user_event_id,) if x), answer=answer,
+            )
+
+    @staticmethod
+    def _remember(organism: Any, opcode: str, event: Dict[str, Any]) -> str:
+        if organism is None:
+            return ""
+        try:
+            entry = organism.memory.remember(
+                "events", event, opcode=opcode, source="resident-runtime"
+            )
+            return str(entry.get("hash") or entry.get("id") or "")
+        except Exception:
+            return ""
 

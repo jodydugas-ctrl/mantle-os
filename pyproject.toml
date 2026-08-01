@@ -9,7 +9,7 @@
 # (or set PYTHONPATH=src). The on-disk VCW format and every gate are unchanged.
 
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -17,7 +17,8 @@ name = "mantle-os"
 version = "2.0.0rc1"
 description = "Mantle OS: the Homeostatic AppAI Framework — grow software like a living organism, then give it a mind. Reproduction, symbiosis, and self-evolution on the certified Body."
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 # CI runs every admitted minor. Raise the ceiling only together with the certification
 # matrix after the new minor is available and green.
 requires-python = ">=3.10,<3.15"

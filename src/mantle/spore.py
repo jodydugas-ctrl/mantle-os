@@ -83,7 +83,7 @@ SPORE_FORMAT = "spore-png-v2"
 # `python -m mantle hatch` or to any coding agent, which can read the germ out
 # of the payload and build a conforming body from it. The germ is inert data
 # here -- the spore stores it; the hatchery validates and grows it.
-GERM_FORMAT = "mantle-germ-v1"
+GERM_FORMAT = "mantle-germ-v2"
 
 CANVAS_W = 2000
 CANVAS_H = 2000
@@ -1004,6 +1004,7 @@ def pack_germ(germ: dict, path: str, *, task: str | None = None,
     in the hatch receipt. Returns the path."""
     if not isinstance(germ, dict) or not isinstance(germ.get("identity"), dict):
         raise ValueError("a germ must be a dict with an 'identity' mapping")
+    validate_embedded_material(germ)
     name = germ["identity"].get("name")
     if not name:
         raise ValueError("a germ's identity must carry a name")
@@ -1190,7 +1191,7 @@ def inspect_spore(path: str, *, include_conversation: bool = False) -> dict:
         "carrier_format": FORMAT_VERSION,
         "inert": True,
         "activation": "requires target-bound operator authorization",
-        "path": os.path.abspath(path),
+        "path_hint": os.path.basename(os.path.abspath(path)),
         "status": info["status"],
         "integrity": info["integrity"],
         "artifact_fingerprint": info["header"].get("payload_fingerprint"),
@@ -1221,6 +1222,66 @@ def inspect_spore(path: str, *, include_conversation: bool = False) -> dict:
             for e in entries
         ]
     return manifest
+
+
+def inspect_spore_typed(path: str):
+    """Return the public typed inspection contract without raw conversation."""
+    from .lifecycle import LineageAttestation, SporeInspection
+    manifest = inspect_spore(path, include_conversation=False)
+    with open(path, "rb") as handle:
+        artifact_sha = hashlib.sha256(handle.read()).hexdigest()
+    germ = manifest["germ"]
+    claimed = germ.get("lineage")
+    lineage = LineageAttestation.unattested(artifact_sha)
+    if isinstance(claimed, dict) and claimed.get("signature"):
+        lineage = LineageAttestation(
+            "mantle-lineage-attestation-v1", artifact_sha,
+            claimed.get("issuer"), claimed.get("parent_fingerprint"),
+            claimed.get("signature"), "CLAIMED_UNVERIFIED",
+        )
+    integrity = manifest.get("integrity") or {}
+    return SporeInspection(
+        "mantle-spore-inspection-v1",
+        integrity.get("parity_status") == "ok" and
+        integrity.get("fingerprint_status") == "ok",
+        artifact_sha,
+        str(germ.get("schema") or GERM_SCHEMA_VERSION),
+        True,
+        int(manifest["conversation"]["count"]),
+        str(manifest["conversation"]["sha256"]),
+        lineage,
+        tuple(germ.get("controls") or ()),
+        tuple(germ.get("instincts") or ()),
+        tuple(germ.get("capabilities") or ()),
+        germ.get("task"), germ.get("target"),
+    )
+
+
+def validate_embedded_material(germ: dict) -> None:
+    """Validate declared embedded files before minting a lifecycle carrier.
+
+    Material is embedded as data, never read by path here. A declaration that
+    includes a path must also include the exact content and SHA-256 so a stale,
+    missing, or path-only build input cannot be blessed into a spore.
+    """
+    rows = germ.get("embedded_material", [])
+    if rows is None:
+        return
+    if not isinstance(rows, list):
+        raise ValueError("embedded_material must be a list")
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise ValueError("embedded material %d must be a mapping" % index)
+        path = str(row.get("path") or "")
+        content = row.get("content")
+        recorded = str(row.get("sha256") or "").removeprefix("sha256:")
+        if not path or os.path.isabs(path) or ".." in path.replace("\\", "/").split("/"):
+            raise ValueError("embedded material %d has an unsafe path" % index)
+        if not isinstance(content, str) or not recorded:
+            raise ValueError("embedded material %d requires content and sha256" % index)
+        actual = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        if actual != recorded:
+            raise ValueError("embedded material %d sha256 is stale" % index)
 
 
 # ---------------------------------------------------------------------------
@@ -1263,7 +1324,7 @@ def _demo(path: str = "example_spore.png") -> str:
 def main(argv):
     if len(argv) < 2:
         print(_USAGE)
-        return 1
+        return 2
     cmd = argv[1]
     try:
         if cmd == "create":
@@ -1300,7 +1361,7 @@ def main(argv):
         elif cmd == "verify":
             rep = verify_spore(argv[2])
             print(json.dumps(rep, indent=2))
-            return 0 if rep["ok"] else 2
+            return 0 if rep["ok"] else 1
         elif cmd == "extract":
             out = argv[3] if len(argv) > 3 else "spore_min.py"
             extract_embedded_tool(argv[2], out)
@@ -1310,7 +1371,7 @@ def main(argv):
             print("demo spore written")
         else:
             print(_USAGE)
-            return 1
+            return 2
     except (IndexError, ValueError) as e:
         print(f"error: {e}\n\n{_USAGE}")
         return 1

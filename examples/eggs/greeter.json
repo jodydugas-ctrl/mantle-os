@@ -1,5 +1,5 @@
 {
-  "germ_format": "mantle-germ-v1",
+  "schema": "mantle-germ-v2",
   "identity": {
     "name": "Greeter.AppAI",
     "purpose": "a tiny companion that greets, remembers visitors, and proves the egg model"

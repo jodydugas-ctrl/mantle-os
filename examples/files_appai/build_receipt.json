@@ -1,12 +1,12 @@
 {
   "artifact": "Files.AppAI.spore.png",
   "spore_format": "spore-png-v2",
-  "sha256": "6e4ca258e11aee5992af8e085a33aaebbec1494871b4b7609ba4ad0779647f4d",
-  "full_lane_fingerprint": "sha256:2f84fccfffafb2514c330e3fb541716f6fc14916bf642f4b885612a1e0cdfd40",
+  "sha256": "e157b0d7047d3566caf743294bd08c4e664dc09a101517a5afe765dfdefda351",
+  "full_lane_fingerprint": "sha256:82779c2def19ae78274e6a9c3ee295cec00afb2ccaae3707e4954558195c5a44",
   "statement_count": 70,
   "parity_status": "ok",
   "fingerprint_status": "ok",
-  "verification_checks": 28,
+  "verification_checks": 29,
   "verification_passed": true,
   "source_commit": "7aa516aca1a97e08ffd74a5cc79a91d00e828a2c",
   "generated_from": [

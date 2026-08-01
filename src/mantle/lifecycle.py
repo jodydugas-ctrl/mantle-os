@@ -14,7 +14,7 @@ import os
 import secrets
 import tempfile
 from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 
 class LifecycleAction(str, Enum):
@@ -28,6 +28,46 @@ class LifecycleResult(str, Enum):
     FAIL = "fail"
     REFUSED = "refused"
     INTERRUPTED = "interrupted"
+
+
+@dataclass(frozen=True)
+class LineageAttestation:
+    schema_version: str
+    artifact_sha256: str
+    issuer: Optional[str]
+    parent_fingerprint: Optional[str]
+    signature: Optional[str]
+    status: str
+
+    @classmethod
+    def unattested(cls, artifact_sha256: str) -> "LineageAttestation":
+        return cls("mantle-lineage-attestation-v1", artifact_sha256,
+                   None, None, None, "UNATTESTED")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class SporeInspection:
+    schema_version: str
+    carrier_integrity: bool
+    artifact_sha256: str
+    germ_schema: str
+    inert: bool
+    conversation_count: int
+    conversation_sha256: str
+    lineage: LineageAttestation
+    declared_controls: Tuple[Any, ...] = ()
+    declared_instincts: Tuple[Any, ...] = ()
+    declared_capabilities: Tuple[Any, ...] = ()
+    task: Optional[str] = None
+    target: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        data = asdict(self)
+        data["lineage"] = self.lineage.to_dict()
+        return data
 
 
 @dataclass(frozen=True)
@@ -121,7 +161,7 @@ class LifecycleJournal:
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
         payload = {"schema": "mantle-lifecycle-journal-v1", **asdict(self)}
         payload["action"] = self.action.value
-        payload["result"] = self.result.value
+        payload["result"] = self.result.name
         with open(self.path, "w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2, sort_keys=True)
 
@@ -143,14 +183,72 @@ class LifecycleTransaction:
     def promote(self) -> str:
         if os.path.lexists(self.target):
             raise FileExistsError("lifecycle target already exists; historical targets are preserved")
-        self.phase("verified", LifecycleResult.PASS)
+        # The staging tree is not complete until the atomic rename succeeds.  Recording
+        # PASS before os.replace made a filesystem interruption look certified and also
+        # made the surviving stage ineligible for resume.
+        self.phase("promotion_ready", LifecycleResult.INTERRUPTED)
         os.replace(self.staging, self.target)
+        self.journal.path = os.path.join(self.target, "lifecycle_journal.json")
+        self.phase("promoted", LifecycleResult.PASS)
         return self.target
 
     def interrupt(self, reason: str) -> None:
-        self.journal.phase = "interrupted:%s" % str(reason)[:160]
+        previous = self.journal.phase
+        self.journal.phase = "interrupted:%s:%s" % (previous, str(reason)[:120])
         self.journal.result = LifecycleResult.INTERRUPTED
         self.journal.write()
+
+
+def load_journal(stage: str) -> LifecycleJournal:
+    """Load and validate a journal belonging to an interrupted Mantle stage."""
+    stage = canonical_target(stage)
+    if not os.path.basename(stage).startswith(".mantle-stage-"):
+        raise LifecycleAuthorizationError("resume requires a Mantle staging directory")
+    path = os.path.join(stage, "lifecycle_journal.json")
+    with open(path, "r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    if data.get("schema") != "mantle-lifecycle-journal-v1":
+        raise LifecycleAuthorizationError("unsupported lifecycle journal schema")
+    try:
+        journal = LifecycleJournal(
+            path=path,
+            action=LifecycleAction(data["action"]),
+            target_hash=str(data["target_hash"]),
+            target_hint=str(data["target_hint"]),
+            result=LifecycleResult(str(data["result"]).lower()),
+            phase=str(data["phase"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise LifecycleAuthorizationError("malformed lifecycle journal") from exc
+    if journal.result != LifecycleResult.INTERRUPTED:
+        raise LifecycleAuthorizationError("only an interrupted lifecycle can resume")
+    return journal
+
+
+def resume_transaction(stage: str) -> LifecycleTransaction:
+    """Re-open an interrupted verified stage without replaying authorization.
+
+    Resume is intentionally narrow: only a stage that reached ``artifact_verified``
+    may be promoted. Earlier phases require quarantine and a fresh authorization,
+    because arbitrary build steps are not safely replayable from a journal alone.
+    """
+    stage = canonical_target(stage)
+    journal = load_journal(stage)
+    resumable = (
+        journal.phase in ("artifact_verified", "promotion_ready") or
+        journal.phase.startswith("interrupted:artifact_verified:") or
+        journal.phase.startswith("interrupted:promotion_ready:")
+    )
+    if not resumable:
+        raise LifecycleAuthorizationError(
+            "stage is not safely resumable; quarantine it and start with fresh authorization"
+        )
+    target = canonical_target(os.path.join(os.path.dirname(stage), journal.target_hint))
+    if hashlib.sha256(target.encode("utf-8")).hexdigest() != journal.target_hash:
+        raise LifecycleAuthorizationError("journal target binding is missing or invalid")
+    if os.path.lexists(target):
+        raise FileExistsError("prior completed target is preserved; resume will not overwrite it")
+    return LifecycleTransaction(journal.action, target, stage, journal)
 
 
 def _target_receipt(target: str) -> Dict[str, str]:

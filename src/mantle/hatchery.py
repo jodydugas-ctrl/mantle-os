@@ -63,8 +63,8 @@ class EggError(HatchError):
     refuses with the reason."""
 
 
-GERM_FORMAT = "mantle-germ-v1"
-EGG_FORMAT = "mantle-egg-v1"          # the same schema's original name; still accepted
+GERM_FORMAT = "mantle-germ-v2"
+EGG_FORMAT = "mantle-egg-v1"          # inspection/migration label; no runtime activation
 
 # the fixed, deterministic vocabulary a declarative reflex may respond with
 REFLEX_KINDS = ("remember", "complete", "notify", "operate")
@@ -84,9 +84,11 @@ def _need(d: Dict[str, Any], key: str, typ, where: str):
 
 def validate_germ(germ: Dict[str, Any]) -> Dict[str, Any]:
     """Validate a germ dict. Returns it (normalized) or raises EggError."""
-    if germ.get("germ_format") != GERM_FORMAT and germ.get("egg_format") != EGG_FORMAT:
-        raise EggError("not a mantle germ (germ_format != %r and egg_format != %r)"
-                       % (GERM_FORMAT, EGG_FORMAT))
+    if germ.get("schema") != GERM_FORMAT:
+        raise EggError(
+            "not an activatable Mantle 2 germ (schema != %r); inspect and run "
+            "`mantle migrate-germ` explicitly" % GERM_FORMAT
+        )
     ident = _need(germ, "identity", dict, "germ")
     _need(ident, "name", str, "germ.identity")
     _need(germ, "truths", list, "germ")

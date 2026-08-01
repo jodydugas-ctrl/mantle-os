@@ -24,7 +24,7 @@ def _independent_seed_spores() -> list[Path]:
     for path in sorted(SPORES.glob("*.png")):
         state = spore.read_spore(str(path))["state"]
         germ = state.get("germ")
-        if isinstance(germ, dict) and germ.get("germ_format") == "mantle-germ-v1":
+        if isinstance(germ, dict) and germ.get("schema") == "mantle-germ-v2":
             seeds.append(path)
     return seeds
 

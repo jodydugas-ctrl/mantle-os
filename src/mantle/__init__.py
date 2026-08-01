@@ -28,6 +28,16 @@ _LAZY = {
     "ResidentRuntime": ("mantle.contracts", "ResidentRuntime"),
     "HostAdapter": ("mantle.contracts", "HostAdapter"),
     "CertificationStatus": ("mantle.contracts", "CertificationStatus"),
+    "TaskClass": ("mantle.governance", "TaskClass"),
+    "EnergyPolicy": ("mantle.governance", "EnergyPolicy"),
+    "SpendAuthorization": ("mantle.governance", "SpendAuthorization"),
+    "ProviderState": ("mantle.governance", "ProviderState"),
+    "EnergyState": ("mantle.governance", "EnergyState"),
+    "ResourceOfferInbox": ("mantle.resources", "ResourceOfferInbox"),
+    "FaceAttestation": ("mantle.phenotype", "FaceAttestation"),
+    "AncestorEvidence": ("mantle.ancestry", "AncestorEvidence"),
+    "LineageAttestation": ("mantle.lifecycle", "LineageAttestation"),
+    "SporeInspection": ("mantle.lifecycle", "SporeInspection"),
     "ActionExecutionProof": ("mantle.proofs", "ActionExecutionProof"),
     "MutationClass": ("mantle.proofs", "MutationClass"),
     "Organism": ("mantle.core", "Organism"),
@@ -57,6 +67,7 @@ _LAZY = {
     "pack_germ": ("mantle.spore", "pack_germ"),
     "read_spore": ("mantle.spore", "read_spore"),
     "verify_spore": ("mantle.spore", "verify_spore"),
+    "inspect_spore_typed": ("mantle.spore", "inspect_spore_typed"),
 }
 
 __all__ = list(_LAZY) + ["__version__"]

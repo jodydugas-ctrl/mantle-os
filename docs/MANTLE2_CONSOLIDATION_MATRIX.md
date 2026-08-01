@@ -1,134 +1,168 @@
 # MantleOS 2.0 consolidation matrix
 
-This tracked matrix is the release-preparation index for the 98 NotepadNext
-corrections, the Organize.AppAI friction register, and the current evidence/security
-decisions. The correction detail remains in the historical source log; this matrix is
-the closure contract. A row is not landed until implementation, regression coverage,
-maintained-example migration, and documentation evidence all exist.
+This is the release closure index for all 98 NotepadNext corrections and the
+cross-project friction ledger. A nonhistorical row is closed only when shared
+implementation, executable regression coverage, a maintained example, and
+commit-bound evidence agree. Historical artifacts remain byte-preserved and are
+never treated as current runtime authority.
 
-Allowed statuses: `already_verified`, `planned`, `superseded`,
-`historical_only`, `requires_operator_decision`.
+Allowed statuses are `already_verified`, `superseded`, `historical_only`, and
+`requires_operator_decision`. This release has no open correction work items.
 
-| Correction | Status | Owning subsystem | Implementation work item | Test/invariant | Example migration | Closure evidence |
-| ---: | --- | --- | --- | --- | --- | --- |
-+| 1 | already_verified | resident-runtime | CORR-01 | invariant-01 | maintained examples migration | closure evidence pending/recorded |
-| 2 | already_verified | resident-runtime | CORR-02 | invariant-02 | maintained examples migration | closure evidence pending/recorded |
-| 3 | already_verified | resident-runtime | CORR-03 | invariant-03 | maintained examples migration | closure evidence pending/recorded |
-| 4 | already_verified | resident-runtime | CORR-04 | invariant-04 | maintained examples migration | closure evidence pending/recorded |
-| 5 | already_verified | resident-runtime | CORR-05 | invariant-05 | maintained examples migration | closure evidence pending/recorded |
-| 6 | already_verified | resident-runtime | CORR-06 | invariant-06 | maintained examples migration | closure evidence pending/recorded |
-| 7 | already_verified | resident-runtime | CORR-07 | invariant-07 | maintained examples migration | closure evidence pending/recorded |
-| 8 | already_verified | resident-runtime | CORR-08 | invariant-08 | maintained examples migration | closure evidence pending/recorded |
-| 9 | already_verified | resident-runtime | CORR-09 | invariant-09 | maintained examples migration | closure evidence pending/recorded |
-| 10 | already_verified | resident-runtime | CORR-10 | invariant-10 | maintained examples migration | closure evidence pending/recorded |
-| 11 | already_verified | resident-runtime | CORR-11 | invariant-11 | maintained examples migration | closure evidence pending/recorded |
-| 12 | already_verified | resident-runtime | CORR-12 | invariant-12 | maintained examples migration | closure evidence pending/recorded |
-| 13 | already_verified | resident-runtime | CORR-13 | invariant-13 | maintained examples migration | closure evidence pending/recorded |
-| 14 | already_verified | resident-runtime | CORR-14 | invariant-14 | maintained examples migration | closure evidence pending/recorded |
-| 15 | already_verified | resident-runtime | CORR-15 | invariant-15 | maintained examples migration | closure evidence pending/recorded |
-| 16 | already_verified | resident-runtime | CORR-16 | invariant-16 | maintained examples migration | closure evidence pending/recorded |
-| 17 | already_verified | resident-runtime | CORR-17 | invariant-17 | maintained examples migration | closure evidence pending/recorded |
-| 18 | already_verified | resident-runtime | CORR-18 | invariant-18 | maintained examples migration | closure evidence pending/recorded |
-| 19 | already_verified | resident-runtime | CORR-19 | invariant-19 | maintained examples migration | closure evidence pending/recorded |
-| 20 | already_verified | resident-runtime | CORR-20 | invariant-20 | maintained examples migration | closure evidence pending/recorded |
-| 21 | already_verified | assimilation | CORR-21 | invariant-21 | maintained examples migration | closure evidence pending/recorded |
-| 22 | already_verified | assimilation | CORR-22 | invariant-22 | maintained examples migration | closure evidence pending/recorded |
-| 23 | already_verified | assimilation | CORR-23 | invariant-23 | maintained examples migration | closure evidence pending/recorded |
-| 24 | already_verified | assimilation | CORR-24 | invariant-24 | maintained examples migration | closure evidence pending/recorded |
-| 25 | already_verified | assimilation | CORR-25 | invariant-25 | maintained examples migration | closure evidence pending/recorded |
-| 26 | already_verified | assimilation | CORR-26 | invariant-26 | maintained examples migration | closure evidence pending/recorded |
-| 27 | already_verified | assimilation | CORR-27 | invariant-27 | maintained examples migration | closure evidence pending/recorded |
-| 28 | already_verified | assimilation | CORR-28 | invariant-28 | maintained examples migration | closure evidence pending/recorded |
-| 29 | already_verified | assimilation | CORR-29 | invariant-29 | maintained examples migration | closure evidence pending/recorded |
-| 30 | already_verified | assimilation | CORR-30 | invariant-30 | maintained examples migration | closure evidence pending/recorded |
-| 31 | already_verified | assimilation | CORR-31 | invariant-31 | maintained examples migration | closure evidence pending/recorded |
-| 32 | already_verified | assimilation | CORR-32 | invariant-32 | maintained examples migration | closure evidence pending/recorded |
-| 33 | already_verified | assimilation | CORR-33 | invariant-33 | maintained examples migration | closure evidence pending/recorded |
-| 34 | planned | assimilation | CORR-34 | invariant-34 | maintained examples migration | closure evidence pending/recorded |
-| 35 | planned | assimilation | CORR-35 | invariant-35 | maintained examples migration | closure evidence pending/recorded |
-| 36 | planned | assimilation | CORR-36 | invariant-36 | maintained examples migration | closure evidence pending/recorded |
-| 37 | planned | assimilation | CORR-37 | invariant-37 | maintained examples migration | closure evidence pending/recorded |
-| 38 | planned | assimilation | CORR-38 | invariant-38 | maintained examples migration | closure evidence pending/recorded |
-| 39 | planned | assimilation | CORR-39 | invariant-39 | maintained examples migration | closure evidence pending/recorded |
-| 40 | planned | assimilation | CORR-40 | invariant-40 | maintained examples migration | closure evidence pending/recorded |
-| 41 | planned | lifecycle | CORR-41 | invariant-41 | maintained examples migration | closure evidence pending/recorded |
-| 42 | planned | lifecycle | CORR-42 | invariant-42 | maintained examples migration | closure evidence pending/recorded |
-| 43 | planned | lifecycle | CORR-43 | invariant-43 | maintained examples migration | closure evidence pending/recorded |
-| 44 | planned | lifecycle | CORR-44 | invariant-44 | maintained examples migration | closure evidence pending/recorded |
-| 45 | planned | lifecycle | CORR-45 | invariant-45 | maintained examples migration | closure evidence pending/recorded |
-| 46 | planned | lifecycle | CORR-46 | invariant-46 | maintained examples migration | closure evidence pending/recorded |
-| 47 | planned | lifecycle | CORR-47 | invariant-47 | maintained examples migration | closure evidence pending/recorded |
-| 48 | planned | lifecycle | CORR-48 | invariant-48 | maintained examples migration | closure evidence pending/recorded |
-| 49 | planned | lifecycle | CORR-49 | invariant-49 | maintained examples migration | closure evidence pending/recorded |
-| 50 | planned | lifecycle | CORR-50 | invariant-50 | maintained examples migration | closure evidence pending/recorded |
-| 51 | planned | lifecycle | CORR-51 | invariant-51 | maintained examples migration | closure evidence pending/recorded |
-| 52 | planned | lifecycle | CORR-52 | invariant-52 | maintained examples migration | closure evidence pending/recorded |
-| 53 | planned | lifecycle | CORR-53 | invariant-53 | maintained examples migration | closure evidence pending/recorded |
-| 54 | planned | lifecycle | CORR-54 | invariant-54 | maintained examples migration | closure evidence pending/recorded |
-| 55 | planned | lifecycle | CORR-55 | invariant-55 | maintained examples migration | closure evidence pending/recorded |
-| 56 | planned | lifecycle | CORR-56 | invariant-56 | maintained examples migration | closure evidence pending/recorded |
-| 57 | planned | lifecycle | CORR-57 | invariant-57 | maintained examples migration | closure evidence pending/recorded |
-| 58 | planned | lifecycle | CORR-58 | invariant-58 | maintained examples migration | closure evidence pending/recorded |
-| 59 | planned | lifecycle | CORR-59 | invariant-59 | maintained examples migration | closure evidence pending/recorded |
-| 60 | planned | lifecycle | CORR-60 | invariant-60 | maintained examples migration | closure evidence pending/recorded |
-| 61 | planned | evidence-security | CORR-61 | invariant-61 | maintained examples migration | closure evidence pending/recorded |
-| 62 | planned | evidence-security | CORR-62 | invariant-62 | maintained examples migration | closure evidence pending/recorded |
-| 63 | planned | evidence-security | CORR-63 | invariant-63 | maintained examples migration | closure evidence pending/recorded |
-| 64 | planned | evidence-security | CORR-64 | invariant-64 | maintained examples migration | closure evidence pending/recorded |
-| 65 | planned | evidence-security | CORR-65 | invariant-65 | maintained examples migration | closure evidence pending/recorded |
-| 66 | planned | evidence-security | CORR-66 | invariant-66 | maintained examples migration | closure evidence pending/recorded |
-| 67 | planned | evidence-security | CORR-67 | invariant-67 | maintained examples migration | closure evidence pending/recorded |
-| 68 | planned | evidence-security | CORR-68 | invariant-68 | maintained examples migration | closure evidence pending/recorded |
-| 69 | planned | evidence-security | CORR-69 | invariant-69 | maintained examples migration | closure evidence pending/recorded |
-| 70 | planned | evidence-security | CORR-70 | invariant-70 | maintained examples migration | closure evidence pending/recorded |
-| 71 | planned | evidence-security | CORR-71 | invariant-71 | maintained examples migration | closure evidence pending/recorded |
-| 72 | planned | evidence-security | CORR-72 | invariant-72 | maintained examples migration | closure evidence pending/recorded |
-| 73 | planned | evidence-security | CORR-73 | invariant-73 | maintained examples migration | closure evidence pending/recorded |
-| 74 | planned | evidence-security | CORR-74 | invariant-74 | maintained examples migration | closure evidence pending/recorded |
-| 75 | planned | evidence-security | CORR-75 | invariant-75 | maintained examples migration | closure evidence pending/recorded |
-| 76 | planned | evidence-security | CORR-76 | invariant-76 | maintained examples migration | closure evidence pending/recorded |
-| 77 | planned | evidence-security | CORR-77 | invariant-77 | maintained examples migration | closure evidence pending/recorded |
-| 78 | planned | evidence-security | CORR-78 | invariant-78 | maintained examples migration | closure evidence pending/recorded |
-| 79 | planned | evidence-security | CORR-79 | invariant-79 | maintained examples migration | closure evidence pending/recorded |
-| 80 | already_verified | resident-runtime | CORR-80 | invariant-80 | maintained examples migration | closure evidence pending/recorded |
-| 81 | already_verified | resident-runtime | CORR-81 | invariant-81 | maintained examples migration | closure evidence pending/recorded |
-| 82 | already_verified | resident-runtime | CORR-82 | invariant-82 | maintained examples migration | closure evidence pending/recorded |
-| 83 | already_verified | resident-runtime | CORR-83 | invariant-83 | maintained examples migration | closure evidence pending/recorded |
-| 84 | already_verified | resident-runtime | CORR-84 | invariant-84 | maintained examples migration | closure evidence pending/recorded |
-| 85 | historical_only | resident-runtime | CORR-85 | invariant-85 | maintained examples migration | closure evidence pending/recorded |
-| 86 | historical_only | resident-runtime | CORR-86 | invariant-86 | maintained examples migration | closure evidence pending/recorded |
-| 87 | historical_only | resident-runtime | CORR-87 | invariant-87 | maintained examples migration | closure evidence pending/recorded |
-| 88 | already_verified | resident-runtime | CORR-88 | invariant-88 | maintained examples migration | closure evidence pending/recorded |
-| 89 | already_verified | resident-runtime | CORR-89 | invariant-89 | maintained examples migration | closure evidence pending/recorded |
-| 90 | already_verified | resident-runtime | CORR-90 | invariant-90 | maintained examples migration | closure evidence pending/recorded |
-| 91 | already_verified | resident-runtime | CORR-91 | invariant-91 | maintained examples migration | closure evidence pending/recorded |
-| 92 | already_verified | resident-runtime | CORR-92 | invariant-92 | maintained examples migration | closure evidence pending/recorded |
-| 93 | already_verified | resident-runtime | CORR-93 | invariant-93 | maintained examples migration | closure evidence pending/recorded |
-| 94 | already_verified | resident-runtime | CORR-94 | invariant-94 | maintained examples migration | closure evidence pending/recorded |
-| 95 | already_verified | resident-runtime | CORR-95 | invariant-95 | maintained examples migration | closure evidence pending/recorded |
-| 96 | already_verified | resident-runtime | CORR-96 | invariant-96 | maintained examples migration | closure evidence pending/recorded |
-| 97 | already_verified | resident-runtime | CORR-97 | invariant-97 | maintained examples migration | closure evidence pending/recorded |
-| 98 | already_verified | resident-runtime | CORR-98 | invariant-98 | maintained examples migration | closure evidence pending/recorded |
+## Correction closure
 
-## Reconciled doctrine
+| Correction | Actual correction | Status | Owning subsystem | Implementation symbol | Test/invariant | Migrated example | Immutable closure evidence |
+| ---: | --- | --- | --- | --- | --- | --- | --- |
+| 1 | C:\tmp\mantleos-notepadnext could not be created from the sandboxed PowerShell session. | already_verified | workspace/supply | `paths.REPO_ROOT; applet_body._safe_checkout` | `SUPPLY-1; FRICTION-1` | isolated NotepadNext candidate build | commits `7bff0b1; 54913e0` |
+| 2 | The requested host was described as C, but repository metadata identifies it as C++. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 3 | Mantle's stock assimilate command undercounted the host because the default scanner does not parse C/C++. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 4 | The first native inventory run produced blank Git provenance fields. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 5 | The first native scanner pass misread C++ control-flow blocks as function symbols. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 6 | The native scanner also misread Qt call expressions with lambda bodies as function symbols. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 7 | The native scanner initially missed functions whose opening brace is on the following line. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 8 | External review identified that constructor initializer lists were still not handled. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 9 | The first native map forced every symbol into exactly one role. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 10 | Lua, macro, script, console, and debug surfaces were overclassified as Brain. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 11 | File writes were overclassified as Memory. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 12 | The first Qt graph extraction treated connect(...) as vocabulary instead of causality. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 13 | Regex-based connect(...) extraction initially truncated lambda edges. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 14 | Ownership boundaries needed more granularity than first-party versus vendored. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 15 | External review found a proof-order bug in the read-only sign-off. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 16 | Ownership and file type were still conflated in one scope field. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 17 | Vendored and resource symbols could still populate proposed organs. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 18 | Multi-label role evidence was present in JSON but still collapsed in the organ map. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 19 | Heartbeat evidence was still too broad. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 20 | Function body extraction had a fixed 220-line ceiling. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 21 | Qt Designer .ui parsing omitted actions and declared connections. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 22 | The gap report was too narrow. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 23 | The larger lesson is not add C/C++ support; it is adaptive assimilation tooling. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 24 | Full invariant auditing hit an optional dependency, not a NotepadNext organism failure. | already_verified | audit/certification | `check._steps; certify.certify_nest; audits.stage2.run` | `STAGE2-PROFILE-1; CERTIFY-1` | candidate lifecycle completion audit v2 | commits `be828ee; e09b61c` |
+| 25 | Certification evidence was first written through the wrong organ contract. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 26 | A local NotepadNext AppAI resident can pass available Body and offline MIND gates. | already_verified | maintained example | `certify.certify_nest; notepadnext_appai_mantle2_candidate.build_candidate` | `CERTIFY-1; test_notepadnext_mantle2_candidate` | distinct Mantle 2 candidate and audit v2 | commits `e09b61c` |
+| 27 | Saved organisms must be re-audited before MIND activation. | already_verified | audit/certification | `check._steps; certify.certify_nest; audits.stage2.run` | `STAGE2-PROFILE-1; CERTIFY-1` | candidate lifecycle completion audit v2 | commits `be828ee; e09b61c` |
+| 28 | Stage-2 audits can be destructive to probe bands. | already_verified | audit/certification | `check._steps; certify.certify_nest; audits.stage2.run` | `STAGE2-PROFILE-1; CERTIFY-1` | candidate lifecycle completion audit v2 | commits `be828ee; e09b61c` |
+| 29 | Full-MIND proof needs a runtime cognition receipt, not only Stage-2 row summaries. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 30 | Host layout cannot be guessed from product name or repository name. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 31 | Code-agnostic assimilation needs generated integration tools, not only generated reports. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 32 | Integration verification must be artifact-kind aware. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 33 | Verification receipts must not hash their own mutable output. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 34 | Observer scaffolds need a narrower claim than full native insertion. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 35 | Generated certification tools should not depend on the caller's current directory. | already_verified | maintained example | `certify.certify_nest; notepadnext_appai_mantle2_candidate.build_candidate` | `CERTIFY-1; test_notepadnext_mantle2_candidate` | distinct Mantle 2 candidate and audit v2 | commits `e09b61c` |
+| 36 | A runnable desktop app may not exist just because source assimilation succeeded. | already_verified | maintained example | `certify.certify_nest; notepadnext_appai_mantle2_candidate.build_candidate` | `CERTIFY-1; test_notepadnext_mantle2_candidate` | distinct Mantle 2 candidate and audit v2 | commits `e09b61c` |
+| 37 | Every AppAI needs an explicit user-to-MIND contact surface. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 38 | Text-entry surfaces should commit semantic entries, not keystrokes. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 39 | App-band allocation must account for reserved hatchery bands. | already_verified | application bands | `vcw.atlas.allocate_app_bands` | `APPBAND-1; REPRO-1` | calculator egg and NotepadNext candidate | commits `7bff0b1; e09b61c` |
+| 40 | Example smoke tests should not require optional npm dependencies when a static proof is enough. | already_verified | portable tooling | `check._steps; applet_body._safe_checkout` | `SUPPLY-1; Windows workflow` | Windows candidate and browser smoke workflows | commits `7bff0b1; 54913e0` |
+| 41 | A downloaded host binary cannot show newly designed in-app affordances. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 42 | Terminal slash commands need a secret-safe routing layer. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 43 | The terminal needed a live provider smoke test, not only command parsing. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 44 | Hidden key prompts are bad UX for AppAI terminals. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 45 | Surface parity needs real Body controls and exact host-window targeting. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 46 | Audit reports need to separate resident gates from optional environment extras. | already_verified | audit/certification | `check._steps; certify.certify_nest; audits.stage2.run` | `STAGE2-PROFILE-1; CERTIFY-1` | candidate lifecycle completion audit v2 | commits `be828ee; e09b61c` |
+| 47 | Optional Python extras need workspace-local proof, not only user-site installation. | already_verified | audit/certification | `check._steps; certify.certify_nest; audits.stage2.run` | `STAGE2-PROFILE-1; CERTIFY-1` | candidate lifecycle completion audit v2 | commits `be828ee; e09b61c` |
+| 48 | Windows Git clones may need long-path policy before checkout. | already_verified | portable tooling | `check._steps; applet_body._safe_checkout` | `SUPPLY-1; Windows workflow` | Windows candidate and browser smoke workflows | commits `7bff0b1; 54913e0` |
+| 49 | VCW audit helpers must use the current cube API. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 50 | Generation status belongs to the current Prime cube. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 51 | Generated lifecycle audits need a shared organism-status adapter. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 52 | Lifecycle SPOREs need a readable bootstrap plus an encrypted body payload. | already_verified | spore/lifecycle | `spore.inspect_spore; spore.validate_embedded_material; lifecycle.LifecycleTransaction` | `SPORE-1; SPORE-2; SPORE-3; LIFECYCLE-1` | germ-v2 NotepadNext lifecycle spore | commits `be828ee; 78820e1; e09b61c` |
+| 53 | The resident primer should be distilled from the SPORE/app body, not only copied from the prior build. | already_verified | spore/lifecycle | `spore.inspect_spore; spore.validate_embedded_material; lifecycle.LifecycleTransaction` | `SPORE-1; SPORE-2; SPORE-3; LIFECYCLE-1` | germ-v2 NotepadNext lifecycle spore | commits `be828ee; 78820e1; e09b61c` |
+| 54 | MIND status answers must load the VCW, not infer genome status from metadata. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 55 | A lifecycle SPORE must carry an actual grimoire copy, not stale paths or excerpts. | already_verified | spore/lifecycle | `spore.inspect_spore; spore.validate_embedded_material; lifecycle.LifecycleTransaction` | `SPORE-1; SPORE-2; SPORE-3; LIFECYCLE-1` | germ-v2 NotepadNext lifecycle spore | commits `be828ee; 78820e1; e09b61c` |
+| 56 | Lifecycle completion should be auditable by the SPORE toolchain itself. | already_verified | spore/lifecycle | `spore.inspect_spore; spore.validate_embedded_material; lifecycle.LifecycleTransaction` | `SPORE-1; SPORE-2; SPORE-3; LIFECYCLE-1` | germ-v2 NotepadNext lifecycle spore | commits `be828ee; 78820e1; e09b61c` |
+| 57 | Complete lifecycle examples should be packaged as reproducible archive artifacts. | already_verified | spore/lifecycle | `spore.inspect_spore; spore.validate_embedded_material; lifecycle.LifecycleTransaction` | `SPORE-1; SPORE-2; SPORE-3; LIFECYCLE-1` | germ-v2 NotepadNext lifecycle spore | commits `be828ee; 78820e1; e09b61c` |
+| 58 | The framework needed a shared VCW/organism status receipt instead of generated scripts duplicating internal calls. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 59 | App-band allocation was protected at the platform layer, not only in the calculator egg. | already_verified | application bands | `vcw.atlas.allocate_app_bands` | `APPBAND-1; REPRO-1` | calculator egg and NotepadNext candidate | commits `7bff0b1; e09b61c` |
+| 60 | The stock assimilator now records substrate coverage before organ mapping. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 61 | Standalone Phase-0 artifact output is now enforced outside the host tree. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 62 | GitHub applet clones now apply Windows long-path-safe checkout policy. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 63 | A visible Body write was reported successful before the editor surface verified it. | already_verified | Body proof/surfaces | `proofs.ActionExecutionProof; contracts.HostAdapter; surface_coverage` | `PROOF-1; ASSIM-2` | NotepadNext host adapter with post-state readback | commits `a231096; e09b61c` |
+| 64 | Natural-language Body requests were answered as plans instead of executed as Body operations. | already_verified | Body proof/surfaces | `proofs.ActionExecutionProof; contracts.HostAdapter; surface_coverage` | `PROOF-1; ASSIM-2` | NotepadNext host adapter with post-state readback | commits `a231096; e09b61c` |
+| 65 | The resident could discuss itself but did not reliably consult its own host evidence. | already_verified | host evidence | `contracts.HostAdapter; surface_coverage.build_surface_coverage` | `CLAIM-1; ASSIM-2` | query-relevant NotepadNext v3 nerve inventory | commits `a231096; e09b61c` |
+| 66 | MantleOS treated consultation evidence as an artifact pile instead of a resident interface. | already_verified | host evidence | `contracts.HostAdapter; surface_coverage.build_surface_coverage` | `CLAIM-1; ASSIM-2` | query-relevant NotepadNext v3 nerve inventory | commits `a231096; e09b61c` |
+| 67 | The resident's function answer was a capped sample instead of a GUI nerve map. | already_verified | host evidence | `contracts.HostAdapter; surface_coverage.build_surface_coverage` | `CLAIM-1; ASSIM-2` | query-relevant NotepadNext v3 nerve inventory | commits `a231096; e09b61c` |
+| 68 | Activation silently discarded most host controls. | already_verified | Body proof/surfaces | `proofs.ActionExecutionProof; contracts.HostAdapter; surface_coverage` | `PROOF-1; ASSIM-2` | NotepadNext host adapter with post-state readback | commits `a231096; e09b61c` |
+| 69 | The Qt scanner missed helper-wired nerves. | already_verified | assimilation | `assimilator.scanner_native; coverage.SubstrateCoverage; artifact_validation.validate_artifact` | `COVERAGE-1; NATIVE-1; ASSIM-1; ASSIM-2` | notepadnext_appai_mantle2_candidate causal map | commits `a231096; 54913e0` |
+| 70 | Missing GUI nerves need maintenance pressure instead of silence. | already_verified | host evidence | `contracts.HostAdapter; surface_coverage.build_surface_coverage` | `CLAIM-1; ASSIM-2` | query-relevant NotepadNext v3 nerve inventory | commits `a231096; e09b61c` |
+| 71 | Natural-language Body dispatch became too aggressive. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 72 | Working surfaces were treated as generic commands instead of discovered SELF anatomy. | already_verified | host evidence | `contracts.HostAdapter; surface_coverage.build_surface_coverage` | `CLAIM-1; ASSIM-2` | query-relevant NotepadNext v3 nerve inventory | commits `a231096; e09b61c` |
+| 73 | Resident runtime state needed an operator-visible VCW reset. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 74 | App-specific working surfaces were exposed as slash commands instead of conversational Body anatomy. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 75 | Creative document creation was implemented as a Body reflex instead of MIND-authored work. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 76 | Non-slash user conversation was intercepted by deterministic resident/reflex routing. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 77 | The MIND lacked an internal Body request lane after the slash-only boundary was restored. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 78 | Escaped MIND-to-Body directives leaked into the terminal when parsing failed. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 79 | GUI self-knowledge was sampled instead of selected from the complete surface map. | already_verified | host evidence | `contracts.HostAdapter; surface_coverage.build_surface_coverage` | `CLAIM-1; ASSIM-2` | query-relevant NotepadNext v3 nerve inventory | commits `a231096; e09b61c` |
+| 80 | Terminal experience lived in sidecar logs instead of first-class VCW memory. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 81 | GUI coverage did not require every surface output to be proven into VCW. | already_verified | Body proof/surfaces | `proofs.ActionExecutionProof; contracts.HostAdapter; surface_coverage` | `PROOF-1; ASSIM-2` | NotepadNext host adapter with post-state readback | commits `a231096; e09b61c` |
+| 82 | Resident runtime lessons were still trapped in one NotepadNext companion terminal. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 83 | Audit/demo/teaching paths still allowed short Primer doctrine. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 84 | Text input surfaces needed committed readback, not tab-state inference. | already_verified | Body proof/surfaces | `proofs.ActionExecutionProof; contracts.HostAdapter; surface_coverage` | `PROOF-1; ASSIM-2` | NotepadNext host adapter with post-state readback | commits `a231096; e09b61c` |
+| 85 | Examples drifted from the resident text-commit contract. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 86 | Residents wrote conversation to VCW but did not rehydrate it into MIND context. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 87 | Sidecar mirror failures could stop resident recall. | already_verified | evidence/VCW | `core.status.organism_status; ResidentRuntime._rehydrate; ActionExecutionProof` | `CLAIM-1; PROOF-1; CONTEXT-BODY-OWNED` | NotepadNext and Organize Prime-VCW terminals | commits `e46b0c7; 54913e0; 896a959` |
+| 88 | Hermes addon resident factory drifted from the shared AppAI Primer. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 89 | Conversational document-reset requests were answered literally instead of operated. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 90 | NotepadNext resident passed Body certification without a live cognitive heartbeat scheduler. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 91 | User-submit heartbeats still had deterministic bypasses and weak API-call accounting. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 92 | The resident heartbeat scheduler was still example tissue, not platform tissue. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 93 | The NotepadNext terminal kept a private copy of the rhythm after the platform owned it. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 94 | Stage-1 could certify a host resident that owned no live cognitive heartbeat. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 95 | The NotepadNext resident factory substituted app doctrine for the shared AppAI Primer. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 96 | A likely /mind model-selection command was rejected as unknown. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 97 | Requested model route and provider-resolved model were conflated. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
+| 98 | Untrusted provider prose could inject terminal control characters. | already_verified | resident runtime | `contracts.ResidentRuntime; resident.commands.BodyCommandDispatcher; resident.heartbeat` | `RESIDENT-RT-1; RESIDENT-CMD-1; RESIDENT-HB-1; RESIDENT-HB-2` | shared NotepadNext and Organize Mantle 2 terminals | commits `e46b0c7; e09b61c; 896a959` |
 
-- The old NotepadNext “Body key derived from spore” audit is historical and
-  non-canonical. The canonical law is independently minted genesis keys.
-- Spore-PNG remains carrier format v2 unless the encoded bytes change. A spore is
-  an inert carrier until an authorized Body tool acts on it.
-- Spore conversation is testimony/inferred memory, never executable authority.
-- Host software remains ordinary host software; Mantle organ terms apply only at
-  Mantle seams.
-- Documented claims, executable behavior, observed evidence, and speculative
-  interpretation are separate categories.
-- External hatch/graft requires fresh target-bound operator authorization.
-  SELF-vault reconstruction retains its Body-owned recovery birthright, and MIND
-  fusion remains separately dual-authorized.
+## Friction closure
 
-## Source traceability
+| Friction ID | Condition | Status | Owning subsystem | Implementation work item | Test/invariant | Example migration | Closure evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| FRICTION-001 | workspace branch/bootstrap containment | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-002 | untracked generated evidence | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-003 | Windows patching outside writable root | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-004 | Mantle reading-gate edition selection | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-005 | resident key/credits prompt ambiguity | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-006 | host test protocol fixtures | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-007 | model route versus resolved model | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-008 | stale virtual environments | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-009 | missing contained pytest base | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-010 | Unix shell assumption on Windows | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-011 | shell built-in capability detection | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-012 | authorization not wired to mutation boundary | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-013 | shared global pytest state | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-014 | concurrent mutable gate fixture | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-015 | security command documentation drift | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-016 | Grimoire edition index drift | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-017 | edition-specific verifier ambiguity | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-018 | germ schema runtime drift | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | NotepadNext v2 candidate | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-019 | dummy resident integration fixture | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | Organize.AppAI Mantle 2 migration | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-020 | Windows bash implementation ambiguity | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | Organize.AppAI Mantle 2 migration | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-021 | release scan sentinel noise | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | Organize.AppAI Mantle 2 migration | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-022 | installed Mantle source/version drift | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | Organize.AppAI Mantle 2 migration | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-023 | package stderr and deprecated license metadata | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-024 | PowerShell process-redirection argument parsing | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-025 | application certification hid a missing Spore extra | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-026 | GitHub CI inspector used a locale-dependent decoder | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-027 | top-level help returned usage error and local smoke masked it | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-028 | Windows runner exposed a POSIX-only descriptor-swap claim | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-029 | duplicate conditional caused a context-light patch misapplication | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
 
-- Corrections: `work/notepadnext-assimilation/CORRECTIONS_LOG.md`
-- Triage: `work/notepadnext-assimilation/CANDIDATE_TRIAGE.md`
-- Organize friction: the product `reports/FRICTION_LOG.md`
-- Historical lifecycle audit: preserved byte-for-byte beside the Mantle 2 audit.
+## Doctrine reconciliation
 
+- The historical spore-derived Body-key audit is noncanonical. Mantle 2 independently
+  mints genesis keys; public spores, conversation, and personality seeds grant no key authority.
+- Spores are inert carriers until an authorized Body tool acts. Conversation is
+  testimony/inferred memory and cannot become executable authority.
+- SHA/parity evidence establishes integrity. Optional lineage attestation establishes
+  an asserted relationship; `UNATTESTED` is not invalid and grants no activation authority.
+- Repository certification, application certification, historical receipts, and current
+  runtime authority are separate claims with separate evidence.
+- Ordinary host software remains ordinary. Body, MIND, Senses, Limbs, Immune, SELF/OTHER,
+  and VCW name Mantle tissue only.
+- Documentation claims, executable behavior, observed receipts, and interpretation are
+  labeled separately; executable code and passing tests govern runtime behavior.
+
+## Closure rule
+
+A candidate is landed only when shared implementation, an executable regression, an
+updated maintained example, and matching documentation are all present. `FRICTION-1`
+enforces this table structurally during `python -m mantle prove`.
