@@ -240,6 +240,8 @@ def build_surface_coverage(symbols: Iterable[Dict[str, Any]],
             "observed in surface inventory plus connection evidence; ok=true requires "
             "Body operation and post-action readback"
         )
+        rec["attempted"] = bool(edges_for_surface or sid in verified or sid in observed)
+        rec["verified"] = status == "verified_body_operation"
         surfaces.append(rec)
         if status != "verified_body_operation":
             maintenance_findings.append({
@@ -257,13 +259,18 @@ def build_surface_coverage(symbols: Iterable[Dict[str, Any]],
     body_test_plan = build_systematic_body_test_plan(surfaces)
     return {
         "kind": "GUI_NERVE_COVERAGE",
-        "schema_version": "mantle-gui-nerve-coverage-v2",
+        "schema_version": "mantle-gui-nerve-coverage-v3",
         "total_surfaces": len(surfaces),
         "status_counts": dict(status_counts),
         "type_counts": dict(type_counts),
         "surfaces": surfaces,
         "maintenance_findings": maintenance_findings,
         "body_test_plan": body_test_plan,
+        "working_surface_types": sorted(type_counts),
+        "vocabulary_aliases": {},
+        "creative_work_policy": (
+            "MIND authors creative material; Body may place, save, render, and verify it"
+        ),
         "contract": {
             "no_silent_gui_omission": True,
             "all_user_surfaces_require_body_tests": True,

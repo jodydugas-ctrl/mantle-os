@@ -17,12 +17,15 @@ from ..primer import appai_commandments, appai_truths
 from .scanner import scan_project
 from .organ_map import build_map, propose_genome, ORGANS
 from .surface_coverage import render_surface_coverage_markdown
+from .coverage import InsertionState
 
 
 def dry_run(root: str) -> Dict[str, Any]:
     """The read-only assimilation pipeline: dissect -> map -> artifacts. Touches nothing."""
     dissection = scan_project(root)
     amap = build_map(dissection)
+    amap["insertion_state"] = InsertionState.OBSERVED_CAUSAL_GRAPH.value
+    amap["runtime_hook_verified"] = False
     return {"dissection": dissection, "map": amap,
             "inventory_md": render_inventory(amap, dissection)}
 
@@ -40,6 +43,9 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
     L.append("")
     L.append("## A.1 Host identity")
     L.append("- **Root:** `%s`" % amap["host"])
+    L.append("- **Insertion state:** `%s`" % amap.get("insertion_state"))
+    L.append("- **Runtime hook verified:** `%s`" %
+             str(bool(amap.get("runtime_hook_verified"))).lower())
     L.append("- **Python files:** %d" % dissection["python_files"])
     substrate = dissection.get("substrate") or {}
     if substrate:
