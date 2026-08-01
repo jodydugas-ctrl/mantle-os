@@ -71,7 +71,8 @@ class SnapshotContextStrategy:
     def prepare(self, *, snapshot: Dict[str, Any], intent: Optional[str],
                 model_info: ModelInfo) -> PreparedContext:
         del model_info
-        prompt = intent or self._frame(snapshot)
+        frame = self._frame(snapshot)
+        prompt = "%s\n\nINTENT:\n%s" % (frame, intent) if intent else frame
         raw = prompt.encode("utf-8")
         digest = sha256_hex(raw)
         return PreparedContext(
