@@ -11,7 +11,8 @@ Each PNG here is a **germ spore**: a single self-contained file carrying
 Hatch one:
 
 ```bash
-python -m mantle hatch examples/spores/greeter.png --out=nest/
+python -m mantle lifecycle authorize hatch examples/spores/greeter.png nest/ --approve --out=hatch-auth.json
+python -m mantle hatch examples/spores/greeter.png --out=nest/ --auth=hatch-auth.json
 ```
 
 Without Mantle, decode the pixels (the Quickstart is mirrored in PNG metadata and, when
@@ -19,7 +20,12 @@ Pillow is available during generation, printed on the image itself) and read the
 key `germ`.
 
 `notes_graft.png` carries a **graft germ** — a spore aimed at a host — applied
-with `python -m mantle graft examples/spores/notes_graft.png examples/sample_app`.
+using a fresh authorization bound to the artifact and exact promoted target:
+
+```bash
+python -m mantle lifecycle authorize graft examples/spores/notes_graft.png workspace/sample_app --approve --out=graft-auth.json
+python -m mantle graft examples/spores/notes_graft.png examples/sample_app --workspace=workspace --auth=graft-auth.json
+```
 
 The PNGs are generated from the germ files in `../eggs/` by
 `python examples/spores/make_spores.py`; regenerate them after editing a germ. The

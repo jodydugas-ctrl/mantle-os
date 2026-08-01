@@ -14,11 +14,14 @@ $env:PYTHONPATH="src"
 python -m mantle assimilate examples/sample_app --dry-run
 python -m mantle assimilate examples/sample_app --out=assimilation
 python -m mantle anchor examples/sample_app
-python -m mantle graft examples/eggs/notes_graft.json examples/sample_app
+python -m mantle lifecycle authorize graft examples/eggs/notes_graft.json workspace/sample_app --approve --out=graft-auth.json
+python -m mantle graft examples/eggs/notes_graft.json examples/sample_app --workspace=workspace --auth=graft-auth.json
 ```
 
-The first command must modify zero host files. Hooking, anchoring, and grafting are only
-lawful after the read-only inventory exists and the operator has authority.
+The first command must modify zero host files. Hooking and anchoring are only lawful after
+the read-only inventory exists. External grafting additionally requires a fresh one-shot
+authorization bound to the artifact and exact promoted target; the original host remains
+unchanged.
 
 ## Expected Organ Map
 

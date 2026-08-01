@@ -25,9 +25,12 @@ native/resource candidates, and parser coverage. It then scans what the current 
 can parse:
 
 - Python via `ast`
-- `.js`, `.mjs`, `.go`, and `.rs` via optional tree-sitter
-- native C-family, Qt UI/resource files, CMake, or other unparsed surfaces as explicit
-  adaptive-tooling gaps
+- `.js`, `.mjs`, and `.go` via optional tree-sitter
+- Rust via tree-sitter when installed, with a deterministic pure-stdlib fallback
+- native C/C++ via tree-sitter evidence when installed plus a conservative fallback
+  that retains bodies, candidate roles, truncation, and parser gaps
+- Qt `.ui`/`.qrc`, balanced `connect(...)` calls, helper-wired actions, and CMake
+  target/source topology through shared deterministic scanners
 
 Host code is never executed and never modified. With `--out=DIR`, Mantle writes
 `APP_INVENTORY.md` and `assimilation_map.json` beside the operator. The JSON map includes
@@ -132,5 +135,7 @@ by future residents.
 artifact that births this host's resident AppAI anywhere: the resident's identity,
 do-no-harm truths, the proposed app bands, the observed organ map as inert data, and a
 census fingerprint as the source descriptor. Emitting is still Phase 0 (zero host
-writes); `python -m mantle hatch out.png` faces the Stage-1 gate like any birth, and
-host code stays OTHER until proven. See [`../REPRODUCTION.md`](../REPRODUCTION.md).
+writes). The spore remains inert: inspect it, issue a fresh lifecycle authorization for
+its exact target, and only then run `python -m mantle hatch out.png --out=<target>
+--auth=<receipt>`. Hatching still faces the Stage-1 gate like any birth, and host code
+stays OTHER until proven. See [`../REPRODUCTION.md`](../REPRODUCTION.md).

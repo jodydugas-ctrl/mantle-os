@@ -12,7 +12,7 @@ reproduce on its own. Everything else is a facet of those two acts.
 
 | Method | Biology | Independent of a host? | What it looks like |
 | --- | --- | --- | --- |
-| **SEED** | spores | **Yes** — grows anywhere | a spore, hatched: `mantle hatch <spore.png>` |
+| **SEED** | spores | **Yes** — grows anywhere | an inert spore, inspected and then hatched with a target-bound authorization |
 | **GRAFT** | a spore aimed at a host | **No** — lives inside a host | `anchor`, `symbiosis`, `graft` |
 
 The Seed/Graft axis replaces the scratch-vs-assimilate split: a seed has no host; a graft
@@ -47,7 +47,8 @@ and frame boundary so a parity-preserving rewrite is still rejected.
   bands, declarative reflexes, routines, controls, instincts *with proving cases*, and an
   optional origin face) — **data, never programs**;
 - the **build note** beside it is human/agent-readable instructions: with Mantle
-  installed, `python -m mantle hatch this.png`; without it, any coding agent can decode
+  installed, authorize an exact target and then run `python -m mantle hatch this.png
+  --out=<target> --auth=<receipt>`; without it, any coding agent can decode
   the pixels (the Quickstart is printed on the image and mirrored in its metadata), read
   the payload key `germ`, and grow a conforming body — nine organs, append-only memory,
   keys minted at build time, instincts sandboxed against their proving cases.
@@ -57,7 +58,8 @@ Pack one from a germ file, or let assimilation emit one from an existing app:
 ```bash
 python -m mantle spore pack germ.json my_app.png       # germ -> spore
 python -m mantle assimilate path/to/app --spore=my_app.png   # existing app -> spore
-python -m mantle hatch my_app.png --out=nest/          # spore -> certified AppAI
+python -m mantle lifecycle authorize hatch my_app.png nest/ --approve --out=hatch-auth.json
+python -m mantle hatch my_app.png --out=nest/ --auth=hatch-auth.json
 ```
 
 > **The deeper truth: a spore is a custom VCW substrate.** The PNG *is* the VCW layer — it
@@ -147,7 +149,8 @@ byte-identical. If the host has drifted from the census the graft was built agai
 apply **raises** a drift interrupt rather than mis-applying silently.
 
 ```bash
-python -m mantle graft examples/spores/notes_graft.png examples/sample_app
+python -m mantle lifecycle authorize graft examples/spores/notes_graft.png workspace/sample_app --approve --out=graft-auth.json
+python -m mantle graft examples/spores/notes_graft.png examples/sample_app --workspace=workspace --auth=graft-auth.json
 ```
 
 **Assimilation closes the loop.** `mantle assimilate <host> --spore=out.png` scans an

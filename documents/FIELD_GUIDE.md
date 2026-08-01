@@ -28,10 +28,12 @@ or a database.
 The fastest possible start:
 
 ```bash
-python -m mantle hatch examples/spores/greeter.png --out=nest/
+python -m mantle lifecycle authorize hatch examples/spores/greeter.png nest/ --approve --out=hatch-auth.json
+python -m mantle hatch examples/spores/greeter.png --out=nest/ --auth=hatch-auth.json
 ```
 
-That one command performs every chapter of this guide. The rest of the manual is
+The hatch command performs every chapter of this guide after the separate authorization
+binds this artifact to this exact target. The rest of the manual is
 understanding what just happened — and how to write your own germ (a bare germ JSON
 hatches too: `examples/eggs/greeter.json` is the template).
 
@@ -266,11 +268,8 @@ with zero LLM. The host's behavior is preserved exactly (same return, same excep
 `unweave` restores the originals byte-for-byte. The static map becomes a pulse.
 
 ```bash
-python -m mantle graft examples/spores/notes_graft.png examples/sample_app
-```
-```python
-res = graft.apply(load_graft("examples/spores/notes_graft.png"), host)   # workspace; host untouched
-graft.weave(host_module.__dict__, res["hooks"], Assimilation(res["organism"]))   # live
+python -m mantle lifecycle authorize graft examples/spores/notes_graft.png workspace/sample_app --approve --out=graft-auth.json
+python -m mantle graft examples/spores/notes_graft.png examples/sample_app --workspace=workspace --auth=graft-auth.json
 ```
 
 **Proven live:** applying a graft leaves every original host file byte-identical; a drifted
@@ -438,7 +437,8 @@ sibling of the seed vault (Chapter 16). Faces survive a chosen rebirth (the gene
 and the old generation keeps its own readable copy in the sealed ancestor.
 
 ```bash
-python -m mantle hatch examples/spores/calculator.png --out=nest/  # born wearing its origin face
+python -m mantle lifecycle authorize hatch examples/spores/calculator.png nest/ --approve --out=hatch-auth.json
+python -m mantle hatch examples/spores/calculator.png --out=nest/ --auth=hatch-auth.json
 python -m mantle face-save nest/ notepad examples/notepad_appai/index.html --kind=html
 python -m mantle face-list nest/                          # origin (default, worn) + notepad
 python -m mantle face-wear nest/ notepad                  # the boot manifest a host renders
@@ -483,7 +483,8 @@ Then hatch it directly, or pack it into a spore — the one artifact that carrie
 germ plus build instructions any coding agent can read:
 
 ```bash
-python -m mantle hatch my_germ.json --out=my_nest/     # hatch the germ directly
+python -m mantle lifecycle authorize hatch my_germ.json my_nest/ --approve --out=hatch-auth.json
+python -m mantle hatch my_germ.json --out=my_nest/ --auth=hatch-auth.json
 python -m mantle spore pack my_germ.json my_app.png    # ...or package it as a spore first
 python -m mantle audit            # the full gate, anytime
 python -m mantle prove            # the current security invariant suite

@@ -1,6 +1,6 @@
 # Grimoire edition migration rules
 
-Mantle OS 1.5.0 carries two explicit Grimoire software lanes:
+Mantle OS 2.0.0rc1 carries two explicit Grimoire software lanes:
 
 | Profile | Role | Counts and source |
 | --- | --- | --- |

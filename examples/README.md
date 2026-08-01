@@ -13,8 +13,11 @@ These are proven by the framework's own gate. Read and run these first:
   affordance. Use it with `python -m mantle assimilate examples/sample_app
   --dry-run` (add `--spore=out.png` to emit its germ spore), `python -m mantle
   anchor`, and the graft spore.
-- **`spores/`** - germ spores, the one artifact that births an AppAI:
-  `python -m mantle hatch examples/spores/greeter.png --out=nest/`.
+- **`spores/`** - germ spores, the one artifact that births an AppAI. First bind
+  approval to the artifact and exact target, then hatch:
+  `python -m mantle lifecycle authorize hatch examples/spores/greeter.png nest/
+  --approve --out=hatch-auth.json`, followed by `python -m mantle hatch
+  examples/spores/greeter.png --out=nest/ --auth=hatch-auth.json`.
 - **`files_appai/`** - the deterministic Files source aide plus generated-carrier
   and local certification scripts. Serve `examples/` and open `/files_appai/`.
 - **`eggs/`** - the germ files those spores are packed from: `greeter.json`

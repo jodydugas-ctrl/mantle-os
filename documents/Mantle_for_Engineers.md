@@ -266,7 +266,8 @@ python -m mantle demo
 python -m mantle mind
 python -m mantle reproduce
 python -m mantle assimilate examples/sample_app --dry-run
-python -m mantle hatch examples/spores/greeter.png --out=nest/
+python -m mantle lifecycle authorize hatch examples/spores/greeter.png nest/ --approve --out=hatch-auth.json
+python -m mantle hatch examples/spores/greeter.png --out=nest/ --auth=hatch-auth.json
 python -m mantle ghost selftest
 ```
 
@@ -287,13 +288,16 @@ python -m mantle ask path/to/host "question"
 python -m mantle ask path/to/host --mind "question"
 python -m mantle feed path/to/host --credits=20 --key=provider-name
 python -m mantle vitals path/to/host
-python -m mantle graft examples/spores/notes_graft.png examples/sample_app
+python -m mantle lifecycle authorize graft examples/spores/notes_graft.png workspace/sample_app --approve --out=graft-auth.json
+python -m mantle graft examples/spores/notes_graft.png examples/sample_app --workspace=workspace --auth=graft-auth.json
 ```
 
 Interactive resident adapters should route slash input through
 `BodyCommandDispatcher`; non-slash text stays in the MIND conversation lane. The shared
-Body commands are `/key`, `/model`, `/offline`, `/status`, and `/help`, with
-`openrouter/free` as the default model; `/mind` is a compatibility alias for `/model`.
+Body dispatcher commands are `/key`, `/model`, `/mind`, `/offline`, `/status`,
+`/provider-test`, `/evidence`, and `/help`, with `openrouter/free` as the default model;
+`/mind` is a compatibility alias for `/model`. Interactive terminal adapters also own
+the local `/quit` session-control command.
 `/key` without an argument returns a typed
 `needs_secret` result so the adapter can use hidden input and call
 `dispatch("/key", secret_input=value)`. Every outcome is written as a redacted Prime VCW

@@ -92,6 +92,11 @@ class Grimoire(object):
         if len(set(edition)) != 1:
             raise ValueError("edition declarations disagree: %s" % sorted(set(edition)))
         self.edition = edition[0]
+        if self.edition != "v0.10":
+            raise ValueError(
+                "independent verifier supports GRIMOIRE v0.10 only; "
+                "use the frozen profile compatibility tests for %s" % self.edition
+            )
         self.atoms, self.gloss_to_atom = self._load_atoms(src)
         self.roles = self._load_enum(src, "## 2 ROLE", hexval=True)
         self.evidence = self._load_enum(src, "## 3 EVIDENCE")

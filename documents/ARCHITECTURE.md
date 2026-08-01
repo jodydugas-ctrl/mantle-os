@@ -145,9 +145,10 @@ logic into a reflex or defer it to a Phase-2 extension.
 
 Two ways in, one gate out:
 
-- **Declarative (preferred):** author a germ and hatch it —
-  `python -m mantle hatch <spore.png|germ.json>`. The hatchery performs the whole
-  sequence below deterministically.
+- **Declarative (preferred):** author a germ, inspect it, authorize the exact target, and
+  hatch it with `python -m mantle hatch <spore.png|germ.json> --out=<target>
+  --auth=<receipt>`. The hatchery performs the whole sequence below deterministically;
+  the authorization supplies permission, not technical proof.
 - **Hand-grown:** build in this order, each organ to its contract:
 
 ```
@@ -210,16 +211,22 @@ FIELD_GUIDE chapters 13–15.
 
 ## 7. The Assimilator (Path B, as code)
 
-`src/mantle/assimilator/` implements Path B: a read-only AST **scanner** classifies every
-symbol of a host app into organ roles; **organ_map** folds the classification into an
-assimilation map and resident host evidence index; **report** emits the APP_INVENTORY artifact (the signed Phase 0 gate), a
+`src/mantle/assimilator/` implements Path B: read-only substrate scanners classify
+evidence-bearing host symbols into candidate organ roles; **organ_map** folds the
+classification into an assimilation map and resident host evidence index; **report** emits
+the APP_INVENTORY artifact (the signed Phase 0 gate), a
 JSON map, and — with `--spore=out.png` — the host's **germ spore** (see
 [`REPRODUCTION.md`](REPRODUCTION.md)); **wrappers** is the fail-open hook runtime that
 threads host behavior through Senses/Limbs/Memory/Immune without changing it.
 `python -m mantle assimilate <path> --dry-run` runs the read-only pipeline against any
-host. The scanner is Python-AST by default and multi-language (`.js/.mjs/.go/.rs`) via the
-optional tree-sitter extra. The Grimoire now supplies the VCW semantic software profile;
-assimilation procedure is owned by this code path and the assimilation guide.
+host. Python uses `ast`; `.js`, `.mjs`, and `.go` use optional tree-sitter parsers; Rust
+and native C/C++ retain deterministic pure-stdlib fallback coverage when structured
+parsers are absent. Shared scanners also extract Qt UI/QRC resources, balanced signal
+connections, helper-wired actions, and CMake target/source topology. Coverage is reported
+as `COMPLETE`, `PARTIAL`, or `BLOCKED`; a dominant first-party substrate with no executable
+parser coverage cannot pass as a successful Phase-0 map. The Grimoire supplies the VCW
+semantic software profile; assimilation procedure is owned by this code path and the
+assimilation guide.
 
 The host evidence index is the resident's local-first consultation substrate. A resident
 answers questions about its software from the inventory, organ map, control surfaces, gap

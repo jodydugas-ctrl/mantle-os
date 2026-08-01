@@ -12,7 +12,8 @@ The Grimoire is a versioned family of immutable edition files:
 | --- | --- | --- |
 | Edition index | This README | Select an explicit edition; filenames are not semantic inference. |
 | v0.9 compatibility | [editions/grimoire-v0.9.md](editions/grimoire-v0.9.md) | Frozen legacy carrier contract. |
-| v0.10 | [editions/grimoire-v0.10.md](editions/grimoire-v0.10.md) | Proposed/adoptable edition with explicit procedure-container semantics. |
+| v0.10 | [editions/grimoire-v0.10.md](editions/grimoire-v0.10.md) | Adopted default for new tissue; explicit procedure-container semantics and normative codec. |
+| Legacy mirror | [The Grimoire.md](The%20Grimoire.md) | Byte-identical v0.9 compatibility mirror; never use it to infer the current edition. |
 
 After the explicit adoption receipt, newly created Grimoire tissue defaults to v0.10.
 The v0.9 edition and v0.9 spore carriers remain readable compatibility data and are not
@@ -31,13 +32,24 @@ Load by section and declare what is absent. The file is machine-oriented by desi
 | `0 AXIOMS` | Edition, framing, grouping, lane-integrity, and authority boundaries. |
 | `1 CHANNELS` | RGBA lane meaning and statement framing. |
 | `2 ROLE`, `3 EVIDENCE`, `4 FORCE` | The `G`, `B`, and `A` channel registries. |
-| `5 ATOM ADDRESS SPACE`, `6 ATOM TABLE` | Atom addressing and the canonical concept rows. |
-| `7 ENCODED BOOK`, `8 BOOK ROWS` | The encoded law corpus. |
-| `9 DECODER RULES`, `10 CONFORMANCE`, `11 MANTLE COMPANION RULES` | Decoder obligations, profile conformance, and how Mantle treats the profile. |
-| `12 KNOWN BENDS` | Explicit measured and structural limitations. |
+| `5 ATOM` | Externally grounded atom addressing and the 1-254 registry. |
+| `6 COMPOSITION` | Canonical grouping, ordering, concepts, and aliases. |
+| `7 CONFORMANCE`, `8 MEASUREMENT`, `9 SELFTEST` | Decoder obligations, measured claims, and canonical vectors. |
+| `10 BOOK` | The encoded law corpus. |
+| `11 VCW SOFTWARE BINDING`, `12 KNOWN BENDS` | Mantle/VCW duties and explicit limitations. |
+| `13 REFERENCE CODEC` | v0.10-only normative codec and its pinned digest. |
 
 The profile's own rule `S6 PARTIAL LOAD` is binding for readers: a partial load declares
 absent sections, and a model may not fill missing law from memory.
+
+Verify the adopted v0.10 edition and its embedded reference codec independently with:
+
+```bash
+python tools/grimoire_tool.py verify documents/grimoire/editions/grimoire-v0.10.md
+```
+
+The independent tool is v0.10-specific. Verify frozen v0.9 compatibility through the
+profile tests and `mantle prove`; do not apply v0.10 parity or ordering rules to v0.9.
 
 ## Relationship To Code
 
@@ -52,16 +64,18 @@ Current Mantle code surfaces that interact with this boundary:
 | VCW booted substrate | [`src/mantle/vcw/`](../../src/mantle/vcw/), [`examples/vcw/vcw_cube.py`](../../examples/vcw/vcw_cube.py) |
 | Carrier profiles / drivers | [`src/mantle/vcw/drivers.py`](../../src/mantle/vcw/drivers.py), [`src/mantle/vcw/bands.py`](../../src/mantle/vcw/bands.py) |
 | Grimoire edition registry | [`src/mantle/vcw/grimoire_editions/`](../../src/mantle/vcw/grimoire_editions/) |
+| Edition adoption policy | [`src/mantle/vcw/grimoire_editions/adoption.py`](../../src/mantle/vcw/grimoire_editions/adoption.py), [`EDITION_MIGRATION.md`](EDITION_MIGRATION.md) |
 | Grimoire v0.9 executable profile | [`src/mantle/vcw/grimoire.py`](../../src/mantle/vcw/grimoire.py) and the registered `grimoire-v0.9` driver |
 | Grimoire v0.10 executable profile | [`src/mantle/vcw/grimoire_editions/v010.py`](../../src/mantle/vcw/grimoire_editions/v010.py) and the registered `grimoire-v0.10` driver |
 | Spore PNG carriers | [`src/mantle/spore.py`](../../src/mantle/spore.py), [`src/mantle/spore_min.py`](../../src/mantle/spore_min.py), [`examples/spore/`](../../examples/spore/) |
+| v0.10 independent verifier / bounded research | [`tools/grimoire_tool.py`](../../tools/grimoire_tool.py), [`src/mantle/research/`](../../src/mantle/research/), [`documents/research/`](../research/) |
 | Assimilation / residency | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |
 | Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`hatchery.py`](../../src/mantle/hatchery.py) |
 
 Presence of an encoded Grimoire profile is data, not adoption or authority. The registered
 drivers decode only their selected profile; v0.9 remains the compatibility path while v0.10
 requires an explicit profile on new carriers. They verify statement parity, measure a full-lane
-fingerprint when a carrier claims tamper evidence, reports atom-address provenance, and
-records adoption state from boot policy (`data`, `quote`, `quarantine`, or `adopted`).
+fingerprint when a carrier claims tamper evidence, report atom-address provenance, and
+record adoption state from boot policy (`data`, `quote`, `quarantine`, or `adopted`).
 Mantle runtime authority still comes from operator decisions, Body policy, and the audited
 code path.

@@ -12,7 +12,8 @@ suite, the Stage-2 gate, and three tamper proofs that show the audit CATCHES vio
 **Scope:** this badge certifies the Mantle reference organism and repository gates; it
 does not certify an application that merely depends on Mantle. See the canonical
 implementation security claims in [`THREAT_MODEL.md`](THREAT_MODEL.md). Application
-certification is tracked as the future `mantle certify <path>` surface.
+certification is a separate, target-bound operation through `mantle certify <nest>`; a
+historical receipt never becomes current runtime authority.
 
 **Current certification count:** run `python -m mantle prove` -- the count is derived
 from the code, never hardcoded in prose (the doctor's docs-vs-code gate enforces this).
@@ -26,9 +27,9 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 >
 > - **[`AGENTS.md`](AGENTS.md)** — for AI agents: what the biological framework is *for* (the
 >   two jobs the organ names do) and how to use the **Grimoire**, Mantle's registered
->   versioned Grimoire VCW software profiles (`grimoire-v0.9` compatibility and
->   `grimoire-v0.10`) for atom/role/evidence/force encoding on RGBA-compatible substrate
->   lanes. Routine code reading and small fixes proceed from the
+>   versioned Grimoire VCW software profiles (`grimoire-v0.9` compatibility and adopted
+>   `grimoire-v0.10` for new tissue) for atom/role/evidence/force encoding on
+>   RGBA-compatible substrate lanes. Routine code reading and small fixes proceed from the
 >   docs and working code.
 > - **[`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md)** — for
 >   engineers and AI specialists who want the architecture before the metaphor: trust
@@ -335,7 +336,8 @@ python examples/vcw/interop.py                # standalone <-> engine: identical
 
 Mantle residents share a deterministic slash-command control plane. Slash commands are
 handled by the **Body**, never sent to the MIND. Plain text remains MIND conversation.
-The canonical session commands are:
+Start a saved resident with `python -m mantle resident <nest>`. The canonical session
+commands are:
 
 ```text
 /key                 securely request an API key (terminal adapters use hidden input)
@@ -344,8 +346,14 @@ The canonical session commands are:
 /mind provider/id    compatibility alias for `/model`
 /offline             forget the session key
 /status              show redacted provider/model state
+/provider-test       test the configured provider without changing the selected model
+/evidence            show bounded Body evidence and receipts for the current session
 /help                list Body commands, including host extensions
+/quit                close the resident terminal
 ```
+
+`/quit` belongs to the interactive terminal adapter; the other entries are supplied by
+the shared Body dispatcher (`/mind` is an alias for `/model`).
 
 The default model is `openrouter/free`. Credentials remain in process memory and never
 enter VCW or disk. Every accepted, refused, or incomplete command creates a redacted
@@ -364,12 +372,15 @@ bidirectional-formatting characters cannot manipulate the terminal display.
 An AppAI travels as **ONE artifact — the spore** — and reproduces in exactly **two** ways
 (doctrine: [`documents/REPRODUCTION.md`](documents/REPRODUCTION.md)); both require the same
 technical evidence (the full invariant suite, no standing law weakened), but evidence is not
-authority: birth, reconstruction, or activation also requires the applicable fresh
-operator/guardian decision. Both methods end at the same certified Body:
+authority. External hatch and graft each require one fresh target-bound operator approval;
+SELF-vault reconstruction retains its Body-owned gated recovery path; MIND fusion remains a
+separate operator-plus-guardian decision. Both reproduction methods end at the same certified
+Body:
 
 - **SEED** — *independent.* A spore whose **germ** declares a whole new AppAI: one PNG
   carrying the complete build document plus instructions any coding agent can read (with
-  Mantle: `mantle hatch <spore.png>`; without: decode the pixels and grow from the germ).
+  Mantle: authorize an exact target, then run `mantle hatch <spore.png> --out=<target>
+  --auth=<receipt>`; without Mantle: decode the pixels and grow from the germ).
   The spore is also a proof that **VCW is a substrate pattern**: the PNG *is* a VCW layer.
   Hatching a seed is always a **birth** through the Stage-1 gate; the genesis key is
   **minted at birth, never derived from the spore** — a public PNG must never be able to
@@ -395,7 +406,8 @@ python -m mantle teach                         # the Field Guide, RUNNING — 18
 python -m mantle spore create seed.png "Buddy" "answer one question"   # the minimal seed
 python -m mantle ghost selftest                # the cache-ghost: a seed that lives in the LLM prompt cache
 python -m mantle anchor path/to/your-app       # an AppAI takes residence in your codebase (do-no-harm)
-python -m mantle graft examples/spores/notes_graft.png examples/sample_app   # a spore aimed at a host
+python -m mantle lifecycle authorize graft examples/spores/notes_graft.png workspace/sample_app --approve --out=graft-auth.json
+python -m mantle graft examples/spores/notes_graft.png examples/sample_app --workspace=workspace --auth=graft-auth.json
 python -m mantle doctor nest/                  # deployment checkup (incl. docs-vs-code coherence)
 ```
 
@@ -418,6 +430,20 @@ Rolling mode preserves the `model(prompt) -> text` interface, never includes its
 and never adds the context band to an existing organism without an explicit Body-authorized
 migration. Provider cache hits are observed facts, not guarantees. See
 [`documents/guides/Rolling_Context_Guide.md`](documents/guides/Rolling_Context_Guide.md).
+
+### Bounded research lifecycle
+
+Mantle's research surface can propose and trial changes inside an isolated Candidate
+Chamber, append evidence to a Body-owned research ledger, and report eligibility. It
+cannot self-authorize or self-adopt a candidate. Operator authorization and adoption are
+separate explicit commands with receipts; network access is absent from the initial CLI.
+See [`documents/research/RESEARCH_CHARTER.md`](documents/research/RESEARCH_CHARTER.md).
+
+```bash
+python -m mantle research-init grimoire-dual-edition --out=research.json
+python -m mantle research-baseline research.json
+python -m mantle research-report research.json --json
+```
 
 ```python
 from mantle import Organism
@@ -498,7 +524,7 @@ every Stage-1 row to prove it.
 | **Genome (agent)** | Identity held in the **Body** (not the cube): Primer (read-only) + Special Instructions + Immunization + lineage index. |
 | **Veil** | The Body reflex that hides private / tombstoned / quarantined memory on read. |
 | **Zombie Body** | A Body that has passed the Stage 1 Gate: alive, correct, dormant. |
-| **Spore** | THE travelling artifact: one PNG that is a whole minimal agent, and may carry a **germ** — then it is the complete birth package (`mantle hatch <spore.png>`). |
+| **Spore** | THE travelling artifact: one PNG that is a whole minimal agent, and may carry a **germ** — then it is the complete birth package (inspect it first, authorize its exact target, then use `mantle hatch <spore.png> --out=<target> --auth=<receipt>`). |
 | **Germ** | The complete AppAI build document (identity, truths, genome bands, reflexes, controls, instincts with proving cases) — data, not programs. Rides inside a spore. |
 | **Graft** | A spore aimed at a host: its germ is a non-destructive patch against a named host repo, applied in a workspace copy. |
 | **Anchoring / Resident** | An AppAI that has taken residence in a host codebase (a `.mantle/` nest), do-no-harm census-verified. |
@@ -521,7 +547,10 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     organs/              the nine organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
       context/           optional rolling-prefix ledger, canonical bytes, budgets + rollover
+    research/            bounded proposals, Candidate Chamber trials, evidence ledger + reports
     assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, invariant suite)
+    contracts.py proofs.py grounded resident contracts + Body action execution proofs
+    lifecycle.py         target-bound hatch/graft authorization, journals + atomic promotion
     reproduction.py      the two-method seam — SEED vs GRAFT (routes to the modules below)
     spore.py spore_min.py THE artifact — one PNG agent, optionally carrying a germ (+ its embryo)
     hatchery.py          the one birth door: germ or spore -> certified organism
@@ -541,10 +570,10 @@ documents/               the books and the living doctrine
   ARCHITECTURE.md        the shape + the Phase-1/Phase-2 build path
   REPRODUCTION.md        the spore, the hatchery, the graft, rebirth
   Mantle_Organ_Atlas.md  the organ taxonomy + the organ contracts
-  grimoire/              the canonical Grimoire VCW software profile
+  grimoire/              explicit v0.9 compatibility and adopted v0.10 software profiles
   guides/ (VCW · audit · lifecycle · assimilation · visual) · assets/ (diagrams)
 examples/                example AppAIs + the normative substrate
-  spores/                germ spores — hatch one: `mantle hatch examples/spores/greeter.png`
+  spores/                inert germ spores; inspect, target-authorize, then hatch one
   eggs/                  the germ files those spores are packed from
   spore/                 a custom VCW substrate in PNG form — purity audit + VCW-conformance proof
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition

@@ -2,12 +2,12 @@
 
 ## Supported versions
 
-Security fixes are provided for the latest release line.
+Security fixes are provided for the current maintained line.
 
 | Version | Supported |
 |---|---|
-| 1.3.x | Yes |
-| < 1.3 | Upgrade required |
+| 2.0.0rc1 candidate | Yes |
+| 1.x | Upgrade required |
 
 ## Reporting a vulnerability
 
@@ -34,7 +34,13 @@ trusted in-process Body/operator Python.
   authority.
 - Production MIND fusion requires fresh resident-bound evidence plus distinct authenticated
   operator and guardian approvals.
-- Reproduction is disabled by default and is not authorized by the 1.4.0 release.
+- External hatch and graft activation requires a fresh, one-shot authorization bound to
+  the artifact, lifecycle action, and exact resolved target. Inspection and migration do
+  not activate an artifact.
+- SELF-vault reconstruction remains a Body-owned recovery path and must still pass its
+  integrity, provenance, instinct, Stage-1, and atomic-persistence gates.
+- MIND fusion is a separate authority boundary and continues to require distinct,
+  resident-bound operator and guardian approvals.
 - Authority credentials and provider credentials are deployment secrets and must never be
   committed.
 - The Hermes addon is fail-open toward host operation but fail-closed toward fusion authority.

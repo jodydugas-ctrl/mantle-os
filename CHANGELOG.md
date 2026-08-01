@@ -4,6 +4,16 @@ All notable release-level changes are documented here.
 
 ## [Unreleased]
 
+### Documentation and repository hygiene
+
+- Reconciled maintained README and guide examples with target-bound hatch/graft
+  authorization, resident protocol v2 commands, current scanner coverage, and the
+  2.0.0rc1 security posture.
+- Clarified that Grimoire v0.10 is the adopted profile for new tissue, v0.9 remains a
+  frozen compatibility profile, and the unversioned edition file is a v0.9 mirror.
+- Made the independent v0.10 verifier refuse legacy editions before applying incompatible
+  parity and ordering rules.
+
 ### Added - MantleOS 2.0.0rc1 platform consolidation
 
 - Added the canonical resident protocol v2 command runtime, grounded claim/evidence
