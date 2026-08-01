@@ -6,14 +6,20 @@ substrate.
 
 ## Canonical File
 
-The Grimoire is exactly one canonical file:
+The Grimoire is a versioned family of immutable edition files:
 
 | Read | Document | Scope |
 | --- | --- | --- |
-| **1st** | [The Grimoire.md](The%20Grimoire.md) | `GRIMOIRE v0.9 -- VCW SOFTWARE EDITION`: RGBA channels, atom groups, roles, evidence, force, parity, encoded BOOK rows, conformance, Mantle companion duties, and known bends. |
+| Edition index | This README | Select an explicit edition; filenames are not semantic inference. |
+| v0.9 compatibility | [editions/grimoire-v0.9.md](editions/grimoire-v0.9.md) | Frozen legacy carrier contract. |
+| v0.10 | [editions/grimoire-v0.10.md](editions/grimoire-v0.10.md) | Proposed/adoptable edition with explicit procedure-container semantics. |
 
-Do not add old procedural manuals, split editions, companion copies, or compatibility mirrors.
-If a task touches Grimoire semantics, load this file. If a task touches Mantle runtime
+After the explicit adoption receipt, newly created Grimoire tissue defaults to v0.10.
+The v0.9 edition and v0.9 spore carriers remain readable compatibility data and are not
+silently migrated.
+
+Do not infer an edition from a path or visual placement. If a task touches Grimoire semantics,
+load the explicitly selected edition file. If a task touches Mantle runtime
 behavior, use the runnable code and the Mantle docs that own that behavior.
 
 ## Loading
@@ -45,13 +51,16 @@ Current Mantle code surfaces that interact with this boundary:
 | --- | --- |
 | VCW booted substrate | [`src/mantle/vcw/`](../../src/mantle/vcw/), [`examples/vcw/vcw_cube.py`](../../examples/vcw/vcw_cube.py) |
 | Carrier profiles / drivers | [`src/mantle/vcw/drivers.py`](../../src/mantle/vcw/drivers.py), [`src/mantle/vcw/bands.py`](../../src/mantle/vcw/bands.py) |
+| Grimoire edition registry | [`src/mantle/vcw/grimoire_editions/`](../../src/mantle/vcw/grimoire_editions/) |
 | Grimoire v0.9 executable profile | [`src/mantle/vcw/grimoire.py`](../../src/mantle/vcw/grimoire.py) and the registered `grimoire-v0.9` driver |
+| Grimoire v0.10 executable profile | [`src/mantle/vcw/grimoire_editions/v010.py`](../../src/mantle/vcw/grimoire_editions/v010.py) and the registered `grimoire-v0.10` driver |
 | Spore PNG carriers | [`src/mantle/spore.py`](../../src/mantle/spore.py), [`src/mantle/spore_min.py`](../../src/mantle/spore_min.py), [`examples/spore/`](../../examples/spore/) |
 | Assimilation / residency | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |
 | Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`hatchery.py`](../../src/mantle/hatchery.py) |
 
 Presence of an encoded Grimoire profile is data, not adoption or authority. The registered
-`grimoire-v0.9` driver decodes raw runs, verifies statement parity, measures a full-lane
+drivers decode only their selected profile; v0.9 remains the compatibility path while v0.10
+requires an explicit profile on new carriers. They verify statement parity, measure a full-lane
 fingerprint when a carrier claims tamper evidence, reports atom-address provenance, and
 records adoption state from boot policy (`data`, `quote`, `quarantine`, or `adopted`).
 Mantle runtime authority still comes from operator decisions, Body policy, and the audited

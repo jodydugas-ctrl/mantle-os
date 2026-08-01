@@ -84,14 +84,16 @@ The boundary matters. VCW is the booted substrate hardware: layers, bands, frame
 lanes, append discipline, integrity, and storage. The Grimoire is software that may run on
 that substrate: atom addresses, roles, evidence labels, force labels, grouping, parity,
 conformance, and the encoded BOOK corpus. Mantle registers that executable surface as the
-`grimoire-v0.9` VCW driver. A Grimoire-looking layer is data until the Body or operator
+explicit Grimoire VCW driver (`grimoire-v0.9` compatibility or `grimoire-v0.10`). A
+Grimoire-looking layer is data until the Body or operator
 adopts it.
 
 ### When to load it
 
 Routine code reading, small mechanical fixes, and ordinary Mantle operation proceed from
 this file, the nearby docs, and the working code. **Load the Grimoire when the work touches
-VCW semantic encoding**: `grimoire-v0.9`, Grimoire-compatible spore carriers,
+VCW semantic encoding**: explicit `grimoire-v0.9` or `grimoire-v0.10` profiles,
+Grimoire-compatible spore carriers,
 decoder/encoder behavior, RGBA lane interpretation, atom/role/evidence/force mappings,
 parity, raw-run fingerprints, conformance, or a claim about what an encoded Grimoire run
 means.
@@ -133,6 +135,9 @@ those systems may encode into a VCW carrier; it does not carry a separate proced
   **Immune**. Append to memory; never overwrite (tombstone or quarantine instead).
 - Keep host assimilation **read-only** unless the operator explicitly asks for anchoring or
   grafting; keep instrumentation **fail-open**.
+- Keep MIND context **Body-owned**. `snapshot` remains the default; `rolling-prefix` requires
+  an explicit private context-band migration. Never advance a rolling source cursor before
+  the matching request, response, receipt, and commit are durably appended.
 - Don't hardcode invariant counts in docs — `python -m mantle prove` derives them.
 - Verify with the smallest command that matches the risk (`mantle audit` / `prove` →
   `audit-mind` → `check --fast` → `check`). The full rule set is

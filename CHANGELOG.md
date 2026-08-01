@@ -4,6 +4,53 @@ All notable release-level changes are documented here.
 
 ## [Unreleased]
 
+### Added - MantleOS 2.0.0rc1 platform consolidation
+
+- Added the canonical resident protocol v2 command runtime, grounded claim/evidence
+  contracts, typed fusion authorization, Body action proofs, and deterministic
+  provider fallback behavior.
+- Expanded read-only assimilation with coverage states, native C/C++ and Qt scanning,
+  CMake/UI/QRC topology, Rust fallback scanning, and explicit parser-gap evidence.
+- Added target-bound one-shot lifecycle authorization for external hatch and graft,
+  same-parent staging journals, symlink-escape refusal, Stage-1 verification, and
+  atomic promotion.
+- Added safe inert spore inspection and Mantle 2 migration guidance while preserving
+  independently minted genesis keys and separating integrity from activation authority.
+- Migrated the Organize.AppAI integration locally to the shared resident contracts;
+  its product repository remains separate from this MantleOS release.
+
+### Changed — faster certification evidence paths
+
+- Accelerated the canonical standard-library SPORE PNG reader without changing RGBA bytes,
+  geometry, corruption refusals, or the Pillow-independent self-hosting boundary. Added exact
+  filter reconstruction and malformed-row invariants plus targeted decoder mutants.
+- Grimoire v0.10 invariant rows now share one immutable, source-bound conformance fixture per
+  suite execution while retaining every named verdict and the independent verifier comparison.
+- Closed-world strict certification runs the complete invariant suite once and binds its ordered
+  results to a fresh run nonce and tracked-source digest between separate Stage-1 and Stage-2 row
+  verdicts. Standalone stage commands remain complete by default.
+- Added a bounded, read-only benchmark harness whose append-only results are explicitly
+  non-authoritative performance evidence.
+
+### Added — Grimoire v0.10 adoption for new tissue
+
+- Added concurrent v0.9 compatibility and v0.10 Grimoire drivers, explicit profile
+  persistence, profile-aware new spores, and an operator-authorized Body-owned adoption
+  receipt. Existing v0.9 carriers are never reinterpreted; research and adoption remain
+  separate authority events.
+
+### Added — Body-owned rolling context
+
+- Added opt-in `rolling-prefix` context with a private VCW ledger, canonical
+  model-visible envelopes, exact request hashes, commit-last source cursors, provider
+  usage/cache receipts, conservative token budgeting, deterministic generation rollover,
+  multi-lane keys, and corruption recovery. The historical snapshot prompt remains the
+  default and its bytes are unchanged.
+- Added explicit context-band migration, optional structured `ModelRequest` /
+  `ModelResponse` transport support behind the existing `model(prompt) -> text` contract,
+  focused unit tests, nine executable `CONTEXT-*` invariants, tamper proofs, and the
+  Rolling Context guide.
+
 ### Security — memory guarantees clarified
 
 - Separated **history integrity** from **insertion provenance** throughout the VCW
@@ -11,7 +58,7 @@ All notable release-level changes are documented here.
   authenticate which in-process organ inserted a new valid row. This is a documented
   trust-boundary decision, not a new storage format or behavior change.
 
-### Changed — documentation reorganization (no code changes; framework still 1.4.0)
+### Changed — documentation reorganization (no code changes; historical 1.4.0 entry)
 
 - **Two on-ramps for specialists.** Added `AGENTS.md` at the repo root — an orientation
   file for AI agents that explains the two jobs the biological framework does (it draws a

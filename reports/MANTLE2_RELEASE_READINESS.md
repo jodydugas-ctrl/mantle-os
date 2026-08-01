@@ -9,7 +9,9 @@
 - Organize.AppAI base: `8ef42a4dbe1991d197c65862825634b0c252af16`
 - Organize.AppAI final implementation commit: `861efe8`
 
-No branch was pushed and no online repository was changed.
+MantleOS was reconciled with the then-current GitHub `main` before publication. The
+separate Organize.AppAI repository remains local because its configured `origin` is a
+pristine filesystem clone rather than a GitHub remote.
 
 ## Verification
 
@@ -17,10 +19,10 @@ No branch was pushed and no online repository was changed.
 | --- | --- |
 | Mantle compileall | PASS |
 | Mantle contract regression script | PASS (6 checks) |
-| `python -m mantle prove` | PASS (109/109) |
+| `python -m mantle prove` | PASS (134/134 after current-main reconciliation) |
 | `python -m mantle audit` | PASS |
 | `python -m mantle audit-mind` | PASS |
-| Mantle full pytest suite | PASS (18 passed, 1 skipped) |
+| Mantle full pytest suite | PASS (78 passed, 2 skipped, 3 subtests) |
 | `python -m mantle check` | PARTIAL (13 passed, 1 skipped, 0 failed; not a certification) |
 | Authorized hatch/graft CLI end-to-end | PASS (atomic targets; original sample host unchanged) |
 | Organize source compilation | PASS |

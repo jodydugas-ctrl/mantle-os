@@ -13,11 +13,16 @@ NO INVARIANT IS EVER WEAKENED TO MAKE A TEST PASS.
 """
 from __future__ import annotations
 
+from contextvars import ContextVar
+import hashlib
 import json
+import inspect
 import os
+import re
 import subprocess
 import sys
 import tempfile
+from types import MappingProxyType
 
 from .. import paths
 from ..core.body import Body
@@ -33,11 +38,18 @@ from ..vcw.drivers import (ExecDriver, CapabilityError, IntegrityError, TrustErr
                            ProtocolError, PythonExecRunner, validate_calcify_payload,
                            trial)
 from ..vcw.grimoire import GrimoireDecodeError, raw_run_fingerprint
+from ..vcw.grimoire_editions import GrimoireEditionError, decode_statement as decode_profiled
+from ..vcw.grimoire_editions import get_edition, known_editions
+from ..vcw.grimoire_editions import v010 as grimoire_v010
+from ..vcw.grimoire_editions import v09 as grimoire_v09
 from ..vcw.bands import code_hash
 from .registry import build_registry, by_concern
 
 _EXEC = ExecDriver()
 _CODE = "def f(x):\n    return x + 1\n"
+_ACTIVE_GRIMOIRE_V010_FIXTURE = ContextVar(
+    "mantle_active_grimoire_v010_fixture", default=None
+)
 
 
 def _born(genome=None):
@@ -435,6 +447,161 @@ def t_grimoire_v09_profile_driver_integrity():
             and wrong_fingerprint and parity_refused,
             "grimoire-v0.9 boots as a driver; raw/parity/fingerprint/provenance/"
             "adoption paths are executable")
+
+
+def _grimoire_v010_checks():
+    raw = grimoire_v010.SELFTEST_VECTORS[0]
+    procedure = grimoire_v010.SELFTEST_VECTORS[3]
+    checks = {}
+    signature = inspect.signature(decode_profiled)
+    checks["explicit-profile"] = (
+        "profile" in signature.parameters and signature.parameters["profile"].default is inspect.Parameter.empty,
+        "persistent decoder requires an explicit profile",
+    )
+    try:
+        get_edition("grimoire-v9.9")
+        checks["unknown-edition"] = (False, "unknown edition was resolved")
+    except GrimoireEditionError:
+        checks["unknown-edition"] = (True, "unknown edition refused")
+    try:
+        decode_profiled(procedure, profile="grimoire-v0.9", frame_id="v09-wall")
+        v09_ok = False
+    except GrimoireDecodeError:
+        v09_ok = True
+    checks["v09-frozen"] = (v09_ok and "grimoire-v0.9" in known_editions(), "v0.9 rejects the v0.10 zero-HEAD procedure")
+    try:
+        decode_profiled("9e600000 212a0000", profile="grimoire-v0.10",
+                        frame_id="non-step", allow_parity_absent=True)
+        step_only = False
+    except grimoire_v010.GrimoireDecodeError:
+        step_only = True
+    checks["step-only"] = (step_only, "v0.10 zero-HEAD frames require STEP lead roles")
+    missing = decode_profiled(procedure, profile="grimoire-v0.10", frame_id="missing")
+    checks["missing-container"] = (
+        missing["unknowns"] == ["container_evidence", "container_force"]
+        and not missing["governing"]
+        and missing["effective_evidence"] == "INHERIT"
+        and missing["effective_force"] == "INHERIT",
+        "missing procedure metadata remains unresolved and non-governing",
+    )
+    quote = decode_profiled(raw, profile="grimoire-v0.10", frame_id="quote", adoption_policy="quote")
+    adopted = decode_profiled(raw, profile="grimoire-v0.10", frame_id="adopted", adoption_policy="adopted")
+    checks["quote-inert"] = (not quote["governing"], "QUOTE is inert")
+    checks["adoption-policy"] = (
+        adopted["governing"] and adopted["adoption"]["authority"] == "boot-policy",
+        "adoption requires explicit boot policy",
+    )
+    container = decode_profiled(
+        procedure, profile="grimoire-v0.10", frame_id="container",
+        container_evidence="STIPULATED", container_force="WAY",
+    )
+    checks["container-labels"] = (
+        container["effective_evidence"] == "STIPULATED"
+        and container["effective_force"] == "WAY"
+        and container["evidence_source"] == "container"
+        and container["force_source"] == "container",
+        "container metadata is carried as the exact effective labels",
+    )
+    checks["raw-retained"] = (missing["raw"] == procedure.replace(" ", ""), "raw run is retained")
+    unmeasured = decode_profiled(raw, profile="grimoire-v0.10", frame_id="integrity",
+                                 claim_tamper_evidence=True)
+    checks["integrity"] = (
+        unmeasured["fingerprint_status"] == "missing"
+        and unmeasured["full_lane_integrity"] == "unmeasured",
+        "parity does not become full-lane integrity",
+    )
+    checks["provenance"] = (
+        missing["profile"] == "grimoire-v0.10"
+        and "v0.9" not in missing["atom_address_provenance"]["source"],
+        "v0.10 provenance names the selected edition",
+    )
+    checks["evidence-label"] = (
+        grimoire_v010.EVIDENCE[0x07] == "ASSUMED",
+        "ASSUMED remains distinct from INFERRED",
+    )
+
+    source_path = os.path.join(paths.REPO_ROOT, "documents", "grimoire", "editions",
+                               "grimoire-v0.10.md")
+    source = open(source_path, encoding="utf-8").read()
+    declared_compositions = int(re.search(r"composes (\d+) named concept rows", source).group(1))
+    declared_statements = int(re.search(r"^(\d+) statements\.", source, re.M).group(1))
+    section9 = source.split("## 9 SELFTEST", 1)[1].split("## 10 BOOK", 1)[0]
+    section10 = source.split("## 10 BOOK", 1)[1].split("## 11 ", 1)[0]
+    vector_re = re.compile(r"[0-9a-f]{8}(?:[ \t]+[0-9a-f]{8})+")
+    code_compositions = grimoire_v010.COMPOSITION_COUNT
+    code_statements = grimoire_v010.STATEMENT_COUNT
+    checks["counts"] = (
+        declared_compositions == code_compositions == 295
+        and declared_statements == code_statements == len(vector_re.findall(section10))
+        and len(vector_re.findall(section9)) == len(grimoire_v010.SELFTEST_VECTORS),
+        "source counts match code-derived edition values",
+    )
+    compare = subprocess.run(
+        [sys.executable, os.path.join(paths.REPO_ROOT, "tools", "grimoire_tool.py"),
+         "compare", source_path, "--profile", "grimoire-v0.10", "--json"],
+        cwd=paths.REPO_ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, env=dict(os.environ, PYTHONIOENCODING="utf-8"), timeout=120,
+    )
+    try:
+        comparison = json.loads(compare.stdout)
+    except (TypeError, ValueError):
+        comparison = {}
+    checks["independent-compare"] = (
+        compare.returncode == 0 and comparison.get("status") == "PASS"
+        and comparison.get("differences") == []
+        and comparison.get("compared") == comparison.get("vectors"),
+        "independent verifier and runtime agree on every covered run",
+    )
+    return checks
+
+
+def _grimoire_v010_evidence_identity():
+    """Bind one suite-local fixture to every source that determines its verdicts."""
+    files = [
+        os.path.abspath(__file__),
+        os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions", "common.py"),
+        os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions", "registry.py"),
+        os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions", "v09.py"),
+        os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions", "v010.py"),
+        os.path.join(paths.REPO_ROOT, "documents", "grimoire", "editions",
+                     "grimoire-v0.10.md"),
+        os.path.join(paths.REPO_ROOT, "tools", "grimoire_tool.py"),
+    ]
+    digest = hashlib.sha256()
+    for filename in files:
+        relative = os.path.relpath(filename, paths.REPO_ROOT).replace("\\", "/")
+        with open(filename, "rb") as stream:
+            data = stream.read()
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative.encode("utf-8"))
+        digest.update(len(data).to_bytes(8, "big"))
+        digest.update(data)
+    runtime = "%s|%s|%s" % (sys.executable, sys.version, "grimoire-v0.10")
+    digest.update(runtime.encode("utf-8"))
+    return "sha256:" + digest.hexdigest()
+
+
+def _grimoire_v010_check(name):
+    fixture = _ACTIVE_GRIMOIRE_V010_FIXTURE.get()
+    checks = fixture["checks"] if fixture is not None else _grimoire_v010_checks()
+    result = checks.get(name)
+    return result if result is not None else (False, "missing Grimoire v0.10 check %s" % name)
+
+
+def t_grimoire_v010_explicit_profile(): return _grimoire_v010_check("explicit-profile")
+def t_grimoire_v010_unknown_edition(): return _grimoire_v010_check("unknown-edition")
+def t_grimoire_v010_v09_frozen(): return _grimoire_v010_check("v09-frozen")
+def t_grimoire_v010_step_only(): return _grimoire_v010_check("step-only")
+def t_grimoire_v010_missing_container(): return _grimoire_v010_check("missing-container")
+def t_grimoire_v010_quote_inert(): return _grimoire_v010_check("quote-inert")
+def t_grimoire_v010_adoption_policy(): return _grimoire_v010_check("adoption-policy")
+def t_grimoire_v010_container_labels(): return _grimoire_v010_check("container-labels")
+def t_grimoire_v010_raw_retained(): return _grimoire_v010_check("raw-retained")
+def t_grimoire_v010_integrity(): return _grimoire_v010_check("integrity")
+def t_grimoire_v010_provenance(): return _grimoire_v010_check("provenance")
+def t_grimoire_v010_evidence_label(): return _grimoire_v010_check("evidence-label")
+def t_grimoire_v010_counts(): return _grimoire_v010_check("counts")
+def t_grimoire_v010_independent_compare(): return _grimoire_v010_check("independent-compare")
 
 
 # ============================================================================
@@ -3262,6 +3429,64 @@ def t_repro_anchor_births_through_hatchery():
             "its own resident-egg in the vault")
 
 
+def t_spore_png_filter_decoder():
+    """SPORE-PNG-1: the canonical stdlib decoder reconstructs every PNG filter exactly
+    and refuses malformed row lengths or unknown filters before semantic decoding."""
+    from .. import spore as _spore
+
+    width, height, bpp = 9, 5, 4
+    stride = width * bpp
+    rows = []
+    for y in range(height):
+        rows.append(bytes(
+            ((x * 37) + (y * 53) + (channel * 71) + (x * y * 3)) & 0xff
+            for x in range(width) for channel in range(bpp)
+        ))
+    encoded = bytearray()
+    previous = bytes(stride)
+    for filt, row in enumerate(rows):
+        encoded.append(filt)
+        for i, value in enumerate(row):
+            left = row[i - bpp] if i >= bpp else 0
+            up = previous[i]
+            up_left = previous[i - bpp] if i >= bpp else 0
+            if filt == 0:
+                predictor = 0
+            elif filt == 1:
+                predictor = left
+            elif filt == 2:
+                predictor = up
+            elif filt == 3:
+                predictor = (left + up) // 2
+            else:
+                predictor = _spore._paeth(left, up, up_left)
+            encoded.append((value - predictor) & 0xff)
+        previous = row
+    decoded = _spore._unfilter_rgba(bytes(encoded), width, height)
+    all_filters = decoded == b"".join(rows)
+
+    malformed = []
+    for candidate in (encoded[:-1], encoded + b"\0"):
+        try:
+            _spore._unfilter_rgba(bytes(candidate), width, height)
+        except ValueError:
+            malformed.append(True)
+        else:
+            malformed.append(False)
+    unknown = bytearray(encoded)
+    unknown[0] = 5
+    try:
+        _spore._unfilter_rgba(bytes(unknown), width, height)
+    except ValueError as exc:
+        unknown_refused = "unsupported PNG filter" in str(exc)
+    else:
+        unknown_refused = False
+    return (
+        all_filters and all(malformed) and unknown_refused,
+        "filters 0..4 reconstructed byte-exactly; short, extra, and unknown-filter rows refused",
+    )
+
+
 def t_spore_distillation_key_law():
     """SPORE-1 (THE KEY LAW): a spore distills into the primer and the memories of the
     body it births; the spore is sealed as SELF tissue and opens only for SELF; and the
@@ -3401,6 +3626,47 @@ def t_spore_germ_round_trip():
             "the vault, spore back from spore_vault, key minted not derived")
 
 
+def t_certification_invariant_receipt():
+    """CERT-RECEIPT-1: top-level invariant evidence is complete, ordered, current-run,
+    source-bound, and wholly green; timing or location cannot make it authoritative."""
+    from ..check import _steps, _validate_invariant_receipt
+
+    expected = ("A-1", "B-2")
+    nonce = "current-run"
+    source = "sha256:" + ("a" * 64)
+    base = {
+        "schema": "mantle-invariant-evidence-v1",
+        "run_nonce": nonce,
+        "source_identity": source,
+        "results": [{"code": "A-1", "ok": True}, {"code": "B-2", "ok": True}],
+    }
+
+    def accepted(payload, use_nonce=nonce, use_source=source):
+        return _validate_invariant_receipt(payload, expected, use_nonce, use_source)[0]
+
+    missing = dict(base, results=base["results"][:1])
+    reordered = dict(base, results=list(reversed(base["results"])))
+    red = dict(base, results=[base["results"][0], {"code": "B-2", "ok": False}])
+    commands = [command for _name, command, _cwd, _expect, _skip in _steps(False)]
+    stage1_rows_only = any(command[-2:] == ["audit", "--rows-only"] for command in commands)
+    stage2_rows_only = any(command[-2:] == ["audit-mind", "--rows-only"]
+                           for command in commands)
+    invariant_commands = [command for command in commands if "prove" in command]
+    one_complete_suite = (
+        len(invariant_commands) == 1 and invariant_commands[0][-2:] == ["prove", "--json"]
+    )
+    return (
+        accepted(base)
+        and not accepted(missing)
+        and not accepted(reordered)
+        and not accepted(red)
+        and not accepted(base, use_nonce="another-run")
+        and not accepted(base, use_source="sha256:" + ("b" * 64))
+        and stage1_rows_only and stage2_rows_only and one_complete_suite,
+        "one complete suite bound between stage rows; missing, reordered, red, replayed, and stale refused",
+    )
+
+
 def t_invariant_registry_single_source():
     """REGISTRY-1: all consumers derive from one typed, concern-indexed registry."""
     names = [spec.name for spec in REGISTRY]
@@ -3413,6 +3679,216 @@ def t_invariant_registry_single_source():
         and set(concern_specs) == set(REGISTRY)
         and list(TESTS) == compatibility,
         "typed specs complete; names unique; concern and compatibility views derive live",
+    )
+
+
+def _rolling_context_fixture(**config_overrides):
+    from ..mind.context import (
+        ModelInfo,
+        RollingContextConfig,
+        RollingPrefixContextStrategy,
+        install_context_band,
+    )
+    org = _born()
+    install_context_band(org, authorized=True)
+    values = {"context_window_tokens": 16_000}
+    values.update(config_overrides)
+    strategy = RollingPrefixContextStrategy(
+        org, RollingContextConfig(**values)
+    )
+    return org, strategy, ModelInfo(provider="audit", model="audit/model")
+
+
+def t_context_body_owned():
+    """CONTEXT-BODY-OWNED: private ledger writes are Body-authored only."""
+    from ..mind import Mind, MindPort, stub_mind
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="audit", model_info=model_info
+    )
+    strategy.commit_success(prepared, answer="ok", usage={})
+    authored = all(
+        entry.get("author") == "BODY" and entry.get("authorship") == "BODY"
+        for entry in org.prime.read("context", reveal_private=True)
+    )
+    mind = Mind(MindPort(org), stub_mind, context_strategy=strategy)
+    before = len(org.immune.log)
+    refused = _expect_raise(
+        lambda: mind._guarded_write("context", {"forbidden": True}),
+        PermissionError,
+    )[0]
+    return (
+        authored and refused and len(org.immune.log) == before + 1,
+        "private ledger is Body-authored; direct MIND write refused + immune-logged",
+    )
+
+
+def t_context_no_self_inclusion():
+    """CONTEXT-NO-SELF-INCLUSION: the transport ledger never projects itself."""
+    from ..mind.context.projection import build_delta
+    from ..mind.context.types import SourceCursor
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="first", model_info=model_info
+    )
+    strategy.commit_success(prepared, answer="ok", usage={})
+    snapshot = org.nervous.assemble()
+    entries, _after, _ranges = build_delta(
+        dict(snapshot, context=org.prime.read("context", reveal_private=True)),
+        SourceCursor(),
+    )
+    return (
+        "context" not in snapshot
+        and all(entry["source_band"] != "context" for entry in entries),
+        "Nervous snapshot omits context; projection excludes injected context records",
+    )
+
+
+def t_context_canonical_bytes():
+    """CONTEXT-CANONICAL-BYTES: ordering and Unicode produce one stable envelope."""
+    from ..mind.context import canonical_json_bytes, render_entry
+    left = {"z": "é", "a": {"y": 2, "x": 1}}
+    right = {"a": {"x": 1, "y": 2}, "z": "é"}
+    stable = (
+        canonical_json_bytes(left) == canonical_json_bytes(right)
+        and render_entry(left) == render_entry(right)
+    )
+    rejected = _expect_raise(
+        lambda: canonical_json_bytes({"bad": float("nan")}), ValueError
+    )[0]
+    return stable and rejected, "insertion order is irrelevant; NaN is refused"
+
+
+def t_context_cursor_commit_after_success():
+    """CONTEXT-CURSOR-COMMIT-AFTER-SUCCESS: failure cannot consume a delta."""
+    org, strategy, model_info = _rolling_context_fixture()
+    org.memory.remember("facts", {"name": "pending"})
+    first = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="retry", model_info=model_info
+    )
+    strategy.commit_failure(first, error=TimeoutError("audit timeout"))
+    unchanged = strategy.ledger.latest_cursor().facts == 0
+    retry = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="retry", model_info=model_info
+    )
+    identical = retry.prompt_bytes == first.prompt_bytes
+    strategy.commit_success(retry, answer="ok", usage={})
+    return (
+        unchanged and identical and strategy.ledger.latest_cursor().facts == 1,
+        "timeout left cursor at 0; retry bytes matched; successful commit advanced to 1",
+    )
+
+
+def t_context_prefix_immutable():
+    """CONTEXT-PREFIX-IMMUTABLE: each successful round only appends bytes."""
+    from ..mind.context import render_entries
+    org, strategy, model_info = _rolling_context_fixture()
+    first = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="one", model_info=model_info
+    )
+    strategy.commit_success(first, answer="first answer", usage={})
+    stable = render_entries(strategy.ledger.visible_records())
+    second = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="two", model_info=model_info
+    )
+    return (
+        second.prompt_bytes.startswith(stable),
+        "the complete committed first-round prefix is byte-identical at round two",
+    )
+
+
+def t_context_rollover_before_limit():
+    """CONTEXT-ROLLOVER-BEFORE-HARD-LIMIT: large history checkpoints before send."""
+    org, strategy, model_info = _rolling_context_fixture(
+        context_window_tokens=2_600,
+        reserved_output_tokens=200,
+        safety_margin_tokens=200,
+        rollover_threshold=0.75,
+        checkpoint_entries_per_band=1,
+    )
+    for index in range(30):
+        org.memory.remember("facts", {
+            "index": index,
+            "text": "x" * 100,
+        })
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="summarize", model_info=model_info
+    )
+    rolled = any(
+        record["kind"] == "ROLLOVER" for record in strategy.ledger.records()
+    )
+    return (
+        rolled
+        and prepared.generation == 2
+        and prepared.estimated_prompt_tokens <= strategy.config.rollover_budget,
+        "candidate crossed threshold; generation 1 closed; bounded checkpoint fit generation 2",
+    )
+
+
+def t_context_private_veil():
+    """CONTEXT-PRIVATE-VEIL: exact persistence stays private and redacted."""
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(),
+        intent="api_key=sk-ABCDEFGHIJKLMNOPQRST",
+        model_info=model_info,
+    )
+    return (
+        org.prime.read("context") == []
+        and "sk-ABCDEFGHIJKLMNOPQRST" not in prepared.prompt,
+        "ordinary read is veiled and secret-shaped intent was masked before send/store",
+    )
+
+
+def t_context_request_hash_exact():
+    """CONTEXT-REQUEST-HASH-EXACT: the receipt covers the exact sent bytes."""
+    import hashlib
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="hash me", model_info=model_info
+    )
+    request = [
+        record for record in strategy.ledger.records()
+        if record["kind"] == "REQUEST"
+    ][-1]
+    exact = hashlib.sha256(prepared.prompt_bytes).hexdigest()
+    return (
+        request["request_hash"] == exact == prepared.request_hash,
+        "prepared bytes, durable request, and transport hash agree",
+    )
+
+
+def t_context_corruption_detected():
+    """CONTEXT-CORRUPTION-DETECTED: byte, cursor, and sequence tampering fail."""
+    org, strategy, model_info = _rolling_context_fixture()
+    prepared = strategy.prepare(
+        snapshot=org.nervous.assemble(), intent="one", model_info=model_info
+    )
+    strategy.commit_success(prepared, answer="ok", usage={})
+    physical = org.prime.read("context", reveal_private=True)
+    response = next(
+        entry for entry in physical
+        if entry["content"].get("kind") == "RESPONSE"
+    )
+    response["content"]["content"] = "tampered"
+    byte_caught = bool(strategy.ledger.verify())
+    response["content"]["content"] = "ok"
+    # The stale hashes remain valid again only if the exact original payload was restored.
+    commit = next(
+        entry for entry in physical
+        if entry["content"].get("kind") == "COMMIT"
+    )
+    commit["content"]["source_cursors"]["facts"] = 999
+    cursor_caught = any(
+        "beyond committed" in problem for problem in strategy.ledger.verify()
+    )
+    commit["content"]["sequence"] = 999
+    sequence_caught = any(
+        "sequence" in problem for problem in strategy.ledger.verify()
+    )
+    return (
+        byte_caught and cursor_caught and sequence_caught,
+        "stored-byte, cursor-ahead, and sequence tampering each produced audit failures",
     )
 
 
@@ -3434,6 +3910,20 @@ _INVARIANT_DEFINITIONS = [
     ("B-CAP capacity->metabolism-not-rebirth", t_capacity_metabolism_not_rebirth),
     ("B-LZ  lazy-load-equivalence",            t_lazy_load_equivalence),
     ("GRIMOIRE-1 v0.9-driver+integrity",       t_grimoire_v09_profile_driver_integrity),
+    ("GRIMOIRE-V010-01 explicit-profile-boundary", t_grimoire_v010_explicit_profile),
+    ("GRIMOIRE-V010-02 unknown-edition-refused",   t_grimoire_v010_unknown_edition),
+    ("GRIMOIRE-V010-03 v09-frozen",                t_grimoire_v010_v09_frozen),
+    ("GRIMOIRE-V010-04 step-only-procedure",       t_grimoire_v010_step_only),
+    ("GRIMOIRE-V010-05 missing-container-unresolved", t_grimoire_v010_missing_container),
+    ("GRIMOIRE-V010-06 quote-inert",               t_grimoire_v010_quote_inert),
+    ("GRIMOIRE-V010-07 adoption-policy-required",  t_grimoire_v010_adoption_policy),
+    ("GRIMOIRE-V010-08 raw-run-retained",          t_grimoire_v010_raw_retained),
+    ("GRIMOIRE-V010-09 parity-not-transport",      t_grimoire_v010_integrity),
+    ("GRIMOIRE-V010-10 container-labels",          t_grimoire_v010_container_labels),
+    ("GRIMOIRE-V010-11 edition-provenance",        t_grimoire_v010_provenance),
+    ("GRIMOIRE-V010-12 evidence-labels",           t_grimoire_v010_evidence_label),
+    ("GRIMOIRE-V010-13 source-counts",             t_grimoire_v010_counts),
+    ("GRIMOIRE-V010-14 independent-compare",       t_grimoire_v010_independent_compare),
     ("HF-B47 exec-integrity-gate",             t_exec_integrity),
     ("HF-B48 exec-capability-gate",            t_exec_capability),
     ("HF-B50 exec-trust/foreign-refused",      t_exec_trust_foreign),
@@ -3522,9 +4012,22 @@ _INVARIANT_DEFINITIONS = [
     ("REPRO-2 ninth-organ+seed-carry",         t_repro_organ_and_seed_carry),
     ("REPRO-3 every-hatch-vaults-its-egg",     t_repro_every_hatch_vaults_its_egg),
     ("REPRO-4 anchor-births-through-hatchery", t_repro_anchor_births_through_hatchery),
+    ("SPORE-PNG-1 stdlib-filter-decoder",      t_spore_png_filter_decoder),
     ("SPORE-1 distillation+key-law",           t_spore_distillation_key_law),
     ("SPORE-2 sporeagent-lifecycle-receipt",   t_sporeagent_lifecycle_receipt),
     ("SPORE-3 germ-round-trip (one artifact)", t_spore_germ_round_trip),
+    ("CONTEXT-BODY-OWNED body-authored-ledger", t_context_body_owned),
+    ("CONTEXT-NO-SELF-INCLUSION projection-exclusion", t_context_no_self_inclusion),
+    ("CONTEXT-CANONICAL-BYTES stable-serialization", t_context_canonical_bytes),
+    ("CONTEXT-CURSOR-COMMIT-AFTER-SUCCESS durable-cursors",
+     t_context_cursor_commit_after_success),
+    ("CONTEXT-PREFIX-IMMUTABLE append-only-prefix", t_context_prefix_immutable),
+    ("CONTEXT-ROLLOVER-BEFORE-HARD-LIMIT bounded-generation",
+     t_context_rollover_before_limit),
+    ("CONTEXT-PRIVATE-VEIL private-redacted-ledger", t_context_private_veil),
+    ("CONTEXT-REQUEST-HASH-EXACT exact-sent-bytes", t_context_request_hash_exact),
+    ("CONTEXT-CORRUPTION-DETECTED tamper-proofs", t_context_corruption_detected),
+    ("CERT-RECEIPT-1 content-bound-invariant-evidence", t_certification_invariant_receipt),
     ("REGISTRY-1 typed-single-source",          t_invariant_registry_single_source),
 ]
 
@@ -3535,27 +4038,53 @@ CONCERNS = by_concern(REGISTRY)
 TESTS = tuple((spec.name, spec.runner) for spec in REGISTRY)
 
 
-def run_all():
+def _run_specs(specs):
+    identity = _grimoire_v010_evidence_identity()
+    fixture = MappingProxyType({
+        "identity": identity,
+        "checks": MappingProxyType(dict(_grimoire_v010_checks())),
+    })
+    token = _ACTIVE_GRIMOIRE_V010_FIXTURE.set(fixture)
     results = []
-    for spec in REGISTRY:
-        try:
-            ok, detail = spec.runner()
-        except Exception as e:  # noqa: BLE001 -- the harness must not crash on a bad guard
-            ok, detail = False, "test crashed: %s: %s" % (type(e).__name__, e)
-        results.append({
-            "name": spec.name,
-            "code": spec.code,
-            "title": spec.title,
-            "guarantee_id": spec.guarantee_id,
-            "concern": spec.concern,
-            "added": spec.added,
-            "ok": bool(ok),
-            "detail": detail,
-        })
+    try:
+        for spec in specs:
+            try:
+                ok, detail = spec.runner()
+            except Exception as e:  # noqa: BLE001 -- a bad guard must not crash the harness
+                ok, detail = False, "test crashed: %s: %s" % (type(e).__name__, e)
+            results.append({
+                "name": spec.name,
+                "code": spec.code,
+                "title": spec.title,
+                "guarantee_id": spec.guarantee_id,
+                "concern": spec.concern,
+                "added": spec.added,
+                "ok": bool(ok),
+                "detail": detail,
+            })
+    finally:
+        _ACTIVE_GRIMOIRE_V010_FIXTURE.reset(token)
+    if _grimoire_v010_evidence_identity() != identity:
+        for result in results:
+            if result["code"].startswith("GRIMOIRE-V010-"):
+                result["ok"] = False
+                result["detail"] = "Grimoire evidence source drifted during invariant execution"
     return results
 
 
+def _run_grimoire_v010_invariants():
+    """Run the named v0.10 rows against one immutable, content-bound fixture."""
+    return _run_specs(
+        tuple(spec for spec in REGISTRY if spec.code.startswith("GRIMOIRE-V010-"))
+    )
+
+
+def run_all():
+    return _run_specs(REGISTRY)
+
+
 def main(argv=None):
+    argv = list(argv or [])
     results = run_all()
     width = max(len(r["name"]) for r in results)
     for r in results:
@@ -3563,8 +4092,19 @@ def main(argv=None):
                                    r["detail"]))
     passed = sum(r["ok"] for r in results)
     print("\n%d/%d invariants green" % (passed, len(results)))
+    if "--json" in argv:
+        from ..check import _repository_identity
+        payload = {
+            "schema": "mantle-invariant-evidence-v1",
+            "run_nonce": os.environ.get("MANTLE_CERTIFICATION_RUN_NONCE"),
+            "source_identity": _repository_identity(),
+            "results": results,
+        }
+        print("MANTLE_INVARIANT_EVIDENCE_JSON:" + json.dumps(
+            payload, sort_keys=True, separators=(",", ":")
+        ))
     return 0 if passed == len(results) else 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

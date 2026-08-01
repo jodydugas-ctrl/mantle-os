@@ -51,6 +51,10 @@ Mantle has a small number of load-bearing principles. Changes should respect the
   catalogue weakens security checks in isolated source copies and requires the named
   live invariant to kill every mutant. A survivor blocks CI.
 
+- For performance work, use the bounded harness described in
+  [`documents/guides/Certification_Performance.md`](documents/guides/Certification_Performance.md).
+  Benchmark records are measurements only; they never replace strict certification.
+
 - For clean-room reproduction and the evidence bundle CI retains, follow
   [`REPRODUCE.md`](REPRODUCE.md).
 

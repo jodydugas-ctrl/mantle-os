@@ -9,7 +9,8 @@ Five drivers, registered on import:
   calendar-spatial  data stored AS COLORS AT COORDINATES -- a real RGBA canvas
   exec              an executable REFLEX LAYER: organism-grown code the Body runs with no
                     MIND, behind hash + capability + provenance/trust + sandbox gates
-  grimoire-v0.9     semantic pixel runs: atom/role/evidence/force over RGBA lanes
+  grimoire-v0.9 / grimoire-v0.10
+                    explicit-edition semantic pixel runs over RGBA lanes
 
 These prove the boot sector -- not hard-coded logic -- decides how a layer behaves.
 The RGBA lanes are substrate hardware. A driver/profile is the software contract that
@@ -31,10 +32,11 @@ from .png import SIDE, CHANNELS, LAYER_BYTES
 from .bands import Driver, register, code_hash
 from .entry import make_entry, visible
 from .grimoire import decode_statement
+from .grimoire_editions import decode_statement as decode_profiled
 
 __all__ = [
     "make_entry", "LogJsonDriver", "KeyValueDriver", "CalendarSpatialDriver", "ExecDriver",
-    "GrimoireV09Driver",
+    "GrimoireV09Driver", "GrimoireV010Driver",
     "CapabilityError", "IntegrityError", "TrustError", "SandboxError", "ProvenanceError",
     "ResourceLimitError", "ProtocolError",
     "validate_skill_code", "validate_calcify_payload", "provenance_is_trusted", "trial",
@@ -194,6 +196,42 @@ class GrimoireV09Driver(Driver):
             claim_tamper_evidence=bool(params.get("claim_tamper_evidence", False)),
             allow_parity_absent=bool(params.get("allow_parity_absent", False)),
             adoption_policy=str(params.get("adoption_policy", "data")),
+        )
+        content.append(decoded)
+        return content
+
+
+@register
+class GrimoireV010Driver(GrimoireV09Driver):
+    """Explicit v0.10 carrier driver; no implicit fallback from its profile."""
+    name = "grimoire-v0.10"
+
+    def append(self, content, params, value):
+        params = params or {}
+        if params.get("profile") != self.name:
+            raise ValueError("v0.10 carrier params require profile %r" % self.name)
+        if isinstance(value, dict):
+            profile = value.get("profile")
+            if profile != self.name:
+                raise ValueError("v0.10 payload requires profile %r" % self.name)
+            frame_id = value.get("frame_id", "frame-%d" % len(content))
+            fingerprint = value.get("fingerprint")
+            raw = value.get("raw", value.get("hex", value))
+        else:
+            frame_id = "frame-%d" % len(content)
+            fingerprint = None
+            raw = value
+        decoded = decode_profiled(
+            raw,
+            profile=self.name,
+            frame_id=frame_id,
+            fingerprint=fingerprint,
+            claim_tamper_evidence=bool(params.get("claim_tamper_evidence", False)),
+            allow_parity_absent=bool(params.get("allow_parity_absent", False)),
+            adoption_policy=str(params.get("adoption_policy", "data")),
+            container_evidence=params.get("container_evidence"),
+            container_force=params.get("container_force"),
+            container_frame_id=params.get("container_frame_id"),
         )
         content.append(decoded)
         return content

@@ -6,9 +6,10 @@ file format** — and the spore proves the substrate can molt into a different m
 800-layer cube. *The PNG does not merely carry VCW-like data; it can **be** the VCW layer.* See
 [The VCW Substrate Guide](../../documents/guides/VCW_Guide.md#vcw-is-the-law--the-cube-is-one-body-plan-the-png-is-another)
 and the [VCW Substrate Guide](../../documents/guides/VCW_Guide.md) for the canonical
-regions, Grimoire v0.9 statement frames, and display/memory boundary.
+regions, explicit Grimoire statement frames (new spores default to v0.10), and display/memory boundary.
 
-SPORE-PNG v2 maps its physical lanes directly to the `grimoire-v0.9` profile:
+SPORE-PNG v2 maps its physical lanes directly to the selected Grimoire profile;
+new spores use `grimoire-v0.10` and historical spores retain `grimoire-v0.9`:
 `R=atom`, `G=role`, `B=evidence`, and `A=force`. Inert manifest and payload bytes are
 QUOTE statements. Every statement ends with a `G=0x7f` PARITY control pixel, and the
 manifest carries a SHA-256 fingerprint over all raw payload RGBA lanes and frame

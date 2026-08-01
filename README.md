@@ -26,8 +26,9 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 >
 > - **[`AGENTS.md`](AGENTS.md)** — for AI agents: what the biological framework is *for* (the
 >   two jobs the organ names do) and how to use the **Grimoire**, Mantle's registered
->   `grimoire-v0.9` VCW software profile for atom/role/evidence/force encoding on
->   RGBA-compatible substrate lanes. Routine code reading and small fixes proceed from the
+>   versioned Grimoire VCW software profiles (`grimoire-v0.9` compatibility and
+>   `grimoire-v0.10`) for atom/role/evidence/force encoding on RGBA-compatible substrate
+>   lanes. Routine code reading and small fixes proceed from the
 >   docs and working code.
 > - **[`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md)** — for
 >   engineers and AI specialists who want the architecture before the metaphor: trust
@@ -405,6 +406,19 @@ and the prompt/response-cache proof receipts — are documented in full in
 no dependencies, no network, no keys (the one optional Phase-2 module, `mantle.ghost_http`,
 is imported by nothing else).
 
+### Rolling context and provider prefix caches
+
+The default MIND context policy is still `snapshot`. Phase 2 may explicitly opt into
+`rolling-prefix`: a private, Body-owned VCW transport ledger keeps the committed
+model-visible prefix byte-stable, appends only newly eligible redacted memory, records exact
+request and provider-usage hashes, and rolls to a deterministic checkpoint before the
+configured model window is exhausted. Failed calls do not advance source cursors.
+
+Rolling mode preserves the `model(prompt) -> text` interface, never includes its own ledger,
+and never adds the context band to an existing organism without an explicit Body-authorized
+migration. Provider cache hits are observed facts, not guarantees. See
+[`documents/guides/Rolling_Context_Guide.md`](documents/guides/Rolling_Context_Guide.md).
+
 ```python
 from mantle import Organism
 from mantle.primer import appai_commandments, appai_truths
@@ -480,7 +494,7 @@ every Stage-1 row to prove it.
 | **Organ** | A self-contained code module with a manifest, reflexes, and audit obligations. |
 | **Reflex** | A deterministic, no-LLM behavior. The Body is made of reflexes. |
 | **Band** | A reserved, named range of cube layers with a boot sector declaring owner, driver/profile, privacy, and purpose. |
-| **Layer profile / driver** | The software contract that decides how one layer frames and interprets its four RGBA lanes. `grimoire-v0.9` is one registered profile, not the whole substrate. |
+| **Layer profile / driver** | The software contract that decides how one layer frames and interprets its four RGBA lanes. `grimoire-v0.9` and `grimoire-v0.10` are registered profiles, not the whole substrate. |
 | **Genome (agent)** | Identity held in the **Body** (not the cube): Primer (read-only) + Special Instructions + Immunization + lineage index. |
 | **Veil** | The Body reflex that hides private / tombstoned / quarantined memory on read. |
 | **Zombie Body** | A Body that has passed the Stage 1 Gate: alive, correct, dormant. |
@@ -506,6 +520,7 @@ src/                     the framework package — `pip install -e .` (or PYTHON
     vcw/                 the booted substrate: PNG lanes, bands, drivers, cube, metabolism, graded-memory overlay
     organs/              the nine organs, each with an enforced contract (self/other + nociception)
     mind/                Phase 2 only: transports, containment, the MIND, AppAIRuntime
+      context/           optional rolling-prefix ledger, canonical bytes, budgets + rollover
     assimilator/ audits/ Path B dissection + the gates (Stage 1, Stage 2, invariant suite)
     reproduction.py      the two-method seam — SEED vs GRAFT (routes to the modules below)
     spore.py spore_min.py THE artifact — one PNG agent, optionally carrying a germ (+ its embryo)

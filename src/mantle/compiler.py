@@ -7,8 +7,9 @@ M5 -- the self-redesigning VCW (a programmable boot sector at rebirth).
   Mantle rebirth re-geneses the SAME standard genome. A Compiler-class organism instead
   authors a VCW *custom-made for the body it inhabits*: at a CHOSEN rebirth, the MIND
   PROPOSES a new genome (extra app bands, possibly a different driver/encoding/profile --
-  e.g. a keyvalue band that mirrors a host's native memory ops, or `grimoire-v0.9` semantic
-  lanes), the BODY VALIDATES it (every encoding must be a REGISTERED driver; heads in
+  e.g. a keyvalue band that mirrors a host's native memory ops, or an explicit
+  `grimoire-v0.9`/`grimoire-v0.10` semantic profile), the BODY VALIDATES it (every encoding
+  must be a REGISTERED driver; heads in
   range; no collisions), and only then rebirths into it. The ancestor stays the readable
   ORACLE. Inherited microcode does not cross for free -- it RE-TRIALS before it re-calcifies
   (no blind inheritance).
@@ -29,6 +30,7 @@ from typing import Any, Dict, List
 
 from .vcw.bands import make_band_boot, standard_genome, registered_encodings
 from .vcw.drivers import trial
+from .vcw.grimoire_editions import get_edition, GrimoireEditionError
 from .core.redact import redact
 
 
@@ -51,6 +53,15 @@ def validate_genome(specs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if enc not in registered_encodings():
             raise GenomeError("band %r: encoding %r is not a registered driver (have: %s)"
                               % (band, enc, ", ".join(registered_encodings())))
+        if enc in ("grimoire-v0.9", "grimoire-v0.10"):
+            params = dict(s.get("params") or {})
+            try:
+                get_edition(enc)
+            except GrimoireEditionError as exc:
+                raise GenomeError(str(exc)) from exc
+            if enc == "grimoire-v0.10" and params.get("profile") != enc:
+                raise GenomeError("band %r: v0.10 requires explicit profile %r"
+                                  % (band, enc))
         head = s.get("head")
         if not isinstance(head, int) or isinstance(head, bool) or not (550 <= head <= 749):
             raise GenomeError("band %r: app-band head must be an int in 550-749 (got %r)"

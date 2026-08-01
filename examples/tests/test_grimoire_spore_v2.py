@@ -81,7 +81,8 @@ def test_parity_substitutes_only_zero_r():
 
 def test_single_lane_corruption_rejected_by_statement_parity(tmp_path: Path):
     path = tmp_path / "parity.png"
-    spore.create_spore("Parity", "reject one changed lane", path=str(path))
+    spore.create_spore("Parity", "reject one changed lane", path=str(path),
+                       profile="grimoire-v0.9")
     img, start, raw = _payload_frame(path)
     damaged = bytearray(raw)
     damaged[0] ^= 0x01
@@ -94,7 +95,8 @@ def test_single_lane_corruption_rejected_by_statement_parity(tmp_path: Path):
 def test_parity_preserving_rewrite_rejected_by_full_lane_fingerprint(
         tmp_path: Path):
     path = tmp_path / "fingerprint.png"
-    spore.create_spore("Fingerprint", "reject rewritten raw lanes", path=str(path))
+    spore.create_spore("Fingerprint", "reject rewritten raw lanes", path=str(path),
+                       profile="grimoire-v0.9")
     img, start, raw = _payload_frame(path)
     records = [list(raw[i:i + 4]) for i in range(0, len(raw), 4)]
     records[0][0] = 1 if records[0][0] != 1 else 2

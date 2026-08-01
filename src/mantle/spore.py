@@ -9,7 +9,7 @@ agent -- the PNG *is* the agent.
 This file implements the whole format:
 
     * VCW color-memory encoding  (top half of the image)
-    * Grimoire v0.9 RGBA statements (atom/role/evidence/force)
+    * versioned Grimoire RGBA statements (new spores default to v0.10; v0.9 is preserved)
     * G=0x7f statement-local PARITY control pixels
     * an in-band manifest with a full-lane SHA-256 payload fingerprint
     * canonical PNG iTXt metadata
@@ -25,8 +25,8 @@ compaction or summarization.  A Spore is transparent and simple:
 
     one PNG - one agent - one task - one conversation - one append-only memory
 
-SPORE-PNG v2 is a Grimoire v0.9 VCW carrier profile. Physical RGBA bytes are logical
-atom/role/evidence/force lanes. Inert manifest and payload bytes are serialized as
+SPORE-PNG v2 supports explicit Grimoire carrier profiles. New spores default to v0.10;
+historical v0.9 carriers remain readable. Physical RGBA bytes are logical atom/role/evidence/force lanes. Inert manifest and payload bytes are serialized as
 QUOTE statements: one composed nibble-atom spelling per frame, one HEAD, inherited
 B/A on every BLEND continuation, and one PARITY control pixel. Whole-payload mutation
 is detected by a SHA-256 fingerprint over every raw RGBA payload frame and its boundary.
@@ -97,6 +97,8 @@ FRAME_PAYLOAD_BYTES = 1024
 MAX_HEADER_BYTES = 64 * 1024
 # Each byte occupies two semantic morpheme pixels; every frame adds one PARITY pixel.
 VCW_CAPACITY_BYTES = (VCW_BLOCKS - 1) // 2
+DEFAULT_GRIMOIRE_PROFILE = "grimoire-v0.10"
+LEGACY_GRIMOIRE_PROFILE = "grimoire-v0.9"
 
 # The canonical bootloader / spec text.  This exact string is mirrored into the
 # visible protected strip AND into PNG metadata (key "Bootloader").
@@ -104,7 +106,7 @@ VCW_CAPACITY_BYTES = (VCW_BLOCKS - 1) // 2
 BOOTLOADER_TEXT = (
     "SPORE-PNG v2  -  this PNG is a self-contained AppAI agent.\n"
     "MEMORY lives in the TOP HALF (y=0..999) as a VCW color field: read pixels\n"
-    "left-to-right, top-to-bottom as Grimoire v0.9 RGBA statements. R is atom,\n"
+    "left-to-right, top-to-bottom as the selected Grimoire RGBA profile. R is atom,\n"
     "G is role, B is evidence, and A is force. Inert bytes are framed as QUOTE:\n"
     "one HEAD, BLEND continuations with B=A=0 inheritance, then G=0x7f PARITY.\n"
     "The first statement is a JSON manifest; following statements carry payload.\n"
@@ -119,6 +121,8 @@ BOOTLOADER_TEXT = (
     "To use me: open in a Spore app, or hand me to a Python-capable LLM and let\n"
     "Python (not eyeballs) decode the pixels. RULE: the LATEST PNG is the living copy."
 )
+LEGACY_BOOTLOADER_TEXT = BOOTLOADER_TEXT.replace(
+    "the selected Grimoire RGBA profile", "Grimoire v0.9 RGBA statements")
 
 TRANSPORT_WARNING = (
     "Transfer the ORIGINAL .png only; do not screenshot/resize/recompress/flatten."
@@ -207,6 +211,10 @@ from .vcw.grimoire import (  # noqa: E402
     decode_quoted_bytes,
     encode_quoted_bytes,
 )
+from .vcw.grimoire_editions.v010 import (  # noqa: E402
+    decode_quoted_bytes as decode_quoted_bytes_v010,
+    encode_quoted_bytes as encode_quoted_bytes_v010,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -284,7 +292,7 @@ def extract_embedded_tool(path: str, out_path: str | None = None) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Grimoire v0.9 statement frames <-> spore package
+# Grimoire statement frames <-> spore package (v0.9 compatibility and v0.10 default)
 # ---------------------------------------------------------------------------
 
 def _full_lane_fingerprint(frames: list[bytes]) -> str:
@@ -298,11 +306,20 @@ def _full_lane_fingerprint(frames: list[bytes]) -> str:
     return "sha256:" + h.hexdigest()
 
 
-def _payload_frames(payload_bytes: bytes) -> list[bytes]:
+def _payload_frames(payload_bytes: bytes, profile: str = LEGACY_GRIMOIRE_PROFILE) -> list[bytes]:
+    encode_frame, _decode_frame = _codec(profile)
     return [
-        encode_quoted_bytes(payload_bytes[i:i + FRAME_PAYLOAD_BYTES])
+        encode_frame(payload_bytes[i:i + FRAME_PAYLOAD_BYTES])
         for i in range(0, len(payload_bytes), FRAME_PAYLOAD_BYTES)
     ]
+
+
+def _codec(profile: str):
+    if profile == DEFAULT_GRIMOIRE_PROFILE:
+        return encode_quoted_bytes_v010, decode_quoted_bytes_v010
+    if profile == LEGACY_GRIMOIRE_PROFILE:
+        return encode_quoted_bytes, decode_quoted_bytes
+    raise ValueError("unsupported Grimoire profile %r" % profile)
 
 
 def build_stream(header: dict, payload_bytes: bytes) -> bytes:
@@ -312,12 +329,16 @@ def build_stream(header: dict, payload_bytes: bytes) -> bytes:
     payload bytes. The manifest fingerprints the raw payload statements, avoiding
     a self-referential package hash while covering every application-data lane.
     """
-    payload_frames = _payload_frames(payload_bytes)
+    profile = header.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)
+    encode_frame, _decode_frame = _codec(profile)
+    payload_frames = [encode_frame(payload_bytes[i:i + FRAME_PAYLOAD_BYTES])
+                      for i in range(0, len(payload_bytes), FRAME_PAYLOAD_BYTES)]
     manifest = dict(header)
     manifest.update({
         "magic": MAGIC.decode("ascii"),
         "format_version": FORMAT_VERSION,
-        "encoding": "grimoire-v0.9-quoted-bytes",
+        "grimoire_profile": profile,
+        "encoding": profile + "-quoted-bytes",
         "frame_payload_bytes": FRAME_PAYLOAD_BYTES,
         "payload_frame_count": len(payload_frames),
         "payload_fingerprint": _full_lane_fingerprint(payload_frames),
@@ -428,6 +449,58 @@ def _parse_itxt(payload: bytes) -> tuple[str, str] | None:
         return None
 
 
+def _unfilter_rgba(raw: bytes, width: int, height: int) -> bytes:
+    """Reconstruct non-interlaced 8-bit RGBA scanlines without per-byte filter dispatch."""
+    stride = width * 4
+    expected = (stride + 1) * height
+    if len(raw) != expected:
+        raise ValueError("PNG decoded data length %d != expected %d" % (len(raw), expected))
+    bpp = 4
+    rgba = bytearray(stride * height)
+    prev = bytearray(stride)
+    src = 0
+    dst = 0
+    abs_ = abs
+    for _y in range(height):
+        filt = raw[src]
+        src += 1
+        row = bytearray(raw[src:src + stride])
+        src += stride
+        if filt == 0:
+            pass
+        elif filt == 1:
+            for i in range(bpp, stride):
+                row[i] = (row[i] + row[i - bpp]) & 0xff
+        elif filt == 2:
+            for i in range(stride):
+                row[i] = (row[i] + prev[i]) & 0xff
+        elif filt == 3:
+            for i in range(bpp):
+                row[i] = (row[i] + (prev[i] // 2)) & 0xff
+            for i in range(bpp, stride):
+                row[i] = (row[i] + ((row[i - bpp] + prev[i]) // 2)) & 0xff
+        elif filt == 4:
+            # With no left byte, Paeth(0, up, 0) always selects up.
+            for i in range(bpp):
+                row[i] = (row[i] + prev[i]) & 0xff
+            for i in range(bpp, stride):
+                a = row[i - bpp]
+                b = prev[i]
+                c = prev[i - bpp]
+                p = a + b - c
+                pa = abs_(p - a)
+                pb = abs_(p - b)
+                pc = abs_(p - c)
+                predictor = a if pa <= pb and pa <= pc else (b if pb <= pc else c)
+                row[i] = (row[i] + predictor) & 0xff
+        else:
+            raise ValueError("unsupported PNG filter %d" % filt)
+        rgba[dst:dst + stride] = row
+        dst += stride
+        prev = row
+    return bytes(rgba)
+
+
 def _read_png(path: str) -> _RawPng:
     with open(path, "rb") as f:
         data = f.read()
@@ -469,35 +542,8 @@ def _read_png(path: str) -> _RawPng:
     if bit_depth != 8 or color_type != 6 or interlace != 0:
         raise ValueError("spore PNG must be non-interlaced 8-bit RGBA")
     raw = zlib.decompress(bytes(idat))
-    stride = width * 4
-    bpp = 4
-    rgba = bytearray(width * height * 4)
-    prev = bytearray(stride)
-    src = 0
-    dst = 0
-    for _y in range(height):
-        filt = raw[src]
-        src += 1
-        row = bytearray(raw[src:src + stride])
-        src += stride
-        for i in range(stride):
-            left = row[i - bpp] if i >= bpp else 0
-            up = prev[i]
-            up_left = prev[i - bpp] if i >= bpp else 0
-            if filt == 1:
-                row[i] = (row[i] + left) & 0xff
-            elif filt == 2:
-                row[i] = (row[i] + up) & 0xff
-            elif filt == 3:
-                row[i] = (row[i] + ((left + up) // 2)) & 0xff
-            elif filt == 4:
-                row[i] = (row[i] + _paeth(left, up, up_left)) & 0xff
-            elif filt != 0:
-                raise ValueError("unsupported PNG filter %d" % filt)
-        rgba[dst:dst + stride] = row
-        dst += stride
-        prev = row
-    return _RawPng(width, height, bytes(rgba), meta)
+    rgba = _unfilter_rgba(raw, width, height)
+    return _RawPng(width, height, rgba, meta)
 
 
 def encode_pixels(stream: bytes, img: Image.Image) -> None:
@@ -546,7 +592,10 @@ def decode_pixels(img: Image.Image) -> tuple[dict, bytes, dict]:
     px = img.load()
     header_raw, next_block = _read_frame(px, 0, "spore-header")
     try:
-        header_bytes = decode_quoted_bytes(header_raw, frame_id="spore-header")
+        try:
+            header_bytes = decode_quoted_bytes(header_raw, frame_id="spore-header")
+        except GrimoireDecodeError:
+            header_bytes = decode_quoted_bytes_v010(header_raw, frame_id="spore-header")
         if len(header_bytes) > MAX_HEADER_BYTES:
             raise ValueError("header exceeds the configured size limit")
         header = json.loads(header_bytes.decode("utf-8"))
@@ -560,7 +609,13 @@ def decode_pixels(img: Image.Image) -> tuple[dict, bytes, dict]:
     if header.get("format_version") != FORMAT_VERSION:
         raise ValueError("unsupported spore format version %r"
                          % header.get("format_version"))
-    if header.get("encoding") != "grimoire-v0.9-quoted-bytes":
+    profile = header.get("grimoire_profile")
+    if profile is None and header.get("encoding") == "grimoire-v0.9-quoted-bytes":
+        # Historical v2 payloads had no profile field; this is the documented
+        # compatibility fallback and is not content-based edition inference.
+        profile = LEGACY_GRIMOIRE_PROFILE
+    encode_frame, decode_frame = _codec(profile)
+    if header.get("encoding") != profile + "-quoted-bytes":
         raise ValueError("unsupported spore encoding %r" % header.get("encoding"))
     payload_length = header.get("payload_length")
     if not isinstance(payload_length, int) or payload_length < 0:
@@ -577,7 +632,7 @@ def decode_pixels(img: Image.Image) -> tuple[dict, bytes, dict]:
         frame_id = "spore-payload-%06d" % index
         frame_raw, next_block = _read_frame(px, next_block, frame_id)
         try:
-            payload_parts.append(decode_quoted_bytes(frame_raw, frame_id=frame_id))
+            payload_parts.append(decode_frame(frame_raw, frame_id=frame_id))
         except GrimoireDecodeError as exc:
             raise ValueError("%s rejected: %s" % (frame_id, exc)) from exc
         payload_raw_frames.append(frame_raw)
@@ -715,7 +770,8 @@ def render_visible(img: Image.Image, state: dict, status: str) -> None:
 
 def _make_header(state: dict, payload_bytes: bytes) -> dict:
     ident = state["identity"]
-    payload_frames = _payload_frames(payload_bytes)
+    profile = ident.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)
+    payload_frames = _payload_frames(payload_bytes, profile)
     return {
         "magic": "SPOREPNG",
         "format_version": FORMAT_VERSION,
@@ -723,7 +779,8 @@ def _make_header(state: dict, payload_bytes: bytes) -> dict:
         "vcw_region": [VCW_X, VCW_Y, VCW_W, VCW_H],
         "display_region": [DISP_X, DISP_Y, DISP_W, DISP_H],
         "boot_strip_region": [DISP_X, DISP_Y, DISP_W, BOOT_STRIP_H],
-        "encoding": "grimoire-v0.9-quoted-bytes",
+        "grimoire_profile": profile,
+        "encoding": profile + "-quoted-bytes",
         "payload_format": "stripped_appai_log",
         "payload_length": len(payload_bytes),
         "payload_checksum": _sha(payload_bytes),
@@ -741,6 +798,9 @@ def _make_header(state: dict, payload_bytes: bytes) -> dict:
 
 def _metadata_fields(state: dict, header: dict) -> dict:
     ident = state["identity"]
+    profile = header.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)
+    bootloader = (LEGACY_BOOTLOADER_TEXT if profile == LEGACY_GRIMOIRE_PROFILE
+                  else BOOTLOADER_TEXT)
     return {
         "Spore-Format": SPORE_FORMAT,
         "Spore-Name": ident.get("spore_name", ""),
@@ -752,7 +812,8 @@ def _metadata_fields(state: dict, header: dict) -> dict:
         "VCW-Region": f"x={VCW_X},y={VCW_Y},w={VCW_W},h={VCW_H}",
         "Display-Region": f"x={DISP_X},y={DISP_Y},w={DISP_W},h={DISP_H}",
         "Boot-Strip-Region": f"x={DISP_X},y={DISP_Y},w={DISP_W},h={BOOT_STRIP_H}",
-        "Encoding": "Grimoire v0.9 RGBA statements (A=force, G=0x7f parity)",
+        "Grimoire-Profile": profile,
+        "Encoding": "%s RGBA statements (A=force, G=0x7f parity)" % profile,
         "Payload-Format": "stripped Mantle/AppAI conversation log (JSON)",
         "Payload-Checksum": header["payload_checksum"],
         "Full-Lane-Fingerprint": header["payload_fingerprint"],
@@ -764,7 +825,7 @@ def _metadata_fields(state: dict, header: dict) -> dict:
         "Authority": "identity+conversation: VCW payload; bootloader/spec: metadata over strip",
         "Transport-Warning": TRANSPORT_WARNING,
         "Quickstart": QUICKSTART_CODE,
-        "Bootloader": BOOTLOADER_TEXT,
+        "Bootloader": bootloader,
     }
 
 
@@ -783,7 +844,9 @@ def _make_metadata(state: dict, header: dict) -> PngInfo:
 # Public API
 # ---------------------------------------------------------------------------
 
-def _new_state(name: str, task: str, author: str | None) -> dict:
+def _new_state(name: str, task: str, author: str | None,
+               profile: str = DEFAULT_GRIMOIRE_PROFILE) -> dict:
+    _codec(profile)
     ts = _now()
     return {
         "identity": {
@@ -793,6 +856,7 @@ def _new_state(name: str, task: str, author: str | None) -> dict:
             "author": author or "",
             "version": "1.0.0",
             "format_version": FORMAT_VERSION,
+            "grimoire_profile": profile,
             "created_at": ts,
             "updated_at": ts,
         },
@@ -890,9 +954,10 @@ def render_spore(state: dict, path: str, status: str = "ACTIVE") -> str:
 
 
 def create_spore(name: str, task: str, author: str | None = None,
-                 path: str = "spore.png") -> str:
+                 path: str = "spore.png", *,
+                 profile: str = DEFAULT_GRIMOIRE_PROFILE) -> str:
     """Create a fresh Spore PNG (one agent, one task)."""
-    state = _new_state(name, task, author)
+    state = _new_state(name, task, author, profile)
     return render_spore(state, path, status="ACTIVE")
 
 
@@ -1066,8 +1131,9 @@ def verify_spore(path: str) -> dict:
 
     ck("magic present", header.get("magic") == "SPOREPNG")
     ck("format_version==2", header.get("format_version") == FORMAT_VERSION)
-    ck("encoding is Grimoire v0.9 quoted bytes",
-       header.get("encoding") == "grimoire-v0.9-quoted-bytes")
+    profile = header.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)
+    ck("known Grimoire profile", profile in (LEGACY_GRIMOIRE_PROFILE, DEFAULT_GRIMOIRE_PROFILE))
+    ck("encoding matches profile", header.get("encoding") == profile + "-quoted-bytes")
     ck("vcw_region top-half", header.get("vcw_region") == [VCW_X, VCW_Y, VCW_W, VCW_H])
     ck("display_region bottom-half", header.get("display_region") == [DISP_X, DISP_Y, DISP_W, DISP_H])
     ck("boot_strip declared", header.get("boot_strip_region") == [DISP_X, DISP_Y, DISP_W, BOOT_STRIP_H])
@@ -1081,7 +1147,8 @@ def verify_spore(path: str) -> dict:
                 "Spore-Name", "Transport-Warning", "Embedded-Tool", "Authority",
                 "Quickstart"):
         ck(f"metadata has {key}", key in meta and meta[key] != "")
-    ck("metadata bootloader canonical", meta.get("Bootloader") == BOOTLOADER_TEXT)
+    expected_bootloaders = {BOOTLOADER_TEXT, LEGACY_BOOTLOADER_TEXT}
+    ck("metadata bootloader canonical", meta.get("Bootloader") in expected_bootloaders)
     ck("metadata format canonical", meta.get("Spore-Format") == SPORE_FORMAT)
     ck("metadata fingerprint mirrors manifest",
        meta.get("Full-Lane-Fingerprint") == header.get("payload_fingerprint"))

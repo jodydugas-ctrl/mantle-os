@@ -54,6 +54,7 @@ class Body:
         #                               "seal_fingerprint": str|None}
         self.lineage_index: Dict[int, Dict[str, Any]] = {}
         self.prime_generation: int = 0
+        self._edition_adoptions: List[Dict[str, Any]] = []
 
     # ---- birth: set the Primer once, immutably -----------------------------
     def birth(self, identity: Dict[str, Any], truths: List[str],
@@ -184,7 +185,17 @@ class Body:
             "primer": [e["content"] for e in self._primer],
             "prime_generation": self.prime_generation,
             "lineage_index": self.lineage_index,
+            "edition_adoptions": list(self._edition_adoptions),
         }
+
+    def record_edition_adoption(self, receipt: Dict[str, Any]) -> Dict[str, Any]:
+        """Append an operator-authorized edition receipt to Body-owned tissue."""
+        if not isinstance(receipt, dict) or receipt.get("operator_authorized") is not True:
+            raise PermissionError("edition adoption requires operator authorization")
+        if receipt.get("kind") != "grimoire_edition_adoption":
+            raise ValueError("unsupported edition receipt kind")
+        self._edition_adoptions.append(dict(receipt))
+        return self._edition_adoptions[-1]
 
     def identity_name(self) -> str:
         for e in self._primer:
@@ -202,7 +213,8 @@ class Body:
                 "immunization": self._immunization, "primer_sealed": self._primer_sealed,
                 "genesis_key": self._genesis_key, "key_fingerprint": self._key_fingerprint,
                 "lineage_index": {str(k): v for k, v in self.lineage_index.items()},
-                "prime_generation": self.prime_generation}
+                "prime_generation": self.prime_generation,
+                "edition_adoptions": list(self._edition_adoptions)}
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "Body":
@@ -217,6 +229,7 @@ class Body:
         b._key_fingerprint = d.get("key_fingerprint")
         b.lineage_index = {int(k): v for k, v in d.get("lineage_index", {}).items()}
         b.prime_generation = d.get("prime_generation", 0)
+        b._edition_adoptions = list(d.get("edition_adoptions", []))
         return b
 
     def key_fingerprint_consistent(self) -> bool:

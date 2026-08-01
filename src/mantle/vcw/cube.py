@@ -209,6 +209,33 @@ class Cube:
             c._next_entry_id[name] = 0
         return c
 
+    def add_band(self, boot: Dict[str, Any]) -> None:
+        """Explicitly graft one empty band into an unsealed Prime cube.
+
+        This is a topology migration, not an ordinary memory write.  Callers must
+        make the authorization decision before invoking it; the substrate enforces
+        uniqueness, range coherence, and registered-driver validity.
+        """
+        from .bands import genome_overlaps
+        if self.sealed:
+            raise PermissionError("cannot graft a band into an ancestral cube")
+        name = str(boot.get("band", ""))
+        if not name:
+            raise ValueError("band boot sector requires a name")
+        if name in self.bands:
+            raise ValueError("band %r already exists" % name)
+        proposed = list(self.bands.values()) + [dict(boot)]
+        problems = genome_overlaps(proposed)
+        if problems:
+            raise ValueError("band graft refused: %s" % "; ".join(problems))
+        driver = get_driver(str(boot.get("encoding", "")))
+        head = int(boot["head"])
+        self.bands[name] = dict(boot)
+        self.band_layers[name] = [head]
+        self.band_free[name] = []
+        self.layers[head] = driver.empty(dict(boot.get("params") or {}))
+        self._next_entry_id[name] = 0
+
     # ---- band helpers -----------------------------------------------------
     def _boot(self, band: str) -> Dict[str, Any]:
         if band not in self.bands:

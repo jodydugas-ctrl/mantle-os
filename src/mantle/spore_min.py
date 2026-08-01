@@ -31,12 +31,14 @@ VCW_BLOCKS = VCW_W * VCW_H
 FRAME_PAYLOAD_BYTES = 1024
 MAX_HEADER_BYTES = 64 * 1024
 VCW_CAPACITY_BYTES = (VCW_BLOCKS - 1) // 2
+DEFAULT_GRIMOIRE_PROFILE = "grimoire-v0.10"
+LEGACY_GRIMOIRE_PROFILE = "grimoire-v0.9"
 
 # NOTE: this string MUST be byte-identical to spore.py's BOOTLOADER_TEXT.
 BOOTLOADER_TEXT = (
     "SPORE-PNG v2  -  this PNG is a self-contained AppAI agent.\n"
     "MEMORY lives in the TOP HALF (y=0..999) as a VCW color field: read pixels\n"
-    "left-to-right, top-to-bottom as Grimoire v0.9 RGBA statements. R is atom,\n"
+    "left-to-right, top-to-bottom as the selected Grimoire RGBA profile. R is atom,\n"
     "G is role, B is evidence, and A is force. Inert bytes are framed as QUOTE:\n"
     "one HEAD, BLEND continuations with B=A=0 inheritance, then G=0x7f PARITY.\n"
     "The first statement is a JSON manifest; following statements carry payload.\n"
@@ -93,7 +95,17 @@ ROLE_MAP = {
 
 # --- Grimoire v0.9 QUOTE framing (self-contained copy of the carrier law) ---
 
-def _parity(records):
+def _parity(records, profile=LEGACY_GRIMOIRE_PROFILE):
+    if profile == DEFAULT_GRIMOIRE_PROFILE:
+        pr = pb = pa = 0
+        for i, (r, g, b, a) in enumerate(records):
+            w = i & 7
+            rot = lambda value, amount: ((value << (amount & 7)) |
+                                          (value >> (8 - (amount & 7)))) & 0xff
+            pr ^= rot(r, w)
+            pb ^= rot(b, w) ^ rot(g, w)
+            pa ^= rot(a, w) ^ rot(g, 7 - w)
+        return (pr or 254), 0x7f, pb, pa
     xr = xb = xa = 0
     for r, _g, b, a in records:
         xr ^= r
@@ -102,7 +114,7 @@ def _parity(records):
     return (xr or 254), 0x7f, xb, xa
 
 
-def _encode_frame(data):
+def _encode_frame(data, profile=LEGACY_GRIMOIRE_PROFILE):
     if not data:
         raise ValueError("quoted-byte statement requires non-empty bytes")
     nibbles = []
@@ -110,15 +122,15 @@ def _encode_frame(data):
         nibbles.extend(((value >> 4) + 1, (value & 0x0f) + 1))
     records = [(nibbles[0], 0x01, 0x01, 0x0f)]
     records.extend((value, 0x40, 0x00, 0x00) for value in nibbles[1:])
-    records.append(_parity(records))
+    records.append(_parity(records, profile))
     return b"".join(bytes(record) for record in records)
 
 
-def _decode_frame(raw):
+def _decode_frame(raw, profile=LEGACY_GRIMOIRE_PROFILE):
     if len(raw) < 8 or len(raw) % 4:
         raise ValueError("invalid Grimoire frame length")
     records = [tuple(raw[i:i + 4]) for i in range(0, len(raw), 4)]
-    if records[-1][1] != 0x7f or tuple(records[-1]) != _parity(records[:-1]):
+    if records[-1][1] != 0x7f or tuple(records[-1]) != _parity(records[:-1], profile):
         raise ValueError("PARITY mismatch")
     body = records[:-1]
     if body[0][1:] != (0x01, 0x01, 0x0f):
@@ -142,8 +154,8 @@ def _fingerprint(frames):
     return "sha256:" + h.hexdigest()
 
 
-def _payload_frames(payload):
-    return [_encode_frame(payload[i:i + FRAME_PAYLOAD_BYTES])
+def _payload_frames(payload, profile=LEGACY_GRIMOIRE_PROFILE):
+    return [_encode_frame(payload[i:i + FRAME_PAYLOAD_BYTES], profile)
             for i in range(0, len(payload), FRAME_PAYLOAD_BYTES)]
 
 
@@ -172,7 +184,10 @@ def _read_frame(px, start):
 def decode_pixels(img):
     px = img.load()
     header_raw, next_block = _read_frame(px, 0)
-    header_bytes = _decode_frame(header_raw)
+    try:
+        header_bytes = _decode_frame(header_raw, LEGACY_GRIMOIRE_PROFILE)
+    except ValueError:
+        header_bytes = _decode_frame(header_raw, DEFAULT_GRIMOIRE_PROFILE)
     if len(header_bytes) > MAX_HEADER_BYTES:
         raise ValueError("header exceeds configured size limit")
     header = json.loads(header_bytes.decode("utf-8"))
@@ -180,7 +195,10 @@ def decode_pixels(img):
         raise ValueError("bad magic")
     if header.get("format_version") != FORMAT_VERSION:
         raise ValueError("unsupported format version")
-    if header.get("encoding") != "grimoire-v0.9-quoted-bytes":
+    profile = header.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)
+    if profile not in (LEGACY_GRIMOIRE_PROFILE, DEFAULT_GRIMOIRE_PROFILE):
+        raise ValueError("unsupported Grimoire profile")
+    if header.get("encoding") != profile + "-quoted-bytes":
         raise ValueError("unsupported encoding")
     if header.get("frame_payload_bytes") != FRAME_PAYLOAD_BYTES:
         raise ValueError("unsupported frame size")
@@ -195,7 +213,7 @@ def decode_pixels(img):
     parts, raw_frames = [], []
     for _ in range(frame_count):
         raw, next_block = _read_frame(px, next_block)
-        parts.append(_decode_frame(raw))
+        parts.append(_decode_frame(raw, profile))
         raw_frames.append(raw)
     actual = _fingerprint(raw_frames)
     if actual != header.get("payload_fingerprint"):
@@ -217,14 +235,16 @@ def decode_pixels(img):
 
 def _header(state, payload):
     i = state["identity"]
-    frames = _payload_frames(payload)
+    profile = i.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)
+    frames = _payload_frames(payload, profile)
     return {
         "magic": "SPOREPNG", "format_version": FORMAT_VERSION,
         "canvas": f"{CANVAS_W}x{CANVAS_H}",
         "vcw_region": [VCW_X, VCW_Y, VCW_W, VCW_H],
         "display_region": [DISP_X, DISP_Y, DISP_W, DISP_H],
         "boot_strip_region": [DISP_X, DISP_Y, DISP_W, BOOT_STRIP_H],
-        "encoding": "grimoire-v0.9-quoted-bytes",
+        "grimoire_profile": profile,
+        "encoding": profile + "-quoted-bytes",
         "payload_format": "stripped_appai_log",
         "payload_length": len(payload), "payload_checksum": _sha(payload),
         "frame_payload_bytes": FRAME_PAYLOAD_BYTES,
@@ -248,7 +268,9 @@ def _metadata(state, header):
         "VCW-Region": f"x={VCW_X},y={VCW_Y},w={VCW_W},h={VCW_H}",
         "Display-Region": f"x={DISP_X},y={DISP_Y},w={DISP_W},h={DISP_H}",
         "Boot-Strip-Region": f"x={DISP_X},y={DISP_Y},w={DISP_W},h={BOOT_STRIP_H}",
-        "Encoding": "Grimoire v0.9 RGBA statements (A=force, G=0x7f parity)",
+        "Grimoire-Profile": header.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE),
+        "Encoding": "%s RGBA statements (A=force, G=0x7f parity)" %
+                    header.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE),
         "Payload-Format": "stripped Mantle/AppAI conversation log (JSON)",
         "Payload-Checksum": header["payload_checksum"],
         "Full-Lane-Fingerprint": header["payload_fingerprint"],
@@ -296,10 +318,11 @@ def _render(state, path, status="ACTIVE"):
     state.setdefault("display", {})["status"] = status
     payload = json.dumps(state, separators=(",", ":"), sort_keys=True).encode("utf-8")
     header = _header(state, payload)
+    profile = header.get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)
     hb = json.dumps(header, separators=(",", ":"), sort_keys=True).encode("utf-8")
     if len(hb) > MAX_HEADER_BYTES:
         raise ValueError("spore manifest exceeds configured size limit")
-    stream = _encode_frame(hb) + b"".join(_payload_frames(payload))
+    stream = _encode_frame(hb, profile) + b"".join(_payload_frames(payload, profile))
 
     img = Image.new("RGBA", (CANVAS_W, CANVAS_H), (0, 0, 0, 255))
     px = img.load()
@@ -368,7 +391,9 @@ def append(path, role, content):
         return {"status": "FULL", "appended": False}
     hb = json.dumps(_header(trial, payload), separators=(",", ":"), sort_keys=True).encode("utf-8")
     stream_blocks = (
-        len(_encode_frame(hb)) + sum(len(frame) for frame in _payload_frames(payload))
+        len(_encode_frame(hb, _header(trial, payload).get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)))
+        + sum(len(frame) for frame in _payload_frames(
+            payload, _header(trial, payload).get("grimoire_profile", LEGACY_GRIMOIRE_PROFILE)))
     ) // 4
     if stream_blocks > VCW_BLOCKS:
         _render(state, path, status="FULL")

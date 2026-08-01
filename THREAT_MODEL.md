@@ -68,11 +68,14 @@ equivalent. Reviewers remain responsible for that mapping.
 | `TM-FOREIGN-ACQUISITION` | Remote material is pinned and reproducible | GitHub acquisition source | `enforced` | `SUPPLY-1` | `applet-clone` requires explicit network consent and an exact 40-hex commit; checkout is detached with hooks/submodules disabled and commit/tree hashes receipted. |
 | `TM-SECRET-BOUNDARY` | Secrets enter ordinary memory/log surfaces | input and failure paths | `enforced` | `HF-B20`, `APPLET-5` | Senses and Immune redact before append. |
 | `TM-CONTEXT-VEIL` | Private thoughts enter the model context | declared MIND | `enforced` | `HF-M14` | Nervous assembly resolves references and applies the veil. |
+| `TM-CONTEXT-LEDGER` | Rolling context leaks, mutates its prefix, consumes uncommitted sources, crosses its budget, includes itself, or resumes corrupt state | declared MIND, provider failure, or storage corruption | `enforced` | `CONTEXT-BODY-OWNED`, `CONTEXT-NO-SELF-INCLUSION`, `CONTEXT-CANONICAL-BYTES`, `CONTEXT-CURSOR-COMMIT-AFTER-SUCCESS`, `CONTEXT-PREFIX-IMMUTABLE`, `CONTEXT-ROLLOVER-BEFORE-HARD-LIMIT`, `CONTEXT-PRIVATE-VEIL`, `CONTEXT-REQUEST-HASH-EXACT`, `CONTEXT-CORRUPTION-DETECTED` | The private Body-authored ledger uses canonical full-hash chains, commit-last cursors, deterministic rollover, exact request hashes, and recovery generations. Provider cache hits remain outside Mantle's control. |
 | `TM-FUSION-AUTHORITY` | MIND fuses without current Stage-1 evidence and dual approval | caller | `enforced` | `HF-M15` | Approval is target-bound and distinct from technical readiness. |
 | `TM-MIND-SELF-PROMOTION` | MIND promotes inference to fact or calcifies itself directly | declared MIND | `enforced` | `HF-M12`, `HF-M16` | Limbs and Body own promotion/calcification. |
 | `TM-PHASE1-MODEL-FREE` | Phase-1 behavior depends on a model | Body implementation | `enforced` | `HF-B08` | Static and clean-interpreter proofs keep certified Phase 1 model-free. |
 | `TM-REFERENCE-CERT` | Repository reference-organism regression is detected | framework change | `detected` | `HF-B08`, `DOCTOR-1`, `STAGE2-PROFILE-1` | Stage 2 aggregates base, reborn, and resident fixtures: every row must PASS somewhere, no profile may FAIL, and all-N/A remains a blocking gap. Repository gates still do not certify arbitrary dependent applications. |
 | `TM-APPLICATION-CERT` | A dependent application's own nest is certified | user application | `enforced` | `CERTIFY-1` | `mantle certify <path>` loads the actual nest, runs applicable Stage-1 rows plus repository invariants, fingerprints target artifacts and the invariant registry, and emits a Body-signed deterministic receipt. |
+| `TM-GRIMOIRE-EDITION` | Grimoire editions, procedure metadata, or verifier agreement drift | VCW profile data and decoder | `enforced` | `GRIMOIRE-V010-01` .. `GRIMOIRE-V010-14` | Edition selection is explicit; v0.9 remains frozen; zero-HEAD procedures remain non-governing without container metadata; parity is not transport integrity; the independent verifier must agree with runtime BOOK semantics. |
+| `TM-RESEARCH-BOUNDARY` | Bounded research candidate escapes workspace, mutates evaluator, forges score, or self-adopts | Research Ganglion, Candidate Chamber, immutable evaluator, Body-owned ledger | `out of scope` | — | Charter and threat extension are defined in R-00; executable proofs are added with the later research runtime tasks. |
 <!-- MANTLE-GUARANTEES:END -->
 
 ## 6. Residual risks
@@ -84,6 +87,10 @@ equivalent. Reviewers remain responsible for that mapping.
 - The reference gates do not certify an arbitrary application.
 - A raw in-process caller can reach internal Python state; this is inside the trust
   boundary even when public façades remove convenient handles.
+- `durable-exact` rolling continuity retains exact redacted projected context and responses;
+  confidentiality at rest depends on host storage encryption and access control.
+- A provider may ignore, evict, partition, or misreport its cache. Mantle records observed
+  cache facts but does not claim that a stable prefix guarantees a hit.
 
 ## 7. Proof surfaces
 
