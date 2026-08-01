@@ -147,8 +147,9 @@ directives, instincts. It travels as a spore (or a bare germ file). Applying it 
 host into a **workspace** and grows the resident there; the original is census-proven
 byte-identical. If the host has drifted from the census the graft was built against, the
 apply **raises** a drift interrupt rather than mis-applying silently.
+
 ```bash
-python -m mantle lifecycle authorize graft examples/spores/notes_graft.png workspace/sample_app --approve --out=hatch-auth.json
+python -m mantle lifecycle authorize graft examples/spores/notes_graft.png workspace/sample_app --approve --out=graft-auth.json
 python -m mantle graft examples/spores/notes_graft.png examples/sample_app --workspace=workspace --auth=graft-auth.json
 ```
 
