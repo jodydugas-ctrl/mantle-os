@@ -22,6 +22,7 @@ No branch was pushed and no online repository was changed.
 | `python -m mantle audit-mind` | PASS |
 | Mantle full pytest suite | PASS (18 passed, 1 skipped) |
 | `python -m mantle check` | PARTIAL (13 passed, 1 skipped, 0 failed; not a certification) |
+| Authorized hatch/graft CLI end-to-end | PASS (atomic targets; original sample host unchanged) |
 | Organize source compilation | PASS |
 | Organize full dependency suite | PASS (299 passed, 4 skipped) |
 
