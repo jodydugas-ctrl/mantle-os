@@ -1350,7 +1350,7 @@ def t_organism_save_atomic_owner_only():
         linked_nest_created, note = _try_symlink(
             outside, linked_nest, target_is_directory=True
         )
-        if linked_nest_created and persist_module._secure_dirfd_available():
+        if linked_nest_created:
             symlink_root_refused = _expect_raise(
                 lambda: org.save(linked_nest), OSError
             )[0]
@@ -1444,7 +1444,7 @@ def t_organism_save_atomic_owner_only():
                 Path(outside_stage).write_text("attacker", encoding="utf-8")
             return real_replace(src, dst, *args, **kwargs)
 
-        if linked_nest_created:
+        if linked_nest_created and persist_module._secure_dirfd_available():
             with patch.object(persist_module.os, "replace", swap_before_replace):
                 _expect_raise(
                     lambda: atomic_write_json(
