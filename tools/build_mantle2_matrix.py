@@ -160,6 +160,8 @@ FRICTION = {
     17: "edition-specific verifier ambiguity", 18: "germ schema runtime drift",
     19: "dummy resident integration fixture", 20: "Windows bash implementation ambiguity",
     21: "release scan sentinel noise", 22: "installed Mantle source/version drift",
+    23: "package stderr and deprecated license metadata",
+    24: "PowerShell process-redirection argument parsing",
 }
 
 
@@ -188,7 +190,12 @@ def render() -> str:
               "| --- | --- | --- | --- | --- | --- | --- | --- |"]
     for number, condition in FRICTION.items():
         evidence = "reports/FRICTION_EVENTS.md; FRICTION-1"
-        example = "NotepadNext v2 candidate" if number <= 18 else "Organize.AppAI Mantle 2 migration"
+        if number <= 18:
+            example = "NotepadNext v2 candidate"
+        elif number <= 22:
+            example = "Organize.AppAI Mantle 2 migration"
+        else:
+            example = "MantleOS wheel/sdist release pipeline"
         lines.append(f"| FRICTION-{number:03d} | {condition} | already_verified | release operations | recorded remedy and prevention control | `{evidence}` | {example} | commits `54913e0; e09b61c; 896a959` |")
     lines += [
         "", "## Doctrine reconciliation", "",
