@@ -170,3 +170,15 @@ def test_resident_protocol_declaration_is_required_for_certification(tmp_path: P
     (nest / "resident_protocol.json").unlink()
     with pytest.raises(CertificationError, match="protocol drift"):
         certify_nest(str(nest), include_invariants=False)
+
+
+def test_application_certification_names_failed_repository_invariant(tmp_path: Path, monkeypatch):
+    import mantle.certify as certification
+    nest = tmp_path / "nest"
+    born().save(str(nest))
+    monkeypatch.setattr(certification._inv, "run_all", lambda: [{
+        "name": "SPORE-2 sporeagent-lifecycle-receipt", "ok": False,
+        "detail": "Pillow missing",
+    }])
+    with pytest.raises(CertificationError, match="SPORE-2 sporeagent-lifecycle-receipt"):
+        certification.certify_nest(str(nest))

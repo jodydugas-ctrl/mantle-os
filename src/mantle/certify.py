@@ -116,6 +116,10 @@ def certify_nest(directory: str, *, include_invariants: bool = True) -> Dict[str
     stage1_rows = evidence["substrate_rows"] + evidence["mesh_rows"]
     invariant_rows = _inv.run_all() if include_invariants else []
     invariant_ok = all(row["ok"] for row in invariant_rows)
+    invariant_failures = [
+        str(row.get("name") or row.get("code") or "unknown")
+        for row in invariant_rows if not row.get("ok")
+    ]
     verify_problems = org.prime.verify()
     failed_codes = [row["code"] for row in stage1_rows if row["result"] == FAIL]
     if preexisting_integrity_events:
@@ -123,7 +127,8 @@ def certify_nest(directory: str, *, include_invariants: bool = True) -> Dict[str
     if verify_problems:
         failed_codes.append("prime-verify")
     if include_invariants and not invariant_ok:
-        failed_codes.append("repository-invariants")
+        failed_codes.extend("repository-invariant:%s" % name
+                            for name in invariant_failures)
 
     unsigned = {
         "schema": SCHEMA,

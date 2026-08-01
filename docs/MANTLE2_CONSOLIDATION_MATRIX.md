@@ -140,6 +140,7 @@ Allowed statuses are `already_verified`, `superseded`, `historical_only`, and
 | FRICTION-022 | installed Mantle source/version drift | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | Organize.AppAI Mantle 2 migration | commits `54913e0; e09b61c; 896a959` |
 | FRICTION-023 | package stderr and deprecated license metadata | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
 | FRICTION-024 | PowerShell process-redirection argument parsing | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
+| FRICTION-025 | application certification hid a missing Spore extra | already_verified | release operations | recorded remedy and prevention control | `reports/FRICTION_EVENTS.md; FRICTION-1` | MantleOS wheel/sdist release pipeline | commits `54913e0; e09b61c; 896a959` |
 
 ## Doctrine reconciliation
 

@@ -162,6 +162,7 @@ FRICTION = {
     21: "release scan sentinel noise", 22: "installed Mantle source/version drift",
     23: "package stderr and deprecated license metadata",
     24: "PowerShell process-redirection argument parsing",
+    25: "application certification hid a missing Spore extra",
 }
 
 

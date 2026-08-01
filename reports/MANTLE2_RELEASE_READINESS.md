@@ -26,7 +26,7 @@ it does not grant a resident permission to act.
 
 ## Tracked closure evidence
 
-- `docs/MANTLE2_CONSOLIDATION_MATRIX.md` contains all 98 actual corrections and 24 friction
+- `docs/MANTLE2_CONSOLIDATION_MATRIX.md` contains all 98 actual corrections and 25 friction
   events with implementation symbols, executable tests, maintained examples, and commit IDs.
 - `python -m mantle prove` reports 148/148, including every named Mantle 2 invariant family
   and the matrix/friction closure check.
