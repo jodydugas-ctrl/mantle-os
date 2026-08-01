@@ -179,6 +179,11 @@ class Organism:
              "ancestral_generations": [c.generation for c in self.ancestral],
              "stage1_certified": self.stage1_certified},
         )
+        atomic_write_json(
+            os.path.join(directory, "resident_protocol.json"),
+            {"schema": "mantle-resident-protocol-declaration-v1",
+             "protocol": "mantle-resident-v2"},
+        )
         # the SELF seal: sign the nest as this Body's own (M2). Skipped only for a
         # legacy Body with no genesis key.
         if self.body.has_key:

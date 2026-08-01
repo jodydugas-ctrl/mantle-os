@@ -50,7 +50,7 @@ def _source_commit() -> str:
 
 
 def _target_files(directory: str) -> List[Dict[str, Any]]:
-    names = ["body.json", "organism.json", "self_seal.json"]
+    names = ["body.json", "organism.json", "self_seal.json", "resident_protocol.json"]
     names.extend(sorted(
         name for name in os.listdir(directory)
         if name.startswith("gen") and name.endswith(".vcw")
@@ -92,6 +92,16 @@ def certify_nest(directory: str, *, include_invariants: bool = True) -> Dict[str
         raise CertificationError("not a Mantle nest; missing %s"
                                  % ", ".join(missing))
     target_files = _target_files(directory)
+    protocol_path = os.path.join(directory, "resident_protocol.json")
+    try:
+        with open(protocol_path, "r", encoding="utf-8") as handle:
+            protocol = json.load(handle).get("protocol")
+    except (OSError, ValueError, AttributeError):
+        protocol = None
+    if protocol != "mantle-resident-v2":
+        raise CertificationError(
+            "resident protocol drift: explicit mantle-resident-v2 declaration required"
+        )
     try:
         org = Organism.load(directory, verify_seals=True)
     except Exception as exc:

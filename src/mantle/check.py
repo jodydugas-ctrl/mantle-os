@@ -279,7 +279,7 @@ def main(argv=None):
         print("PARTIAL: required work did not execute — NOT A CERTIFICATION.")
         print("Re-run with --strict to make every gap fail closed.")
         print(_LINE)
-        return 0
+        return 3
     print("EVERY REQUIRED GATE EXECUTED AND GREEN. The reference organism is certified.")
     print(_LINE)
     return 0
