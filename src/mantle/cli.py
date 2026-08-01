@@ -49,7 +49,8 @@ _USAGE = ("usage: python -m mantle "
           "certify <nest> [--out=FILE] | reproduce | spore <op> ... | ghost <op> ... | "
           "demo | audit | prove | mind | audit-mind | "
           "check [--fast] | "
-          "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png]]")
+          "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png] | "
+          "resident <nest>]")
 
 _COMMANDS = (
     "anchor", "ask", "feed", "vitals", "hatch", "graft", "spore", "ghost",
@@ -57,6 +58,7 @@ _COMMANDS = (
     "applet-create", "applet-list", "applet-show", "applet-export", "applet-wear",
     "applet-audit", "applet-clone", "demo", "audit", "prove", "mind", "audit-mind",
     "assimilate", "check", "certify",
+    "resident",
 )
 
 # every command answers to its hyphenated name and its underscore twin
@@ -728,6 +730,51 @@ def _cmd_certify(rest):
     return 0
 
 
+def cmd_resident(argv):
+    """Run the canonical Body command/conversation loop for a saved resident."""
+    args, _flags = _split(argv)
+    if len(args) != 1:
+        print("usage: python -m mantle resident <nest>")
+        return 2
+    from .core.organism import Organism
+    from .resident.commands import BodyCommandDispatcher
+    from .contracts import ResidentRuntime
+    try:
+        org = Organism.load(args[0], verify_seals=True)
+    except Exception as exc:
+        print("RESIDENT REFUSED: could not load nest: %s" % type(exc).__name__)
+        return 1
+    dispatcher = BodyCommandDispatcher(org)
+    runtime = ResidentRuntime(dispatcher=dispatcher)
+    print("Mantle resident protocol %s" % runtime.PROTOCOL_VERSION)
+    print("Plain text enters conversation; slash commands are deterministic Body maintenance.")
+    print("Use /help for commands; /quit closes the session.")
+    while True:
+        try:
+            line = input("You> ")
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if line.strip().lower() in ("/quit", "/exit"):
+            break
+        if line.strip().lower() == "/help":
+            result = dispatcher.dispatch("/help")
+            print(result.message)
+            continue
+        if line.strip().lower() == "/key":
+            import getpass
+            secret = getpass.getpass("API key (hidden; blank cancels): ")
+            result = dispatcher.dispatch("/key", secret_input=secret or None)
+            print(result.message)
+            continue
+        try:
+            result = runtime.turn(line)
+            print(result.visible_output)
+        except Exception as exc:
+            print("Body fallback: conversation unavailable (%s)." % type(exc).__name__)
+    return 0
+
+
 _DISPATCH = {
     "anchor": cmd_anchor,
     "ask": cmd_ask,
@@ -760,6 +807,7 @@ _DISPATCH = {
     "assimilate": _cmd_assimilate,
     "check": _cmd_check,
     "certify": _cmd_certify,
+    "resident": cmd_resident,
 }
 
 

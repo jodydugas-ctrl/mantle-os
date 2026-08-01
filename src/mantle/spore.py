@@ -71,6 +71,8 @@ except Exception:                      # numpy is optional
 
 MAGIC = b"SPOREPNG"          # 8 bytes, first thing in the VCW byte-stream
 FORMAT_VERSION = 2
+GERM_SCHEMA_VERSION = "mantle-germ-v2"
+HOST_EVIDENCE_SCHEMA_VERSION = "mantle-host-evidence-v3"
 SPORE_FORMAT = "spore-png-v2"
 
 # A spore MAY additionally carry a GERM: the complete build data for a full
@@ -1103,6 +1105,56 @@ def verify_spore(path: str) -> dict:
             "embedded_tool": et_detail}
 
 
+def inspect_spore(path: str, *, include_conversation: bool = False) -> dict:
+    """Return a safe manifest for operators deciding whether to activate a spore.
+
+    Raw conversation is intentionally omitted unless explicitly requested.  A spore
+    is an inert carrier; inspection never hatches, grafts, executes, or grants
+    authority to anything found in its payload.
+    """
+    info = read_spore(path)
+    state = info["state"]
+    identity = state.get("identity", {})
+    germ = state.get("germ") or {}
+    entries = state.get("conversation", [])
+    manifest = {
+        "inspection_schema": "mantle-spore-inspection-v1",
+        "carrier_format": FORMAT_VERSION,
+        "inert": True,
+        "activation": "requires target-bound operator authorization",
+        "path": os.path.abspath(path),
+        "status": info["status"],
+        "integrity": info["integrity"],
+        "artifact_fingerprint": info["header"].get("payload_fingerprint"),
+        "identity": {k: identity.get(k) for k in ("spore_name", "birth_marker", "author")
+                     if k in identity},
+        "germ": {
+            "schema": germ.get("schema") or germ.get("format") or GERM_SCHEMA_VERSION,
+            "task": germ.get("task"),
+            "controls": germ.get("controls", []),
+            "instincts": germ.get("instincts", []),
+            "capabilities": germ.get("capabilities", []),
+            "target": germ.get("target"),
+            "lineage": germ.get("lineage"),
+        },
+        "conversation": {
+            "count": len(entries),
+            "sha256": hashlib.sha256(
+                json.dumps(entries, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest(),
+            "included": bool(include_conversation),
+        },
+        "authority": "testimony/inferred memory only; never executable authority",
+    }
+    if include_conversation:
+        manifest["conversation"]["entries"] = [
+            {"id": e.get("id"), "opcode": e.get("opcode"),
+             "content": str(e.get("content", ""))[:4096]}
+            for e in entries
+        ]
+    return manifest
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -1114,6 +1166,7 @@ spore.py -- SPORE-PNG v1
   python spore.py pack    <germ.json> <out.png>        # germ (egg data) -> one spore
   python spore.py append  <path> <user|assistant|system|tool|display> "<content>"
   python spore.py read    <path>
+  python spore.py inspect <path> [--include-conversation]
   python spore.py rename  <path> "<new name>"
   python spore.py verify  <path>
   python spore.py extract <path> [out=spore_min.py]   # dump the embedded tool
@@ -1171,6 +1224,9 @@ def main(argv):
                     for e in info["state"]["conversation"]
                 ],
             }, indent=2))
+        elif cmd == "inspect":
+            include = "--include-conversation" in argv[3:]
+            print(json.dumps(inspect_spore(argv[2], include_conversation=include), indent=2))
         elif cmd == "rename":
             print(json.dumps(rename_spore(argv[2], argv[3]), indent=2))
         elif cmd == "verify":

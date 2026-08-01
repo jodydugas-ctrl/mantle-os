@@ -8,11 +8,41 @@ fail-closed decision.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, Dict
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 
 class FusionAuthorizationError(PermissionError):
     """A fusion request lacks valid independent operator and guardian approval."""
+
+
+@dataclass(frozen=True)
+class FusionAuthorization:
+    """Typed, minimized dual-approval receipt consumed by the existing validator."""
+
+    resident_identity: str
+    operator_approved: bool
+    guardian_approved: bool
+    issued_at: Optional[str] = None
+
+    def as_mapping(self) -> Dict[str, Any]:
+        return {
+            "target": {"resident_identity": self.resident_identity},
+            "operator": {"fusion_decision": "APPROVED" if self.operator_approved else "DENIED"},
+            "guardian": {"fusion_decision": "APPROVED" if self.guardian_approved else "DENIED"},
+            "effective_decision": {
+                "mind_fusion_authorized": bool(self.operator_approved and self.guardian_approved)
+            },
+        }
+
+
+def build_fusion_authorization(resident_identity: str, *, operator_approved: bool,
+                               guardian_approved: bool,
+                               issued_at: Optional[str] = None) -> Dict[str, Any]:
+    """Build the canonical validator input; integrations must not hand-build it."""
+    return FusionAuthorization(
+        str(resident_identity), bool(operator_approved), bool(guardian_approved), issued_at
+    ).as_mapping()
 
 
 def validate_fusion_authorization(organism: Any, authorization: Any) -> Dict[str, Any]:
