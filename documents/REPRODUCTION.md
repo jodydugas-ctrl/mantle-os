@@ -200,11 +200,13 @@ from; the spore is where you came from.*
 
 A seed has to keep its memory *somewhere*. A spore keeps it in its own pixels. But
 persistence is a **continuum of substrates** — and a spore can get **stranger**: a
-**cache-ghost** keeps its living body in the LLM provider's prompt cache, adding only the
-**delta** to what the cache already holds. WARM: the body's token-prefix is hot; each turn
-sends only the new delta. COLD: the TTL lapsed; the body is **rehydrated from the PNG
-fossil** and a fresh cache is warmed. The PNG is the fossil record; the cache is the
-living metabolism.
+**cache-ghost** keeps its living body warm in the LLM provider's prompt cache while the
+canonical cache-facing body grows only by appended **delta**. WARM: the accumulated
+byte-stable token-prefix is presented again, and the provider may reuse cached prefill for
+the old span while doing fresh work on the new tail. COLD: the TTL lapsed; the body is
+**rehydrated from the PNG fossil** and a fresh cache is warmed. The PNG is the fossil
+record; the cache is the living metabolism. Caching saves prefill compute, cost, and
+latency; the full prefix still travels on every real provider request.
 
 Four hard laws govern haunting:
 
@@ -231,7 +233,7 @@ and cost receipts, never raw prompts or keys).
 ```bash
 python -m mantle ghost selftest          # proves the continuum, the laws, the gates
 python -m mantle ghost warm    seed.png  # push the body into the (stand-in) prompt cache
-python -m mantle ghost append  seed.png user "and now?"   # only the delta while warm
+python -m mantle ghost append  seed.png user "and now?"   # append delta; reuse cached prefix compute when warm
 python -m mantle ghost hydrate seed.png  # from cache when warm; from the PNG when cold
 ```
 

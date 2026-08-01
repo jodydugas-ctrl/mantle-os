@@ -43,6 +43,37 @@ HUNGRY_FRACTION = 0.25      # below this fraction of lifetime grants: HUNGRY
 
 FED, HUNGRY, STARVING = "FED", "HUNGRY", "STARVING"
 
+_TRANSPORT_IDENTITY_ATTRS = (
+    "provider", "model_name", "model", "context_window_tokens",
+    "reserved_output_tokens", "capabilities",
+)
+_TRANSPORT_RECEIPT_ATTRS = (
+    "last_usage", "last_headers", "last_generation_id", "last_request_hash",
+    "last_requested_model", "last_response_model", "last_resolved_model",
+    "last_model_evidence", "last_cache",
+)
+
+
+def _mirror_attrs(wrapper: Callable[[str], str], model: Callable[[str], str],
+                  attrs) -> None:
+    """Keep transport metadata visible across the metabolic decorator seam."""
+    for name in attrs:
+        if hasattr(model, name):
+            setattr(wrapper, name, getattr(model, name))
+
+
+def _metered_transport(wrapper: Callable[[str], str], model: Callable[[str], str],
+                       prefix: str) -> Callable[[str], str]:
+    wrapper.__name__ = "%s_%s" % (prefix, getattr(model, "__name__", "model"))
+    _mirror_attrs(wrapper, model, _TRANSPORT_IDENTITY_ATTRS)
+    _mirror_attrs(wrapper, model, _TRANSPORT_RECEIPT_ATTRS)
+    return wrapper
+
+
+def _sync_transport_receipts(wrapper: Callable[[str], str],
+                             model: Callable[[str], str]) -> None:
+    _mirror_attrs(wrapper, model, _TRANSPORT_RECEIPT_ATTRS)
+
 
 def symbiosis_band(span: int = 4) -> Dict[str, Any]:
     """The band boot sector to include in a genome at genesis."""
@@ -144,9 +175,10 @@ def metered(model: Callable[[str], str], org, cost_per_call: float = 1.0,
                 "no energy for cognition (balance=%.1f); the MIND sleeps, the Body "
                 "keeps beating. Feed the organism: python -m mantle feed ..."
                 % balance(org))
-        return model(prompt)
-    call.__name__ = "metered_%s" % getattr(model, "__name__", "model")
-    return call
+        result = model(prompt)
+        _sync_transport_receipts(call, model)
+        return result
+    return _metered_transport(call, model, "metered")
 
 
 def _rough_tokens(result: Any) -> int:
@@ -173,6 +205,7 @@ def metered_by_usage(model: Callable[[str], str], org, price_per_1k: float = 1.0
             raise StarvationError(
                 "no energy for cognition; the MIND sleeps, the Body keeps beating.")
         result = model(prompt)
+        _sync_transport_receipts(call, model)
         tokens = usage_of(result)
         cost = price_per_1k * tokens / 1000.0
         if not spend(org, cost, "%s (%d tok)" % (purpose, tokens)):
@@ -182,8 +215,7 @@ def metered_by_usage(model: Callable[[str], str], org, price_per_1k: float = 1.0
             raise StarvationError(
                 "usage exceeded the authorized energy ceiling; the MIND sleeps.")
         return result
-    call.__name__ = "usage_metered_%s" % getattr(model, "__name__", "model")
-    return call
+    return _metered_transport(call, model, "usage_metered")
 
 
 def metered_by_receipt(model: Callable[[str], str], org, max_cost: float,
@@ -207,7 +239,8 @@ def metered_by_receipt(model: Callable[[str], str], org, max_cost: float,
             raise StarvationError(
                 "no energy for cognition; the MIND sleeps, the Body keeps beating.")
         result = model(prompt)
-        receipt = getattr(model, "last_usage", None)
+        _sync_transport_receipts(call, model)
+        receipt = getattr(call, "last_usage", None)
         if not receipt:
             org.immune_event("missing_usage_receipt", {"purpose": purpose})
             cost = max_cost
@@ -230,8 +263,7 @@ def metered_by_receipt(model: Callable[[str], str], org, max_cost: float,
                 "usage exceeded available energy; the MIND sleeps.")
         _record_spend_receipt(org, cost, purpose, receipt)
         return result
-    call.__name__ = "receipt_metered_%s" % getattr(model, "__name__", "model")
-    return call
+    return _metered_transport(call, model, "receipt_metered")
 
 
 def metering_summary(org) -> Dict[str, Any]:
