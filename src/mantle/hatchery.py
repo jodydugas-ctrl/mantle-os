@@ -37,7 +37,7 @@ The incubation itself is deterministic, with no LLM anywhere:
   5. THE GATE    the SAME Stage-1 audit every Body faces; a failed gate = no hatch
   6. HATCH       save the organism (staged atomic) + the hatch report + a self-portrait
 
-    python -m mantle hatch examples/spores/greeter.png --out nest/
+    python -m mantle hatch examples/spores/greeter.png --out=nest/ --auth=hatch-auth.json
 """
 from __future__ import annotations
 
@@ -294,12 +294,14 @@ def incubate(germ: Dict[str, Any], *, warmup_beats: int = 3,
     return {"organism": org, "report": report}
 
 
-def _persist_hatch(org: Organism, report: Dict[str, Any], out_dir: str) -> None:
+def _persist_hatch(org: Organism, report: Dict[str, Any], out_dir: str,
+                   reported_dir: Optional[str] = None) -> None:
     """Persist the complete birth state and the evidence promised by the hatch contract."""
     os.makedirs(out_dir, exist_ok=True)
     portrait = os.path.join(out_dir, "face.png")
-    report["saved_to"] = out_dir
-    report["portrait"] = portrait
+    visible_dir = reported_dir or out_dir
+    report["saved_to"] = visible_dir
+    report["portrait"] = os.path.join(visible_dir, "face.png")
     org.save(out_dir)
     _face.render(org, portrait)
     with open(os.path.join(out_dir, "hatch_report.json"), "w", encoding="utf-8") as f:
@@ -412,17 +414,50 @@ def _is_spore(path: str) -> bool:
 
 
 def hatch(path: str, out_dir: Optional[str] = None,
-          warmup_beats: int = 3) -> Dict[str, Any]:
+          warmup_beats: int = 3, *, authorization: Any = None) -> Dict[str, Any]:
     """The full ceremony, from either artifact:
 
       * a spore PNG  -> hatch_from_spore (germ aboard, or v1 distillation)
       * a germ JSON  -> load -> incubate -> persist + report + self-portrait
     """
-    if _is_spore(path):
-        return hatch_from_spore(path, out_dir=out_dir, warmup_beats=warmup_beats)
-    germ = load_germ(path)
-    result = incubate(germ, warmup_beats=warmup_beats)
-    org, report = result["organism"], result["report"]
-    if out_dir:
-        _persist_hatch(org, report, out_dir)
-    return {"organism": org, "report": report}
+    if not out_dir:
+        raise HatchError("external hatch requires an explicit target directory")
+    if authorization is None:
+        raise HatchError("external hatch requires fresh target-bound operator authorization")
+    from .lifecycle import (LifecycleAction, LifecycleAuthorizationError,
+                            begin_transaction)
+    try:
+        transaction = begin_transaction(authorization, LifecycleAction.HATCH, path, out_dir)
+    except (LifecycleAuthorizationError, FileExistsError) as exc:
+        raise HatchError("activation refused: %s" % exc) from exc
+    try:
+        transaction.phase("incubating")
+        if _is_spore(path):
+            result = hatch_from_spore(path, warmup_beats=warmup_beats)
+        else:
+            germ = load_germ(path)
+            result = incubate(germ, warmup_beats=warmup_beats)
+        org, report = result["organism"], result["report"]
+        if not org.stage1_certified:
+            raise HatchError("Stage-1 gate did not certify the newborn Body")
+        transaction.phase("persisting")
+        report["lifecycle"] = {
+            "result": "pass", "action": "hatch",
+            "authorization": authorization.redacted(),
+            "journal": os.path.join(os.path.abspath(out_dir), "lifecycle_journal.json"),
+        }
+        _persist_hatch(org, report, transaction.staging,
+                       reported_dir=os.path.abspath(out_dir))
+        required = ("organism.json", "body.json", "self_seal.json",
+                    "hatch_report.json", "face.png")
+        missing = [name for name in required
+                   if not os.path.isfile(os.path.join(transaction.staging, name))]
+        if missing:
+            raise HatchError("staged hatch is incomplete: %s" % ", ".join(missing))
+        transaction.phase("artifact_verified")
+        transaction.promote()
+        return {"organism": org, "report": report,
+                **({"receipt": result["receipt"]} if "receipt" in result else {})}
+    except Exception as exc:
+        transaction.interrupt(type(exc).__name__)
+        raise

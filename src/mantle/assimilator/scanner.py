@@ -144,6 +144,8 @@ def scan_project(root: str) -> Dict[str, Any]:
     substrate = discover_substrate(root)
     files: List[Dict[str, Any]] = []
     py_count = 0
+    native_count = 0
+    gap_count = 0
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames
                        if d not in (".git", "__pycache__", "node_modules", ".venv", "venv")]
@@ -154,5 +156,30 @@ def scan_project(root: str) -> Dict[str, Any]:
                 files.append(scan_file(full, os.path.relpath(full, root)))
             elif multilang and os.path.splitext(fn)[1].lower() in scanner_ts.LANGS:
                 files.append(scanner_ts.scan_file(full, os.path.relpath(full, root)))
-    return {"root": os.path.abspath(root), "python_files": py_count, "files": files,
+            elif os.path.splitext(fn)[1].lower() == ".rs":
+                # Rust remains inspectable when tree-sitter is unavailable; the
+                # fallback reports its limitations explicitly in the result.
+                from . import scanner_rust
+                files.append(scanner_rust.scan_file(full, os.path.relpath(full, root)))
+            elif (os.path.splitext(fn)[1].lower() in
+                  {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".m", ".mm",
+                   ".ui", ".qrc", ".cmake"} or fn.lower() == "cmakelists.txt"):
+                from . import scanner_native
+                scanned = scanner_native.scan_file(full, os.path.relpath(full, root))
+                files.append(scanned)
+                native_count += 1
+                gap_count += len(scanned.get("gaps", []))
+    syntax_gaps = sum(1 for item in files if item.get("error"))
+    blocked = bool(substrate.get("coverage", {}).get("blocked")) or any(
+        item.get("coverage") == "blocked" for item in files
+    )
+    coverage_state = "blocked" if blocked else (
+        "partial" if gap_count or syntax_gaps or any(
+            item.get("coverage") == "partial" for item in files
+        ) else "complete"
+    )
+    return {"schema": "mantle-host-evidence-v3", "root": os.path.abspath(root),
+            "python_files": py_count, "native_qt_files": native_count,
+            "parser_gap_count": gap_count + syntax_gaps,
+            "coverage_state": coverage_state, "files": files,
             "read_only": True, "multilang": multilang, "substrate": substrate}

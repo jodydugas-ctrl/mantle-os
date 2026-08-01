@@ -11,15 +11,25 @@ share knowledge, redesign its own VCW, and reconstruct itself -- every capabilit
 the runnable audits and their tamper proofs.
 
     python -m mantle teach                       # the Field Guide, running
-    python -m mantle hatch examples/spores/greeter.png --out=nest/
+    python -m mantle hatch examples/spores/greeter.png --out=nest/ --auth=hatch-auth.json
 """
-__version__ = "1.4.0"
+__version__ = "2.0.0rc1"
 
 # The public API is exposed lazily (PEP 562): importing `mantle` is near-free; each name pulls
 # in its submodule only on first access. `from mantle import Organism` and `mantle.Organism`
 # both still work -- they just defer the core/vcw/hatchery import chains (and the heavy audit
 # suite those drag in) until something is actually used.
 _LAZY = {
+    "ClaimStatus": ("mantle.contracts", "ClaimStatus"),
+    "EvidenceRef": ("mantle.contracts", "EvidenceRef"),
+    "GroundedClaim": ("mantle.contracts", "GroundedClaim"),
+    "GroundedAnswer": ("mantle.contracts", "GroundedAnswer"),
+    "ResidentTurnResult": ("mantle.contracts", "ResidentTurnResult"),
+    "ResidentRuntime": ("mantle.contracts", "ResidentRuntime"),
+    "HostAdapter": ("mantle.contracts", "HostAdapter"),
+    "CertificationStatus": ("mantle.contracts", "CertificationStatus"),
+    "ActionExecutionProof": ("mantle.proofs", "ActionExecutionProof"),
+    "MutationClass": ("mantle.proofs", "MutationClass"),
     "Organism": ("mantle.core", "Organism"),
     "Body": ("mantle.core", "Body"),
     "SignalBus": ("mantle.core", "SignalBus"),

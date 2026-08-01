@@ -11,6 +11,8 @@ from __future__ import annotations
 import os
 from typing import Any, Dict
 
+from .coverage import CoverageState, ParserCapability, SubstrateCoverage
+
 
 NATIVE_EXTS = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".m", ".mm"}
 QT_EXTS = {".ui", ".qrc"}
@@ -57,18 +59,39 @@ def discover(root: str) -> Dict[str, Any]:
         languages.append("cmake")
 
     unsupported = []
-    if native_count:
-        unsupported.append({
-            "substrate": "native-c-family",
-            "files": native_count,
-            "reason": "requires native parser/adapter before signed organ insertion",
-        })
-    if qt_count:
-        unsupported.append({
-            "substrate": "qt-resource-ui",
-            "files": qt_count,
-            "reason": "requires Qt UI/resource graph extraction before signed organ insertion",
-        })
+
+    total_bytes = 0
+    try:
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in (".git", "__pycache__", "node_modules")]
+            for filename in filenames:
+                try:
+                    total_bytes += os.path.getsize(os.path.join(dirpath, filename))
+                except OSError:
+                    pass
+    except OSError:
+        total_bytes = 0
+    coverage_rows = []
+    for language, count, bytes_hint, parser_available, parser_name in (
+        ("python", python_count, 0, True, "stdlib-ast"),
+        ("native-c-family", native_count, 0, True, "native-stdlib-fallback"),
+        ("qt-resource-ui", qt_count, 0, True, "qt-xml-stdlib"),
+        ("rust", counts.get(".rs", 0), 0, True, "stdlib-rust-fallback"),
+    ):
+        if not count:
+            continue
+        row = SubstrateCoverage(
+            language, count, bytes_hint, count if parser_available else 0,
+            total_first_party_files=first_party_files,
+            total_first_party_bytes=total_bytes,
+            material_gaps=() if parser_available else ("parser unavailable",),
+            parser=ParserCapability(
+                language, parser_available, parser_name,
+                ("conservative fallback; per-file gaps are authoritative",)
+                if "fallback" in parser_name else (),
+            ),
+        )
+        coverage_rows.append(row.to_dict())
 
     return {
         "root": os.path.abspath(root),
@@ -83,7 +106,9 @@ def discover(root: str) -> Dict[str, Any]:
         "coverage": {
             "python_ast": python_count,
             "tree_sitter_optional": tree_sitter_count,
-            "requires_adaptive_native_tools": native_count + qt_count,
+            "requires_adaptive_native_tools": 0,
+            "states": coverage_rows,
+            "blocked": any(row["state"] == CoverageState.BLOCKED.value for row in coverage_rows),
         },
         "unsupported": unsupported,
         "read_only": True,

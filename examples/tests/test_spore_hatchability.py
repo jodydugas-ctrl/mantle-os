@@ -11,6 +11,7 @@ from mantle import spore
 from mantle.audits import stage1
 from mantle.core.organism import Organism
 from mantle.hatchery import hatch, validate_germ
+from mantle.lifecycle import LifecycleAction, LifecycleAuthorization
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,8 +41,13 @@ def test_advertised_seed_spores_decode_verify_and_stage1_hatch():
         germ = validate_germ(dict(state.get("germ") or {}))
         assert germ["identity"]["name"].endswith(".AppAI")
 
-        with tempfile.TemporaryDirectory(prefix="mantle-seed-hatch-") as out_dir:
-            result = hatch(str(path), out_dir=out_dir, warmup_beats=0)
+        with tempfile.TemporaryDirectory(prefix="mantle-seed-hatch-") as parent:
+            out_dir = str(Path(parent) / "nest")
+            auth = LifecycleAuthorization.issue(
+                LifecycleAction.HATCH, str(path), out_dir
+            )
+            result = hatch(str(path), out_dir=out_dir, warmup_beats=0,
+                           authorization=auth)
             org = result["organism"]
             passed, evidence = stage1.run(org, include_invariants=False)
             assert result["report"]["certified"] is True

@@ -50,13 +50,19 @@ def render_inventory(amap: Dict[str, Any], dissection: Dict[str, Any]) -> str:
         L.append("- **Adaptive native/tooling required:** %d file(s)" %
                  substrate.get("coverage", {}).get("requires_adaptive_native_tools", 0))
     L.append("")
-    if substrate.get("unsupported"):
+    if substrate:
         L.append("## A.2 Substrate coverage")
         L.append("")
-        L.append("MantleOS is code-agnostic by discovery and tool growth, not by pretending one")
-        L.append("scanner sees every host. The following surfaces require an adaptive parser,")
-        L.append("observer, or verifier before any signed organ insertion:")
+        L.append("MantleOS is code-agnostic by discovery and explicit parser evidence, not by")
+        L.append("pretending one scanner sees every host. Per-file gaps remain authoritative.")
         L.append("")
+        L.append("- **Overall scan state:** `%s`" % dissection.get("coverage_state", "unknown"))
+        L.append("- **Parser gaps:** %d" % dissection.get("parser_gap_count", 0))
+        for row in substrate.get("coverage", {}).get("states", []):
+            parser = row.get("parser") or {}
+            L.append("- `%s`: `%s` via `%s` (%d/%d file(s) parsed)" % (
+                row.get("language"), row.get("state"), parser.get("parser", "none"),
+                row.get("parsed_files", 0), row.get("first_party_files", 0)))
         for gap in substrate["unsupported"]:
             L.append("- `%s`: %d file(s) -- %s" %
                      (gap["substrate"], gap["files"], gap["reason"]))
@@ -232,7 +238,9 @@ def emit_spore(result: Dict[str, Any], out_png: str) -> Dict[str, Any]:
         "# HOW TO BUILD THE RESIDENT AppAI IN THIS SPORE\n\n"
         "This spore was emitted by a READ-ONLY assimilation (Path B, Phase 0) of the\n"
         "host %r. Zero host files were modified.\n\n"
-        "With Mantle: python -m mantle hatch this_file.png --out=nest/\n"
+        "With Mantle 2:\n"
+        "  python -m mantle lifecycle authorize hatch this_file.png nest/ --approve --out=hatch-auth.json\n"
+        "  python -m mantle hatch this_file.png --out=nest/ --auth=hatch-auth.json\n"
         "Without: decode my payload (Quickstart on the image) and read key 'germ'.\n\n"
         "The germ's `assimilation` block is the observed organ map -- which host\n"
         "symbols play which organ roles (%s). Treat it as observed fact, not law.\n"

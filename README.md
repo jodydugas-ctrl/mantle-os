@@ -386,7 +386,8 @@ sealed heirlooms across every rebirth (or raises an immune event, never a silent
 
 ```bash
 python -m mantle reproduce                     # the map on one screen
-python -m mantle hatch examples/spores/greeter.png --out=nest/   # THE birth command
+python -m mantle lifecycle authorize hatch examples/spores/greeter.png nest/ --approve --out=hatch-auth.json
+python -m mantle hatch examples/spores/greeter.png --out=nest/ --auth=hatch-auth.json
 python -m mantle spore pack my_germ.json my_app.png              # germ -> one spore
 python -m mantle assimilate path/to/app --spore=out.png          # existing app -> spore
 python -m mantle teach                         # the Field Guide, RUNNING — 18 chapters, each proven

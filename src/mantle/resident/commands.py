@@ -21,6 +21,7 @@ from .protocol import resident_vcw_event, sanitize_user_submit
 
 DEFAULT_PROVIDER = "openrouter"
 DEFAULT_MODEL = "openrouter/free"
+RESIDENT_PROTOCOL_VERSION = "mantle-resident-v2"
 MODEL_ALIASES = {
     "free": DEFAULT_MODEL,
     "auto": "openrouter/auto",
@@ -163,6 +164,9 @@ class BodyCommandDispatcher:
         self.register("/model", "show or select the OpenRouter model", self._model)
         self.register("/offline", "clear the session API key", self._offline)
         self.register("/status", "show redacted resident provider state", self._status)
+        self.register("/provider-test", "test provider configuration without sending content",
+                      self._provider_test)
+        self.register("/evidence", "show bounded Body evidence and receipts", self._evidence)
         if organism is not None:
             organism.senses.mark_routine("resident.body_command", "submit")
 
@@ -356,7 +360,43 @@ class BodyCommandDispatcher:
                 state["provider"], state["model"],
                 "yes" if state["credential_configured"] else "no",
             ),
-            details=state,
+            details={**state, "resident_protocol": RESIDENT_PROTOCOL_VERSION,
+                     "requested_model": state["model"],
+                     "resolved_model": None,
+                     "model_evidence": "not_requested"},
+        )
+
+    def _provider_test(self, _argument: str, _secret: Optional[str]) -> BodyCommandResult:
+        """Validate local provider state without making a network request."""
+        state = self.state.snapshot()
+        if not state["credential_configured"]:
+            return BodyCommandResult(
+                "/provider-test", True, "offline",
+                "Provider configuration is valid but offline until /key is supplied.",
+                details={"provider": state["provider"], "model": state["model"],
+                         "network_called": False},
+            )
+        return BodyCommandResult(
+            "/provider-test", True, "ready",
+            "Provider configuration is locally valid; no network request was made.",
+            details={"provider": state["provider"], "model": state["model"],
+                     "network_called": False},
+        )
+
+    def _evidence(self, _argument: str, _secret: Optional[str]) -> BodyCommandResult:
+        """Expose only bounded, redacted Body evidence; never credentials or content."""
+        records = []
+        if self.organism is not None:
+            try:
+                records = list(self.organism.memory.recent("events", limit=20))
+            except Exception:
+                records = []
+        safe = redact(records)
+        return BodyCommandResult(
+            "/evidence", True, "executed",
+            "Bounded Body evidence is available below (credentials and raw content redacted).",
+            details={"resident_protocol": RESIDENT_PROTOCOL_VERSION,
+                     "event_count": len(safe), "events": safe},
         )
 
 

@@ -2,7 +2,7 @@
 """
 mantle.cli  --  one command for the whole organism (Mantle OS)
 
-    python -m mantle hatch <spore.png|germ.json> [--out=DIR]
+    python -m mantle hatch <spore.png|germ.json> --out=DIR --auth=FILE
                                                     THE birth command: a germ spore (or
                                                       bare germ) -> certified AppAI
     python -m mantle teach [N]                      the Field Guide, RUNNING: each
@@ -37,7 +37,7 @@ from .primer import appai_commandments, appai_truths
 
 _USAGE = ("usage: python -m mantle "
           "[anchor <host> | ask <host> [--mind] <question> | feed <host> --credits=N "
-          "[--key=NAME] | vitals <host> | hatch <spore.png|germ.json> [--out=DIR] | "
+          "[--key=NAME] | vitals <host> | hatch <spore.png|germ.json> --out=DIR --auth=FILE | "
           "teach [N] | "
           "face <dir> [out.png] | face-list <dir> | face-save <dir> <name> <src> [--default] | "
           "face-wear <dir> <name> | "
@@ -49,7 +49,8 @@ _USAGE = ("usage: python -m mantle "
           "certify <nest> [--out=FILE] | reproduce | spore <op> ... | ghost <op> ... | "
           "demo | audit | prove | mind | audit-mind | "
           "check [--fast] | "
-          "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png]]")
+          "assimilate <path> [--dry-run] [--out=DIR] [--spore=out.png] | "
+          "resident <nest> | lifecycle <authorize|status|quarantine> ...]")
 
 _COMMANDS = (
     "anchor", "ask", "feed", "vitals", "hatch", "graft", "spore", "ghost",
@@ -57,6 +58,8 @@ _COMMANDS = (
     "applet-create", "applet-list", "applet-show", "applet-export", "applet-wear",
     "applet-audit", "applet-clone", "demo", "audit", "prove", "mind", "audit-mind",
     "assimilate", "check", "certify",
+    "resident",
+    "lifecycle",
 )
 
 # every command answers to its hyphenated name and its underscore twin
@@ -171,15 +174,20 @@ def cmd_hatch(argv):
     flags = {a.split("=")[0]: (a.split("=", 1)[1] if "=" in a else True)
              for a in argv if a.startswith("--")}
     if not args:
-        print("usage: python -m mantle hatch <spore.png|germ.json> [--out=DIR]")
+        print("usage: python -m mantle hatch <spore.png|germ.json> --out=DIR --auth=FILE")
         return 2
     from .hatchery import hatch, HatchError
     print("=" * 74)
     print("MANTLE OS HATCHERY  ·  %s" % args[0])
     print("=" * 74)
     try:
+        if not isinstance(flags.get("--out"), str) or not isinstance(flags.get("--auth"), str):
+            print("\nTHE GERM DID NOT HATCH: --out and --auth are required for external activation")
+            return 2
+        from .lifecycle import load_authorization
         result = hatch(args[0], out_dir=flags.get("--out")
-                       if isinstance(flags.get("--out"), str) else None)
+                       if isinstance(flags.get("--out"), str) else None,
+                       authorization=load_authorization(str(flags["--auth"])))
     except (HatchError, RuntimeError, ValueError, OSError) as e:
         print("\nTHE GERM DID NOT HATCH: %s" % e)
         return 1
@@ -209,15 +217,23 @@ def cmd_hatch(argv):
 def cmd_graft(argv):
     args, flags = _split(argv)
     if len(args) < 2:
-        print("usage: python -m mantle graft <spore.png|germ.json> <host-dir> [--allow-drift]")
+        print("usage: python -m mantle graft <spore.png|germ.json> <host-dir> "
+              "--workspace=DIR --auth=FILE [--allow-drift]")
         return 2
-    from .graft import load_graft, apply, GraftError, GraftDrift
+    from .graft import apply_artifact, GraftError, GraftDrift
     print("=" * 74)
     print("MANTLE OS GRAFT  ·  %s  ->  %s" % (args[0], args[1]))
     print("=" * 74)
     try:
-        result = apply(load_graft(args[0]), args[1],
-                       allow_drift=bool(flags.get("--allow-drift")))
+        if not isinstance(flags.get("--workspace"), str) or not isinstance(flags.get("--auth"), str):
+            print("\nGRAFT REFUSED: --workspace and --auth are required for external activation")
+            return 2
+        from .lifecycle import load_authorization
+        result = apply_artifact(
+            args[0], args[1], workspace=str(flags["--workspace"]),
+            authorization=load_authorization(str(flags["--auth"])),
+            allow_drift=bool(flags.get("--allow-drift")),
+        )
     except GraftDrift as e:
         print("\nGRAFT DRIFT (the host moved): %s" % e)
         return 1
@@ -728,6 +744,112 @@ def _cmd_certify(rest):
     return 0
 
 
+def cmd_resident(argv):
+    """Run the canonical Body command/conversation loop for a saved resident."""
+    args, _flags = _split(argv)
+    if len(args) != 1:
+        print("usage: python -m mantle resident <nest>")
+        return 2
+    from .core.organism import Organism
+    from .resident.commands import BodyCommandDispatcher
+    from .contracts import ResidentRuntime
+    try:
+        org = Organism.load(args[0], verify_seals=True)
+    except Exception as exc:
+        print("RESIDENT REFUSED: could not load nest: %s" % type(exc).__name__)
+        return 1
+    dispatcher = BodyCommandDispatcher(org)
+    runtime = ResidentRuntime(dispatcher=dispatcher)
+    print("Mantle resident protocol %s" % runtime.PROTOCOL_VERSION)
+    print("Plain text enters conversation; slash commands are deterministic Body maintenance.")
+    print("Use /help for commands; /quit closes the session.")
+    while True:
+        try:
+            line = input("You> ")
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if line.strip().lower() in ("/quit", "/exit"):
+            break
+        if line.strip().lower() == "/help":
+            result = dispatcher.dispatch("/help")
+            print(result.message)
+            continue
+        if line.strip().lower() == "/key":
+            import getpass
+            secret = getpass.getpass("API key (hidden; blank cancels): ")
+            result = dispatcher.dispatch("/key", secret_input=secret or None)
+            print(result.message)
+            continue
+        try:
+            result = runtime.turn(line)
+            print(result.visible_output)
+        except Exception as exc:
+            print("Body fallback: conversation unavailable (%s)." % type(exc).__name__)
+    return 0
+
+
+def cmd_lifecycle(argv):
+    """Operator-facing authorization and interrupted-stage inspection tools."""
+    args, flags = _split(argv)
+    if not args:
+        print("usage: python -m mantle lifecycle <authorize|status|quarantine> ...")
+        return 2
+    sub = args[0]
+    if sub == "authorize":
+        if len(args) != 4 or not isinstance(flags.get("--out"), str) or not flags.get("--approve"):
+            print("usage: python -m mantle lifecycle authorize <hatch|graft> <artifact> "
+                  "<exact-target> --approve --out=FILE")
+            return 2
+        from .lifecycle import (LifecycleAction, LifecycleAuthorization,
+                                write_authorization)
+        try:
+            action = LifecycleAction(args[1])
+            auth = LifecycleAuthorization.issue(action, args[2], args[3])
+            target = write_authorization(auth, str(flags["--out"]))
+        except (ValueError, OSError) as exc:
+            print("AUTHORIZATION REFUSED: %s" % exc)
+            return 1
+        print("operator authorization written: %s" % target)
+        print("artifact=%s target_hash=%s action=%s expires=%s" % (
+            auth.artifact_sha256, auth.redacted()["target_id"], auth.action.value,
+            auth.expires_at,
+        ))
+        return 0
+    if sub == "status":
+        if len(args) != 2:
+            print("usage: python -m mantle lifecycle status <stage-or-target-dir>")
+            return 2
+        journal = os.path.join(os.path.abspath(args[1]), "lifecycle_journal.json")
+        try:
+            with open(journal, "r", encoding="utf-8") as handle:
+                print(json.dumps(json.load(handle), indent=2, sort_keys=True))
+        except OSError as exc:
+            print("LIFECYCLE STATUS UNAVAILABLE: %s" % exc)
+            return 1
+        return 0
+    if sub == "quarantine":
+        if len(args) != 2:
+            print("usage: python -m mantle lifecycle quarantine <interrupted-stage-dir>")
+            return 2
+        import uuid
+        stage = os.path.realpath(os.path.abspath(args[1]))
+        if not os.path.basename(stage).startswith(".mantle-stage-"):
+            print("QUARANTINE REFUSED: only a Mantle staging directory can be quarantined")
+            return 1
+        journal = os.path.join(stage, "lifecycle_journal.json")
+        if not os.path.isfile(journal):
+            print("QUARANTINE REFUSED: lifecycle journal missing")
+            return 1
+        target = os.path.join(os.path.dirname(stage),
+                              ".mantle-quarantine-" + uuid.uuid4().hex)
+        os.replace(stage, target)
+        print("interrupted staging quarantined: %s" % target)
+        return 0
+    print("unknown lifecycle subcommand %r" % sub)
+    return 2
+
+
 _DISPATCH = {
     "anchor": cmd_anchor,
     "ask": cmd_ask,
@@ -760,6 +882,8 @@ _DISPATCH = {
     "assimilate": _cmd_assimilate,
     "check": _cmd_check,
     "certify": _cmd_certify,
+    "resident": cmd_resident,
+    "lifecycle": cmd_lifecycle,
 }
 
 
