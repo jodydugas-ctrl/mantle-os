@@ -83,7 +83,7 @@ SPORE_FORMAT = "spore-png-v2"
 # `python -m mantle hatch` or to any coding agent, which can read the germ out
 # of the payload and build a conforming body from it. The germ is inert data
 # here -- the spore stores it; the hatchery validates and grows it.
-GERM_FORMAT = "mantle-germ-v1"
+GERM_FORMAT = "mantle-germ-v2"
 
 CANVAS_W = 2000
 CANVAS_H = 2000

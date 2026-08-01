@@ -218,7 +218,7 @@ def emit_spore(result: Dict[str, Any], out_png: str) -> Dict[str, Any]:
                      for organ, syms in amap["organs"].items() if syms}
 
     germ = {
-        "germ_format": "mantle-germ-v1",
+        "schema": "mantle-germ-v2",
         "identity": {"name": name,
                      "purpose": "resident AppAI assimilated read-only from %s"
                                 % os.path.basename(host),

@@ -150,7 +150,7 @@
       "span": 1
     }
   ],
-  "germ_format": "mantle-germ-v1",
+  "schema": "mantle-germ-v2",
   "identity": {
     "name": "Files.AppAI",
     "purpose": "a Mantle AppAI for reading, mapping, and assisting work on files-community/Files, the C#/.NET WinUI 3 Files desktop app source tree"

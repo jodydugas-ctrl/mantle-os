@@ -2121,7 +2121,7 @@ def t_vault_self_encrypted_other_cannot_read():
     different body (different key) gets garbage (the vault is unreadable as OTHER)."""
     from ..organs import reproduction as _v
     org = _born(genome=standard_genome() + [_v.vault_band()])
-    seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Seed.AppAI"},
+    seed = {"schema": "mantle-germ-v2", "identity": {"name": "Seed.AppAI"},
             "truths": appai_truths(), "commandments": appai_commandments()}
     _v.store_seed(org, seed)
     mine = _v.open_seed(org) == seed
@@ -2141,7 +2141,7 @@ def t_vault_reconstruct_gates():
     rebuild faces the same Stage-1 gate (a seed that cannot certify does not reconstruct)."""
     from ..organs import reproduction as _v
     org = _born(genome=standard_genome() + [_v.vault_band()])
-    seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Rebuilt.AppAI"},
+    seed = {"schema": "mantle-germ-v2", "identity": {"name": "Rebuilt.AppAI"},
             "truths": appai_truths(),
             "commandments": appai_commandments()}
     _v.store_seed(org, seed)
@@ -3384,7 +3384,7 @@ def t_repro_organ_and_seed_carry():
     m = org.manifests()
     organ_ok = ("reproduction" in m and m["reproduction"]["fail_mode"] == "fail-open"
                 and len(m) == 9)
-    seed = {"egg_format": "mantle-egg-v1", "identity": {"name": "Carried.AppAI"},
+    seed = {"schema": "mantle-germ-v2", "identity": {"name": "Carried.AppAI"},
             "truths": ["t"], "commandments": ["c"]}
     org.reproduction.store_seed(seed)
     org.rebirth(new_genome=standard_genome() + [vault_band()], reason="carry test")
@@ -3402,7 +3402,7 @@ def t_repro_every_hatch_vaults_its_egg():
     SELF-sealed, in the vault band, without the egg asking for it."""
     from ..hatchery import incubate
     from ..organs.reproduction import open_seed
-    egg = {"egg_format": "mantle-egg-v1", "identity": {"name": "Vaulted.AppAI"},
+    egg = {"schema": "mantle-germ-v2", "identity": {"name": "Vaulted.AppAI"},
            "truths": appai_truths(),
            "commandments": appai_commandments()}
     org = incubate(egg)["organism"]
@@ -3601,7 +3601,7 @@ def t_spore_germ_round_trip():
     state path is pure stdlib (no Pillow needed to prove the law)."""
     from ..hatchery import hatch_from_spore
     from ..organs.reproduction import open_seed
-    germ = {"germ_format": "mantle-germ-v1",
+    germ = {"schema": "mantle-germ-v2",
             "identity": {"name": "GermCarried.AppAI", "purpose": "prove the round trip"},
             "truths": appai_truths(),
             "commandments": appai_commandments(),

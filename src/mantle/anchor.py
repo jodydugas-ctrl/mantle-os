@@ -95,7 +95,7 @@ def anchor(host: str, name: Optional[str] = None,
     # bands are the host-shaped bands from the atlas + the symbiosis ledger.
     host_bands = [b for b in propose_genome(amap["role_counts"]) if 550 <= b["head"] <= 749]
     resident_egg = {
-        "germ_format": "mantle-germ-v1",
+        "schema": "mantle-germ-v2",
         "identity": {"name": host_name, "host": host,
                      "purpose": "resident nervous system of this application"},
         "truths": appai_truths(["The host is my body's home; I never harm it."]),
