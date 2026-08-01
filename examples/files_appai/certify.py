@@ -22,6 +22,7 @@ from mantle import phenotype, spore  # noqa: E402
 from mantle.audits import stage1  # noqa: E402
 from mantle.core.organism import Organism  # noqa: E402
 from mantle.hatchery import hatch  # noqa: E402
+from mantle.lifecycle import LifecycleAction, LifecycleAuthorization  # noqa: E402
 
 
 def _sha256(data: bytes) -> str:
@@ -37,7 +38,8 @@ def certify() -> dict:
     carrier = spore.verify_spore(str(SPORE))
     if not carrier["ok"]:
         raise RuntimeError("spore verification failed: %s" % carrier["problems"])
-    born = hatch(str(SPORE), out_dir=str(NEST), warmup_beats=3)
+    auth = LifecycleAuthorization.issue(LifecycleAction.HATCH, str(SPORE), str(NEST))
+    born = hatch(str(SPORE), out_dir=str(NEST), warmup_beats=3, authorization=auth)
     organism = born["organism"]
     passed, evidence = stage1.run(organism, include_invariants=False)
     face = phenotype.open_face(organism, "origin")

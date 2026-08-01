@@ -11,7 +11,7 @@ share knowledge, redesign its own VCW, and reconstruct itself -- every capabilit
 the runnable audits and their tamper proofs.
 
     python -m mantle teach                       # the Field Guide, running
-    python -m mantle hatch examples/spores/greeter.png --out=nest/
+    python -m mantle hatch examples/spores/greeter.png --out=nest/ --auth=hatch-auth.json
 """
 __version__ = "2.0.0rc1"
 

@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import secrets
+import tempfile
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, Optional
 
@@ -43,10 +44,12 @@ class LifecycleAuthorization:
     @classmethod
     def issue(cls, action: LifecycleAction, artifact: str, target_id: str,
               *, expires_at: Optional[str] = None) -> "LifecycleAuthorization":
-        digest = hashlib.sha256(open(artifact, "rb").read()).hexdigest()
+        with open(artifact, "rb") as handle:
+            digest = hashlib.sha256(handle.read()).hexdigest()
         now = datetime.now(timezone.utc).isoformat()
         default_expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
-        return cls("mantle-lifecycle-authorization-v1", action, digest, str(target_id),
+        return cls("mantle-lifecycle-authorization-v1", action, digest,
+                   canonical_target(target_id),
                    True, now, expires_at or default_expiry, secrets.token_hex(16))
 
     def redacted(self) -> Dict[str, Any]:
@@ -68,10 +71,11 @@ def validate_authorization(auth: LifecycleAuthorization, action: LifecycleAction
         raise LifecycleAuthorizationError("unsupported lifecycle authorization schema")
     if auth.action != action or not auth.operator_approved:
         raise LifecycleAuthorizationError("operator authorization does not approve this action")
-    digest = hashlib.sha256(open(artifact, "rb").read()).hexdigest()
+    with open(artifact, "rb") as handle:
+        digest = hashlib.sha256(handle.read()).hexdigest()
     if digest != auth.artifact_sha256:
         raise LifecycleAuthorizationError("artifact fingerprint does not match authorization")
-    if str(target_id) != auth.target_id:
+    if canonical_target(target_id) != auth.target_id:
         raise LifecycleAuthorizationError("resolved target does not match authorization")
     if used_nonces is not None and auth.nonce in used_nonces:
         raise LifecycleAuthorizationError("authorization nonce has already been used")
@@ -81,6 +85,11 @@ def validate_authorization(auth: LifecycleAuthorization, action: LifecycleAction
             raise LifecycleAuthorizationError("lifecycle authorization has expired")
     except ValueError:
         raise LifecycleAuthorizationError("authorization expiry is invalid")
+
+
+def canonical_target(target_id: str) -> str:
+    """Stable exact target identifier used only in memory and authorization files."""
+    return os.path.normcase(os.path.realpath(os.path.abspath(str(target_id))))
 
 
 def authorization_from_dict(data: Dict[str, Any]) -> LifecycleAuthorization:
@@ -103,7 +112,8 @@ def authorization_from_dict(data: Dict[str, Any]) -> LifecycleAuthorization:
 class LifecycleJournal:
     path: str
     action: LifecycleAction
-    target_id: str
+    target_hash: str
+    target_hint: str
     result: LifecycleResult = LifecycleResult.INTERRUPTED
     phase: str = "created"
 
@@ -114,3 +124,85 @@ class LifecycleJournal:
         payload["result"] = self.result.value
         with open(self.path, "w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2, sort_keys=True)
+
+
+@dataclass
+class LifecycleTransaction:
+    """Unique same-parent staging tree promoted atomically after verification."""
+
+    action: LifecycleAction
+    target: str
+    staging: str
+    journal: LifecycleJournal
+
+    def phase(self, name: str, result: LifecycleResult = LifecycleResult.INTERRUPTED) -> None:
+        self.journal.phase = str(name)
+        self.journal.result = result
+        self.journal.write()
+
+    def promote(self) -> str:
+        if os.path.lexists(self.target):
+            raise FileExistsError("lifecycle target already exists; historical targets are preserved")
+        self.phase("verified", LifecycleResult.PASS)
+        os.replace(self.staging, self.target)
+        return self.target
+
+    def interrupt(self, reason: str) -> None:
+        self.journal.phase = "interrupted:%s" % str(reason)[:160]
+        self.journal.result = LifecycleResult.INTERRUPTED
+        self.journal.write()
+
+
+def _target_receipt(target: str) -> Dict[str, str]:
+    canonical = canonical_target(target)
+    return {
+        "target_hash": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "target_hint": os.path.basename(canonical) or "target",
+    }
+
+
+def begin_transaction(auth: LifecycleAuthorization, action: LifecycleAction,
+                      artifact: str, target: str) -> LifecycleTransaction:
+    """Validate/consume authorization before creating the unique staging tree."""
+    canonical = canonical_target(target)
+    validate_authorization(auth, action, artifact, canonical)
+    parent = os.path.dirname(canonical)
+    if not os.path.isdir(parent):
+        raise LifecycleAuthorizationError("authorized target parent does not exist")
+    if os.path.lexists(canonical):
+        raise FileExistsError("lifecycle target already exists; use a new preserved target")
+
+    # Durable one-shot nonce consumption. The raw target is intentionally omitted.
+    registry = os.path.join(parent, ".mantle-lifecycle-authorizations")
+    os.makedirs(registry, exist_ok=True)
+    nonce_name = hashlib.sha256(auth.nonce.encode("utf-8")).hexdigest() + ".json"
+    nonce_path = os.path.join(registry, nonce_name)
+    try:
+        with open(nonce_path, "x", encoding="utf-8") as handle:
+            json.dump({"authorization": auth.redacted(), **_target_receipt(canonical)},
+                      handle, indent=2, sort_keys=True)
+    except FileExistsError as exc:
+        raise LifecycleAuthorizationError("authorization nonce has already been used") from exc
+
+    staging = tempfile.mkdtemp(prefix=".mantle-stage-%s-" % action.value, dir=parent)
+    receipt = _target_receipt(canonical)
+    journal = LifecycleJournal(
+        os.path.join(staging, "lifecycle_journal.json"), action,
+        receipt["target_hash"], receipt["target_hint"],
+        LifecycleResult.INTERRUPTED, "authorized",
+    )
+    journal.write()
+    return LifecycleTransaction(action, canonical, staging, journal)
+
+
+def load_authorization(path: str) -> LifecycleAuthorization:
+    with open(path, "r", encoding="utf-8") as handle:
+        return authorization_from_dict(json.load(handle))
+
+
+def write_authorization(auth: LifecycleAuthorization, path: str) -> str:
+    payload = asdict(auth)
+    payload["action"] = auth.action.value
+    with open(path, "x", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True)
+    return path

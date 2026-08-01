@@ -59,6 +59,25 @@ class GraftDrift(Exception):
     applied silently -- this interrupt is the signal for the MIND to re-patch."""
 
 
+def _assert_safe_host_tree(host: str) -> None:
+    """Refuse symlink/junction escapes before copying an untrusted host tree."""
+    root = os.path.realpath(os.path.abspath(host))
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        for name in list(dirnames) + list(filenames):
+            candidate = os.path.join(dirpath, name)
+            is_link = os.path.islink(candidate)
+            is_junction = bool(getattr(os.path, "isjunction", lambda _p: False)(candidate))
+            if not (is_link or is_junction):
+                continue
+            resolved = os.path.realpath(candidate)
+            try:
+                inside = os.path.commonpath([root, resolved]) == root
+            except ValueError:
+                inside = False
+            if not inside:
+                raise GraftError("host link escapes approved tree: %s" % candidate)
+
+
 # ---------------------------------------------------------------------------
 # the graft egg: a non-destructive diff, declared as data
 # ---------------------------------------------------------------------------
@@ -141,6 +160,7 @@ def apply(graft: Dict[str, Any], host: str, workspace: Optional[str] = None,
     host = os.path.abspath(host)
     if not os.path.isdir(host):
         raise GraftError("host %r is not a directory" % host)
+    _assert_safe_host_tree(host)
 
     drifted = _drift(graft, host)
     if drifted and not allow_drift:
@@ -172,6 +192,78 @@ def apply(graft: Dict[str, Any], host: str, workspace: Optional[str] = None,
               "drifted": drifted, "extra_bands": [b["band"] for b in graft.get("bands", [])],
               "hooks": len(hooks), "certified": org.stage1_certified}
     return {"organism": org, "workspace": ws_host, "report": report, "hooks": hooks}
+
+
+def apply_artifact(path: str, host: str, *, workspace: str,
+                   authorization: Any, starter_credits: float = 5.0,
+                   allow_drift: bool = False) -> Dict[str, Any]:
+    """Authorized transactional external graft activation.
+
+    ``apply`` remains the Body-internal data operation used by reconstruction/tests;
+    all external artifacts enter here and are authorized before a target exists.
+    """
+    from .anchor import anchor, census
+    from .lifecycle import (LifecycleAction, LifecycleAuthorizationError,
+                            begin_transaction)
+    graft = load_graft(path)
+    host = os.path.abspath(host)
+    if not os.path.isdir(host):
+        raise GraftError("host %r is not a directory" % host)
+    _assert_safe_host_tree(host)
+    target = os.path.join(os.path.abspath(workspace),
+                          os.path.basename(host.rstrip("/\\")) or "host")
+    try:
+        transaction = begin_transaction(
+            authorization, LifecycleAction.GRAFT, path, target
+        )
+    except (LifecycleAuthorizationError, FileExistsError) as exc:
+        raise GraftError("activation refused: %s" % exc) from exc
+    try:
+        transaction.phase("drift_check")
+        drifted = _drift(graft, host)
+        if drifted and not allow_drift:
+            raise GraftDrift(
+                "host drifted from the graft census (%d file(s): %s)"
+                % (len(drifted), ", ".join(drifted[:5]))
+            )
+        before = census(host)
+        transaction.phase("copy_host")
+        shutil.copytree(host, transaction.staging, dirs_exist_ok=True)
+        transaction.phase("anchor_resident")
+        result = anchor(
+            transaction.staging, name=graft["identity"]["name"],
+            starter_credits=starter_credits, extra_bands=graft_bands(graft),
+        )
+        org = result["organism"]
+        hooks = list(graft.get("hooks", []))
+        org.memory.remember(
+            "facts", {"graft_hooks": hooks, "graft_host": graft["host"]},
+            opcode="OBSERVED", source="graft", verified=True,
+        )
+        org.save(os.path.join(transaction.staging, NEST))
+        if not org.stage1_certified:
+            raise GraftError("Stage-1 gate did not certify the graft resident")
+        after = census(host)
+        if before != after:
+            raise GraftError("GRAFT MODIFIED THE ORIGINAL HOST -- this must never happen")
+        report = {
+            "graft": graft["identity"]["name"], "host": graft["host"],
+            "workspace": target, "original_unchanged": True, "drifted": drifted,
+            "extra_bands": [b["band"] for b in graft.get("bands", [])],
+            "hooks": len(hooks), "certified": org.stage1_certified,
+            "lifecycle": {"result": "pass", "action": "graft",
+                          "authorization": authorization.redacted(),
+                          "journal": os.path.join(target, "lifecycle_journal.json")},
+        }
+        with open(os.path.join(transaction.staging, "graft_report.json"), "w",
+                  encoding="utf-8") as handle:
+            json.dump(report, handle, indent=2, sort_keys=True)
+        transaction.phase("artifact_verified")
+        transaction.promote()
+        return {"organism": org, "workspace": target, "report": report, "hooks": hooks}
+    except Exception as exc:
+        transaction.interrupt(type(exc).__name__)
+        raise
 
 
 # ---------------------------------------------------------------------------

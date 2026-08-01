@@ -121,8 +121,8 @@ def graft(form: str = "anchor", **kwargs) -> Dict[str, Any]:
         graft("anchor", host="path/to/app", starter_credits=5)
         graft("graft",  spec="examples/eggs/notes_graft.json", host="examples/sample_app")
 
-    The `graft` form accepts `spec` as either a path (loaded for you) or an already-loaded
-    graft dict. Both forms are do-no-harm: the host is never modified in place.
+    External graft artifacts require a target-bound authorization and explicit
+    workspace. A pre-loaded dict is Body-internal data and requires ``internal=True``.
     """
     if form == "anchor":
         from .anchor import anchor
@@ -130,7 +130,13 @@ def graft(form: str = "anchor", **kwargs) -> Dict[str, Any]:
     if form == "graft":
         from . import graft as _graft
         spec: Union[str, Dict[str, Any]] = kwargs.pop("spec")
-        loaded = _graft.load_graft(spec) if isinstance(spec, str) else spec
-        return {"method": "graft", "form": "graft", "result": _graft.apply(loaded, **kwargs)}
+        if isinstance(spec, str):
+            return {"method": "graft", "form": "graft",
+                    "result": _graft.apply_artifact(spec, **kwargs)}
+        if not kwargs.pop("internal", False):
+            raise ReproductionError(
+                "pre-loaded graft dictionaries are Body-internal; pass internal=True explicitly"
+            )
+        return {"method": "graft", "form": "graft", "result": _graft.apply(spec, **kwargs)}
     raise ReproductionError(
         f"unknown graft form {form!r}; expected one of {GRAFT_FORMS}")
