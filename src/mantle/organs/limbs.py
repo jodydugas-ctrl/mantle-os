@@ -29,6 +29,7 @@ _BODY_PHASES = ("NOTIFIED", "COMPLETED")      # authored by the Body (Phase 1, p
 MIND_SPECIAL_CONTROL = "mind.special_instruction"
 MIND_DISCOVERY_CONTROL = "mind.discovery"
 MIND_CULTIVATE_CONTROL = "mind.cultivate"
+MIND_CONSOLIDATION_CONTROL = "mind.consolidation"
 
 CONTRACT = OrganContract(
     "limbs", "action & surface actuation (efferent I/O) -- the only outbound boundary",
@@ -200,6 +201,101 @@ class Limbs(Organ):
             MIND_DISCOVERY_CONTROL, attempted=True, ok=True,
             method="BodyMutationBridge", ref="discoveries", reason="ok",
         )
+
+    def record_mind_consolidation(self, proposal: Dict[str, Any], window: Dict[str, Any],
+                                  proposal_hash: str) -> Dict[str, Any]:
+        """Validate retrospective proposals before any Body memory mutation."""
+        if not self.org.brain.fused:
+            self._prove(MIND_CONSOLIDATION_CONTROL, attempted=False, ok=False,
+                        method="BodyMutationBridge", ref="discoveries", reason="no MIND fused")
+        self._require_fused_mind(MIND_CONSOLIDATION_CONTROL)
+        # A completed hash is safe to acknowledge even after its source window has moved.
+        # This preserves retry idempotency without reopening any mutation surface.
+        if any(receipt.get("content", {}).get("proposal_hash") == proposal_hash
+               for receipt in self.org.memory._successful_receipts()):
+            result = self.org.memory.record_consolidation(
+                proposal, cursor_after=(window or {}).get("cursor_after", {}),
+                proposal_hash=proposal_hash)
+            result["proof"] = self._prove(
+                MIND_CONSOLIDATION_CONTROL, attempted=True, ok=True,
+                method="BodyMutationBridge", ref="discoveries", reason="idempotent")
+            return result
+        reason = self._validate_consolidation(proposal, window, proposal_hash)
+        if reason:
+            self.org.immune_event("consolidation_refused", {"reason": reason})
+            self._prove(MIND_CONSOLIDATION_CONTROL, attempted=False, ok=False,
+                        method="BodyMutationBridge", ref="discoveries", reason=reason)
+            raise ValueError("invalid MIND consolidation proposal: %s" % reason)
+        result = self.org.memory.record_consolidation(
+            proposal, cursor_after=window["cursor_after"], proposal_hash=proposal_hash)
+        result["proof"] = self._prove(
+            MIND_CONSOLIDATION_CONTROL, attempted=True, ok=True,
+            method="BodyMutationBridge", ref="discoveries", reason="ok")
+        return result
+
+    @staticmethod
+    def _valid_text(value: Any, limit: int) -> bool:
+        return (isinstance(value, str) and bool(value.strip()) and len(value) <= limit
+                and not any(ord(char) < 32 and char not in "\n\t" for char in value))
+
+    def _validate_consolidation(self, proposal: Any, window: Any, proposal_hash: Any) -> str:
+        if not isinstance(proposal, dict) or set(proposal) != {"summary", "reappraisals", "open_questions"}:
+            return "unknown or missing top-level keys"
+        if not isinstance(proposal_hash, str) or len(proposal_hash) != 64:
+            return "invalid proposal hash"
+        if not self._valid_text(proposal.get("summary"), 2048):
+            return "invalid summary"
+        reappraisals, questions = proposal.get("reappraisals"), proposal.get("open_questions")
+        if not isinstance(reappraisals, list) or len(reappraisals) > 24:
+            return "invalid reappraisals"
+        if not isinstance(questions, list) or len(questions) > 24 or not all(
+                self._valid_text(question, 512) for question in questions):
+            return "invalid open questions"
+        if not isinstance(window, dict) or not isinstance(window.get("entries"), list):
+            return "invalid Body window"
+        if window != self.org.memory.consolidation_window(limit=48):
+            return "stale or forged Body window"
+        allowed = {
+            (item["ref"].get("generation"), item["ref"].get("band"), item["ref"].get("id"))
+            for item in window["entries"] if isinstance(item, dict)
+            and isinstance(item.get("ref"), dict)
+        }
+        keys = {"subject", "status", "because", "interpretation", "confidence", "weight"}
+        for item in reappraisals:
+            if not isinstance(item, dict) or set(item) - keys or not {"subject", "status", "because", "interpretation", "confidence"} <= set(item):
+                return "invalid reappraisal keys"
+            subject = item["subject"]
+            if not self._valid_consolidation_ref(subject, allowed):
+                return "invented subject reference"
+            if item["status"] not in {"supported", "weakened", "superseded", "unresolved", "later_significant"}:
+                return "invalid status"
+            if item["confidence"] not in {"strong", "moderate", "plausible", "speculative"}:
+                return "invalid confidence"
+            if not self._valid_text(item["interpretation"], 2048):
+                return "invalid interpretation"
+            if any(token in item["interpretation"].lower() for token in (
+                    "promote", "delete", "tombstone", "calcify", "execute", "write")):
+                return "forbidden mutation instruction"
+            because = item["because"]
+            if not isinstance(because, list) or len(because) > 16 or not all(
+                    self._valid_consolidation_ref(ref, allowed) for ref in because):
+                return "invented because reference"
+            if "weight" in item:
+                value = item["weight"]
+                if subject["band"] not in ("events", "discoveries", "senses"):
+                    return "fact weight changes are forbidden"
+                if not isinstance(value, (int, float)) or isinstance(value, bool) or not 0.0 <= value <= 1.0:
+                    return "invalid weight"
+        if any(any(token in text.lower() for token in (
+                "promote", "delete", "tombstone", "calcify", "execute", "write"))
+               for text in [proposal["summary"]] + questions):
+            return "forbidden mutation instruction"
+        return ""
+
+    @staticmethod
+    def _valid_consolidation_ref(ref: Any, allowed: set) -> bool:
+        return (isinstance(ref, dict) and set(ref) == {"generation", "band", "id"}
+                and (ref.get("generation"), ref.get("band"), ref.get("id")) in allowed)
 
     def cultivate_mind_skill(
         self,

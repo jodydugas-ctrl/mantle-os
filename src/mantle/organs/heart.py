@@ -45,6 +45,8 @@ CONTRACT = OrganContract(
          "effect": "persist on BOTH explicit checkpoint AND an atexit handler"},
         {"name": "schedule-pulse", "trigger": "the organism plans ahead",
          "effect": "annotate a FUTURE cognition beat (countdown/at); baseline continues"},
+        {"name": "schedule-consolidation", "trigger": "the operator requests sleep",
+         "effect": "schedule one future Body-governed memory consolidation pulse"},
     ],
     phase1="active",
     phase2_extension="every ten-minute natural pulse offers the snapshot to cognition; "
@@ -122,6 +124,11 @@ class Heart(Organ):
             due = self.beats + 1
         self._schedule.append({"due": due, "reason": reason, "band": band, "ref": ref})
         return due
+
+    def schedule_consolidation(self, after: Optional[int] = None,
+                               at: Optional[int] = None) -> int:
+        return self.schedule_pulse(reason="memory_consolidation", after=after, at=at,
+                                   band="discoveries", ref=None)
 
     def scheduled(self) -> List[Dict[str, Any]]:
         """The pending planning queue: future wakes not yet fired."""

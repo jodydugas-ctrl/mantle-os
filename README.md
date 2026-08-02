@@ -98,6 +98,10 @@ contract. Every failure becomes an immune event. Every generation of memory seal
 fingerprint that makes later history alteration detectable; it does not attest the
 provenance of a newly inserted valid row.
 
+**Sleep / memory consolidation.** An organism may revisit bounded old experience on a
+scheduled pulse. Later meaning is appended rather than written backward into history: the
+MIND proposes the reinterpretation, while the Body governs its durable consequences.
+
 Beyond the certified Body, an AppAI carries reproductive, symbiotic, and self-evolving tissue:
 a whole AppAI travelling as one **spore** (a PNG carrying its **germ** — the complete build
 data — plus instructions any coding agent can read), **residency** in a host codebase with a

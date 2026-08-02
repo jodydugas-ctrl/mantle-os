@@ -223,6 +223,22 @@ Severe immune kinds currently include `integrity`, `organ_overreach`,
 These wakeups add stressor-anchored cognition when a Brain is fused. They do not replace
 the natural Phase-2 baseline pulse.
 
+### Body-governed memory consolidation
+
+Sleep / memory consolidation is scheduled cognition, not a new organ or scheduler. Heart
+schedules one opt-in pulse; Memory selects a bounded deterministic window; and the MIND
+returns only inferred retrospective interpretation. Limbs validates references and allowed
+graded-memory effects, then Memory appends the result to `discoveries`. Original experience
+is never rewritten and fact-promotion rules remain external-evidence-only.
+
+```text
+experience
+!= interpretation-at-the-time
+!= retrospective interpretation
+```
+
+Consolidation has no automatic cadence, so it does not create default model cost.
+
 ## 8. Extended Module Map
 
 The following descriptions are summarized from module docstrings and source:

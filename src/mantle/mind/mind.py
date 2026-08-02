@@ -137,6 +137,67 @@ class Mind:
                 % (self.port.identity_name(),
                    json.dumps(snapshot, default=str)[:4000]))
 
+    def _consolidation_frame(self, snapshot: Dict[str, Any], window: Dict[str, Any]) -> str:
+        return (
+            "You are the fused MIND of an AppAI. Perform retrospective interpretation only. "
+            "Original records are immutable: do not request promotion, deletion, tombstoning, "
+            "execution, or source coordinates not supplied below. Return JSON only with exactly "
+            "this schema: {summary:string, reappraisals:[{subject:{generation,band,id}, "
+            "status:supported|weakened|superseded|unresolved|later_significant, because:[{generation,band,id}], "
+            "interpretation:string, confidence:strong|moderate|plausible|speculative, weight?:0..1}], "
+            "open_questions:[string]}. A weight is permitted only for events, discoveries, or senses.\n\n"
+            "BODY-SELECTED WINDOW:\n%s\n\nCONTEXT:\n%s"
+            % (json.dumps(window, sort_keys=True, default=str),
+               json.dumps(snapshot, sort_keys=True, default=str)[:4000])
+        )
+
+    def consolidate(self, snapshot: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Ask for bounded retrospective meaning; the Body validates every durable effect."""
+        if self.thoughts_written >= self.max_thoughts:
+            self.port.immune_event("waste_guard", {"organ": "mind", "limit": self.max_thoughts})
+            return None
+        window = self.port.consolidation_window(limit=48)
+        if not window.get("entries"):
+            return None
+        prompt = self._consolidation_frame(snapshot, window)
+        request_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+        self._trace("REQUEST", {
+            "prompt_hash": _h(prompt), "request_hash": request_hash,
+            "context_generation": 0, "context_sequence": 0,
+            "estimated_prompt_tokens": 0,
+        })
+        try:
+            response = complete_model(self.model, ModelRequest(
+                prompt=prompt,
+                metadata={"request_hash": request_hash, "consolidation": True},
+            ))
+        except Exception as exc:
+            self._trace("FAILURE", {"request_hash": request_hash,
+                                    "error": type(exc).__name__})
+            self.thoughts_written += 1
+            raise
+        answer = response.text
+        usage = dict(response.usage or getattr(self.model, "last_usage", None) or {})
+        if usage:
+            self._trace("USAGE", usage)
+        self._trace("RESPONSE", {"answer_hash": _h(answer)})
+        self.thoughts_written += 1
+        self._guarded_write("thoughts", make_entry(
+            {"reflection": answer, "window": window.get("cursor_before")},
+            opcode="CONSOLIDATE", author="MIND", verified=False, confidence="inferred"))
+        try:
+            proposal = json.loads(answer)
+        except (TypeError, ValueError):
+            self.port.immune_event("consolidation_refused", {"reason": "malformed JSON"})
+            return None
+        canonical = json.dumps(proposal, sort_keys=True, separators=(",", ":"),
+                               ensure_ascii=False)
+        proposal_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        try:
+            return self.port.record_consolidation(proposal, window, proposal_hash)
+        except (PermissionError, ValueError):
+            return None
+
     # ---- propose Special Instructions (the Body applies) -----------------
     def propose_special(self, text: str) -> Dict[str, Any]:
         """The MIND may only PROPOSE. The returned intent is NOT written; the Body applies
@@ -156,11 +217,14 @@ class Mind:
         )
 
     # ---- cognition: the Phase-2 heartbeat extension ----------------------
-    def cognize(self, snapshot: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    def cognize(self, snapshot: Optional[Dict[str, Any]] = None) -> Optional[Any]:
         """One cognition pulse. The Heart passes the snapshot it already assembled; a
         direct call assembles one. Either way: fully resolved, veiled, deterministic."""
         if snapshot is None:
             snapshot = self.port.snapshot()
+        stressor = snapshot.get("_stressor") or {}
+        if stressor.get("reason") == "memory_consolidation":
+            return self.consolidate(snapshot)
         return self.think(snapshot)
 
 

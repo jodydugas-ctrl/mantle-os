@@ -439,7 +439,8 @@ class Cube:
         self.indexes.invalidate(band)
         return True
 
-    def deweight(self, band: str, entry_id: int, weight: float = 0.0) -> bool:
+    def deweight(self, band: str, entry_id: int, weight: float = 0.0, *,
+                 source: str = "deweight", **extra: Any) -> bool:
         """Graded suppression (M3): lower the effective weight of `entry_id` by APPENDING a
         DEWEIGHT event -- the original entry is never touched (its hash stays valid; it
         remains retrievable as a behavioral ghost). `weight=0.0` (default) fully suppresses
@@ -452,7 +453,8 @@ class Cube:
             return False
         from .entry import make_entry, DEWEIGHT_OPCODE
         self.append(band, make_entry({"target": entry_id, "weight": float(weight)},
-                                     opcode=DEWEIGHT_OPCODE, author="BODY", source="deweight"))
+                                     opcode=DEWEIGHT_OPCODE, author="BODY", source=source,
+                                     **extra))
         return True
 
     # ---- metabolism (delegated; kept as methods for the Memory organ) ------
