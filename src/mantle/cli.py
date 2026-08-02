@@ -62,7 +62,7 @@ _COMMANDS = (
     "research-propose", "research-trial", "research-report", "research-authorize",
     "research-adopt",
     "resident", "lifecycle", "migrate-germ", "migrate-resident", "migrate-spore",
-    "rebind",
+    "rebind", "nest",
 )
 
 # every command answers to its hyphenated name and its underscore twin
@@ -1139,6 +1139,13 @@ def _operator_command(rest, *, adopt=False):
         return _research_error(exc)
 
 
+def _cmd_nest(rest):
+    """Route the additive ``nest <subcommand>`` family (remote GitHub NEST)."""
+    from .nest.cli import main as nest_cli_main
+
+    return nest_cli_main(rest)
+
+
 _DISPATCH = {
     "anchor": cmd_anchor,
     "ask": cmd_ask,
@@ -1177,6 +1184,7 @@ _DISPATCH = {
     "migrate-resident": lambda rest: _cmd_migration("resident", rest),
     "migrate-spore": lambda rest: _cmd_migration("spore", rest),
     "rebind": cmd_rebind,
+    "nest": _cmd_nest,
     "research-init": _cmd_research_init,
     "research-baseline": _cmd_research_baseline,
     "research-propose": _cmd_research_propose,
