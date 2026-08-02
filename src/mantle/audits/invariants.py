@@ -44,6 +44,7 @@ from ..vcw.grimoire_editions import v010 as grimoire_v010
 from ..vcw.grimoire_editions import v09 as grimoire_v09
 from ..vcw.bands import code_hash
 from .registry import build_registry, by_concern
+from .ghnest import GHNEST_DEFINITIONS
 
 _EXEC = ExecDriver()
 _CODE = "def f(x):\n    return x + 1\n"
@@ -4220,7 +4221,7 @@ _INVARIANT_DEFINITIONS = [
     ("FRICTION-1 closure-evidence",                   t_friction_closure_contract),
     ("RESEARCH-1 isolated-candidate-no-adoption",     t_research_candidate_isolated),
     ("REGISTRY-1 typed-single-source",          t_invariant_registry_single_source),
-]
+] + GHNEST_DEFINITIONS
 
 # One live, typed registry. TESTS remains a derived compatibility view for external
 # callers written against the pre-registry API; it cannot diverge from REGISTRY.
