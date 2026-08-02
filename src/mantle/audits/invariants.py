@@ -3544,6 +3544,10 @@ def t_sporeagent_lifecycle_receipt():
     hatch_from_spore, not feature creep in spore.py. The receipt records source
     declaration/fetch/assimilation/certification/boundary facts, redacts unsafe
     metadata, treats host code as OTHER, and never exposes Body key material."""
+    try:
+        import PIL  # noqa: F401  (spore PNG rasterizer is an optional extra)
+    except ImportError:
+        return (True, "skipped: spore extra (pillow) not installed")
     from .. import spore as _spore
     from .. import spore_min as _spore_min
     from ..hatchery import hatch_from_spore
@@ -4054,6 +4058,9 @@ def t_ancestor_query_read_only():
 def t_friction_closure_contract():
     matrix = os.path.join(paths.REPO_ROOT, "docs", "MANTLE2_CONSOLIDATION_MATRIX.md")
     ledger = os.path.join(paths.REPO_ROOT, "reports", "FRICTION_EVENTS.md")
+    if not (os.path.isfile(matrix) and os.path.isfile(ledger)):
+        # Repo-only evidence, absent when mantle is pip-installed (not a checkout).
+        return (True, "skipped: not a repository checkout (consolidation matrix absent)")
     with open(matrix, "r", encoding="utf-8") as handle:
         matrix_text = handle.read().lower()
     with open(ledger, "r", encoding="utf-8") as handle:
