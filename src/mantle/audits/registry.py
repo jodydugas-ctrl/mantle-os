@@ -45,6 +45,18 @@ def _guarantee(code: str) -> str:
         return "TM-PHASE1-MODEL-FREE"
     if code == "HF-B20":
         return "TM-SECRET-BOUNDARY"
+    if code in {"GHNEST-1", "GHNEST-2", "GHNEST-12", "GHNEST-15", "GHNEST-16"}:
+        return "TM-REMOTE-RESIDENCY"
+    if code in {"GHNEST-5", "GHNEST-19", "GHNEST-20"}:
+        return "TM-REMOTE-INTEGRITY"
+    if code in {"GHNEST-3", "GHNEST-10"}:
+        return "TM-REMOTE-SECRET"
+    if code in {"GHNEST-4", "GHNEST-6", "GHNEST-7"}:
+        return "TM-REMOTE-CAS"
+    if code in {"GHNEST-8", "GHNEST-9", "GHNEST-14", "GHNEST-18"}:
+        return "TM-REMOTE-EVENTS"
+    if code in {"GHNEST-11", "GHNEST-13", "GHNEST-17"}:
+        return "TM-REMOTE-ISOLATION"
     if code.startswith("HF-B46"):
         return "TM-ANCESTOR-SEAL"
     if code in {"HF-B47", "HF-B48", "HF-B52"}:
@@ -81,6 +93,8 @@ def _concern(code: str) -> str:
         return "residency"
     if code.startswith(("MEM", "B-", "HF-B", "PERSIST", "SELF")):
         return "body"
+    if code.startswith("GHNEST"):
+        return "operations"
     return "operations"
 
 
