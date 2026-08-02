@@ -111,7 +111,7 @@ def t_ghn_02_stable_id_bound():
 def t_ghn_03_plaintext_refused():
     # red: a public carry leaking a provider key must be refused
     inv = {
-        "mantle-nest/organism.json": b'{"note": "key sk-or-v1-abcdef01234567890"}',
+        "mantle-nest/organism.json": b'{"note": "key sk-or-v1-abc"}',
     }
     try:
         enforce_publishable(inv)
