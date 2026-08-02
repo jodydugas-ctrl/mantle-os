@@ -443,14 +443,35 @@ def t_ghn_19_stale_cert_not_authority():
 # GHNEST-20 segment-reconstruction-byte-or-fingerprint-equivalent
 # ---------------------------------------------------------------------------
 def t_ghn_20_segment_reconstruction():
-    # Until segments ship, the gate is a placeholder that only allows the
-    # complete-checkpoint (non-segment) path: correctness precedes optimization.
+    from ..nest.segments import (
+        SegmentError,
+        reconstruct,
+        slice_segments,
+        fingerprint_equal,
+    )
     from ..nest.manifest import sha256_bytes
 
-    data = b"checkpoint-bytes"
-    if sha256_bytes(data) == "":
-        return False, "unexpected digest"
-    return True, "segment transport not yet shipped; complete checkpoint path equivalent"
+    checkpoint = b"complete content-addressed VCW checkpoint bytes" * 8
+    canonical_sha = sha256_bytes(checkpoint)
+    headers = slice_segments(checkpoint, 4)
+    payload_by = {h.index: checkpoint[h.index * (len(checkpoint) // 4):
+                                      (h.index + 1) * (len(checkpoint) // 4)]
+                  for h in headers}
+
+    # green: reassembly reproduces the exact canonical bytes / fingerprint
+    assembled = reconstruct(headers, lambda h: payload_by[h.index])
+    if assembled != checkpoint or not fingerprint_equal(assembled, canonical_sha):
+        return False, "segment reassembly is not byte/fingerprint-equivalent"
+
+    # red: a tampered segment must be caught, never silently reordered
+    evil = dict(payload_by)
+    evil[2] = evil[2][:-1] + bytes([evil[2][-1] ^ 0x01])
+    try:
+        reconstruct(headers, lambda h: evil[h.index])
+        return False, "GHNEST-20 gate failed: tampered segment reconstructed"
+    except SegmentError:
+        return True, ("segments reconstruct byte/fingerprint-equivalent and tamper is "
+                      "detected (gate proven; segments still not the canonical carrier)")
 
 
 GHNEST_DEFINITIONS = [

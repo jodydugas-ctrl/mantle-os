@@ -667,6 +667,29 @@ python -m mantle check          # every gate, proof, demo, and test — the CI s
 python -m mantle check --fast   # gates + proofs only (skips the narrated demos)
 ```
 
+## Remote residency — a GitHub NEST
+
+An organism may also *reside* in a **private GitHub repository** as an optional
+remote NEST — but only the way an octopus lives in a den it did not become. GitHub
+supplies the den: durable storage, events, workers, checks. It is **never the
+organism**. The Body stays deterministic and authoritative on its own local bytes;
+GitHub data and receipts are *OTHER evidence* until verified and adopted.
+
+The pattern is one sentence:
+
+> **Materialize the den into a verified local NEST, let the Body live there, then
+> publish a secret-free, SELF-sealed checkpoint through Limbs using exact-revision
+> compare-and-swap — never let GitHub become SELF, the Heart, or Phase-1
+> authority.**
+
+Concretely: the sealed Body travels only inside an authenticated envelope (never in
+plaintext), the state branch only ever moves forward by exact-revision CAS (never
+forced), and downloads/uploads happen as **fewer, larger** updates — three remote
+writes per checkpoint no matter how big the NEST grows, so the creature stays
+within GitHub's limits. See `documents/guides/GitHub_Nest_Guide.md` (operator),
+`documents/Mantle_for_Engineers.md` §12 (engineering), and the `GHNEST-*`
+invariants in `src/mantle/audits/ghnest.py`.
+
 ## The single sentence to remember
 
 > Grow a Body of organs around the VCW cube that runs perfectly with no brain;

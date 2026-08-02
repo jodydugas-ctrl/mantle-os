@@ -40,7 +40,9 @@ python -m mantle nest inspect github:OWNER/REPO --auth=AUTH.json
 python -m mantle nest connect LOCAL_NEST github:OWNER/REPO --auth=AUTH.json
 python -m mantle nest pull  github:OWNER/REPO --out=LOCAL_DIR --envelope-key=KEY --auth=AUTH.json
 python -m mantle nest push  LOCAL_NEST github:OWNER/REPO --envelope-key=KEY --auth=AUTH.json
+python -m mantle nest sync  github:OWNER/REPO --auth=AUTH.json
 python -m mantle nest doctor github:OWNER/REPO --auth=AUTH.json
+python -m mantle nest install-template audit|heartbeat [--out=DIR]
 python -m mantle nest disconnect github:OWNER/REPO --preserve-remote
 ```
 

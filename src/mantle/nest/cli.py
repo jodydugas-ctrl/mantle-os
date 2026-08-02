@@ -26,6 +26,11 @@ from .transport import NestConflict
 
 BINDING_FILE = ".mantle-nest-binding.json"
 
+# repo root = <root>/src/mantle/nest/cli.py -> up 4
+_REPO_ROOT = os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_ASSETS_WORKFLOWS = os.path.join(_REPO_ROOT, "nest_assets", "workflows")
+
 
 class NestCliError(Exception):
     pass
@@ -192,14 +197,60 @@ def nest_sync(argv, *, transport=None):
     # sync requires an existing binding in a local nest OR a github target
     local_nest = str(flags.get("--nest") or ".")
     tr = transport or _load_transport(flags)
-    prov = _load_envelope(flags)
     if args:
         target = parse_location(args[0])
     else:
         target = _read_binding(local_nest)
     status = tr.inspect(target)
-    print("sync: head=%s tx=%s" % (status.head_commit[:12] if status.head_commit else "-",
-                                   "-"))
+    print("sync: %s" % target.full_name)
+    print("  state branch : %s" % status.state_branch)
+    print("  head commit  : %s" % (status.head_commit or "(none)"))
+    print("  manifest     : %s" % ("present" if status.manifest_present else "absent"))
+    print("  manifest hash: %s" % (status.manifest_hash or "-"))
+    if status.head_commit:
+        rec = tr.reconcile(target, _head_transaction(tr, target))
+        print("  reconcile    : completed=%s request_verified=%s tree_matches=%s"
+              % (rec.completed, rec.request_verified, rec.tree_matches))
+    return 0
+
+
+def _head_transaction(tr, target):
+    # best-effort: derive the head transaction id from a materialization receipt
+    import tempfile as _tf
+
+    with _tf.TemporaryDirectory() as td:
+        try:
+            return tr.materialize(target, td).transaction_id
+        except Exception:  # noqa: BLE001
+            return ""
+
+
+def nest_install_template(argv, *, transport=None):
+    """Copy an inert workflow template into .github/workflows/ (EXPLICIT only).
+
+    Templates are never written automatically; this operator command is the only
+    path, keeping GitHub Actions inert until the operator explicitly adopts them.
+    """
+    args, flags = _split_flags(argv)
+    if len(args) != 1:
+        print("usage: python -m mantle nest install-template audit|heartbeat [--out=DIR]")
+        return 2
+    name = args[0]
+    src = os.path.join(_ASSETS_WORKFLOWS, "mantle-%s.yml" % name)
+    if not os.path.isfile(src):
+        print("unknown template %r (available: audit, heartbeat)" % name)
+        return 1
+    out_dir = str(flags.get("--out") or os.path.join(_REPO_ROOT, ".github", "workflows"))
+    os.makedirs(out_dir, exist_ok=True)
+    dest = os.path.join(out_dir, "mantle-%s.yml" % name)
+    import shutil
+
+    with open(src, "rb") as f:
+        data = f.read()
+    with open(dest, "wb") as f:
+        f.write(data)
+    print("installed template %s -> %s" % (name, dest))
+    print("note: review permissions and SHA pins before relying on the workflow.")
     return 0
 
 
@@ -267,12 +318,14 @@ _SUBCOMMANDS = {
     "sync": nest_sync,
     "doctor": nest_doctor,
     "disconnect": nest_disconnect,
+    "install-template": nest_install_template,
 }
 
 
 def main(argv, *, transport=None) -> int:
     if not argv:
-        print("usage: python -m mantle nest <inspect|connect|pull|push|sync|doctor|disconnect> ...")
+        print("usage: python -m mantle nest <inspect|connect|pull|push|sync|doctor|"
+              "disconnect|install-template> ...")
         return 2
     sub = argv[0]
     handler = _SUBCOMMANDS.get(sub)

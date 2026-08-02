@@ -376,3 +376,62 @@ For browser demo changes, serve `examples/` and run the Node tests from `example
 
 Before opening a PR, check `git diff --check` and run the smallest verification command that
 matches the risk of the change.
+
+## 12. GitHub NEST (remote residency)
+
+This section documents the optional GitHub remote NEST transport
+(`src/mantle/nest/`, invariants `GHNEST-*`). It lives **outside** the certified
+Phase-1 core and is **never imported** by `mantle.core` / `mantle.organs` /
+`mantle.vcw` (enforced by GHNEST-13).
+
+### 12.1 Trust boundary
+
+- **GitHub is OTHER.** Repository ownership, privacy, a commit signature, an Actions
+  result, or a GitHub App identity is technical evidence only
+  (`authority.github_is_self = false`). It independently authorizes no fusion,
+  rebirth, grafting, calcification, or fact promotion. The Body's genesis key
+  remains the cryptographic SELF.
+- **Materialize-then-live.** A remote NEST is hydrated into an owner-private
+  temporary directory *before* `Organism.load`; the Body operates only on local
+  bytes. `Organism.save()`/`load()` never perform network I/O.
+- **All inbound GitHub signals enter through Senses exactly once (GHNEST-8); all
+  mutations execute through Limbs with an Action Execution Proof (GHNEST-7); all
+  failures/conflicts/visibility changes route through Immune (GHNEST-9).**
+
+### 12.2 Transport and CAS
+
+The transport builds the **entire tree locally in a temporary staging dir**, then
+makes exactly three wire writes per checkpoint (one tree with all blobs inline,
+one commit, one non-force ref update) — **constant regardless of NEST size**, so
+publishing stays inside GitHub write-rate limits (GHNEST-4). The state-branch ref
+advances only as a non-force fast-forward under an exact-revision
+compare-and-swap; a moved branch is a `NestConflict` (GHNEST-6), never a silent
+force or overwrite.
+
+### 12.3 Credential and secret model
+
+- The Body (`body.json`, which carries `genesis_key`) never travels in plaintext.
+  It is sealed with an authenticated AESGCM envelope that binds repository ID,
+  schema, key fingerprint, and manifest hash as associated data (GHNEST-3, -16).
+- The envelope-opening capability is a private transport capability, **never
+  exposed to the MIND** (GHNEST-10). Materialization of plaintext is confined to
+  owner-private temp dirs with best-effort cleanup.
+- Preferred production credential path: GitHub OIDC to an external KMS, so no
+  long-lived decryption credential is stored in the repository. An environment-
+  injected 32-byte key is a clearly labeled personal prototype.
+
+### 12.4 Limits (stated plainly)
+
+- A private repository is **access control, not SELF**. GitHub is not the only
+  backup; keep an independent spore/export.
+- Scheduled Actions are **soft-time signals**, not a real-time clock; a dropped
+  run becomes visible in the next heartbeat receipt and Immune record (GHNEST-14).
+- Checks prove what they actually execute, not general correctness.
+- Plan-dependent preventive controls are reported honestly by `nest doctor` as
+  `enforced` / `detected` / `unavailable`; detection is never advertised as
+  prevention.
+- Actions artifacts/caches are **never canonical memory** (GHNEST-11); they carry
+  temporary evidence only.
+- One inline-tree commit is the default; the append-segment transport /
+  immutable-release path (GHNEST-20) must prove byte/fingerprint reconstruction
+  equivalence before it is adopted as a second carrier.
