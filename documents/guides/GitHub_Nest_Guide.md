@@ -17,6 +17,12 @@ identity does not independently authorize MIND fusion, rebirth, grafting, skill
 calcification, or fact promotion. The Body's genesis key remains the cryptographic
 SELF.
 
+The ABODE/residency law that makes GitHub a den and never the creature is carried
+in the organism's Grimoire: the non-edition
+[`residency/grimoire-residency-v1.md`](../grimoire/residency/grimoire-residency-v1.md)
+companion, which defines the `local`, `cloud`, and `github` nesting forms under one
+residency rule.
+
 ## Layout
 
 - **Host repository** — the source you already have (may stay public).

@@ -13,6 +13,7 @@ The Grimoire is a versioned family of immutable edition files:
 | Edition index | This README | Select an explicit edition; filenames are not semantic inference. |
 | v0.9 compatibility | [editions/grimoire-v0.9.md](editions/grimoire-v0.9.md) | Frozen legacy carrier contract. |
 | v0.10 | [editions/grimoire-v0.10.md](editions/grimoire-v0.10.md) | Adopted default for new tissue; explicit procedure-container semantics and normative codec. |
+| Residency companion | [residency/grimoire-residency-v1.md](residency/grimoire-residency-v1.md) | Non-edition ABODE/residency profile: `local`, `cloud`, `github` nesting forms and the one residency law. Not codec-affecting; not an edition. |
 | Legacy mirror | [The Grimoire.md](The%20Grimoire.md) | Byte-identical v0.9 compatibility mirror; never use it to infer the current edition. |
 
 After the explicit adoption receipt, newly created Grimoire tissue defaults to v0.10.
@@ -71,6 +72,7 @@ Current Mantle code surfaces that interact with this boundary:
 | v0.10 independent verifier / bounded research | [`tools/grimoire_tool.py`](../../tools/grimoire_tool.py), [`src/mantle/research/`](../../src/mantle/research/), [`documents/research/`](../research/) |
 | Assimilation / residency | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |
 | Reproduction | [`src/mantle/reproduction.py`](../../src/mantle/reproduction.py), [`src/mantle/organs/reproduction.py`](../../src/mantle/organs/reproduction.py), [`hatchery.py`](../../src/mantle/hatchery.py) |
+| Remote NEST residency (GitHub) | [`src/mantle/nest/`](../../src/mantle/nest/), [`residency/grimoire-residency-v1.md`](residency/grimoire-residency-v1.md), `GHNEST-*` invariants in [`src/mantle/audits/ghnest.py`](../../src/mantle/audits/ghnest.py) |
 
 Presence of an encoded Grimoire profile is data, not adoption or authority. The registered
 drivers decode only their selected profile; v0.9 remains the compatibility path while v0.10

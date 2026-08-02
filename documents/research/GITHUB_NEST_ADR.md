@@ -47,6 +47,9 @@ until verified and adopted through Mantle's existing boundaries.
 
 - `src/mantle/nest/` is an outer, optional package. It is **never imported by**
   `mantle.core`, `mantle.organs`, or `mantle.vcw` (enforced by GHNEST-13).
+- The ABODE/residency law is carried in the organism's Grimoire as a non-edition
+  companion — [`residency/grimoire-residency-v1.md`](../grimoire/residency/grimoire-residency-v1.md)
+  — defining `local`, `cloud`, and `github` nesting forms under one residency rule.
 - Remote transport is injected; tests use a deterministic in-memory fake
   (`src/mantle/nest/fake.py`) and never need the network.
 - The Body's genesis key remains the cryptographic SELF. A GitHub commit
