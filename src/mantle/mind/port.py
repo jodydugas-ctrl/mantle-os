@@ -54,6 +54,14 @@ class MindPort(_Port):
     def record_discovery(self, record: Dict[str, Any]) -> Any:
         return object.__getattribute__(self, "_org").limbs.record_mind_discovery(record)
 
+    def consolidation_window(self, limit: int = 48) -> Dict[str, Any]:
+        return object.__getattribute__(self, "_org").memory.consolidation_window(limit=limit)
+
+    def record_consolidation(self, proposal: Dict[str, Any], window: Dict[str, Any],
+                             proposal_hash: str) -> Any:
+        return object.__getattribute__(self, "_org").limbs.record_mind_consolidation(
+            proposal, window, proposal_hash)
+
 
 class OperatorPort(_Port):
     """Enumerated operator capabilities used by ``AppAIRuntime``."""
@@ -112,6 +120,11 @@ class OperatorPort(_Port):
                        ref: Optional[str] = None) -> int:
         return object.__getattribute__(self, "_org").heart.schedule_pulse(
             reason, after=after, at=at, band=band, ref=ref)
+
+    def schedule_consolidation(self, after: Optional[int] = None,
+                               at: Optional[int] = None) -> int:
+        return object.__getattribute__(self, "_org").heart.schedule_consolidation(
+            after=after, at=at)
 
     def scheduled_pulses(self) -> list:
         return object.__getattribute__(self, "_org").heart.scheduled()

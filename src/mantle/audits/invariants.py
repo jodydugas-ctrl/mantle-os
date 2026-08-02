@@ -4085,6 +4085,100 @@ def t_research_candidate_isolated():
                 "candidate changed only isolated material; original and traversal boundary held")
 
 
+def _consolidation_proposal(window, *, band="events", weight=None):
+    subject = next(item["ref"] for item in window["entries"]
+                   if item["ref"]["band"] == band)
+    appraisal = {"subject": subject, "status": "later_significant", "because": [],
+                 "interpretation": "A later record changes the bounded interpretation.",
+                 "confidence": "plausible"}
+    if weight is not None:
+        appraisal["weight"] = weight
+    return {"summary": "A bounded retrospective interpretation.",
+            "reappraisals": [appraisal], "open_questions": []}
+
+
+def _fused_consolidation_org(model):
+    from ..mind import fuse
+    org = _born()
+    org.stage1_certified = True
+    fuse(org, model, authorization=_fusion_approval(org))
+    return org
+
+
+def t_consolidation_history_immutable():
+    """CONSOLIDATION-1: accepted retrospective meaning appends; source history stays exact."""
+    org = _fused_consolidation_org(lambda _prompt: "{}")
+    source = org.memory.remember("events", {"observed": "first"})
+    before = json.dumps(source, sort_keys=True, separators=(",", ":"))
+    window = org.memory.consolidation_window()
+    result = org.limbs.record_mind_consolidation(
+        _consolidation_proposal(window), window, "1" * 64)
+    unchanged = json.dumps(org.prime.retrieve("events", source["id"]), sort_keys=True,
+                          separators=(",", ":")) == before
+    return unchanged and result["discovery"].get("opcode") == "CONSOLIDATED", (
+        "source bytes unchanged; consolidation only appended Body records")
+
+
+def t_consolidation_mind_cannot_rewrite_or_promote():
+    """CONSOLIDATION-2: hostile facts and invented coordinates fail before mutation."""
+    org = _fused_consolidation_org(lambda _prompt: "{}")
+    fact = org.memory.remember("facts", {"observed": "external"})
+    window = org.memory.consolidation_window()
+    hostile = _consolidation_proposal(window, band="facts", weight=.1)
+    invented = _consolidation_proposal(window, band="facts")
+    invented["reappraisals"][0]["subject"] = dict(
+        invented["reappraisals"][0]["subject"], id=9999)
+    before_cursor = org.memory.consolidation_window()["cursor_before"]
+    refused_fact = _expect_raise(
+        lambda: org.limbs.record_mind_consolidation(hostile, window, "2" * 64), ValueError)[0]
+    refused_ref = _expect_raise(
+        lambda: org.limbs.record_mind_consolidation(invented, window, "3" * 64), ValueError)[0]
+    proofs = [entry for entry in org.prime.read("brain")
+              if entry.get("opcode") == "PROOF"
+              and (entry.get("content") or {}).get("action_proof", {}).get("control")
+              == "mind.consolidation"]
+    return (refused_fact and refused_ref and org.prime.retrieve("facts", fact["id"]) == fact
+            and before_cursor == org.memory.consolidation_window()["cursor_before"]
+            and len(proofs) >= 2 and all(not p["content"]["action_proof"]["ok"] for p in proofs)), (
+        "fact weighting and invented references refused with failed Body proofs; cursor unchanged")
+
+
+def t_consolidation_is_inferred_and_body_applied():
+    """CONSOLIDATION-3: only BODY commits an inferred discovery and allowed overlay."""
+    org = _fused_consolidation_org(lambda _prompt: "{}")
+    org.memory.remember("events", {"observed": "first"})
+    window = org.memory.consolidation_window()
+    result = org.limbs.record_mind_consolidation(
+        _consolidation_proposal(window, weight=.25), window, "4" * 64)
+    discovery = result["discovery"]
+    overlays = [entry for layer in org.prime.band_layers["events"]
+                for entry in org.prime.layer_content(layer)
+                if entry.get("opcode") == "DEWEIGHT"]
+    return (discovery.get("author") == "BODY" and discovery.get("source") == "MIND"
+            and discovery.get("guided_by") == "MIND" and discovery.get("verified") is False
+            and discovery.get("confidence") == "inferred" and bool(overlays)
+            and result["proof"].get("ok") is True), "inference and graded overlay were Body-applied"
+
+
+def t_consolidation_cursor_commits_after_success():
+    """CONSOLIDATION-4: failed retry sees the same window; receipt makes replay idempotent."""
+    org = _fused_consolidation_org(lambda _prompt: "not JSON")
+    org.memory.remember("events", {"observed": "first"})
+    mind = org.brain.mind
+    before = org.memory.consolidation_window()
+    malformed = mind.consolidate({}) is None
+    retry_same = org.memory.consolidation_window() == before
+    proposal = _consolidation_proposal(before)
+    mind.model = lambda _prompt: json.dumps(proposal)
+    accepted = mind.consolidate({})
+    cursor_advanced = org.memory.consolidation_window()["cursor_before"] != before["cursor_before"]
+    proposal_hash = hashlib.sha256(json.dumps(proposal, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    replay = org.limbs.record_mind_consolidation(proposal, before, proposal_hash)
+    return (malformed and retry_same and bool(accepted) and cursor_advanced
+            and replay.get("idempotent") is True), (
+        "malformed pass left cursor; valid retry committed receipt; hash replay was idempotent")
+
+
 _INVARIANT_DEFINITIONS = [
     ("HF-B08 no-phase1-llm-path (subprocess)", t_no_phase1_llm_path),
     ("HF-B08 phase1-source-clean (static)",    t_phase1_source_clean),
@@ -4134,6 +4228,10 @@ _INVARIANT_DEFINITIONS = [
     ("HF-M15 fusion-requires-stage1",          t_fusion_requires_stage1),
     ("BUGFIX-1 runtime-boundaries",            t_bugfix_runtime_boundaries),
     ("HF-M16 self-inquiry-never-facts",        t_self_inquiry_never_facts),
+    ("CONSOLIDATION-1 history-stays-immutable", t_consolidation_history_immutable),
+    ("CONSOLIDATION-2 mind-cannot-promote-or-rewrite", t_consolidation_mind_cannot_rewrite_or_promote),
+    ("CONSOLIDATION-3 inferred-and-body-applied", t_consolidation_is_inferred_and_body_applied),
+    ("CONSOLIDATION-4 cursor-commits-after-success", t_consolidation_cursor_commits_after_success),
     ("B-OC  organ-overreach-refused",          t_organ_overreach_refused),
     ("HF-B32 reflex-fault-fail-open",          t_reflex_fault_failopen),
     ("LIMB-1 structured-bridge-proof",         t_limb_structured_bridge_proof),

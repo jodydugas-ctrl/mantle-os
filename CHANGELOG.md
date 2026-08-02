@@ -4,6 +4,12 @@ All notable release-level changes are documented here.
 
 ## [Unreleased]
 
+### Added — Body-governed memory consolidation
+
+- Added scheduled retrospective cognition ("sleep") that revisits bounded prior experience and appends later interpretation without rewriting original memory.
+- Consolidation remains inferred, Body-validated, append-only, and unable to promote facts; failed/refused passes do not advance the consolidation cursor.
+- Added executable consolidation authority, history-integrity, retry, and idempotency proofs.
+
 ### Documentation and repository hygiene
 
 - Reconciled maintained README and guide examples with target-bound hatch/graft

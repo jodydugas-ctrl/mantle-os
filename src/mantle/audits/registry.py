@@ -35,6 +35,8 @@ _GUARANTEE_BY_CODE: Dict[str, str] = {
 
 
 def _guarantee(code: str) -> str:
+    if code.startswith("CONSOLIDATION-"):
+        return "TM-CONSOLIDATION-AUTHORITY"
     if code.startswith("GRIMOIRE-V010-"):
         return "TM-GRIMOIRE-EDITION"
     if code in _GUARANTEE_BY_CODE:
@@ -79,6 +81,8 @@ def _guarantee(code: str) -> str:
 
 
 def _concern(code: str) -> str:
+    if code.startswith("CONSOLIDATION-"):
+        return "cognition"
     if code.startswith(("EXEC", "HF-B47", "HF-B48", "HF-B50", "HF-B51", "HF-B52")):
         return "execution"
     if code.startswith(("HF-M", "MIND-", "STAGE2-")):
