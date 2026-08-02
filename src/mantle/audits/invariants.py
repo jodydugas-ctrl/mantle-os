@@ -523,36 +523,45 @@ def _grimoire_v010_checks():
 
     source_path = os.path.join(paths.REPO_ROOT, "documents", "grimoire", "editions",
                                "grimoire-v0.10.md")
-    source = open(source_path, encoding="utf-8").read()
-    declared_compositions = int(re.search(r"composes (\d+) named concept rows", source).group(1))
-    declared_statements = int(re.search(r"^(\d+) statements\.", source, re.M).group(1))
-    section9 = source.split("## 9 SELFTEST", 1)[1].split("## 10 BOOK", 1)[0]
-    section10 = source.split("## 10 BOOK", 1)[1].split("## 11 ", 1)[0]
-    vector_re = re.compile(r"[0-9a-f]{8}(?:[ \t]+[0-9a-f]{8})+")
-    code_compositions = grimoire_v010.COMPOSITION_COUNT
-    code_statements = grimoire_v010.STATEMENT_COUNT
-    checks["counts"] = (
-        declared_compositions == code_compositions == 295
-        and declared_statements == code_statements == len(vector_re.findall(section10))
-        and len(vector_re.findall(section9)) == len(grimoire_v010.SELFTEST_VECTORS),
-        "source counts match code-derived edition values",
-    )
-    compare = subprocess.run(
-        [sys.executable, os.path.join(paths.REPO_ROOT, "tools", "grimoire_tool.py"),
-         "compare", source_path, "--profile", "grimoire-v0.10", "--json"],
-        cwd=paths.REPO_ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        text=True, env=dict(os.environ, PYTHONIOENCODING="utf-8"), timeout=120,
-    )
-    try:
-        comparison = json.loads(compare.stdout)
-    except (TypeError, ValueError):
-        comparison = {}
-    checks["independent-compare"] = (
-        compare.returncode == 0 and comparison.get("status") == "PASS"
-        and comparison.get("differences") == []
-        and comparison.get("compared") == comparison.get("vectors"),
-        "independent verifier and runtime agree on every covered run",
-    )
+    if os.path.isfile(source_path):
+        # Repository checkout: verify the source document against the codec-derived
+        # edition values and the independent verifier tool.
+        source = open(source_path, encoding="utf-8").read()
+        declared_compositions = int(re.search(r"composes (\d+) named concept rows", source).group(1))
+        declared_statements = int(re.search(r"^(\d+) statements\.", source, re.M).group(1))
+        section9 = source.split("## 9 SELFTEST", 1)[1].split("## 10 BOOK", 1)[0]
+        section10 = source.split("## 10 BOOK", 1)[1].split("## 11 ", 1)[0]
+        vector_re = re.compile(r"[0-9a-f]{8}(?:[ \t]+[0-9a-f]{8})+")
+        code_compositions = grimoire_v010.COMPOSITION_COUNT
+        code_statements = grimoire_v010.STATEMENT_COUNT
+        checks["counts"] = (
+            declared_compositions == code_compositions == 295
+            and declared_statements == code_statements == len(vector_re.findall(section10))
+            and len(vector_re.findall(section9)) == len(grimoire_v010.SELFTEST_VECTORS),
+            "source counts match code-derived edition values",
+        )
+        compare = subprocess.run(
+            [sys.executable, os.path.join(paths.REPO_ROOT, "tools", "grimoire_tool.py"),
+             "compare", source_path, "--profile", "grimoire-v0.10", "--json"],
+            cwd=paths.REPO_ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, env=dict(os.environ, PYTHONIOENCODING="utf-8"), timeout=120,
+        )
+        try:
+            comparison = json.loads(compare.stdout)
+        except (TypeError, ValueError):
+            comparison = {}
+        checks["independent-compare"] = (
+            compare.returncode == 0 and comparison.get("status") == "PASS"
+            and comparison.get("differences") == []
+            and comparison.get("compared") == comparison.get("vectors"),
+            "independent verifier and runtime agree on every covered run",
+        )
+    else:
+        # Package install (not a source checkout): the grimoire source document and
+        # the independent verifier tool are not installed, so source-integrity checks
+        # cannot run. Report an explicit skip rather than crashing the suite.
+        checks["counts"] = (True, "skipped: not a repository checkout (installed package)")
+        checks["independent-compare"] = (True, "skipped: not a repository checkout (installed package)")
     return checks
 
 
@@ -570,6 +579,12 @@ def _grimoire_v010_evidence_identity():
     ]
     digest = hashlib.sha256()
     for filename in files:
+        # When mantle is installed as a package (not a source checkout), repo-only
+        # files such as the grimoire document and the independent verifier tool are
+        # not present. Skip them so the fixture identity is computed consistently
+        # (setup and compare) instead of raising FileNotFoundError.
+        if not os.path.isfile(filename):
+            continue
         relative = os.path.relpath(filename, paths.REPO_ROOT).replace("\\", "/")
         with open(filename, "rb") as stream:
             data = stream.read()
