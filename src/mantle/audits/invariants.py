@@ -2717,7 +2717,11 @@ def t_doctor_checkup():
     org = _born()
     org.memory.remember("facts", {"k": "v"})
     root = paths.REPO_ROOT
-    repository_checkout = os.path.isfile(os.path.join(root, "README.md"))
+    # A repository checkout has BOTH the README and the threat model; a partial tree
+    # (e.g. a vendored plugin runtime with a README but no THREAT_MODEL.md) must not
+    # trigger repo-coherence checks it cannot satisfy.
+    repository_checkout = (os.path.isfile(os.path.join(root, "README.md"))
+                           and os.path.isfile(os.path.join(root, "THREAT_MODEL.md")))
     healthy = _doc.checkup(org, repo_root=root if repository_checkout else None)
     coherence_ok = (
         next(c for c in healthy["checks"] if c["check"] == "docs-vs-code")["ok"]

@@ -68,10 +68,16 @@ def adopt_semantic_memory(*, body: Any, operator_authorized: bool, commit: str,
     if operator_authorized is not True:
         raise PermissionError("semantic-memory adoption requires operator authorization")
     root = Path(repository_root)
-    encoder = root / "src" / "mantle" / "vcw" / "grimoire_editions" / "semantic.py"
-    driver = root / "src" / "mantle" / "vcw" / "drivers.py"
-    cube = root / "src" / "mantle" / "vcw" / "cube.py"
-    invariants = root / "src" / "mantle" / "audits" / "invariants.py"
+    # Runtime files resolve from the implementing modules themselves so the receipt
+    # works identically from a source checkout (<root>/src/mantle) and from a
+    # vendored runtime (<root>/runtime/mantle). Never assume a layout.
+    from . import semantic as _semantic_module
+    encoder = Path(_semantic_module.__file__).resolve()
+    vcw_dir = encoder.parents[1]
+    mantle_dir = encoder.parents[2]
+    driver = vcw_dir / "drivers.py"
+    cube = vcw_dir / "cube.py"
+    invariants = mantle_dir / "audits" / "invariants.py"
     companion = root / "documents" / "grimoire" / "semantic-memory" / "semantic-memory-v1.md"
     receipt = {
         "kind": "semantic_memory_adoption",
@@ -81,7 +87,8 @@ def adopt_semantic_memory(*, body: Any, operator_authorized: bool, commit: str,
         "driver_sha256": _sha256(driver),
         "cube_sha256": _sha256(cube),
         "invariants_sha256": _sha256(invariants),
-        "companion_sha256": _sha256(companion),
+        "companion_sha256": _sha256(companion) if companion.is_file() else None,
+        "companion_present": companion.is_file(),
         "operator_authorized": True,
         "default_scope": "new-tissue-only",
         "legacy_reinterpretation": False,
