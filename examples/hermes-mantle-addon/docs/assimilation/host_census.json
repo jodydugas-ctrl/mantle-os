@@ -229,7 +229,7 @@
     "apps/bootstrap-installer/src-tauri/capabilities/default.json": "86b982c193d6113194c5c1b6f605149956f9d334f3d4f55a53d14d01fe7121f5",
     "apps/bootstrap-installer/src-tauri/hermes-setup.manifest": "8903a23d0360edd22e361bc8ae14a71013b906f0190337844c862c84331ffd97",
     "apps/bootstrap-installer/src-tauri/icons/128x128.png": "1f773427a0076eb0d49dd299151e9d897ba657100448b14de961cec7c38274fd",
-    "apps/bootstrap-installer/src-tauri/icons/128x128@2x.png": "1f773427a0076eb0d49dd299151e9d897ba657100448b14de961cec7c38274fd",
+    "apps/bootstrap-installer/src-tauri/icons/apps/bootstrap-installer/src-tauri/icons/author.png": "1f773427a0076eb0d49dd299151e9d897ba657100448b14de961cec7c38274fd",
     "apps/bootstrap-installer/src-tauri/icons/32x32.png": "1f773427a0076eb0d49dd299151e9d897ba657100448b14de961cec7c38274fd",
     "apps/bootstrap-installer/src-tauri/icons/icon.icns": "56c39b613d61d13671e49bf7e32fb8e80f705b9c50d8bed1c18a505f0b12be89",
     "apps/bootstrap-installer/src-tauri/icons/icon.ico": "92320b91d6290c158d8c64e231d5964dabbd2eab8d72102469b986d8792bf260",
