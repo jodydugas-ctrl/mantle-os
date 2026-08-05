@@ -30,9 +30,9 @@ from ..core.organism import Organism
 from ..core.redact import contains_secret
 from ..core.audit import expect_raise as _expect_raise
 from ..primer import appai_commandments, appai_truths
-from ..vcw.bands import standard_genome, make_band_boot, get_driver
+from ..vcw.bands import standard_genome, semantic_genome, make_band_boot, get_driver
 from ..vcw.cube import Cube
-from ..vcw.entry import make_entry
+from ..vcw.entry import make_entry, entry_hash
 from ..vcw.drivers import (ExecDriver, CapabilityError, IntegrityError, TrustError,
                            SandboxError, ProvenanceError, ResourceLimitError,
                            ProtocolError, PythonExecRunner, validate_calcify_payload,
@@ -42,6 +42,9 @@ from ..vcw.grimoire_editions import GrimoireEditionError, decode_statement as de
 from ..vcw.grimoire_editions import get_edition, known_editions
 from ..vcw.grimoire_editions import v010 as grimoire_v010
 from ..vcw.grimoire_editions import v09 as grimoire_v09
+from ..vcw.grimoire_editions import semantic as grimoire_semantic
+from ..vcw.grimoire_editions.v010 import GrimoireDecodeError as V010DecodeError
+from ..vcw.grimoire_editions.adoption import adopt_semantic_memory
 from ..vcw.bands import code_hash
 from .registry import build_registry, by_concern
 from .ghnest import GHNEST_DEFINITIONS
@@ -618,6 +621,316 @@ def t_grimoire_v010_provenance(): return _grimoire_v010_check("provenance")
 def t_grimoire_v010_evidence_label(): return _grimoire_v010_check("evidence-label")
 def t_grimoire_v010_counts(): return _grimoire_v010_check("counts")
 def t_grimoire_v010_independent_compare(): return _grimoire_v010_check("independent-compare")
+
+
+# ============================================================================
+# 6b. Semantic memory (GRIMOIRE-ENC-*): one-step entry -> Grimoire encoding
+#     (THREAT_MODEL: TM-GRIMOIRE-SEMANTIC; every runner has a red case)
+# ============================================================================
+def _enc_cube(genome=None):
+    return Cube.genesis(genome if genome is not None else semantic_genome(),
+                        generation=0)
+
+
+def _enc_think(content=None, **extra):
+    """One MIND reflection entry (unverified by default)."""
+    e = make_entry(content if content is not None else {"reflection": "enc"},
+                   opcode="THINK", author="MIND", verified=False,
+                   confidence="inferred")
+    e.update(extra)
+    return e
+
+
+def t_grimoire_enc_one_step():
+    """GRIMOIRE-ENC-01: a MIND think stores a record whose semantic.raw decodes as a
+    valid v0.10 statement with evidence+force. Red case: a log-json band on the same
+    organism carries no semantic statement."""
+    cube = _enc_cube()
+    cube.append("thoughts", _enc_think())
+    rec = cube.read("thoughts", reveal_private=True)[0]
+    stmt = decode_profiled(rec["semantic"]["raw"], profile="grimoire-v0.10",
+                           frame_id="enc-01")
+    good = (rec["semantic"]["parity_status"] == "ok"
+            and stmt["effective_evidence"] == "INFERRED"
+            and stmt["effective_force"] == "MAY")
+    plain = Cube.genesis(standard_genome(), generation=0)
+    plain.append("thoughts", _enc_think())
+    red = "semantic" not in plain.read("thoughts", reveal_private=True)[0]
+    return good and red, ("one append stored a v0.10 statement (INFERRED/MAY); "
+                          "a log-json band stores none")
+
+
+def t_grimoire_enc_evidence_fidelity():
+    """GRIMOIRE-ENC-02: evidence labels follow the default table -- unverified THINK
+    is INFERRED; a verified sensor fact is MEASURED. Red case: ASSUMED relabeled as
+    INFERRED is refused."""
+    think = _enc_think()
+    think["ts"] = 123456789.0
+    rec = grimoire_semantic.encode_entry(think)
+    green = rec["semantic"]["evidence"] == "INFERRED"
+    measured = _enc_think({"reflection": "s"}, author="BODY", verified=True,
+                          source="sensor-1", confidence="measured")
+    measured["ts"] = 123456789.0
+    rec2 = grimoire_semantic.encode_entry(measured)
+    green = green and rec2["semantic"]["evidence"] == "MEASURED"
+    assumed = make_entry({"reflection": "a"}, opcode="WRITE", author="BODY",
+                         assumption=True)
+    assumed["ts"] = 123456789.0
+    rec3 = grimoire_semantic.encode_entry(assumed)
+    red = rec3["semantic"]["evidence"] == "ASSUMED" \
+        and grimoire_semantic.resolve_evidence(assumed) == "ASSUMED"
+    return green and red, ("labels follow the table (INFERRED/MEASURED); "
+                           "ASSUMED is never laundered into INFERRED")
+
+
+def t_grimoire_enc_force_fidelity():
+    """GRIMOIRE-ENC-03: force labels follow the default table -- THINK is MAY,
+    CONSOLIDATE is LET, IMMUNE is MUST. Red case: an unmapped opcode gets QUOTE,
+    never an invented force."""
+    labels = {"THINK": "MAY", "CONSOLIDATE": "LET", "DISPATCH": "GATE",
+              "IMMUNE": "MUST", "SENSE": "WAY"}
+    green = True
+    for opcode, expected in labels.items():
+        e = make_entry({"k": opcode}, opcode=opcode, author="BODY")
+        e["ts"] = 123456789.0
+        green = green and grimoire_semantic.encode_entry(e)["semantic"]["force"] == expected
+    mystery = make_entry({"k": "mystery"}, opcode="MYSTERY", author="BODY")
+    mystery["ts"] = 123456789.0
+    red = grimoire_semantic.encode_entry(mystery)["semantic"]["force"] == "QUOTE"
+    return green and red, ("force labels follow the table; an unmapped opcode "
+                           "is inert QUOTE, never invented")
+
+
+def t_grimoire_enc_raw_retained():
+    """GRIMOIRE-ENC-04: semantic.raw survives append AND save/load (mirror of
+    GRIMOIRE-V010-08). Red case: a record stripped of its raw run cannot verify."""
+    import tempfile
+    cube = _enc_cube()
+    cube.append("thoughts", _enc_think())
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "g.vcw")
+        cube.save(path)
+        loaded = Cube.load(path)
+        back = loaded.read("thoughts", reveal_private=True)[0]
+        green = bool(back["semantic"]["raw"]) \
+            and back["semantic"]["raw"] == cube.read("thoughts", reveal_private=True)[0]["semantic"]["raw"]
+        stripped = dict(back)
+        stripped["semantic"] = {k: v for k, v in back["semantic"].items() if k != "raw"}
+        try:
+            grimoire_semantic.decode_entry(stripped)
+            red = False
+        except V010DecodeError:
+            red = True
+    return green and red, ("raw run retained across save/load; a stripped raw "
+                           "refuses verification")
+
+
+def t_grimoire_enc_hash_covers_raw():
+    """GRIMOIRE-ENC-05: tampering semantic.raw breaks the entry hash (and the cube's
+    verify catches a tampered record with a stale hash). Red case: tamper + stale hash
+    goes undetected."""
+    cube = _enc_cube()
+    cube.append("thoughts", _enc_think())
+    layer = cube.band_layers["thoughts"][0]
+    rec = cube.layer_content(layer)[0]
+    raw_hex = rec["semantic"]["raw"]
+    rec["semantic"]["raw"] = raw_hex[:-2] + "00"        # in-place tamper
+    problems = cube.verify()
+    detected = any("hash mismatch" in p for p in problems)
+    try:
+        grimoire_semantic.decode_entry(rec)
+        decode_refused = False
+    except V010DecodeError:
+        decode_refused = True
+    rec["semantic"]["raw"] = raw_hex                     # restore for the green side
+    green = cube.verify() == []
+    return green and detected and decode_refused, ("hash covers the raw run; "
+                                                   "tamper+stale-hash is detected")
+
+
+def t_grimoire_enc_multi_layer_read():
+    """GRIMOIRE-ENC-06: entries beyond layer one are visible on a semantic band.
+    Red case: the pre-fix primary-layer-only read hides them."""
+    genome = []
+    for boot in standard_genome():
+        if boot["band"] == "thoughts":
+            boot["encoding"] = "grimoire-v0.10-entry"
+            boot["params"] = {"profile": "grimoire-v0.10-entry",
+                              "max_entries_per_layer": 2}
+            boot["span"] = 5
+        genome.append(boot)
+    cube = Cube.genesis(genome, generation=0)
+    for i in range(6):
+        cube.append("thoughts", _enc_think({"reflection": "m%d" % i}))
+    total = len(cube.read("thoughts", reveal_private=True))
+    primary_only = len(cube.layer_content(cube.primary_layer("thoughts")))
+    return cube.layer_count("thoughts") == 3 and total == 6 and primary_only == 2, (
+        "semantic bands read across all layers (%d); primary-layer-only would see %d"
+        % (total, primary_only))
+
+
+def t_grimoire_enc_ids_and_marks():
+    """GRIMOIRE-ENC-07: ids are band-unique monotonic; tombstone/quarantine hide.
+    Red case: id reuse or a hidden-mark bypass."""
+    cube = _enc_cube()
+    for i in range(3):
+        cube.append("thoughts", _enc_think({"reflection": "r%d" % i}))
+    ids = [e["id"] for e in cube.read("thoughts", reveal_private=True)]
+    monotonic = ids == [0, 1, 2]
+    cube.tombstone("thoughts", 1)
+    cube.quarantine("thoughts", 2)
+    visible = [e["id"] for e in cube.read("thoughts", reveal_private=True)]
+    hidden = visible == [0]
+    return monotonic and hidden, ("ids monotonic and unique; tombstoned/quarantined "
+                                  "entries never surface")
+
+
+def t_grimoire_enc_graded_memory():
+    """GRIMOIRE-ENC-08: deweight hides as a behavioral ghost and restores; the
+    original record is never mutated. Red case: deweight overwrites the record."""
+    cube = _enc_cube()
+    cube.append("thoughts", _enc_think({"reflection": "a"}))
+    cube.append("thoughts", _enc_think({"reflection": "b"}))
+    cube.deweight("thoughts", 0)
+    ghosted = [e["id"] for e in cube.read("thoughts", reveal_private=True, ghosts=True)]
+    cube.deweight("thoughts", 0, weight=0.5)
+    restored = [e["id"] for e in cube.read("thoughts", reveal_private=True)]
+    layer = cube.band_layers["thoughts"][0]
+    original = next(e for e in cube.layer_content(layer) if e.get("id") == 0)
+    unmutated = original["hash"] == entry_hash(original)
+    return ghosted == [0] and restored == [1, 0] and unmutated, (
+        "deweight hides as ghost and restores; the original record's hash survives")
+
+
+def t_grimoire_enc_metabolism():
+    """GRIMOIRE-ENC-09: dedupe tombstones identical (opcode, content); compact
+    reclaims; dedupe never collapses distinct evidence/force. Red case: a MEASURED
+    fact dropped as a duplicate of an INFERRED reflection."""
+    cube = _enc_cube()
+    cube.append("thoughts", _enc_think({"reflection": "dup"}))
+    cube.append("thoughts", _enc_think({"reflection": "dup"}))
+    cube.append("thoughts", _enc_think({"reflection": "dup"}, author="BODY",
+                                       verified=True, source="sensor-1",
+                                       confidence="measured"))
+    rep = cube.dedupe("thoughts")
+    live = cube.read("thoughts", reveal_private=True)
+    distinct_kept = rep["duplicates"] == 1 and [e["id"] for e in live] == [0, 2] \
+        and live[1]["semantic"]["evidence"] == "MEASURED"
+    cube.tombstone("thoughts", 0)
+    rep = cube.compact("thoughts")
+    compacted = rep["dropped"] == 2 and \
+        [e["id"] for e in cube.read("thoughts", reveal_private=True)] == [2]
+    return distinct_kept and compacted, ("dedupe keys include evidence+force; "
+                                         "compact reclaims tombstones")
+
+
+def t_grimoire_enc_veil():
+    """GRIMOIRE-ENC-10: a private semantic band reads [] without reveal. Red case:
+    the driver bypasses the veil."""
+    cube = _enc_cube()
+    cube.append("thoughts", _enc_think())
+    hidden = cube.read("thoughts") == []
+    revealed = len(cube.read("thoughts", reveal_private=True)) == 1
+    return hidden and revealed, ("the veil holds on semantic bands; only an explicit "
+                                 "reveal surfaces the private stream")
+
+
+def t_grimoire_enc_content_fidelity():
+    """GRIMOIRE-ENC-11: content round-trips byte-for-byte through the QUOTE frame.
+    Red case: content drift between the frame and the stored field."""
+    entry = _enc_think({"reflection": "fidelity", "nested": {"a": [1, 2, 3]}})
+    entry["ts"] = 123456789.0
+    record = grimoire_semantic.encode_entry(entry)
+    bytes_back = grimoire_v010.decode_quoted_bytes(record["semantic"]["content_raw"],
+                                                   frame_id="enc-11")
+    green = json.loads(bytes_back.decode("utf-8")) == entry["content"]
+    drifted = dict(record)
+    drifted["content"] = {"reflection": "drifted"}
+    try:
+        grimoire_semantic.decode_entry(drifted)
+        red = False
+    except V010DecodeError:
+        red = True
+    return green and red, ("content rides QUOTE frames byte-exactly; drift is refused")
+
+
+def t_grimoire_enc_determinism():
+    """GRIMOIRE-ENC-12: encode(entry) twice yields identical bytes. Red case:
+    timestamp nondeterminism -- a different ts must produce a different run."""
+    a = _enc_think({"reflection": "same"})
+    b = dict(a)
+    a["ts"] = 123456789.0
+    b["ts"] = 123456790.0
+    ra = grimoire_semantic.encode_entry(a)
+    rb = grimoire_semantic.encode_entry(dict(a))
+    rc = grimoire_semantic.encode_entry(b)
+    same = ra["semantic"]["raw"] == rb["semantic"]["raw"] \
+        and ra["semantic"]["content_raw"] == rb["semantic"]["content_raw"]
+    red = rc["semantic"]["raw"] != ra["semantic"]["raw"]
+    return same and red, ("deterministic encode; ts participates in the run")
+
+
+def t_grimoire_enc_stage1_compat():
+    """GRIMOIRE-ENC-13: Phase-1 stays model-free -- the encoder imports no mind or
+    network client (static) and a clean interpreter births a semantic-genome organism
+    and encodes without loading mantle.mind. Red case: any Phase-1 path reaching a
+    model."""
+    import ast as _ast
+    banned_roots = ("urllib", "http", "socket", "requests", "openai", "anthropic")
+    semantic_path = os.path.join(paths.SRC_DIR, "mantle", "vcw", "grimoire_editions",
+                                 "semantic.py")
+    with open(semantic_path, encoding="utf-8") as fh:
+        tree = _ast.parse(fh.read(), semantic_path)
+    static_clean = True
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.Import):
+            for alias in node.names:
+                root = alias.name.split(".")[0]
+                if root in banned_roots or alias.name.startswith("mantle.mind"):
+                    static_clean = False
+        elif isinstance(node, _ast.ImportFrom) and node.module:
+            root = node.module.split(".")[0]
+            if root in banned_roots or node.module.startswith("mantle.mind"):
+                static_clean = False
+    probe = (
+        "import sys\n"
+        "from mantle import Organism\n"
+        "from mantle.vcw.bands import semantic_genome\n"
+        "org = Organism.birth(identity={'name':'P'}, truths=['t'], commandments=['c'],\n"
+        "                     genome=semantic_genome())\n"
+        "org.prime.append('thoughts', {'opcode':'THINK','author':'MIND',\n"
+        "                             'content':{'reflection':'p'},'verified':False,\n"
+        "                             'confidence':'inferred'})\n"
+        "banned = [m for m in sys.modules if m.startswith('mantle.mind')\n"
+        "          or m in ('urllib.request','http.client','openai','anthropic','requests')]\n"
+        "print('BANNED:' + ','.join(banned))\n"
+    )
+    env = {**os.environ, "PYTHONPATH": paths.SRC_DIR}
+    out = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True,
+                         cwd=paths.REPO_ROOT, env=env, timeout=120)
+    line = [l for l in out.stdout.splitlines() if l.startswith("BANNED:")]
+    banned = line[0][len("BANNED:"):] if line else "?"
+    subprocess_ok = out.returncode == 0 and banned == ""
+    return static_clean and subprocess_ok, (
+        "semantic encoder is import-clean; a clean interpreter encoded a THINK on a "
+        "semantic-genome organism without loading a mind or network module")
+
+
+def t_grimoire_enc_adoption_gate():
+    """GRIMOIRE-ENC-14: semantic-memory tissue requires the operator adoption
+    receipt. Red case: creation without authorization."""
+    body = Body()
+    try:
+        adopt_semantic_memory(body=body, operator_authorized=False, commit="red")
+        refused = False
+    except PermissionError:
+        refused = True
+    receipt = adopt_semantic_memory(body=body, operator_authorized=True, commit="ok")
+    recorded = receipt["kind"] == "semantic_memory_adoption" \
+        and receipt["default_scope"] == "new-tissue-only" \
+        and receipt in body.self_record()["edition_adoptions"]
+    return refused and recorded, ("unauthorized adoption refused; the receipt is "
+                                  "operator-authorized new-tissue-only")
 
 
 # ============================================================================
@@ -4218,6 +4531,20 @@ _INVARIANT_DEFINITIONS = [
     ("GRIMOIRE-V010-12 evidence-labels",           t_grimoire_v010_evidence_label),
     ("GRIMOIRE-V010-13 source-counts",             t_grimoire_v010_counts),
     ("GRIMOIRE-V010-14 independent-compare",       t_grimoire_v010_independent_compare),
+    ("GRIMOIRE-ENC-01 one-step-encode",            t_grimoire_enc_one_step),
+    ("GRIMOIRE-ENC-02 evidence-fidelity",          t_grimoire_enc_evidence_fidelity),
+    ("GRIMOIRE-ENC-03 force-fidelity",             t_grimoire_enc_force_fidelity),
+    ("GRIMOIRE-ENC-04 raw-retained",               t_grimoire_enc_raw_retained),
+    ("GRIMOIRE-ENC-05 hash-covers-raw",            t_grimoire_enc_hash_covers_raw),
+    ("GRIMOIRE-ENC-06 multi-layer-read",           t_grimoire_enc_multi_layer_read),
+    ("GRIMOIRE-ENC-07 ids+immune-marks",           t_grimoire_enc_ids_and_marks),
+    ("GRIMOIRE-ENC-08 graded-memory",              t_grimoire_enc_graded_memory),
+    ("GRIMOIRE-ENC-09 metabolism",                 t_grimoire_enc_metabolism),
+    ("GRIMOIRE-ENC-10 veil",                       t_grimoire_enc_veil),
+    ("GRIMOIRE-ENC-11 content-fidelity",           t_grimoire_enc_content_fidelity),
+    ("GRIMOIRE-ENC-12 determinism",                t_grimoire_enc_determinism),
+    ("GRIMOIRE-ENC-13 stage1-compat",              t_grimoire_enc_stage1_compat),
+    ("GRIMOIRE-ENC-14 adoption-gate",              t_grimoire_enc_adoption_gate),
     ("HF-B47 exec-integrity-gate",             t_exec_integrity),
     ("HF-B48 exec-capability-gate",            t_exec_capability),
     ("HF-B50 exec-trust/foreign-refused",      t_exec_trust_foreign),
