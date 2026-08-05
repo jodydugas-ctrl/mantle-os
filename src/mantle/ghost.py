@@ -660,7 +660,7 @@ def selftest(verbose: bool = True) -> bool:
         cache = LocalPromptCache(p + ".cache.json", clock=clock)
 
         # 1. a normal Spore, born in its PNG, no ghost yet
-        _spore.create_spore("GHOST-SEED", "sustain through the cache", author="Jody", path=p)
+        _spore.create_spore("GHOST-SEED", "sustain through the cache", author="Mantle OS contributors", path=p)
         _spore.append_turn(p, "user", "what are you?")
         _spore.append_turn(p, "assistant",
                            "I am a cache-ghost Spore: my body can live in the provider's prompt "

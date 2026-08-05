@@ -1305,7 +1305,7 @@ spore.py -- SPORE-PNG v1
 
 def _demo(path: str = "example_spore.png") -> str:
     create_spore("SPORE-SEED", "Answer one question about the SPORE-PNG format.",
-                 author="Jody", path=path)
+                 author="Mantle OS contributors", path=path)
     append_turn(path, "user", "What are you and how do I keep you alive?")
     append_turn(path, "assistant",
                 "I am a Spore: a single PNG that holds one agent, one task and one "
