@@ -66,6 +66,11 @@ Mantle has a small number of load-bearing principles. Changes should respect the
 - Match the existing code style in `examples/vcw/`.
 - Keep documents in the established voice and reading order. If you add a document, link it from
   the README and the Primer's document set.
+- **Where documents live:** `documents/` is the canonical documentation corpus — everything
+  user- and contributor-facing lives there. The top-level `docs/` is reserved for the MantleOS 2.0
+  release-closure artifacts (`MANTLE2_*`) that `tools/build_mantle2_matrix.py` writes and the
+  invariant suite reads — do not move or rename them. Never create a new documentation root
+  (`doc/`, `document/`, `documentation/`, ...); add to `documents/` instead.
 
 ## License
 
