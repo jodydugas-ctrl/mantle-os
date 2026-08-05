@@ -921,11 +921,13 @@ def t_grimoire_enc_adoption_gate():
     receipt. Red case: creation without authorization."""
     body = Body()
     try:
-        adopt_semantic_memory(body=body, operator_authorized=False, commit="red")
+        adopt_semantic_memory(body=body, operator_authorized=False, commit="red",
+                              repository_root=paths.REPO_ROOT)
         refused = False
     except PermissionError:
         refused = True
-    receipt = adopt_semantic_memory(body=body, operator_authorized=True, commit="ok")
+    receipt = adopt_semantic_memory(body=body, operator_authorized=True, commit="ok",
+                                    repository_root=paths.REPO_ROOT)
     recorded = receipt["kind"] == "semantic_memory_adoption" \
         and receipt["default_scope"] == "new-tissue-only" \
         and receipt in body.self_record()["edition_adoptions"]

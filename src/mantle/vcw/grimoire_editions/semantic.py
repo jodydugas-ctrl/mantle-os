@@ -262,7 +262,8 @@ def _edition_composition_rows() -> Dict[str, Tuple[int, ...]]:
                                "grimoire-v0.10.md")
     if not os.path.isfile(source_path):
         return {}
-    source = open(source_path, encoding="utf-8").read()
+    with open(source_path, encoding="utf-8") as fh:
+        source = fh.read()
     block = source.split("## 6 COMPOSITION", 1)[1].split("## 7 CONFORMANCE", 1)[0]
     atoms_block = source.split("## 5 ATOM", 1)[1].split("## 6 COMPOSITION", 1)[0]
     by_char: Dict[str, int] = {}

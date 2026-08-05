@@ -291,13 +291,16 @@ def test_carrier_compat():
 # ---------------------------------------------------------------------------
 def test_adoption_gate():
     body = Body()
+    root = os.path.join(os.path.dirname(__file__), "..", "..")
     try:
-        adopt_semantic_memory(body=body, operator_authorized=False, commit="abc")
+        adopt_semantic_memory(body=body, operator_authorized=False, commit="abc",
+                              repository_root=root)
         assert False, "unauthorized adoption must be refused"
     except PermissionError:
         pass
     assert new_semantic_genome_params() == {"profile": SEMANTIC_MEMORY_PROFILE}
-    receipt = adopt_semantic_memory(body=body, operator_authorized=True, commit="abc")
+    receipt = adopt_semantic_memory(body=body, operator_authorized=True, commit="abc",
+                                    repository_root=root)
     assert receipt["kind"] == "semantic_memory_adoption"
     assert receipt["default_scope"] == "new-tissue-only"
     assert receipt in body.self_record()["edition_adoptions"]
