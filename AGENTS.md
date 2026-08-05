@@ -152,6 +152,8 @@ those systems may encode into a VCW carrier; it does not carry a separate proced
   an explicit private context-band migration. Never advance a rolling source cursor before
   the matching request, response, receipt, and commit are durably appended.
 - Don't hardcode invariant counts in docs — `python -m mantle prove` derives them.
+- Keep documentation in `documents/` (the canonical corpus). The top-level `docs/` is reserved
+  for the machine-referenced `MANTLE2_*` release-closure artifacts — never create a new doc root.
 - Verify with the smallest command that matches the risk (`mantle audit` / `prove` →
   `audit-mind` → `check --fast` → `check`). The full rule set is
   [`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md) §10–§11.
