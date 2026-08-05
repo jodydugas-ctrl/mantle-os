@@ -14,6 +14,7 @@ The Grimoire is a versioned family of immutable edition files:
 | v0.9 compatibility | [editions/grimoire-v0.9.md](editions/grimoire-v0.9.md) | Frozen legacy carrier contract. |
 | v0.10 | [editions/grimoire-v0.10.md](editions/grimoire-v0.10.md) | Adopted default for new tissue; explicit procedure-container semantics and normative codec. |
 | Residency companion | [residency/grimoire-residency-v1.md](residency/grimoire-residency-v1.md) | Non-edition ABODE/residency profile: `local`, `cloud`, `github` nesting forms and the one residency law. Not codec-affecting; not an edition. |
+| Semantic-memory companion | [semantic-memory/semantic-memory-v1.md](semantic-memory/semantic-memory-v1.md) | Non-edition one-step thought-and-storage profile (`grimoire-v0.10-entry` driver): DEFAULT evidence/force tables, record-kind compositions, and the DD-Q two-framed-run shape. Not codec-affecting; not an edition. |
 | Legacy mirror | [The Grimoire.md](The%20Grimoire.md) | Byte-identical v0.9 compatibility mirror; never use it to infer the current edition. |
 
 After the explicit adoption receipt, newly created Grimoire tissue defaults to v0.10.
@@ -68,6 +69,7 @@ Current Mantle code surfaces that interact with this boundary:
 | Edition adoption policy | [`src/mantle/vcw/grimoire_editions/adoption.py`](../../src/mantle/vcw/grimoire_editions/adoption.py), [`EDITION_MIGRATION.md`](EDITION_MIGRATION.md) |
 | Grimoire v0.9 executable profile | [`src/mantle/vcw/grimoire.py`](../../src/mantle/vcw/grimoire.py) and the registered `grimoire-v0.9` driver |
 | Grimoire v0.10 executable profile | [`src/mantle/vcw/grimoire_editions/v010.py`](../../src/mantle/vcw/grimoire_editions/v010.py) and the registered `grimoire-v0.10` driver |
+| Semantic-memory entry profile | [`src/mantle/vcw/grimoire_editions/semantic.py`](../../src/mantle/vcw/grimoire_editions/semantic.py), the registered `grimoire-v0.10-entry` driver, and [`semantic-memory/semantic-memory-v1.md`](semantic-memory/semantic-memory-v1.md) |
 | Spore PNG carriers | [`src/mantle/spore.py`](../../src/mantle/spore.py), [`src/mantle/spore_min.py`](../../src/mantle/spore_min.py), [`examples/spore/`](../../examples/spore/) |
 | v0.10 independent verifier / bounded research | [`tools/grimoire_tool.py`](../../tools/grimoire_tool.py), [`src/mantle/research/`](../../src/mantle/research/), [`documents/research/`](../research/) |
 | Assimilation / residency | [`src/mantle/assimilator/`](../../src/mantle/assimilator/), [`anchor.py`](../../src/mantle/anchor.py), [`graft.py`](../../src/mantle/graft.py) |

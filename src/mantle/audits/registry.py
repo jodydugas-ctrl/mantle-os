@@ -39,6 +39,8 @@ def _guarantee(code: str) -> str:
         return "TM-CONSOLIDATION-AUTHORITY"
     if code.startswith("GRIMOIRE-V010-"):
         return "TM-GRIMOIRE-EDITION"
+    if code.startswith("GRIMOIRE-ENC-"):
+        return "TM-GRIMOIRE-SEMANTIC"
     if code in _GUARANTEE_BY_CODE:
         return _GUARANTEE_BY_CODE[code]
     if code in {"HF-B07", "HF-B45", "HF-B02"}:
@@ -95,7 +97,7 @@ def _concern(code: str) -> str:
         return "reproduction"
     if code.startswith(("PHENO", "RESID", "NOC", "SCHED", "SYM")):
         return "residency"
-    if code.startswith(("MEM", "B-", "HF-B", "PERSIST", "SELF")):
+    if code.startswith(("MEM", "B-", "HF-B", "PERSIST", "SELF", "GRIMOIRE-ENC-")):
         return "body"
     if code.startswith("GHNEST"):
         return "operations"

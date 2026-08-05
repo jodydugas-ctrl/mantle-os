@@ -20,11 +20,21 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from .bands import OVERFLOW_THRESHOLD, EMERGENCY_THRESHOLD
+from .bands import OVERFLOW_THRESHOLD, EMERGENCY_THRESHOLD, get_driver
 from .entry import content_hash
 
 # the reclaimable, entry-addressed encodings (spatial/exec layers are never recycled)
-ENTRY_ENCODINGS = ("log-json", "keyvalue")
+ENTRY_ENCODINGS = ("log-json", "keyvalue", "grimoire-v0.10-entry")
+
+
+def _entry_stream(boot) -> bool:
+    """True when the band's driver declares entry-shaped, hashed records (log-json and
+    the semantic entry driver). Capability-based: adding a new entry-stream driver
+    requires no hardcoded name changes here or in the cube."""
+    enc = boot.get("encoding", "")
+    if enc == "log-json":
+        return True
+    return bool(getattr(get_driver(enc), "entry_stream", False))
 
 
 def pressure(cube, band: str) -> float:
@@ -48,9 +58,9 @@ def compact(cube, band: str) -> Dict[str, Any]:
     """Drop tombstoned/quarantined entries; reclaim any non-tail layer that becomes empty
     into the free pool. Only entry-addressed bands are reclaimable (safe-reuse rule)."""
     boot = cube.bands[band]
-    if boot["encoding"] not in ENTRY_ENCODINGS:
+    if not _entry_stream(boot):
         return {"band": band, "reclaimed": 0, "dropped": 0,
-                "note": "spatial/exec layers are not reclaimed"}
+                "note": "spatial/exec/keyvalue layers are not reclaimed"}
     reclaimed = dropped = 0
     keep: List[int] = []
     for idx in list(cube.band_layers[band]):
@@ -75,8 +85,9 @@ def dedupe(cube, band: str) -> Dict[str, Any]:
     the same band. The duplicate is tombstoned -- append-only history is preserved; the
     visible stream becomes coherent. Returns a report with the duplicate ids."""
     boot = cube.bands[band]
-    if boot["encoding"] != "log-json":
-        return {"band": band, "duplicates": 0, "note": "only log-json bands deduplicate"}
+    if not _entry_stream(boot):
+        return {"band": band, "duplicates": 0,
+                "note": "only entry-stream bands deduplicate"}
     seen = set()
     duplicates = []
     for idx in cube.band_layers[band]:
@@ -84,6 +95,12 @@ def dedupe(cube, band: str) -> Dict[str, Any]:
             if e.get("tombstone") or e.get("quarantined"):
                 continue
             key = (e.get("opcode"), content_hash(e.get("content")))
+            sem = e.get("semantic")
+            if isinstance(sem, dict):
+                # semantic records: evidence and force are part of what a duplicate
+                # IS -- a MEASURED fact and an INFERRED reflection with the same
+                # content are NOT duplicates. Never drop distinct evidence/force.
+                key = key + (sem.get("evidence"), sem.get("force"))
             if key in seen:
                 e["tombstone"] = True
                 duplicates.append(e.get("id"))
@@ -112,7 +129,7 @@ def coherence(cube, band: str) -> List[str]:
     boot = cube.bands[band]
     if set(cube.band_layers.get(band, [])) & set(cube.band_free.get(band, [])):
         problems.append("band %s has a layer both active and free" % band)
-    if boot["encoding"] == "log-json":
+    if _entry_stream(boot):
         seen = set()
         for idx in cube.band_layers.get(band, []):
             for e in cube.layer_content(idx):

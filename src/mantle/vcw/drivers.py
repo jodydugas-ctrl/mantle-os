@@ -36,7 +36,7 @@ from .grimoire_editions import decode_statement as decode_profiled
 
 __all__ = [
     "make_entry", "LogJsonDriver", "KeyValueDriver", "CalendarSpatialDriver", "ExecDriver",
-    "GrimoireV09Driver", "GrimoireV010Driver",
+    "GrimoireV09Driver", "GrimoireV010Driver", "GrimoireV010EntryDriver",
     "CapabilityError", "IntegrityError", "TrustError", "SandboxError", "ProvenanceError",
     "ResourceLimitError", "ProtocolError",
     "validate_skill_code", "validate_calcify_payload", "provenance_is_trusted", "trial",
@@ -50,6 +50,7 @@ __all__ = [
 @register
 class LogJsonDriver(Driver):
     name = "log-json"
+    entry_stream = True     # entry-addressed, hashed records (the cube's base contract)
 
     def empty(self, params):
         return []
@@ -206,14 +207,9 @@ class GrimoireV010Driver(GrimoireV09Driver):
     """Explicit v0.10 carrier driver; no implicit fallback from its profile."""
     name = "grimoire-v0.10"
 
-    def append(self, content, params, value):
-        params = params or {}
-        if params.get("profile") != self.name:
-            raise ValueError("v0.10 carrier params require profile %r" % self.name)
+    def _carrier_payload(self, value, content):
+        """Extract (frame_id, fingerprint, raw) from a raw/hex/dict carrier."""
         if isinstance(value, dict):
-            profile = value.get("profile")
-            if profile != self.name:
-                raise ValueError("v0.10 payload requires profile %r" % self.name)
             frame_id = value.get("frame_id", "frame-%d" % len(content))
             fingerprint = value.get("fingerprint")
             raw = value.get("raw", value.get("hex", value))
@@ -221,9 +217,15 @@ class GrimoireV010Driver(GrimoireV09Driver):
             frame_id = "frame-%d" % len(content)
             fingerprint = None
             raw = value
-        decoded = decode_profiled(
+        return frame_id, fingerprint, raw
+
+    def decode_carrier(self, content, params, value):
+        """Decode one raw v0.10 carrier run (no profile-name check; always the base
+        edition profile). Shared by the carrier path of both v0.10 drivers."""
+        frame_id, fingerprint, raw = self._carrier_payload(value, content)
+        return decode_profiled(
             raw,
-            profile=self.name,
+            profile="grimoire-v0.10",
             frame_id=frame_id,
             fingerprint=fingerprint,
             claim_tamper_evidence=bool(params.get("claim_tamper_evidence", False)),
@@ -233,8 +235,62 @@ class GrimoireV010Driver(GrimoireV09Driver):
             container_force=params.get("container_force"),
             container_frame_id=params.get("container_frame_id"),
         )
+
+    def append(self, content, params, value):
+        params = params or {}
+        if params.get("profile") != self.name:
+            raise ValueError("v0.10 carrier params require profile %r" % self.name)
+        if isinstance(value, dict):
+            profile = value.get("profile")
+            if profile != self.name:
+                raise ValueError("v0.10 payload requires profile %r" % self.name)
+        decoded = self.decode_carrier(content, params, value)
         content.append(decoded)
         return content
+
+
+@register
+class GrimoireV010EntryDriver(GrimoireV010Driver):
+    """The one-step semantic memory driver: append ENCODES (entry -> v0.10 statement).
+
+    `entry_stream = True` declares that this band's content is a list of entry-shaped
+    records, so the cube gives it the same guarantees as `log-json`: band-unique ids,
+    multi-layer reads, weight overlay, indexes, immune marks, and metabolism.
+
+    append() has two paths:
+      * entry-shaped value (a dict with `hash`) -> encoded through the semantic
+        encoder into one record holding the structural statement (raw) and the
+        content QUOTE frame (content_raw), both hex, both hash-covered;
+      * raw/hex/dict-with-raw (a v0.10 carrier) -> the frozen carrier decode path
+        (compatibility with `grimoire-v0.10` semantics).
+    """
+    name = "grimoire-v0.10-entry"
+    entry_stream = True
+
+    def empty(self, params):
+        return []
+
+    def append(self, content, params, value):
+        params = params or {}
+        if params.get("profile") != self.name:
+            raise ValueError("grimoire-v0.10-entry params require profile %r" % self.name)
+        if isinstance(value, dict) and "hash" in value:
+            from .grimoire_editions.semantic import encode_entry
+            record = encode_entry(value, frame_id="semantic-%d" % len(content))
+            content.append(record)
+            return content
+        # carrier compatibility: raw v0.10 runs decode exactly like the v0.10 driver
+        decoded = self.decode_carrier(content, params, value)
+        content.append(decoded)
+        return content
+
+    def read(self, content, params, reveal_private=False):
+        return visible(content)
+
+    def retrieve(self, content, params, address):
+        vis = self.read(content, params)
+        i = int(address)
+        return vis[i] if 0 <= i < len(vis) else None
 
 
 # ============================================================================

@@ -345,7 +345,8 @@ class Cube:
         tail = self.band_layers[band][-1]
         content = self.layer_content(tail)
         cap = boot["params"].get("max_entries_per_layer")
-        if cap and boot["encoding"] in metabolism.ENTRY_ENCODINGS and len(content) >= cap:
+        if cap and (boot["encoding"] in metabolism.ENTRY_ENCODINGS
+                    or getattr(drv, "entry_stream", False)) and len(content) >= cap:
             tail = self._allocate(band)
             content = self.layer_content(tail)
         if boot["encoding"] == "log-json":
@@ -356,6 +357,20 @@ class Cube:
                 value = dict(value)
                 value["id"] = self._next_entry_id.get(band, 0)   # band-unique, monotonic
                 self._next_entry_id[band] = value["id"] + 1
+        elif getattr(drv, "entry_stream", False):
+            # semantic entry streams get the same band-unique monotonic ids as log-json,
+            # so indexes, immune marks, deweight, and metabolism work identically.
+            # A bare dict (no entry hash, no carrier raw) is wrapped like log-json;
+            # dicts carrying raw/hex and raw strings remain carriers.
+            from .entry import make_entry
+            if isinstance(value, dict) and "hash" not in value \
+                    and "raw" not in value and "hex" not in value:
+                value = make_entry(value)
+            if isinstance(value, dict) and "hash" in value:
+                if value.get("id") is None:
+                    value = dict(value)
+                    value["id"] = self._next_entry_id.get(band, 0)
+                    self._next_entry_id[band] = value["id"] + 1
         self.layers[tail] = drv.append(content, boot["params"], value)
         self.indexes.invalidate(band)
         return value
@@ -365,7 +380,9 @@ class Cube:
         if boot["private"] and not reveal_private:
             return []                                     # the veil (a Body reflex)
         drv = self._driver(band)
-        if boot["encoding"] == "log-json":                # concatenate the visible stream
+        if boot["encoding"] == "log-json" or getattr(drv, "entry_stream", False):
+            # entry-stream bands (log-json + semantic): concatenate the visible stream
+            # across ALL layers in fill order, then apply the graded-memory overlay.
             from .entry import weight_overlay
             out: List[Any] = []
             for idx in self.band_layers[band]:
@@ -390,7 +407,8 @@ class Cube:
         if boot["private"]:
             return None
         drv = self._driver(band)
-        if boot["encoding"] == "log-json":                # O(1) via the band index
+        if boot["encoding"] == "log-json" or getattr(drv, "entry_stream", False):
+            # O(1) via the band index (visible index -> physical layer/position)
             self._ensure_index(band)
             try:
                 entry_id = int(address)
@@ -647,7 +665,8 @@ class Cube:
                 if boot["encoding"] == "calendar-spatial":
                     continue
                 content = _decode_layer_payload(raw, idx_band[idx], idx, boot)
-                if boot["encoding"] == "log-json":
+                if boot["encoding"] == "log-json" or getattr(
+                        get_driver(boot["encoding"]), "entry_stream", False):
                     for e in content:
                         if isinstance(e, dict) and "hash" in e and entry_hash(e) != e["hash"]:
                             problems.append("staged entry hash mismatch in band %s layer %d "
@@ -734,7 +753,8 @@ class Cube:
             except KeyError:
                 problems.append("band %s names unknown driver %s" % (band, boot["encoding"]))
             problems.extend(metabolism.coherence(self, band))
-            if boot["encoding"] == "log-json":
+            if boot["encoding"] == "log-json" or getattr(
+                    get_driver(boot["encoding"]), "entry_stream", False):
                 for idx in self.band_layers.get(band, []):
                     for e in self.layer_content(idx):
                         if isinstance(e, dict) and "hash" in e and entry_hash(e) != e["hash"]:
