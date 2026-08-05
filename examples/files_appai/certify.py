@@ -12,8 +12,8 @@ import sys
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 SRC = ROOT / "src"
-SPORE = ROOT / "Files.AppAI.spore.png"
-NEST = ROOT / "Files.AppAI.nest"
+SPORE = HERE / "Files.AppAI.spore.png"
+NEST = HERE / "Files.AppAI.nest"
 RECEIPT = HERE / "certification_receipt.json"
 
 sys.path.insert(0, str(SRC))
@@ -30,7 +30,7 @@ def _sha256(data: bytes) -> str:
 
 
 def certify() -> dict:
-    if NEST.parent != ROOT or NEST.name != "Files.AppAI.nest":
+    if NEST.parent != HERE or NEST.name != "Files.AppAI.nest":
         raise RuntimeError("refusing to remove an unexpected nest path")
     if NEST.exists():
         shutil.rmtree(NEST)

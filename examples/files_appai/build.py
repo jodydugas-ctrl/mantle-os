@@ -11,7 +11,7 @@ import sys
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 SRC = ROOT / "src"
-OUTPUT = ROOT / "Files.AppAI.spore.png"
+OUTPUT = ROOT / "examples" / "files_appai" / "Files.AppAI.spore.png"
 RECEIPT = HERE / "build_receipt.json"
 STALE_GENERATED = (
     HERE / "carrier-smoke.png",

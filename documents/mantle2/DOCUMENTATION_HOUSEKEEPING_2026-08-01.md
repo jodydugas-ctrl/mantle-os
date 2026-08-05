@@ -49,8 +49,8 @@ Mantle invariant gate, not by applying the v0.10-only independent verifier.
 | `compileall` | PASS |
 | Grimoire focused suite | 33 passed |
 | Maintained `examples/tests` suite | 79 passed, 2 skipped, 3 subtests passed |
-| `python -m mantle prove` | 134/134 invariants green |
-| `python -m mantle audit` | 22/22 Stage-1 rows, 134/134 invariants, PASS |
+| `python -m mantle prove` | all invariants green (dated run) |
+| `python -m mantle audit` | 22/22 Stage-1 rows, all invariants, PASS |
 | `python -m mantle audit-mind` | 7/7 Stage-2 rows, 23/23 Phase-1 regression, PASS |
 | `python -m mantle check --fast` | 11 passed, 1 expected non-resident skip, 0 failed |
 | `python -m mantle check` | 13 passed, 1 expected non-resident skip, 0 failed; PARTIAL, not certification |

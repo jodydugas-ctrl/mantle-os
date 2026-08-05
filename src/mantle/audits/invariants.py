@@ -4375,8 +4375,8 @@ def t_ancestor_query_read_only():
 
 
 def t_friction_closure_contract():
-    matrix = os.path.join(paths.REPO_ROOT, "docs", "MANTLE2_CONSOLIDATION_MATRIX.md")
-    ledger = os.path.join(paths.REPO_ROOT, "reports", "FRICTION_EVENTS.md")
+    matrix = os.path.join(paths.REPO_ROOT, "documents", "mantle2", "MANTLE2_CONSOLIDATION_MATRIX.md")
+    ledger = os.path.join(paths.REPO_ROOT, "documents", "mantle2", "FRICTION_EVENTS.md")
     if not (os.path.isfile(matrix) and os.path.isfile(ledger)):
         # Repo-only evidence, absent when mantle is pip-installed (not a checkout).
         return (True, "skipped: not a repository checkout (consolidation matrix absent)")

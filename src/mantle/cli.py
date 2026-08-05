@@ -72,7 +72,7 @@ _COMMAND_ALIASES.update({name.replace("-", "_"): name
 
 
 def known_commands(include_aliases: bool = False):
-    """The canonical CLI command registry used by docs/alignment audits."""
+    """The canonical CLI command registry used by documentation/alignment audits."""
     if include_aliases:
         return sorted(_COMMAND_ALIASES)
     return sorted(set(_COMMAND_ALIASES.values()))

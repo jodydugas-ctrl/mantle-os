@@ -41,6 +41,12 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 > and the doctrine stays in that language. The organic terms are scoped: Body, MIND, Senses,
 > VCW, SELF/OTHER name *Mantle tissue*, not ordinary host/application code.
 
+> **For AI agents:** read [`AGENTS.md`](AGENTS.md) first — it tells you what the project is
+> and how to use the **Grimoire**, the doctrine the organism operates through. Grok the
+> Grimoire from its family index: [`documents/grimoire/README.md`](documents/grimoire/README.md)
+> — select an edition there before loading it (new tissue: `grimoire-v0.10`; `v0.9` frozen
+> compatibility). The corpus index is [`documents/README.md`](documents/README.md).
+
 ---
 
 ## In plain terms
@@ -587,8 +593,10 @@ documents/               the books and the living doctrine
   ARCHITECTURE.md        the shape + the Phase-1/Phase-2 build path
   REPRODUCTION.md        the spore, the hatchery, the graft, rebirth
   Mantle_Organ_Atlas.md  the organ taxonomy + the organ contracts
-  grimoire/              explicit v0.9 compatibility and adopted v0.10 software profiles
+  grimoire/              the doctrine — family index (README.md), editions/, residency/, semantic-memory/
   guides/ (VCW · audit · lifecycle · assimilation · visual) · assets/ (diagrams)
+  mantle2/               MantleOS 2.0 release-closure records (matrix · migration · readiness · friction ledger)
+  README.md              this corpus index (family table + the Grimoire pointer)
 examples/                example AppAIs + the normative substrate
   spores/                inert germ spores; inspect, target-authorize, then hatch one
   eggs/                  the germ files those spores are packed from
@@ -596,6 +604,8 @@ examples/                example AppAIs + the normative substrate
   vcw/vcw_cube.py        THE standalone VCW cube — the normative, runnable format definition
   Mantle_Live_Agent.html live MIND workbench (browser-tested) — see examples/README.md
   notepad_appai/         maintained browser host example
+  files_appai/           Files.AppAI browser example — build.py, its spore + hatched nest
+  hermes-mantle-addon/   example Hermes plugin addon (vendored Mantle runtime)
   Mantle_MacroDroid_Schema.yaml  Path-B alignment contract
   tests/                 headless smoke tests for maintained browser examples
 ```

@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "docs" / "MANTLE2_CONSOLIDATION_MATRIX.md"
+OUT = ROOT / "documents" / "mantle2" / "MANTLE2_CONSOLIDATION_MATRIX.md"
 
 TITLES = """C:\\tmp\\mantleos-notepadnext could not be created from the sandboxed PowerShell session.
 The requested host was described as C, but repository metadata identifies it as C++.
@@ -194,7 +194,7 @@ def render() -> str:
               "| Friction ID | Condition | Status | Owning subsystem | Implementation work item | Test/invariant | Example migration | Closure evidence |",
               "| --- | --- | --- | --- | --- | --- | --- | --- |"]
     for number, condition in FRICTION.items():
-        evidence = "reports/FRICTION_EVENTS.md; FRICTION-1"
+        evidence = "documents/mantle2/FRICTION_EVENTS.md; FRICTION-1"
         if number <= 18:
             example = "NotepadNext v2 candidate"
         elif number <= 22:

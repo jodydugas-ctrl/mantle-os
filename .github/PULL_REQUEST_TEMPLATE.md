@@ -10,6 +10,6 @@
 
 ## Notes
 
-- Documentation lives in `documents/`; top-level `docs/` is reserved for the
-  machine-referenced `MANTLE2_*` release-closure artifacts. Never create a new doc root.
+- Documentation lives in `documents/` — the single doc root; `documents/mantle2/` holds the
+  machine-referenced `MANTLE2_*` release records. Never create a new doc root.
 - Small conventional commits only; no history rewrites, no force-pushes.
