@@ -73,6 +73,33 @@ def standard_genome() -> List[Dict[str, Any]]:
     ]
 
 
+def semantic_genome(semantic_bands=("thoughts", "brain")) -> List[Dict[str, Any]]:
+    """The semantic-memory genome: the standard bands, but the selected MIND-surface
+    bands boot the `grimoire-v0.10-entry` driver, so a MIND reflection is encoded into a
+    Grimoire v0.10 statement at append time -- thought and storage are one step.
+
+    Default scope: `thoughts` + `brain` (the MIND write surface). `identity` and
+    `immune` intentionally stay `log-json` (identity lives in the Body; immune events
+    stay plain records). The privacy veil on `thoughts` is preserved.
+
+    Creating semantic-memory tissue requires the operator adoption receipt
+    (`adopt_semantic_memory`); this function only builds the boot sectors.
+    """
+    allowed = {boot["band"] for boot in standard_genome()}
+    unknown = [name for name in semantic_bands if name not in allowed]
+    if unknown:
+        raise ValueError("semantic_genome: unknown band(s) %s (have: %s)"
+                         % (", ".join(sorted(unknown)), ", ".join(sorted(allowed))))
+    encoding = "grimoire-v0.10-entry"
+    get_driver(encoding)                                # registered or fail loudly
+    genome = standard_genome()
+    for boot in genome:
+        if boot["band"] in semantic_bands:
+            boot["encoding"] = encoding
+            boot["params"] = {"profile": encoding}
+    return genome
+
+
 APP_BAND_RANGE = (550, 749)   # caller-defined application bands
 TAIL_RANGE     = (750, 799)   # reserved scratch / future use
 

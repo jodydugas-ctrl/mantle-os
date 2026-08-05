@@ -45,3 +45,46 @@ def new_grimoire_params(profile: str = DEFAULT_NEW_TISSUE_PROFILE) -> Dict[str, 
     """Return explicit carrier params for a newly created Grimoire band."""
     get_edition(profile)
     return {"profile": profile}
+
+
+# ---------------------------------------------------------------------------
+# Semantic-memory adoption: the one-step entry -> Grimoire statement profile
+# ---------------------------------------------------------------------------
+SEMANTIC_MEMORY_PROFILE = "grimoire-v0.10-entry"
+SEMANTIC_MEMORY_BASE_EDITION = DEFAULT_NEW_TISSUE_PROFILE
+
+
+def new_semantic_genome_params() -> Dict[str, str]:
+    """Driver params for a semantic-memory band (the one-step entry encoder)."""
+    get_edition(SEMANTIC_MEMORY_BASE_EDITION)
+    return {"profile": SEMANTIC_MEMORY_PROFILE}
+
+
+def adopt_semantic_memory(*, body: Any, operator_authorized: bool, commit: str,
+                          repository_root: str | Path = ".") -> Dict[str, Any]:
+    """Record the semantic-memory adoption event; only an explicit operator
+    authorization may call it. Scope is new-tissue-only: existing organisms and
+    carriers are untouched."""
+    if operator_authorized is not True:
+        raise PermissionError("semantic-memory adoption requires operator authorization")
+    root = Path(repository_root)
+    encoder = root / "src" / "mantle" / "vcw" / "grimoire_editions" / "semantic.py"
+    driver = root / "src" / "mantle" / "vcw" / "drivers.py"
+    cube = root / "src" / "mantle" / "vcw" / "cube.py"
+    invariants = root / "src" / "mantle" / "audits" / "invariants.py"
+    companion = root / "documents" / "grimoire" / "semantic-memory" / "semantic-memory-v1.md"
+    receipt = {
+        "kind": "semantic_memory_adoption",
+        "profile": SEMANTIC_MEMORY_PROFILE,
+        "base_edition": SEMANTIC_MEMORY_BASE_EDITION,
+        "encoder_sha256": _sha256(encoder),
+        "driver_sha256": _sha256(driver),
+        "cube_sha256": _sha256(cube),
+        "invariants_sha256": _sha256(invariants),
+        "companion_sha256": _sha256(companion),
+        "operator_authorized": True,
+        "default_scope": "new-tissue-only",
+        "legacy_reinterpretation": False,
+        "commit": str(commit),
+    }
+    return body.record_edition_adoption(receipt)

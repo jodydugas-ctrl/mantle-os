@@ -192,7 +192,8 @@ class Body:
         """Append an operator-authorized edition receipt to Body-owned tissue."""
         if not isinstance(receipt, dict) or receipt.get("operator_authorized") is not True:
             raise PermissionError("edition adoption requires operator authorization")
-        if receipt.get("kind") != "grimoire_edition_adoption":
+        if receipt.get("kind") not in ("grimoire_edition_adoption",
+                                       "semantic_memory_adoption"):
             raise ValueError("unsupported edition receipt kind")
         self._edition_adoptions.append(dict(receipt))
         return self._edition_adoptions[-1]

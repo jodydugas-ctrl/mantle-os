@@ -53,15 +53,16 @@ def validate_genome(specs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if enc not in registered_encodings():
             raise GenomeError("band %r: encoding %r is not a registered driver (have: %s)"
                               % (band, enc, ", ".join(registered_encodings())))
-        if enc in ("grimoire-v0.9", "grimoire-v0.10"):
+        if enc in ("grimoire-v0.9", "grimoire-v0.10", "grimoire-v0.10-entry"):
             params = dict(s.get("params") or {})
+            edition_profile = "grimoire-v0.10" if enc == "grimoire-v0.10-entry" else enc
             try:
-                get_edition(enc)
+                get_edition(edition_profile)
             except GrimoireEditionError as exc:
                 raise GenomeError(str(exc)) from exc
-            if enc == "grimoire-v0.10" and params.get("profile") != enc:
-                raise GenomeError("band %r: v0.10 requires explicit profile %r"
-                                  % (band, enc))
+            if enc != "grimoire-v0.9" and params.get("profile") != enc:
+                raise GenomeError("band %r: %s requires explicit profile %r"
+                                  % (band, enc, enc))
         head = s.get("head")
         if not isinstance(head, int) or isinstance(head, bool) or not (550 <= head <= 749):
             raise GenomeError("band %r: app-band head must be an int in 550-749 (got %r)"
