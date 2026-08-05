@@ -117,20 +117,18 @@ walks every one.
 
 ### Why Mantle began this way
 
-> **Creator's note:  Story is true AI sucks at telling it.** 
-> I came to Mantle from two directions. In my youth I worked as an
-> Information Systems Engineer; after my father suffered a stroke, I moved into medicine
-> and eventually specialized in neurology. A few years later I built a custom agent for
-> him. The point of this history is not emotional impact — it explains the engineering
-> constraints that shaped the system.
+> **Creator's note.** Mantle began from a concrete constraint: it was built for a person who
+> needed a memory prosthetic. That origin explains the engineering constraints that shaped
+> the system.
 >
-> The intended home was a hearing aid: an intimate assistive device used where neither the
-> wearer nor their partner could be expected to troubleshoot software. The agent therefore
-> needed medical-context dependability, self-repair, strict privacy, and a low operating
-> cost that would not burn tokens merely by remaining available.
+> The system runs as a process within Android OS on the person's phone, using a hearing aid
+> as its user interface — an intimate assistive surface where neither the wearer nor their
+> partner could be expected to troubleshoot software. The agent therefore needed
+> medical-context dependability, self-repair, strict privacy, and a low operating cost that
+> would not burn tokens merely by remaining available.
 >
-> At the time I had coding fundamentals but no background in AI engineering or established
-> agent-framework practice. I built from how I thought an agent ought to work: as an
+> It was built from first principles rather than established agent-framework practice,
+> starting from how an agent ought to work: as an
 > organism, modeled particularly on the octopus — a creature with distributed intelligence,
 > capable local limbs, and a body that coordinates without making every reflex depend on a
 > central brain.
