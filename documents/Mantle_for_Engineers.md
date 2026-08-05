@@ -115,6 +115,10 @@ Rules that matter for implementation:
 - Use band declarations from `src/mantle/vcw/bands.py`; do not invent ad hoc storage.
 - Treat lane semantics as driver/profile-defined. Do not assume every RGBA layer is a
   Grimoire thought stream.
+- Semantic bands (`grimoire-v0.10-entry`) encode entries into v0.10 statements at
+  append time with the same entry guarantees as `log-json` (ids, veil, immune marks,
+  graded memory, metabolism, entry hashes over the hex raw runs). See the
+  [semantic-memory companion](grimoire/semantic-memory/semantic-memory-v1.md).
 - Keep identity and primer data in `Body`, not in the VCW cube.
 - Keep secrets out of input and error logs by using the existing redaction boundary.
 - Preserve sealed ancestors as read-only storage.

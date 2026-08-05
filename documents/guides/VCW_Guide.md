@@ -41,8 +41,14 @@ anatomical atlas and exported from `mantle.vcw.atlas`.
 A band's boot sector (level 1, fixed format) names a **driver** or carrier profile (level
 2, programmable): `log-json` (immutable entry log), `keyvalue` (small mutable map),
 `calendar-spatial` (data AS colors at coordinates — a real canvas), `exec` (a calcified
-reflex layer), or an explicit Grimoire profile (`grimoire-v0.9` compatibility or
-`grimoire-v0.10`; semantic RGBA runs: atom, role, evidence, force).
+reflex layer), an explicit Grimoire profile (`grimoire-v0.9` compatibility or
+`grimoire-v0.10`; semantic RGBA runs: atom, role, evidence, force), or
+`grimoire-v0.10-entry` — the semantic-memory driver, which ENCODES an appended entry
+into a v0.10 statement at write time (thought and storage in one step; see
+[the semantic-memory companion](../grimoire/semantic-memory/semantic-memory-v1.md)).
+Entry-stream drivers (`log-json`, `grimoire-v0.10-entry`) share the cube's entry
+guarantees: band-unique ids, multi-layer reads, veil, immune marks, graded memory, and
+metabolism.
 Drivers live in the Body (trusted code); boot sectors are data that select them.
 
 That means RGBA is not globally "thought" and not globally "Grimoire." RGBA is the lane

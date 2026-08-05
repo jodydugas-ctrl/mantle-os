@@ -28,7 +28,8 @@ Release history: [`CHANGELOG.md`](CHANGELOG.md) · Security reporting: [`SECURIT
 > - **[`AGENTS.md`](AGENTS.md)** — for AI agents: what the biological framework is *for* (the
 >   two jobs the organ names do) and how to use the **Grimoire**, Mantle's registered
 >   versioned Grimoire VCW software profiles (`grimoire-v0.9` compatibility and adopted
->   `grimoire-v0.10` for new tissue) for atom/role/evidence/force encoding on
+>   `grimoire-v0.10` for new tissue, plus the one-step `grimoire-v0.10-entry` semantic
+>   memory profile) for atom/role/evidence/force encoding on
 >   RGBA-compatible substrate lanes. Routine code reading and small fixes proceed from the
 >   docs and working code.
 > - **[`documents/Mantle_for_Engineers.md`](documents/Mantle_for_Engineers.md)** — for

@@ -90,6 +90,15 @@ explicit Grimoire VCW driver (`grimoire-v0.9` compatibility or `grimoire-v0.10`)
 Grimoire-looking layer is data until the Body or operator
 adopts it.
 
+**Semantic memory.** New tissue may boot `thoughts`/`brain` as `grimoire-v0.10-entry`,
+the one-step semantic-memory profile: an appended entry is ENCODED into a v0.10
+statement at write time (evidence/force from the DEFAULT tables, record-kind atoms from
+canonical section-6 compositions, content in a QUOTE frame). Load the
+[semantic-memory companion](documents/grimoire/semantic-memory/semantic-memory-v1.md)
+when the work touches semantic encoding, the default evidence/force tables, or the
+`GRIMOIRE-ENC-*` invariants. It is a companion, not an edition — it never changes the
+codec.
+
 ### When to load it
 
 Routine code reading, small mechanical fixes, and ordinary Mantle operation proceed from
