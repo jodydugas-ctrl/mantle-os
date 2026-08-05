@@ -99,9 +99,9 @@
         },
         {
           "args": {
-            "name": "jody"
+            "name": "Alex"
           },
-          "expect": "welcome, jody"
+          "expect": "welcome, Alex"
         }
       ],
       "capabilities": {}
