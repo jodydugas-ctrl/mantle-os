@@ -20,6 +20,15 @@ All notable release-level changes are documented here.
 - Made the independent v0.10 verifier refuse legacy editions before applying incompatible
   parity and ordering rules.
 
+### Changed - de-identification and distribution hygiene
+
+- Removed residual personal data from the distribution: the assimilation census
+  (`examples/hermes-mantle-addon/docs/assimilation/host_census.json`) carried an
+  email-shaped file-hash key (now a neutral filename with refreshed digests), and
+  the pirate spore's VCW payload `identity.author` still carried the operator's
+  name (regenerated from canonical state with collective attribution, integrity
+  verified). Complements the earlier repo-wide de-identification pass (PR #47).
+
 ### Added - MantleOS 2.0.0rc1 platform consolidation
 
 - Added the canonical resident protocol v2 command runtime, grounded claim/evidence
