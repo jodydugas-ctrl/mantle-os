@@ -1,7 +1,7 @@
 {
-  "after_digest": "ef4c730530d1eb3cb7a330c7d2212e6c69e74cb6ab55d240dff663318fc15519",
+  "after_digest": "8bdd7e3ca4de04d669e5ec8def11354f9f0f968e2eb8f81949d83c0cf67f01f8",
   "algorithm": "sha256",
-  "before_digest": "ef4c730530d1eb3cb7a330c7d2212e6c69e74cb6ab55d240dff663318fc15519",
+  "before_digest": "8bdd7e3ca4de04d669e5ec8def11354f9f0f968e2eb8f81949d83c0cf67f01f8",
   "file_hashes": {
     ".dockerignore": "297f36c5c25d8126608d605d47590358f4d019f7fad1d1bbca4be0402767cb7d",
     ".env.example": "9398ee070e1b76c4636cffb8d3a89cf501c6b8cf7013cf96cd2682b396170308",
@@ -229,7 +229,7 @@
     "apps/bootstrap-installer/src-tauri/capabilities/default.json": "86b982c193d6113194c5c1b6f605149956f9d334f3d4f55a53d14d01fe7121f5",
     "apps/bootstrap-installer/src-tauri/hermes-setup.manifest": "8903a23d0360edd22e361bc8ae14a71013b906f0190337844c862c84331ffd97",
     "apps/bootstrap-installer/src-tauri/icons/128x128.png": "1f773427a0076eb0d49dd299151e9d897ba657100448b14de961cec7c38274fd",
-    "apps/bootstrap-installer/src-tauri/icons/128x128@2x.png": "1f773427a0076eb0d49dd299151e9d897ba657100448b14de961cec7c38274fd",
+    "apps/bootstrap-installer/src-tauri/icons/author.png": "1f773427a0076eb0d49dd299151e9d897ba657100448b14de961cec7c38274fd",
     "apps/bootstrap-installer/src-tauri/icons/32x32.png": "1f773427a0076eb0d49dd299151e9d897ba657100448b14de961cec7c38274fd",
     "apps/bootstrap-installer/src-tauri/icons/icon.icns": "56c39b613d61d13671e49bf7e32fb8e80f705b9c50d8bed1c18a505f0b12be89",
     "apps/bootstrap-installer/src-tauri/icons/icon.ico": "92320b91d6290c158d8c64e231d5964dabbd2eab8d72102469b986d8792bf260",
